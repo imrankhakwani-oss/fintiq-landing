@@ -9,7 +9,7 @@ from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 import yfinance as yf
 import pandas as pd
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 import anthropic
 
@@ -4632,13 +4632,25 @@ def alpha_scanner_reset(token: str = ""):
     return {"status": "reset", "message": "All signals and universe cleared. Next /run will be a full first-run scan."}
 
 
+_scanner_running = False
+
 @app.get("/alpha-scanner/run")
-def alpha_scanner_run(token: str = ""):
-    """Trigger daily Alpha Scanner run. Protected by REFRESH_TOKEN."""
+def alpha_scanner_run(background_tasks: BackgroundTasks, token: str = ""):
+    """Trigger daily Alpha Scanner run. Returns immediately; scan runs in background."""
+    global _scanner_running
     if token != REFRESH_TOKEN:
         raise HTTPException(status_code=403, detail="Invalid token")
-    result = _run_alpha_scanner()
-    return result
+    if _scanner_running:
+        return {"status": "already_running", "message": "Scan already in progress. Check /alpha-scanner/signals for results."}
+    _scanner_running = True
+    def _run_and_clear():
+        global _scanner_running
+        try:
+            _run_alpha_scanner()
+        finally:
+            _scanner_running = False
+    background_tasks.add_task(_run_and_clear)
+    return {"status": "started", "message": "Scan started in background. Check /alpha-scanner/signals in a few minutes."}
 
 
 @app.get("/alpha-scanner/signals")
