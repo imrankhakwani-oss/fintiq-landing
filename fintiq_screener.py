@@ -854,6 +854,90 @@ st.markdown("""
 
   /* Hide sidebar toggle */
   section[data-testid="stSidebar"] { display:none; }
+
+  /* ── MOBILE RESPONSIVE (≤768px) ── */
+  @media (max-width: 768px) {
+
+    /* Base font + padding */
+    html, body, .stApp { font-size: 14px !important; }
+    .main .block-container {
+      padding-left: 12px !important;
+      padding-right: 12px !important;
+      max-width: 100% !important;
+    }
+
+    /* Nav bar — stack logo and badges vertically */
+    .fintiq-nav {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      padding: 8px 14px !important;
+      gap: 6px !important;
+    }
+    .fintiq-logo { font-size: 1.8rem !important; }
+    .fintiq-tagline { font-size: 0.68rem !important; }
+    /* Hide badges on mobile to save space */
+    .nav-badge { display: none !important; }
+
+    /* Ticker tape — smaller font */
+    .ticker-tape { font-size: 0.65rem !important; }
+    .ticker-item { margin: 0 16px !important; }
+
+    /* Tabs — smaller text, scrollable */
+    .stTabs [data-baseweb="tab"] {
+      font-size: 0.72rem !important;
+      padding: 6px 8px !important;
+    }
+    .stTabs [data-baseweb="tab-list"] {
+      overflow-x: auto !important;
+      flex-wrap: nowrap !important;
+      -webkit-overflow-scrolling: touch !important;
+    }
+
+    /* Hero title smaller */
+    .fintiq-hero-title { font-size: 1.8rem !important; letter-spacing: 1px !important; }
+
+    /* Metric cards — smaller values, auto height */
+    .metric-card {
+      height: auto !important;
+      min-height: 80px !important;
+      padding: 10px 12px !important;
+    }
+    .metric-value { font-size: 1.1rem !important; }
+    .metric-label { font-size: 0.62rem !important; }
+    .metric-sub   { font-size: 0.68rem !important; }
+
+    /* Valuation cards — auto height on mobile */
+    .val-card {
+      height: auto !important;
+      padding: 14px !important;
+      margin: 4px 0 !important;
+    }
+    .val-price { font-size: 1.4rem !important; }
+
+    /* Section headers */
+    .section-header { font-size: 0.85rem !important; padding: 8px 12px !important; }
+
+    /* Buttons — full width, bigger tap target */
+    .stButton > button,
+    div[data-testid="stButton"] > button {
+      width: 100% !important;
+      padding: 12px 16px !important;
+      font-size: 0.85rem !important;
+    }
+
+    /* Charts — allow horizontal scroll */
+    .js-plotly-plot { max-width: 100% !important; overflow-x: auto !important; }
+
+    /* Dataframe — scrollable */
+    .stDataFrame { overflow-x: auto !important; font-size: 0.75rem !important; }
+
+    /* Disclaimer footer */
+    .disclaimer-footer { font-size: 0.7rem !important; padding: 10px 12px !important; }
+
+    /* Home page feature cards — make readable on 1 column */
+    p, span, label, .stMarkdown { font-size: 0.85rem !important; }
+    h1, h2, h3 { font-size: 1.1rem !important; }
+  }
 </style>
 """, unsafe_allow_html=True)
 
