@@ -646,9 +646,9 @@ st.markdown("""
   /* ── TOP NAV BAR ── */
   .fintiq-nav {
     background: linear-gradient(135deg, #0A1628 0%, #0D2137 50%, #0A1628 100%);
-    padding: 3px 18px;
+    padding: 5px 22px;
     border-radius: 0 0 8px 8px;
-    margin-bottom: 1px;
+    margin-bottom: 2px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -656,7 +656,7 @@ st.markdown("""
     box-shadow: 0 4px 30px rgba(245,158,11,0.15), 0 2px 60px rgba(0,0,0,0.8);
   }
   .fintiq-logo {
-    font-size: 1.9rem !important;
+    font-size: 2.1rem !important;
     font-weight: 900 !important;
     color: #F59E0B !important;
     letter-spacing: -2px !important;
