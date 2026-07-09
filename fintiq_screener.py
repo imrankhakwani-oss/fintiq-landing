@@ -1748,28 +1748,30 @@ def backtest_pair(df, entry_threshold=2.0):
 _qp_action = st.query_params.get("action", "")
 
 if _user_email:
-    _nav_right_html = f'''
-      <span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}</span>
-      <a href="?action=logout" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
-         color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;
-         text-decoration:none">Logout</a>'''
+    _nav_right_html = (
+        f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 ' + _user_email + '</span>'
+        '<a href="?action=logout" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        'color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;'
+        'text-decoration:none">Logout</a>'
+    )
 else:
-    _nav_right_html = '''
-      <a href="?action=login" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
-         color:#F59E0B;padding:5px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;
-         text-decoration:none;letter-spacing:0.3px">Login</a>'''
+    _nav_right_html = (
+        '<a href="?action=login" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        'color:#F59E0B;padding:5px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;'
+        'text-decoration:none;letter-spacing:0.3px">Login</a>'
+    )
 
-st.markdown(f"""
-<div class="fintiq-nav">
-  <div style="display:flex;align-items:center;gap:14px">
-    <div class="fintiq-logo">📊 Fintiq</div>
-    <div class="fintiq-tagline">From speculation to strategy · Intelligent Trading Screener</div>
-  </div>
-  <div style="display:flex;align-items:center;gap:10px">
-    {_nav_right_html}
-  </div>
-</div>
-""", unsafe_allow_html=True)
+_nav_html = (
+    '<div class="fintiq-nav">'
+    '<div style="display:flex;align-items:center;gap:14px">'
+    '<div class="fintiq-logo">📊 Fintiq</div>'
+    '<div class="fintiq-tagline">From speculation to strategy · Intelligent Trading Screener</div>'
+    '</div>'
+    '<div style="display:flex;align-items:center;gap:10px">'
+    + _nav_right_html +
+    '</div></div>'
+)
+st.markdown(_nav_html, unsafe_allow_html=True)
 
 # ── Handle logout via query param ────────────────────────────
 if _qp_action == "logout" and _user_email:
