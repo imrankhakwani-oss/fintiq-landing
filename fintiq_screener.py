@@ -986,11 +986,17 @@ st.markdown("""
     border-radius: 6px !important;
     max-width: none !important;
     overflow: visible !important;
+    margin-left: 4px !important;
   }
   span[data-baseweb="tag"] span,
   span[data-baseweb="tag"] svg {
     color: #FDE68A !important;
     fill: #FDE68A !important;
+  }
+  /* Give the multiselect input area breathing room so tags aren't clipped */
+  div[data-baseweb="select"] > div:first-child {
+    padding-left: 6px !important;
+    overflow: visible !important;
   }
   /* Reduce tab bar top margin */
   div[data-testid="stTabs"] {
