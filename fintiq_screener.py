@@ -18,6 +18,15 @@ import sqlite3, os, math, io, json
 import warnings
 warnings.filterwarnings("ignore")
 
+# ── Supabase auth ──────────────────────────────────────────────
+try:
+    from supabase import create_client, Client as SupabaseClient
+    _SUPABASE_URL = st.secrets.get("SUPABASE_URL", "")
+    _SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "")
+    _sb: SupabaseClient = create_client(_SUPABASE_URL, _SUPABASE_KEY) if _SUPABASE_URL else None
+except Exception:
+    _sb = None
+
 # ─────────────────────────────────────────────────────────────
 # WATCHLIST — JSON persistence helpers
 # ─────────────────────────────────────────────────────────────
@@ -393,6 +402,126 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+# ─────────────────────────────────────────────────────────────
+# AUTH GATE — Login / Sign-up wall
+# ─────────────────────────────────────────────────────────────
+
+def _auth_css():
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
+    html, body, .stApp { background: #0F1923 !important; font-family: 'Inter', sans-serif !important; }
+    .auth-wrap {
+        max-width: 420px; margin: 60px auto 0 auto;
+        background: linear-gradient(135deg, #0D2137 0%, #0A1628 100%);
+        border: 1px solid rgba(245,158,11,0.25); border-radius: 16px;
+        padding: 40px 36px; box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+    .auth-logo {
+        font-size: 2.6rem; font-weight: 900; color: #F59E0B;
+        letter-spacing: -2px; text-align: center; margin-bottom: 4px;
+        text-shadow: 0 0 20px rgba(245,158,11,0.5);
+    }
+    .auth-sub { text-align: center; color: #64748B; font-size: 0.82rem;
+                margin-bottom: 28px; font-style: italic; }
+    .auth-err { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.4);
+                color: #F87171; border-radius: 8px; padding: 10px 14px;
+                font-size: 0.85rem; margin-bottom: 12px; }
+    .auth-ok  { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.4);
+                color: #4ADE80; border-radius: 8px; padding: 10px 14px;
+                font-size: 0.85rem; margin-bottom: 12px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+def _show_auth():
+    """Render login / signup page. Returns True when user is authenticated."""
+    _auth_css()
+
+    st.markdown("""
+    <div class="auth-wrap">
+      <div class="auth-logo">📊 Fintiq</div>
+      <div class="auth-sub">Intelligent Trading Screener · From speculation to strategy</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Centre the form
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        mode = st.radio("", ["Login", "Sign up"], horizontal=True,
+                        label_visibility="collapsed", key="auth_mode")
+        email = st.text_input("Email", placeholder="you@example.com", key="auth_email")
+        password = st.text_input("Password", type="password",
+                                 placeholder="Min 6 characters", key="auth_pw")
+
+        if mode == "Sign up":
+            confirm = st.text_input("Confirm password", type="password",
+                                    placeholder="Repeat password", key="auth_pw2")
+
+        btn_label = "Create account" if mode == "Sign up" else "Log in"
+        if st.button(btn_label, use_container_width=True, type="primary"):
+            if not email or not password:
+                st.markdown('<div class="auth-err">Please enter your email and password.</div>',
+                            unsafe_allow_html=True)
+                return False
+
+            if _sb is None:
+                st.markdown('<div class="auth-err">Auth service unavailable — check configuration.</div>',
+                            unsafe_allow_html=True)
+                return False
+
+            try:
+                if mode == "Sign up":
+                    if password != st.session_state.get("auth_pw2", ""):
+                        st.markdown('<div class="auth-err">Passwords do not match.</div>',
+                                    unsafe_allow_html=True)
+                        return False
+                    if len(password) < 6:
+                        st.markdown('<div class="auth-err">Password must be at least 6 characters.</div>',
+                                    unsafe_allow_html=True)
+                        return False
+                    res = _sb.auth.sign_up({"email": email, "password": password})
+                    if res.user:
+                        st.markdown('<div class="auth-ok">✅ Account created! Check your email to confirm, then log in.</div>',
+                                    unsafe_allow_html=True)
+                        return False
+                    else:
+                        st.markdown('<div class="auth-err">Sign-up failed. Please try again.</div>',
+                                    unsafe_allow_html=True)
+                        return False
+                else:
+                    res = _sb.auth.sign_in_with_password({"email": email, "password": password})
+                    if res.user:
+                        st.session_state["fintiq_user"] = {
+                            "email": res.user.email,
+                            "id": res.user.id,
+                            "session": res.session.access_token if res.session else None,
+                        }
+                        st.rerun()
+                    else:
+                        st.markdown('<div class="auth-err">Invalid email or password.</div>',
+                                    unsafe_allow_html=True)
+                        return False
+            except Exception as e:
+                err_msg = str(e)
+                if "Email not confirmed" in err_msg:
+                    st.markdown('<div class="auth-err">Please confirm your email first — check your inbox.</div>',
+                                unsafe_allow_html=True)
+                elif "Invalid login" in err_msg or "invalid_grant" in err_msg:
+                    st.markdown('<div class="auth-err">Invalid email or password.</div>',
+                                unsafe_allow_html=True)
+                else:
+                    st.markdown(f'<div class="auth-err">Error: {err_msg}</div>', unsafe_allow_html=True)
+                return False
+    return False
+
+# ── Auth check — show gate if not logged in ──────────────────
+if "fintiq_user" not in st.session_state:
+    _show_auth()
+    st.stop()
+
+# ── Logged-in: show logout button in top-right ───────────────
+_user_email = st.session_state["fintiq_user"].get("email", "")
 
 # ─────────────────────────────────────────────────────────────
 # GLOBAL CSS — Professional Navy/Gold Theme
@@ -1546,9 +1675,20 @@ st.markdown("""
     <span class="nav-badge">⚡ Live Data</span>
     <span class="nav-badge">v3.0</span>
     <span class="nav-badge" style="background:rgba(74,222,128,0.1);border-color:#4ADE80;color:#4ADE80">● LIVE</span>
+    <span class="nav-badge" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);color:#94A3B8;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{_user_email}">👤 {_user_email}</span>
   </div>
 </div>
-""", unsafe_allow_html=True)
+""".replace("{_user_email}", _user_email), unsafe_allow_html=True)
+
+# ── Logout button (top right) ────────────────────────────────
+_lcol1, _lcol2 = st.columns([10, 1])
+with _lcol2:
+    if st.button("Logout", key="nav_logout"):
+        if _sb:
+            try: _sb.auth.sign_out()
+            except Exception: pass
+        del st.session_state["fintiq_user"]
+        st.rerun()
 
 # ── Background: CSS pseudo-element on stApp — most reliable Streamlit approach ──
 st.markdown("""
