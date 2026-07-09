@@ -1744,102 +1744,101 @@ def backtest_pair(df, entry_threshold=2.0):
 # NAVIGATION HEADER (replaces sidebar)
 # ─────────────────────────────────────────────────────────────
 
-_nav_right = (
-    f'<span class="nav-badge" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.3);color:#94A3B8;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">👤 {_user_email}</span>'
-    if _user_email else ""
-)
+# ── Nav bar — Login button lives inside the HTML ─────────────
+_qp_action = st.query_params.get("action", "")
+
+if _user_email:
+    _nav_right_html = f'''
+      <span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}</span>
+      <a href="?action=logout" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
+         color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;
+         text-decoration:none">Logout</a>'''
+else:
+    _nav_right_html = '''
+      <a href="?action=login" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);
+         color:#F59E0B;padding:5px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;
+         text-decoration:none;letter-spacing:0.3px">Login</a>'''
+
 st.markdown(f"""
 <div class="fintiq-nav">
   <div style="display:flex;align-items:center;gap:14px">
     <div class="fintiq-logo">📊 Fintiq</div>
     <div class="fintiq-tagline">From speculation to strategy · Intelligent Trading Screener</div>
   </div>
-  <div style="display:flex;gap:8px;align-items:center">
-    {_nav_right}
+  <div style="display:flex;align-items:center;gap:10px">
+    {_nav_right_html}
   </div>
 </div>
 """, unsafe_allow_html=True)
 
-# ── Login / Logout buttons in nav row ────────────────────────
-_nc1, _nc2, _nc3 = st.columns([8, 1, 1])
-if _user_email:
-    with _nc3:
-        if st.button("Logout", key="nav_logout"):
-            if _sb:
-                try: _sb.auth.sign_out()
-                except Exception: pass
-            del st.session_state["fintiq_user"]
-            st.rerun()
-else:
-    with _nc2:
-        if st.button("Sign up", key="nav_signup"):
-            st.session_state["show_auth_modal"] = "signup"
-            st.rerun()
-    with _nc3:
-        if st.button("Login", key="nav_login"):
-            st.session_state["show_auth_modal"] = "login"
-            st.rerun()
+# ── Handle logout via query param ────────────────────────────
+if _qp_action == "logout" and _user_email:
+    if _sb:
+        try: _sb.auth.sign_out()
+        except Exception: pass
+    del st.session_state["fintiq_user"]
+    st.query_params.clear()
+    st.rerun()
 
-# ── Auth modal (shown when Login/Sign up clicked) ─────────────
-if st.session_state.get("show_auth_modal") and not _user_email:
-    _modal_mode = st.session_state["show_auth_modal"]
-    with st.container():
-        st.markdown("<hr style='border-color:rgba(245,158,11,0.2);margin:4px 0 12px 0'>",
-                    unsafe_allow_html=True)
-        _, _mc, _ = st.columns([1, 2, 1])
-        with _mc:
-            st.markdown(f"### {'Create your free account' if _modal_mode == 'signup' else 'Welcome back'}")
-            _m_email = st.text_input("Email", placeholder="you@example.com", key="modal_email")
-            _m_pw    = st.text_input("Password", type="password",
-                                     placeholder="Min 6 characters", key="modal_pw")
-            if _modal_mode == "signup":
-                _m_pw2 = st.text_input("Confirm password", type="password",
-                                       placeholder="Repeat password", key="modal_pw2")
-            _mc1, _mc2 = st.columns(2)
-            with _mc1:
-                _btn_lbl = "Create account" if _modal_mode == "signup" else "Log in"
-                if st.button(_btn_lbl, use_container_width=True, type="primary", key="modal_submit"):
-                    if not _m_email or not _m_pw:
-                        st.error("Please fill in all fields.")
-                    elif _sb is None:
-                        st.error("Auth service unavailable.")
-                    else:
-                        try:
-                            if _modal_mode == "signup":
-                                if _m_pw != st.session_state.get("modal_pw2",""):
-                                    st.error("Passwords do not match.")
-                                elif len(_m_pw) < 6:
-                                    st.error("Password must be at least 6 characters.")
-                                else:
-                                    res = _sb.auth.sign_up({"email": _m_email, "password": _m_pw})
-                                    if res.user:
-                                        st.success("✅ Account created! Check your email to confirm, then log in.")
-                                        st.session_state["show_auth_modal"] = None
-                                    else:
-                                        st.error("Sign-up failed. Please try again.")
+# ── Login / Sign-up form (shown when ?action=login) ──────────
+if _qp_action == "login" and not _user_email:
+    st.markdown("<hr style='border-color:rgba(245,158,11,0.15);margin:6px 0 16px 0'>",
+                unsafe_allow_html=True)
+    _, _lc, _ = st.columns([1, 2, 1])
+    with _lc:
+        _lf_mode = st.radio("", ["Login", "Sign up"], horizontal=True,
+                            label_visibility="collapsed", key="lf_mode")
+        st.markdown(f"#### {'Welcome back' if _lf_mode == 'Login' else 'Create your free account'}")
+        _lf_email = st.text_input("Email", placeholder="you@example.com", key="lf_email")
+        _lf_pw    = st.text_input("Password", type="password",
+                                  placeholder="Min 6 characters", key="lf_pw")
+        if _lf_mode == "Sign up":
+            _lf_pw2 = st.text_input("Confirm password", type="password",
+                                    placeholder="Repeat password", key="lf_pw2")
+        _lfa, _lfb = st.columns(2)
+        with _lfa:
+            if st.button("Login" if _lf_mode == "Login" else "Create account",
+                         use_container_width=True, type="primary", key="lf_submit"):
+                if not _lf_email or not _lf_pw:
+                    st.error("Please fill in all fields.")
+                elif _sb is None:
+                    st.error("Auth service unavailable.")
+                else:
+                    try:
+                        if _lf_mode == "Sign up":
+                            if _lf_pw != st.session_state.get("lf_pw2", ""):
+                                st.error("Passwords do not match.")
+                            elif len(_lf_pw) < 6:
+                                st.error("Password must be at least 6 characters.")
                             else:
-                                res = _sb.auth.sign_in_with_password({"email": _m_email, "password": _m_pw})
+                                res = _sb.auth.sign_up({"email": _lf_email, "password": _lf_pw})
                                 if res.user:
-                                    st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
-                                    st.session_state["free_searches"] = 0
-                                    st.session_state["show_auth_modal"] = None
-                                    st.rerun()
+                                    st.success("✅ Account created! Check your email to confirm, then log in.")
                                 else:
-                                    st.error("Invalid email or password.")
-                        except Exception as _e:
-                            _em = str(_e)
-                            if "Email not confirmed" in _em:
-                                st.warning("Please confirm your email first — check your inbox.")
-                            elif "Invalid login" in _em or "invalid_grant" in _em:
-                                st.error("Invalid email or password.")
+                                    st.error("Sign-up failed. Please try again.")
+                        else:
+                            res = _sb.auth.sign_in_with_password({"email": _lf_email, "password": _lf_pw})
+                            if res.user:
+                                st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
+                                st.session_state["free_searches"] = 0
+                                st.query_params.clear()
+                                st.rerun()
                             else:
-                                st.error(f"Error: {_em}")
-            with _mc2:
-                if st.button("Cancel", use_container_width=True, key="modal_cancel"):
-                    st.session_state["show_auth_modal"] = None
-                    st.rerun()
-        st.markdown("<hr style='border-color:rgba(245,158,11,0.2);margin:12px 0 4px 0'>",
-                    unsafe_allow_html=True)
+                                st.error("Invalid email or password.")
+                    except Exception as _e:
+                        _em = str(_e)
+                        if "Email not confirmed" in _em:
+                            st.warning("Please confirm your email — check your inbox.")
+                        elif "Invalid login" in _em or "invalid_grant" in _em:
+                            st.error("Invalid email or password.")
+                        else:
+                            st.error(f"Error: {_em}")
+        with _lfb:
+            if st.button("Cancel", use_container_width=True, key="lf_cancel"):
+                st.query_params.clear()
+                st.rerun()
+    st.markdown("<hr style='border-color:rgba(245,158,11,0.15);margin:8px 0'>",
+                unsafe_allow_html=True)
 
 # ── Background: CSS pseudo-element on stApp — most reliable Streamlit approach ──
 st.markdown("""
