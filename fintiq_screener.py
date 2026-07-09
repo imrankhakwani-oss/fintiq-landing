@@ -646,9 +646,9 @@ st.markdown("""
   /* ── TOP NAV BAR ── */
   .fintiq-nav {
     background: linear-gradient(135deg, #0A1628 0%, #0D2137 50%, #0A1628 100%);
-    padding: 6px 24px;
+    padding: 3px 18px;
     border-radius: 0 0 8px 8px;
-    margin-bottom: 2px;
+    margin-bottom: 1px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -656,7 +656,7 @@ st.markdown("""
     box-shadow: 0 4px 30px rgba(245,158,11,0.15), 0 2px 60px rgba(0,0,0,0.8);
   }
   .fintiq-logo {
-    font-size: 2.4rem !important;
+    font-size: 1.9rem !important;
     font-weight: 900 !important;
     color: #F59E0B !important;
     letter-spacing: -2px !important;
@@ -666,9 +666,9 @@ st.markdown("""
     display: inline !important;
   }
   .fintiq-tagline {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #64748B;
-    margin-top: 2px;
+    margin-top: 1px;
     font-style: italic;
     letter-spacing: 0.3px;
   }
@@ -687,11 +687,11 @@ st.markdown("""
     background: #0A1520;
     border-top: 1px solid rgba(245,158,11,0.2);
     border-bottom: 1px solid rgba(245,158,11,0.2);
-    padding: 2px 0;
+    padding: 1px 0;
     overflow: hidden;
     white-space: nowrap;
-    margin-bottom: 2px;
-    font-size: 0.74rem;
+    margin-bottom: 1px;
+    font-size: 0.7rem;
     font-family: 'Inter', monospace;
   }
   .ticker-tape-inner {
@@ -889,28 +889,22 @@ st.markdown("""
     font-size: 1rem !important;
   }
 
-  /* ── SELECTBOX & MULTISELECT — control box ── */
-  div[data-testid="stSelectbox"] [data-baseweb="select"] > div:first-child,
-  div[data-testid="stMultiSelect"] [data-baseweb="select"] > div:first-child {
+  /* ── SELECTBOX & MULTISELECT — dark bg, white text ── */
+  [data-baseweb="select"] > div {
     background-color: #162032 !important;
-    border-color: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.15) !important;
   }
-  /* Placeholder and selected value text */
-  div[data-testid="stSelectbox"] [data-baseweb="select"] [class*="placeholder"],
-  div[data-testid="stSelectbox"] [data-baseweb="select"] [class*="value"],
-  div[data-testid="stSelectbox"] [data-baseweb="select"] input,
-  div[data-testid="stMultiSelect"] [data-baseweb="select"] [class*="placeholder"],
-  div[data-testid="stMultiSelect"] [data-baseweb="select"] input {
-    color: #94A3B8 !important;
-  }
-  div[data-testid="stSelectbox"] [data-baseweb="select"] [class*="single"],
-  div[data-testid="stSelectbox"] [data-baseweb="select"] [class*="Single"] {
+  [data-baseweb="select"] > div > div,
+  [data-baseweb="select"] > div > div > div {
+    background-color: #162032 !important;
     color: #E2E8F0 !important;
   }
+  /* Placeholder text */
+  [data-baseweb="select"] input { color: #E2E8F0 !important; }
 
   /* ── DROPDOWN POPUP LIST ── */
-  [data-baseweb="popover"] [data-baseweb="menu"],
-  [data-baseweb="menu"] {
+  [data-baseweb="menu"],
+  [data-baseweb="popover"] [data-baseweb="menu"] {
     background: #162032 !important;
     border: 1px solid rgba(245,158,11,0.2) !important;
     border-radius: 8px !important;
