@@ -899,6 +899,11 @@ st.markdown("""
     background-color: #162032 !important;
     color: #E2E8F0 !important;
   }
+  /* Tag value container — ensure left padding so first tag isn't flush with border */
+  [data-baseweb="select"] > div > div:first-child {
+    padding-left: 6px !important;
+    overflow: visible !important;
+  }
   /* Placeholder text */
   [data-baseweb="select"] input { color: #E2E8F0 !important; }
 
