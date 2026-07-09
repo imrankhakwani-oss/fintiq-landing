@@ -889,44 +889,45 @@ st.markdown("""
     font-size: 1rem !important;
   }
 
-  /* ── SELECTBOX — full coverage for all nested elements ── */
-  .stSelectbox > div > div,
-  .stSelectbox [data-baseweb="select"] > div,
-  .stSelectbox [data-baseweb="select"] div,
-  div[data-testid="stSelectbox"] div[data-baseweb="select"] > div {
+  /* ── SELECTBOX + MULTISELECT — nuclear option, covers all versions ── */
+  /* Container */
+  [data-baseweb="select"] { background: #162032 !important; }
+  [data-baseweb="select"] > div {
     background: #162032 !important;
-    color: #E2E8F0 !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    font-size: 0.95rem !important;
+    border-color: rgba(255,255,255,0.15) !important;
   }
-  /* Selected value text */
-  .stSelectbox [data-baseweb="select"] span,
-  .stSelectbox [data-baseweb="select"] div[class*="ValueContainer"] span,
-  .stSelectbox [data-baseweb="select"] div[class*="singleValue"],
-  .stSelectbox [data-baseweb="select"] div[class*="placeholder"] {
+  /* Every text node inside select control */
+  [data-baseweb="select"] div,
+  [data-baseweb="select"] span,
+  [data-baseweb="select"] input,
+  [data-baseweb="select"] p {
+    color: #E2E8F0 !important;
+    background: transparent !important;
+  }
+  /* Placeholder specifically */
+  [data-baseweb="select"] [class*="placeholder"],
+  [data-baseweb="select"] [class*="Placeholder"] {
+    color: #94A3B8 !important;
+  }
+  /* Selected value */
+  [data-baseweb="select"] [class*="singleValue"],
+  [data-baseweb="select"] [class*="SingleValue"] {
     color: #E2E8F0 !important;
   }
+  /* Tag chips in multiselect */
+  [data-baseweb="tag"] {
+    background: rgba(245,158,11,0.15) !important;
+    border-color: rgba(245,158,11,0.3) !important;
+  }
+  [data-baseweb="tag"] span { color: #F59E0B !important; }
 
-  /* ── MULTISELECT — full coverage ── */
-  .stMultiSelect > div > div,
-  .stMultiSelect [data-baseweb="select"] > div,
-  div[data-testid="stMultiSelect"] div[data-baseweb="select"] > div {
-    background: #162032 !important;
-    color: #E2E8F0 !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    font-size: 0.95rem !important;
-  }
-  .stMultiSelect [data-baseweb="select"] span,
-  .stMultiSelect [data-baseweb="select"] div[class*="placeholder"],
-  .stMultiSelect [data-baseweb="tag"] span {
-    color: #E2E8F0 !important;
-  }
-
-  /* ── DROPDOWN POPUP LIST (all selectboxes/multiselects) ── */
+  /* ── DROPDOWN POPUP LIST ── */
+  [data-baseweb="popover"],
   [data-baseweb="popover"] > div,
   [data-baseweb="menu"],
   [data-baseweb="menu"] ul,
-  ul[role="listbox"] {
+  ul[role="listbox"],
+  div[role="listbox"] {
     background: #1A2840 !important;
     border: 1px solid rgba(245,158,11,0.2) !important;
     border-radius: 8px !important;
@@ -934,7 +935,8 @@ st.markdown("""
   [data-baseweb="option"],
   [data-baseweb="menu"] li,
   ul[role="listbox"] li,
-  div[role="option"] {
+  div[role="option"],
+  li[role="option"] {
     background: #1A2840 !important;
     color: #E2E8F0 !important;
     font-size: 0.92rem !important;
@@ -942,9 +944,17 @@ st.markdown("""
   [data-baseweb="option"]:hover,
   [data-baseweb="option"][aria-selected="true"],
   ul[role="listbox"] li:hover,
-  div[role="option"]:hover {
+  div[role="option"]:hover,
+  li[role="option"]:hover {
     background: #2A3F5F !important;
     color: #F59E0B !important;
+  }
+  /* All text inside dropdown items */
+  [data-baseweb="option"] *,
+  [data-baseweb="option"] div,
+  [data-baseweb="option"] span {
+    color: inherit !important;
+    background: transparent !important;
   }
 
   /* ── EXPANDER — all Streamlit versions ── */
