@@ -979,6 +979,19 @@ st.markdown("""
     font-size: 0.82rem !important;
     line-height: 1.2 !important;
   }
+  /* Multiselect selected tags — readable amber on dark */
+  span[data-baseweb="tag"] {
+    background-color: rgba(245,158,11,0.25) !important;
+    border: 1px solid rgba(245,158,11,0.55) !important;
+    border-radius: 6px !important;
+    max-width: none !important;
+    overflow: visible !important;
+  }
+  span[data-baseweb="tag"] span,
+  span[data-baseweb="tag"] svg {
+    color: #FDE68A !important;
+    fill: #FDE68A !important;
+  }
   /* Reduce tab bar top margin */
   div[data-testid="stTabs"] {
     margin-top: 4px !important;
