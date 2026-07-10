@@ -2293,13 +2293,12 @@ with tab0:
                   background:linear-gradient(135deg,rgba(10,22,40,0.95) 0%,rgba(8,18,32,0.99) 100%);
                   border-radius:20px;border:1px solid rgba(245,158,11,0.25);
                   box-shadow:0 8px 50px rgba(0,0,0,0.7);margin-bottom:28px;text-align:center">
-        <div class="fintiq-hero-title">Intelligent Trading Screener</div>
+        <div class="fintiq-hero-title">Invest like an institution</div>
         <div style="font-size:1rem;color:#94A3B8;max-width:680px;margin:12px auto 0;line-height:1.7">
-          Built for serious investors who want
-          <strong style="color:#F1F5F9">process over impulse</strong> —
-          screen global markets, value companies with 3 institutional methods,
-          detect catalysts, and journal every trade.
-          <strong style="color:#F59E0B">All in one platform.</strong>
+          Screen 10+ global markets for quality value stocks · Value companies with
+          <strong style="color:#F1F5F9">DCF, Graham &amp; industry models</strong> ·
+          Detect catalysts before the crowd · Trade pairs like a hedge fund · Journal every position —
+          <strong style="color:#F59E0B">all in one platform.</strong>
         </div>
       </div>
 
