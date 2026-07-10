@@ -1958,10 +1958,9 @@ if _qp_stripe and "fintiq_user" in st.session_state:
 _qp_action = st.query_params.get("action", "")
 
 _pricing_link = (
-    '<a href="?page=pricing" style="color:#94A3B8;font-size:0.8rem;font-weight:500;'
-    'text-decoration:none;padding:5px 12px;border-radius:20px;'
-    'transition:color 0.2s" onmouseover="this.style.color=\'#F59E0B\'" '
-    'onmouseout="this.style.color=\'#94A3B8\'">Pricing</a>'
+    '<a href="?page=pricing" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+    'color:#F59E0B;padding:5px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;'
+    'text-decoration:none;letter-spacing:0.3px">Pricing</a>'
 )
 
 if _user_email:
@@ -2048,15 +2047,6 @@ if _qp_page == "pricing":
               </div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-            if not _pu_email:
-                if st.button("Sign up free →", use_container_width=True, key="price_signup"):
-                    st.query_params.clear()
-                    st.query_params["action"] = "login"
-                    st.rerun()
-            else:
-                st.button("Current plan ✓", use_container_width=True,
-                          disabled=True, key="price_free_cur")
 
         with _col_pro:
             st.markdown("""
@@ -2087,44 +2077,55 @@ if _qp_page == "pricing":
               </div>
             </div>
             """, unsafe_allow_html=True)
-            st.markdown("<br>", unsafe_allow_html=True)
-            if _pu_pro:
-                st.button("You're on Pro ⭐", use_container_width=True,
-                          disabled=True, key="price_pro_cur")
-            else:
-                _pa, _pb = st.columns(2)
-                with _pa:
-                    if st.button("Monthly £10", use_container_width=True,
-                                 type="primary", key="price_monthly"):
-                        if not _pu_email:
-                            st.query_params.clear()
-                            st.query_params["action"] = "login"
-                            st.rerun()
+
+        # ── All 3 buttons in one row ──────────────────────────
+        st.markdown("<br>", unsafe_allow_html=True)
+        if _pu_pro:
+            st.button("You're on Pro ⭐", use_container_width=True,
+                      disabled=True, key="price_pro_cur")
+        else:
+            _btn_free, _btn_mo, _btn_yr = st.columns(3, gap="medium")
+            with _btn_free:
+                if not _pu_email:
+                    if st.button("Sign up free →", use_container_width=True, key="price_signup"):
+                        st.query_params.clear()
+                        st.query_params["action"] = "login"
+                        st.rerun()
+                else:
+                    st.button("Free plan ✓", use_container_width=True,
+                              disabled=True, key="price_free_cur")
+            with _btn_mo:
+                if st.button("Monthly — £10/mo", use_container_width=True,
+                             type="primary", key="price_monthly"):
+                    if not _pu_email:
+                        st.query_params.clear()
+                        st.query_params["action"] = "login"
+                        st.rerun()
+                    else:
+                        url = _create_checkout("monthly", _pu_email, _pu_id)
+                        if url:
+                            st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
+                                        unsafe_allow_html=True)
+                            st.info("Redirecting to checkout…")
+                            st.stop()
                         else:
-                            url = _create_checkout("monthly", _pu_email, _pu_id)
-                            if url:
-                                st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
-                                            unsafe_allow_html=True)
-                                st.info("Redirecting to checkout…")
-                                st.stop()
-                            else:
-                                st.error("Could not start checkout.")
-                with _pb:
-                    if st.button("Annual £100", use_container_width=True,
-                                 key="price_annual"):
-                        if not _pu_email:
-                            st.query_params.clear()
-                            st.query_params["action"] = "login"
-                            st.rerun()
+                            st.error("Could not start checkout.")
+            with _btn_yr:
+                if st.button("Annual — £100/yr ⭐", use_container_width=True,
+                             key="price_annual"):
+                    if not _pu_email:
+                        st.query_params.clear()
+                        st.query_params["action"] = "login"
+                        st.rerun()
+                    else:
+                        url = _create_checkout("annual", _pu_email, _pu_id)
+                        if url:
+                            st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
+                                        unsafe_allow_html=True)
+                            st.info("Redirecting to checkout…")
+                            st.stop()
                         else:
-                            url = _create_checkout("annual", _pu_email, _pu_id)
-                            if url:
-                                st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
-                                            unsafe_allow_html=True)
-                                st.info("Redirecting to checkout…")
-                                st.stop()
-                            else:
-                                st.error("Could not start checkout.")
+                            st.error("Could not start checkout.")
 
     st.markdown("""
     <div style="text-align:center;color:#334155;font-size:0.8rem;margin-top:32px">
