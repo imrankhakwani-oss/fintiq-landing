@@ -27,6 +27,19 @@ try:
 except Exception:
     _sb = None
 
+# ── Stripe ─────────────────────────────────────────────────────
+try:
+    import stripe as _stripe
+    _STRIPE_SECRET  = st.secrets.get("STRIPE_SECRET_KEY", "")
+    _STRIPE_PUB     = st.secrets.get("STRIPE_PUBLISHABLE_KEY", "")
+    _PRICE_MONTHLY  = "price_1TrhHVFTN1XDVLFMznTk6ZXR"
+    _PRICE_ANNUAL   = "price_1TrhItFTN1XDVLFMTVceBUT0"
+    _APP_URL        = "https://fintiq.uk"
+    if _STRIPE_SECRET:
+        _stripe.api_key = _STRIPE_SECRET
+except Exception:
+    _stripe = None  # type: ignore
+
 # ─────────────────────────────────────────────────────────────
 # WATCHLIST — JSON persistence helpers
 # ─────────────────────────────────────────────────────────────
@@ -515,43 +528,131 @@ def _show_auth():
                 return False
     return False
 
-# ── Free usage counter ───────────────────────────────────────
+# ── Usage limits ─────────────────────────────────────────────
 if "free_searches" not in st.session_state:
     st.session_state["free_searches"] = 0
-_FREE_LIMIT = 3
+_GUEST_LIMIT   = 2   # searches before signup wall
+_MONTHLY_LIMIT = 10  # free-account searches per calendar month
 
-def _check_auth_gate():
-    """Call before running a search. Returns True if allowed, False if blocked."""
-    if "fintiq_user" in st.session_state:
-        return True  # logged in — always allowed
-    if st.session_state["free_searches"] < _FREE_LIMIT:
-        st.session_state["free_searches"] += 1
-        return True  # within free tier
-    # Hit the limit — show signup wall
-    _show_auth_wall()
+# ── Supabase profile helpers ──────────────────────────────────
+def _get_profile(user_id: str) -> dict:
+    if not _sb or not user_id:
+        return {}
+    try:
+        r = _sb.table("profiles").select("*").eq("id", user_id).maybe_single().execute()
+        return r.data or {}
+    except Exception:
+        return {}
+
+def _upsert_profile(user_id: str, data: dict):
+    if not _sb or not user_id:
+        return
+    try:
+        _sb.table("profiles").upsert({"id": user_id, **data}).execute()
+    except Exception:
+        pass
+
+def _increment_search(user_id: str, profile: dict) -> dict:
+    now_month = datetime.now().strftime("%Y-%m")
+    searches  = profile.get("monthly_searches", 0)
+    if profile.get("search_month") != now_month:
+        searches = 0
+    searches += 1
+    updated = {**profile, "monthly_searches": searches, "search_month": now_month}
+    _upsert_profile(user_id, {"monthly_searches": searches, "search_month": now_month})
+    return updated
+
+# ── Stripe helpers ────────────────────────────────────────────
+def _create_checkout(plan: str, user_email: str, user_id: str) -> str | None:
+    if not _stripe or not _STRIPE_SECRET:
+        return None
+    price_id = _PRICE_ANNUAL if plan == "annual" else _PRICE_MONTHLY
+    try:
+        session = _stripe.checkout.Session.create(
+            mode="subscription",
+            customer_email=user_email,
+            line_items=[{"price": price_id, "quantity": 1}],
+            success_url=f"{_APP_URL}?stripe_session={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{_APP_URL}",
+            metadata={"user_id": user_id},
+        )
+        return session.url
+    except Exception:
+        return None
+
+def _verify_stripe_session(session_id: str, user_id: str) -> bool:
+    if not _stripe or not _STRIPE_SECRET:
+        return False
+    try:
+        session = _stripe.checkout.Session.retrieve(session_id)
+        if session.payment_status == "paid":
+            _upsert_profile(user_id, {
+                "is_pro": True,
+                "stripe_customer_id": session.customer,
+                "stripe_subscription_id": session.subscription,
+            })
+            st.session_state["fintiq_user"]["is_pro"] = True
+            if "fintiq_profile" in st.session_state:
+                st.session_state["fintiq_profile"]["is_pro"] = True
+            return True
+    except Exception:
+        pass
+    return False
+
+# ── Auth / upgrade gate ───────────────────────────────────────
+def _check_auth_gate() -> bool:
+    """Returns True if allowed to run a search."""
+    user = st.session_state.get("fintiq_user", {})
+
+    # Pro — unlimited
+    if user.get("is_pro"):
+        return True
+
+    # Guest
+    if not user:
+        if st.session_state["free_searches"] < _GUEST_LIMIT:
+            st.session_state["free_searches"] += 1
+            return True
+        _show_auth_wall()
+        return False
+
+    # Free registered user — check monthly limit
+    user_id = user.get("id", "")
+    profile = st.session_state.get("fintiq_profile")
+    if profile is None:
+        profile = _get_profile(user_id)
+        st.session_state["fintiq_profile"] = profile
+
+    if profile.get("is_pro"):
+        st.session_state["fintiq_user"]["is_pro"] = True
+        return True
+
+    now_month = datetime.now().strftime("%Y-%m")
+    searches  = profile.get("monthly_searches", 0) if profile.get("search_month") == now_month else 0
+    if searches < _MONTHLY_LIMIT:
+        profile = _increment_search(user_id, profile)
+        st.session_state["fintiq_profile"] = profile
+        return True
+
+    _show_upgrade_wall(user.get("email", ""), user_id)
     return False
 
 def _show_auth_wall():
-    """Modal-style signup prompt shown after free limit is reached."""
+    """Signup wall shown to guests after 2 free searches."""
     st.markdown("""
-    <div style="
-        background:linear-gradient(135deg,#0D2137,#0A1628);
-        border:1px solid rgba(245,158,11,0.4);
-        border-radius:16px; padding:36px; text-align:center;
-        max-width:500px; margin:20px auto;
+    <div style="background:linear-gradient(135deg,#0D2137,#0A1628);
+        border:1px solid rgba(245,158,11,0.4);border-radius:16px;
+        padding:36px;text-align:center;max-width:500px;margin:20px auto;
         box-shadow:0 8px 40px rgba(0,0,0,0.6);">
       <div style="font-size:2rem;font-weight:900;color:#F59E0B;letter-spacing:-1px;margin-bottom:8px">
-        📊 Fintiq
-      </div>
+        📊 Fintiq</div>
       <div style="color:#F1F5F9;font-size:1.1rem;font-weight:700;margin-bottom:8px">
-        You've used your 3 free searches
+        You've used your 2 free searches</div>
+      <div style="color:#94A3B8;font-size:0.88rem;margin-bottom:8px">
+        Create a free account to get <b style="color:#F59E0B">10 searches/month</b> — no card required.<br>
+        Upgrade to Pro for unlimited access.
       </div>
-      <div style="color:#94A3B8;font-size:0.88rem;margin-bottom:24px">
-        Create a free account to continue screening — no credit card required.<br>
-        Upgrade anytime for unlimited access and premium features.
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
+    </div>""", unsafe_allow_html=True)
     _, col, _ = st.columns([1,2,1])
     with col:
         mode = st.radio("", ["Sign up free", "I have an account"], horizontal=True,
@@ -560,15 +661,13 @@ def _show_auth_wall():
         password = st.text_input("Password", type="password",
                                  placeholder="Min 6 characters", key="wall_pw")
         if mode == "Sign up free":
-            confirm = st.text_input("Confirm password", type="password",
-                                    placeholder="Repeat password", key="wall_pw2")
+            st.text_input("Confirm password", type="password",
+                          placeholder="Repeat password", key="wall_pw2")
         if st.button("Continue →", use_container_width=True, type="primary", key="wall_btn"):
             if not email or not password:
-                st.error("Please enter your email and password.")
-                return
+                st.error("Please enter your email and password."); return
             if _sb is None:
-                st.error("Auth service unavailable.")
-                return
+                st.error("Auth service unavailable."); return
             try:
                 if mode == "Sign up free":
                     if password != st.session_state.get("wall_pw2",""):
@@ -583,10 +682,7 @@ def _show_auth_wall():
                 else:
                     res = _sb.auth.sign_in_with_password({"email": email, "password": password})
                     if res.user:
-                        st.session_state["fintiq_user"] = {
-                            "email": res.user.email,
-                            "id": res.user.id,
-                        }
+                        st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
                         st.session_state["free_searches"] = 0
                         st.rerun()
                     else:
@@ -594,11 +690,69 @@ def _show_auth_wall():
             except Exception as e:
                 err = str(e)
                 if "Email not confirmed" in err:
-                    st.warning("Please confirm your email first — check your inbox.")
+                    st.warning("Please confirm your email — check your inbox.")
                 elif "Invalid login" in err or "invalid_grant" in err:
                     st.error("Invalid email or password.")
                 else:
                     st.error(f"Error: {err}")
+
+def _show_upgrade_wall(user_email: str, user_id: str):
+    """Upgrade wall shown to free users after 10 searches/month."""
+    st.markdown("""
+    <div style="background:linear-gradient(135deg,#0D2137,#0A1628);
+        border:1px solid rgba(245,158,11,0.4);border-radius:16px;
+        padding:36px;text-align:center;max-width:560px;margin:20px auto;
+        box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+      <div style="font-size:2rem;font-weight:900;color:#F59E0B;letter-spacing:-1px;margin-bottom:8px">
+        📊 Fintiq Pro</div>
+      <div style="color:#F1F5F9;font-size:1.1rem;font-weight:700;margin-bottom:8px">
+        You've used all 10 free searches this month</div>
+      <div style="color:#94A3B8;font-size:0.88rem;margin-bottom:20px">
+        Upgrade to Pro for <b style="color:#F1F5F9">unlimited searches</b>, all global markets,
+        and priority data.
+      </div>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:8px">
+        <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.4);
+            border-radius:12px;padding:18px 28px;min-width:160px">
+          <div style="color:#F59E0B;font-weight:700;font-size:1.4rem">£10</div>
+          <div style="color:#CBD5E1;font-size:0.85rem">per month</div>
+        </div>
+        <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.4);
+            border-radius:12px;padding:18px 28px;min-width:160px;position:relative">
+          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+              background:#22C55E;color:#fff;font-size:0.7rem;font-weight:700;
+              padding:2px 10px;border-radius:10px">SAVE 2 MONTHS</div>
+          <div style="color:#4ADE80;font-weight:700;font-size:1.4rem">£100</div>
+          <div style="color:#CBD5E1;font-size:0.85rem">per year</div>
+        </div>
+      </div>
+    </div>""", unsafe_allow_html=True)
+
+    _, col, _ = st.columns([1,2,1])
+    with col:
+        c1, c2 = st.columns(2)
+        with c1:
+            if st.button("▶ Monthly — £10/mo", use_container_width=True,
+                         type="primary", key="upgrade_monthly"):
+                url = _create_checkout("monthly", user_email, user_id)
+                if url:
+                    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
+                                unsafe_allow_html=True)
+                    st.info("Redirecting to secure checkout…")
+                    st.stop()
+                else:
+                    st.error("Could not start checkout. Please try again.")
+        with c2:
+            if st.button("⭐ Annual — £100/yr", use_container_width=True,
+                         key="upgrade_annual"):
+                url = _create_checkout("annual", user_email, user_id)
+                if url:
+                    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
+                                unsafe_allow_html=True)
+                    st.info("Redirecting to secure checkout…")
+                    st.stop()
+                else:
+                    st.error("Could not start checkout. Please try again.")
 
 # ── Logged-in user email (empty string if guest) ─────────────
 _user_email = st.session_state.get("fintiq_user", {}).get("email", "")
@@ -1789,12 +1943,27 @@ def backtest_pair(df, entry_threshold=2.0):
 # NAVIGATION HEADER (replaces sidebar)
 # ─────────────────────────────────────────────────────────────
 
+# ── Handle Stripe success redirect ───────────────────────────
+_qp_stripe = st.query_params.get("stripe_session", "")
+if _qp_stripe and "fintiq_user" in st.session_state:
+    _uid = st.session_state["fintiq_user"].get("id", "")
+    if _verify_stripe_session(_qp_stripe, _uid):
+        st.query_params.clear()
+        st.success("🎉 Welcome to Fintiq Pro! Unlimited searches unlocked.")
+        st.rerun()
+    else:
+        st.query_params.clear()
+
 # ── Nav bar — Login button lives inside the HTML ─────────────
 _qp_action = st.query_params.get("action", "")
 
 if _user_email:
+    _is_pro = st.session_state.get("fintiq_user", {}).get("is_pro", False)
+    _pro_badge = (' <span style="background:#F59E0B;color:#0F1923;font-size:0.65rem;font-weight:800;'
+                  'padding:1px 7px;border-radius:8px;vertical-align:middle">PRO</span>'
+                  if _is_pro else "")
     _nav_right_html = (
-        f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 ' + _user_email + '</span>'
+        f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}{_pro_badge}</span>'
         '<a href="?action=logout" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
         'color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;'
         'text-decoration:none">Logout</a>'
