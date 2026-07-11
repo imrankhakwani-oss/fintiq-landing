@@ -6444,103 +6444,99 @@ with tab_opt:
                 textfont=dict(color="#F59E0B", size=11), name="Optimal"
             ))
             _demo_fig.update_layout(
-                height=300,
+                height=220,
                 paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                margin=dict(l=40, r=20, t=10, b=40),
+                margin=dict(l=36, r=16, t=6, b=32),
                 showlegend=False,
                 xaxis=dict(title="Annual Volatility (Risk)", tickformat=".0%",
                            gridcolor="rgba(100,116,139,0.18)",
-                           tickfont=dict(color="#64748B")),
+                           tickfont=dict(color="#64748B", size=9)),
                 yaxis=dict(title="Expected Annual Return", tickformat=".0%",
                            gridcolor="rgba(100,116,139,0.18)",
-                           tickfont=dict(color="#64748B")),
+                           tickfont=dict(color="#64748B", size=9)),
             )
             st.plotly_chart(_demo_fig, use_container_width=True, config={"displayModeBar": False})
 
         with _prev_right:
-            st.markdown(
-                '<div style="font-size:0.78rem;font-weight:700;color:#F59E0B;'
-                'text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">'
-                'Optimal Allocation</div>', unsafe_allow_html=True)
-            # Blurred allocation card
+            # Blurred allocation + KPI — compact single card
             _alloc_html = (
+                '<div style="font-size:0.72rem;font-weight:700;color:#F59E0B;'
+                'text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">'
+                'Optimal Allocation</div>'
                 '<div style="background:#0D1F33;border:1px solid rgba(245,158,11,0.3);'
-                'border-radius:10px;padding:12px;filter:blur(3px);user-select:none;'
+                'border-radius:8px;padding:8px 10px;filter:blur(3px);user-select:none;'
                 'pointer-events:none">'
             )
             for _dt, _dw in zip(_demo_tickers, _demo_weights):
-                _bar_w = int(_dw * 200)
+                _bar_pct = int(_dw * 100)
                 _alloc_html += (
-                    f'<div style="margin-bottom:8px">'
+                    f'<div style="margin-bottom:5px">'
                     f'<div style="display:flex;justify-content:space-between;'
-                    f'font-size:0.78rem;color:#F1F5F9;margin-bottom:3px">'
+                    f'font-size:0.72rem;color:#F1F5F9;margin-bottom:2px">'
                     f'<span>{_dt}</span><span>{_dw:.0%}</span></div>'
-                    f'<div style="background:#1E3A5F;border-radius:4px;height:6px">'
-                    f'<div style="background:#F59E0B;width:{_bar_w}px;max-width:100%;'
-                    f'height:6px;border-radius:4px"></div></div></div>'
+                    f'<div style="background:#1E3A5F;border-radius:3px;height:4px">'
+                    f'<div style="background:#F59E0B;width:{_bar_pct}%;'
+                    f'height:4px;border-radius:3px"></div></div></div>'
                 )
-            _alloc_html += '</div>'
+            # Inline KPIs below bars
             _alloc_html += (
-                '<div style="text-align:center;margin-top:8px;font-size:0.7rem;'
-                'color:#F59E0B">Pro unlock required</div>'
+                '</div>'
+                '<div style="margin-top:5px;display:flex;gap:4px">'
+            )
+            for _kl, _kv, _kc in [("Return", "+18.4%", "#22C55E"),
+                                    ("Sharpe", "1.42", "#F59E0B"),
+                                    ("VaR95", "-1.8%", "#EF4444")]:
+                _alloc_html += (
+                    f'<div style="flex:1;background:#0D1F33;border:1px solid rgba(245,158,11,0.2);'
+                    f'border-radius:6px;padding:4px 6px;filter:blur(3px);user-select:none;'
+                    f'pointer-events:none;text-align:center">'
+                    f'<div style="font-size:0.58rem;color:#64748B;text-transform:uppercase">{_kl}</div>'
+                    f'<div style="font-size:0.85rem;font-weight:800;color:{_kc}">{_kv}</div>'
+                    f'</div>'
+                )
+            _alloc_html += (
+                '</div>'
+                '<div style="text-align:center;margin-top:4px;font-size:0.65rem;color:#F59E0B">'
+                'Pro unlock required</div>'
             )
             st.markdown(_alloc_html, unsafe_allow_html=True)
 
-            # Mini KPI preview (blurred)
-            st.markdown(
-                '<div style="margin-top:10px;background:#0D1F33;border:1px solid '
-                'rgba(245,158,11,0.3);border-radius:10px;padding:10px;'
-                'filter:blur(3px);user-select:none;pointer-events:none">'
-                '<div style="font-size:0.65rem;color:#64748B;text-transform:uppercase">Expected Return</div>'
-                '<div style="font-size:1.1rem;font-weight:800;color:#22C55E">+18.4%</div>'
-                '<div style="font-size:0.65rem;color:#64748B;margin-top:6px;text-transform:uppercase">Sharpe Ratio</div>'
-                '<div style="font-size:1.1rem;font-weight:800;color:#F59E0B">1.42</div>'
-                '<div style="font-size:0.65rem;color:#64748B;margin-top:6px;text-transform:uppercase">Daily VaR 95%</div>'
-                '<div style="font-size:1.1rem;font-weight:800;color:#EF4444">-1.8%</div>'
-                '</div>', unsafe_allow_html=True)
-
-        # ── Upgrade button — always above fold ──────────────────
-        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+        # ── Button + expander side by side — one compact row ─────
         _u_email = _opt_user.get("email", "")
-        if _opt_user:
-            _ub1, _ub2, _ub3 = st.columns([1, 2, 1])
-            with _ub2:
-                if st.button("🚀 Upgrade to Pro — Unlock Full Optimizer", use_container_width=True, type="primary"):
+        _btn_col, _exp_col = st.columns([1, 1])
+        with _btn_col:
+            if _opt_user:
+                if st.button("🚀 Upgrade to Pro — Unlock Optimizer", use_container_width=True, type="primary"):
                     _co_url = _create_checkout("monthly", _u_email, _opt_user.get("id", ""))
                     if _co_url:
                         st.markdown(f'<meta http-equiv="refresh" content="0;url={_co_url}">',
                                     unsafe_allow_html=True)
-        else:
-            _ub1, _ub2, _ub3 = st.columns([1, 2, 1])
-            with _ub2:
+            else:
                 if st.button("🔑 Log in to upgrade", use_container_width=True, type="primary"):
                     st.session_state["show_login"] = True
                     st.rerun()
 
-        # ── Collapsible explainer ────────────────────────────────
-        with st.expander("What is Portfolio Optimization and how does it help me?", expanded=False):
-            st.markdown("""
-**The problem every investor faces:** You've found 5 great stocks. But how much should you put in each one?
+        with _exp_col:
+            with st.expander("What is Portfolio Optimization?", expanded=False):
+                st.markdown("""
+**The problem:** You've found 5 great stocks — but how much to put in each?
 
-Most retail investors either split equally ("I'll put 20% in each") or go with gut feel. Both approaches leave significant return on the table — and take on more risk than necessary.
+Most retail investors split equally or guess. Both leave return on the table and take on unnecessary risk.
 
-**What Modern Portfolio Theory (MPT) does:**
-Harry Markowitz won the Nobel Prize in Economics for proving that the *combination* of assets matters more than the individual assets themselves. Two stocks that each move in different directions actually *reduce* your total portfolio risk when held together — even if each is volatile on its own.
+**What MPT does:** Harry Markowitz won the Nobel Prize proving the *combination* of assets matters more than the individual picks. Assets that move in different directions reduce your total risk — even if each is volatile alone.
 
-The Efficient Frontier is the set of portfolios that give you the **maximum return for a given level of risk**. Every portfolio below that line is suboptimal — you're taking on risk without being compensated for it.
+**The Efficient Frontier** is every optimal portfolio plotted by risk vs return. The gold star is the mathematically best point — maximum return for the risk you're taking.
 
-**What Fintiq's optimizer gives you:**
+**What you unlock with Pro:**
+- Exact % allocation per stock to maximise Sharpe Ratio
+- Value at Risk — worst-case daily loss at 95%/99% confidence
+- Sharpe & Sortino Ratios, Max Drawdown
+- Correlation matrix — see your real diversification
 
-- **Efficient Frontier chart** — see every possible combination of your stocks plotted by risk vs return. The gold star is the mathematically optimal point.
-- **Optimal Weights** — instead of guessing, get the exact % to allocate to each stock to maximise your risk-adjusted return (Sharpe Ratio).
-- **Value at Risk (VaR)** — before you invest, know your worst-case daily loss at 95% and 99% confidence. On a bad day, how much could you lose? VaR answers that with data, not guesswork.
-- **Sharpe & Sortino Ratios** — the Sharpe Ratio tells you how much return you get per unit of risk. A Sharpe above 1.0 is good; above 1.5 is excellent. The Sortino only penalises downside volatility — a better measure for investors who don't mind upside swings.
-- **Correlation Matrix** — shows you which of your stocks move together. High correlation = poor diversification. Low/negative correlation = genuine risk reduction.
+**Real example:** HSBC + Shell + Vodafone equal-weighted = Sharpe 0.6. Optimised to 35/45/20 = Sharpe 1.1 with *lower* volatility.
 
-**A real example:** A portfolio of HSBC + Shell + Vodafone equal-weighted might have a Sharpe of 0.6. The optimizer might suggest 35% HSBC, 45% Shell, 20% Vodafone — and that rebalancing alone could lift the Sharpe to 1.1 with *lower* total volatility.
-
-**This is what fund managers do every morning.** Now you can too.
-            """)
+This is what fund managers do every morning.
+                """)
 
         st.stop()
 
