@@ -6431,9 +6431,8 @@ with tab_opt:
             _demo_fig.add_trace(go.Scatter(
                 x=_vol_d, y=_ret_d, mode="markers",
                 marker=dict(color=_sharpe_d, colorscale="Viridis", size=5, opacity=0.55,
-                            colorbar=dict(title="Sharpe", thickness=10, len=0.65,
-                                          tickfont=dict(color="#64748B"),
-                                          titlefont=dict(color="#64748B"))),
+                            colorbar=dict(title=dict(text="Sharpe", font=dict(color="#64748B")), thickness=10, len=0.65,
+                                          tickfont=dict(color="#64748B"))),
                 name="Portfolios",
                 hovertemplate="Vol: %{x:.1%}<br>Return: %{y:.1%}<extra></extra>"
             ))
@@ -6451,10 +6450,10 @@ with tab_opt:
                 showlegend=False,
                 xaxis=dict(title="Annual Volatility (Risk)", tickformat=".0%",
                            gridcolor="rgba(100,116,139,0.18)",
-                           tickfont=dict(color="#64748B"), titlefont=dict(color="#64748B")),
+                           tickfont=dict(color="#64748B")),
                 yaxis=dict(title="Expected Annual Return", tickformat=".0%",
                            gridcolor="rgba(100,116,139,0.18)",
-                           tickfont=dict(color="#64748B"), titlefont=dict(color="#64748B")),
+                           tickfont=dict(color="#64748B")),
             )
             st.plotly_chart(_demo_fig, use_container_width=True, config={"displayModeBar": False})
 
@@ -6794,7 +6793,7 @@ The Efficient Frontier is the set of portfolios that give you the **maximum retu
         x=_sim_vols, y=_sim_rets, mode="markers",
         marker=dict(color=_sim_shrp, colorscale="Viridis", size=4, opacity=0.5,
                     colorbar=dict(title="Sharpe", thickness=12, len=0.7,
-                                  tickfont=dict(color="#64748B"), titlefont=dict(color="#64748B"))),
+                                  tickfont=dict(color="#64748B"))),
         name="Random portfolios",
         hovertemplate="Vol: %{x:.1%}<br>Return: %{y:.1%}<extra></extra>"
     ))
@@ -6831,14 +6830,15 @@ The Efficient Frontier is the set of portfolios that give you the **maximum retu
 
     _fig_ef.update_layout(
         height=420,
-        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",        margin=dict(l=40, r=20, t=20, b=50),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=40, r=20, t=20, b=50),
         legend=dict(font=dict(color="#94A3B8", size=10), bgcolor="rgba(0,0,0,0)"),
-        xaxis=dict(title="Annual Volatility (Risk)", tickformat=".0%",
-                   gridcolor="rgba(100,116,139,0.15)", tickfont=dict(color="#64748B"),
-                   titlefont=dict(color="#64748B")),
-        yaxis=dict(title="Expected Annual Return", tickformat=".0%",
-                   gridcolor="rgba(100,116,139,0.15)", tickfont=dict(color="#64748B"),
-                   titlefont=dict(color="#64748B")),
+        xaxis=dict(title=dict(text="Annual Volatility (Risk)", font=dict(color="#64748B")),
+                   tickformat=".0%", gridcolor="rgba(100,116,139,0.15)",
+                   tickfont=dict(color="#64748B")),
+        yaxis=dict(title=dict(text="Expected Annual Return", font=dict(color="#64748B")),
+                   tickformat=".0%", gridcolor="rgba(100,116,139,0.15)",
+                   tickfont=dict(color="#64748B")),
     )
     st.plotly_chart(_fig_ef, use_container_width=True, config={"displayModeBar": False})
     st.caption("Star = optimal portfolio. Diamond = equal-weight baseline. Colour = Sharpe Ratio.")
@@ -6887,7 +6887,7 @@ The Efficient Frontier is the set of portfolios that give you the **maximum retu
         text=[[f"{v:.2f}" for v in row] for row in _corr.values],
         texttemplate="%{text}", textfont=dict(size=10),
         hovertemplate="%{y} / %{x}: %{z:.2f}<extra></extra>",
-        colorbar=dict(tickfont=dict(color="#64748B"), titlefont=dict(color="#64748B"))
+        colorbar=dict(tickfont=dict(color="#64748B"))
     ))
     _corr_fig.update_layout(
         height=max(250, _n * 35),
