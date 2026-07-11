@@ -2802,25 +2802,67 @@ with tab_brief:
             </div>""", unsafe_allow_html=True)
 
         with _sb_right:
-            # VIX 30-day mini chart
+            # VIX 30-day chart — full labels + zone bands
             _vix_hist = _fetch_vix_chart()
             if _vix_hist is not None and not _vix_hist.empty:
                 _vfig = go.Figure()
+                # Zone background bands
+                _vix_zones = [
+                    (0,  12,  "rgba(34,197,94,0.07)",  "Calm"),
+                    (12, 20,  "rgba(251,191,36,0.07)", "Mean"),
+                    (20, 30,  "rgba(249,115,22,0.09)", "Anxiety"),
+                    (30, 40,  "rgba(239,68,68,0.10)",  "Fear"),
+                    (40, 80,  "rgba(139,0,0,0.10)",    "Panic"),
+                ]
+                for _z0, _z1, _zcol, _zlbl in _vix_zones:
+                    _vfig.add_hrect(y0=_z0, y1=_z1, fillcolor=_zcol, layer="below",
+                                    line_width=0,
+                                    annotation_text=_zlbl,
+                                    annotation_position="right",
+                                    annotation_font_size=8,
+                                    annotation_font_color="#94A3B8")
+                # Zone boundary lines
+                for _yval, _col in [(20, "#F59E0B"), (30, "#EF4444"), (40, "#991B1B")]:
+                    _vfig.add_hline(y=_yval, line_dash="dot", line_color=_col,
+                                    line_width=1,
+                                    annotation_text=str(_yval),
+                                    annotation_position="left",
+                                    annotation_font_size=8,
+                                    annotation_font_color=_col)
+                # VIX line
+                _fill_rgba = f"rgba({int(_vix_color[1:3],16)},{int(_vix_color[3:5],16)},{int(_vix_color[5:7],16)},0.15)"
                 _vfig.add_trace(go.Scatter(
                     x=_vix_hist.iloc[:,0], y=_vix_hist.iloc[:,1],
-                    fill="tozeroy", line=dict(color=_vix_color, width=2),
-                    fillcolor=f"rgba({int(_vix_color[1:3],16)},{int(_vix_color[3:5],16)},{int(_vix_color[5:7],16)},0.13)", name="VIX"
+                    fill="tozeroy", line=dict(color=_vix_color, width=2.5),
+                    fillcolor=_fill_rgba, name="VIX",
+                    hovertemplate="<b>%{x|%d %b}</b><br>VIX: %{y:.1f}<extra></extra>"
                 ))
-                _vfig.add_hline(y=20, line_dash="dot", line_color="#F59E0B",
-                                annotation_text="20 (caution)", annotation_font_size=9)
+                # X-axis date labels — show first, mid and last
+                _dates = _vix_hist.iloc[:,0].tolist()
+                _tick_dates = [_dates[0], _dates[len(_dates)//2], _dates[-1]]
                 _vfig.update_layout(
-                    height=120, margin=dict(l=0,r=0,t=4,b=0),
-                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                    showlegend=False, xaxis=dict(visible=False),
-                    yaxis=dict(showgrid=False, tickfont=dict(size=9, color="#64748B")),
-                    title=dict(text="VIX — 30 days", font=dict(size=10,color="#64748B"), x=0)
+                    height=220,
+                    margin=dict(l=10, r=60, t=28, b=40),
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    showlegend=False,
+                    title=dict(text="VIX Fear Index — 30 Days", font=dict(size=11, color="#94A3B8"), x=0),
+                    xaxis=dict(
+                        tickvals=_tick_dates,
+                        tickformat="%d %b",
+                        tickfont=dict(size=9, color="#64748B"),
+                        showgrid=False,
+                        title=dict(text="Date", font=dict(size=9, color="#64748B")),
+                    ),
+                    yaxis=dict(
+                        range=[0, max(45, float(_vix_hist.iloc[:,1].max()) + 5)],
+                        showgrid=True,
+                        gridcolor="rgba(100,116,139,0.15)",
+                        tickfont=dict(size=9, color="#64748B"),
+                        title=dict(text="VIX Level", font=dict(size=9, color="#64748B")),
+                    ),
                 )
-                st.plotly_chart(_vfig, use_container_width=True, config={"displayModeBar":False})
+                st.plotly_chart(_vfig, use_container_width=True, config={"displayModeBar": False})
 
         # ── AI Explanation expander ───────────────────────────
         _spx_pct = _bd.get("^GSPC", {}).get("chg_pct")
