@@ -2289,6 +2289,19 @@ if _ticker_html_items:
 # TABS
 # ─────────────────────────────────────────────────────────────
 
+st.markdown("""
+<style>
+/* Shrink tab labels so all 8 fit in one row */
+.stTabs [data-baseweb="tab-list"] button [data-testid="stMarkdownContainer"] p {
+    font-size: 0.78rem !important;
+}
+.stTabs [data-baseweb="tab-list"] button {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+}
+</style>
+""", unsafe_allow_html=True)
+
 tab0, tab_brief, tab1, tab2, tab3, tab4, tab5, tab_opt = st.tabs([
     "🏠  Home",
     "🌍  Morning Brief",
