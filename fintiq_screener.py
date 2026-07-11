@@ -2783,19 +2783,19 @@ with tab_brief:
         st.markdown(f"""
         <div style="background:linear-gradient(135deg,rgba(13,31,51,0.95),rgba(8,18,32,0.99));
             border:1.5px solid {_sent_color}55;border-radius:14px;
-            padding:18px 22px;margin-bottom:10px;
-            display:flex;align-items:center;gap:16px">
-          <div style="font-size:2.4rem;line-height:1">{_sent_parts[0]}</div>
+            padding:10px 16px;margin-bottom:6px;
+            display:flex;align-items:center;gap:12px">
+          <div style="font-size:1.8rem;line-height:1">{_sent_parts[0]}</div>
           <div>
-            <div style="font-size:1.15rem;font-weight:800;color:{_sent_color}">
+            <div style="font-size:1rem;font-weight:800;color:{_sent_color}">
               {_sent_parts[1] if len(_sent_parts)>1 else ''}</div>
-            <div style="font-size:0.85rem;color:#94A3B8;margin-top:4px">{_sent_msg}</div>
+            <div style="font-size:0.78rem;color:#94A3B8;margin-top:2px">{_sent_msg}</div>
           </div>
-          <div style="margin-left:auto;text-align:right;min-width:80px">
-            <div style="font-size:0.7rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px">VIX Fear Index</div>
-            <div style="font-size:2rem;font-weight:900;color:{_vix_color};line-height:1.2">
+          <div style="margin-left:auto;text-align:right;min-width:72px">
+            <div style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px">VIX Fear Index</div>
+            <div style="font-size:1.6rem;font-weight:900;color:{_vix_color};line-height:1.2">
               {f"{_vix_val:.1f}" if _vix_val else "—"}</div>
-            <div style="font-size:0.7rem;color:#475569">
+            <div style="font-size:0.65rem;color:#475569">
               {"🟢 Low fear" if (_vix_val or 0)<18 else "🟡 Elevated" if (_vix_val or 0)<25 else "🔴 High fear"}</div>
           </div>
         </div>""", unsafe_allow_html=True)
@@ -2839,8 +2839,8 @@ with tab_brief:
             _tick_dates = [_dates[0], _dates[len(_dates)//4], _dates[len(_dates)//2],
                            _dates[3*len(_dates)//4], _dates[-1]]
             _vfig.update_layout(
-                height=200,
-                margin=dict(l=10, r=70, t=30, b=40),
+                height=160,
+                margin=dict(l=10, r=70, t=22, b=32),
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
                 showlegend=False,
