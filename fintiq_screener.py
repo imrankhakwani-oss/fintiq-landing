@@ -2519,12 +2519,99 @@ def _fetch_econ_calendar() -> list:
 
 @st.cache_data(ttl=600)
 def _fetch_market_news() -> list:
-    """Fetch top market news headlines via yfinance."""
+    """Fetch market news from FMP general news endpoint."""
     try:
-        news = yf.Ticker("^GSPC").news or []
-        return news[:8]
+        url = f"{FMP_BASE}/v4/general_news?page=0&apikey={FMP_KEY}"
+        r = requests.get(url, timeout=10)
+        if r.status_code == 200:
+            data = r.json()
+            if isinstance(data, list) and data:
+                return data[:8]
+    except Exception:
+        pass
+    # Fallback: yfinance news (handle both old and new schema)
+    try:
+        raw = yf.Ticker("^GSPC").news or []
+        out = []
+        for n in raw[:8]:
+            # new yfinance schema nests under 'content'
+            c = n.get("content", n)
+            title = c.get("title", n.get("title", ""))
+            url_  = (c.get("canonicalUrl", {}).get("url")
+                     or c.get("clickThroughUrl", {}).get("url")
+                     or n.get("link", "#"))
+            pub   = (c.get("provider", {}).get("displayName")
+                     or n.get("publisher", ""))
+            dt    = c.get("pubDate", "") or ""
+            if title:
+                out.append({"title": title, "url": url_, "site": pub,
+                            "publishedDate": dt})
+        return out
     except Exception:
         return []
+
+@st.cache_data(ttl=3600)
+def _fetch_vix_chart():
+    """Fetch 30-day VIX history for mini chart."""
+    try:
+        df = yf.download("^VIX", period="30d", interval="1d", progress=False, auto_adjust=True)
+        if not df.empty:
+            close = df["Close"].dropna()
+            return close.reset_index()
+    except Exception:
+        pass
+    return None
+
+def _generate_risk_explanation(sentiment: str, vix: float | None,
+                                spx_pct: float | None, gold_pct: float | None,
+                                dxy_pct: float | None) -> str:
+    """Generate plain-English explanation of current risk environment."""
+    vix_str = f"{vix:.1f}" if vix else "unknown"
+    spx_str = (f"{'up' if (spx_pct or 0)>=0 else 'down'} {abs(spx_pct or 0):.2f}%") if spx_pct is not None else "flat"
+    gold_str = (f"{'rising' if (gold_pct or 0)>=0 else 'falling'}") if gold_pct is not None else "flat"
+    dxy_str  = (f"{'strengthening' if (dxy_pct or 0)>=0 else 'weakening'}") if dxy_pct is not None else "flat"
+
+    if "Risk-On" in sentiment:
+        mood = ("Markets are in a **risk-on** mode today. Think of it like this: investors "
+                "are feeling confident and are actively buying stocks, moving money out of "
+                "safe havens like Gold and Government Bonds.\n\n"
+                f"**What the data tells us:** VIX (the fear gauge) is at **{vix_str}** — "
+                f"below 20 means low fear. S&P 500 is **{spx_str}**. Gold is **{gold_str}** "
+                f"and the US Dollar is **{dxy_str}**. These all point to investors taking risk.\n\n"
+                "**What this means for you as a retail investor:**\n"
+                "- ✅ Good environment to run your stock screens and look for new entries\n"
+                "- ✅ Momentum strategies (buying breakouts) tend to work well\n"
+                "- ✅ Your existing positions are likely performing well\n"
+                "- ⚠️ Don't get greedy — risk-on can reverse quickly on bad news\n\n"
+                "**Professional tip:** Use this environment to look for quality stocks near "
+                "52-week highs with strong fundamentals. Institutions are buying, not hiding.")
+    elif "Risk-Off" in sentiment:
+        mood = ("Markets are in a **risk-off** mode today. This means investors are scared "
+                "and moving money away from stocks into safe havens like Gold, Government "
+                "Bonds, and Cash.\n\n"
+                f"**What the data tells us:** VIX (the fear gauge) is at **{vix_str}** — "
+                f"above 20 signals elevated fear, above 30 means panic. S&P 500 is **{spx_str}**. "
+                f"Gold is **{gold_str}** and the US Dollar is **{dxy_str}**.\n\n"
+                "**What this means for you as a retail investor:**\n"
+                "- ⚠️ Be very selective — avoid new long entries in speculative stocks\n"
+                "- ⚠️ Check your stop losses are in place\n"
+                "- ✅ This can be a good time to study your watchlist for future entries\n"
+                "- ✅ If VIX spikes above 30, it often marks a short-term bottom\n\n"
+                "**Professional tip:** Institutions use risk-off periods to *prepare* — "
+                "they don't panic sell, they build shopping lists for when fear subsides.")
+    else:
+        mood = ("Markets are sending **mixed signals** today — neither strongly bullish "
+                "nor clearly risk-off.\n\n"
+                f"**What the data tells us:** VIX is at **{vix_str}**. S&P 500 is **{spx_str}**. "
+                f"Gold is **{gold_str}** and the Dollar is **{dxy_str}**.\n\n"
+                "**What this means for you as a retail investor:**\n"
+                "- 🟡 Be selective — stick to your highest-conviction ideas only\n"
+                "- 🟡 Smaller position sizes are prudent in uncertain conditions\n"
+                "- ✅ Good time to review existing positions rather than open new ones\n\n"
+                "**Professional tip:** When signals are mixed, professionals wait for "
+                "confirmation. Patience is a strategy. Missing a trade is better than "
+                "taking a bad one.")
+    return mood
 
 def _brief_card(sym, label, flag, price, chg_pct):
     """Render one index card."""
@@ -2587,23 +2674,60 @@ with tab_brief:
         _sentiment, _sent_color, _sent_msg = _risk_sentiment(
             _vix_d.get("price"), _gold_d.get("chg_pct"), _dxy_d.get("chg_pct"))
 
-        st.markdown(f"""
-        <div style="background:linear-gradient(135deg,rgba(13,31,51,0.95),rgba(8,18,32,0.99));
-            border:1.5px solid {_sent_color}40;border-radius:14px;
-            padding:16px 22px;margin-bottom:18px;
-            display:flex;align-items:center;gap:16px">
-          <div style="font-size:2rem">{_sentiment.split()[0]}</div>
-          <div>
-            <div style="font-size:1.1rem;font-weight:800;color:{_sent_color}">
-              {' '.join(_sentiment.split()[1:])}</div>
-            <div style="font-size:0.85rem;color:#94A3B8;margin-top:2px">{_sent_msg}</div>
-          </div>
-          <div style="margin-left:auto;text-align:right">
-            <div style="font-size:0.72rem;color:#475569">VIX (Fear Index)</div>
-            <div style="font-size:1.3rem;font-weight:800;color:{'#EF4444' if (_vix_d.get('price') or 0)>20 else '#22C55E'}">
-              {f"{_vix_d.get('price'):.1f}" if _vix_d.get('price') else '—'}</div>
-          </div>
-        </div>""", unsafe_allow_html=True)
+        _vix_val = _vix_d.get("price")
+        _vix_color = "#EF4444" if (_vix_val or 0) > 25 else "#F59E0B" if (_vix_val or 0) > 18 else "#22C55E"
+        _sent_parts = _sentiment.split(" ", 1)
+
+        _sb_left, _sb_right = st.columns([3, 1])
+        with _sb_left:
+            st.markdown(f"""
+            <div style="background:linear-gradient(135deg,rgba(13,31,51,0.95),rgba(8,18,32,0.99));
+                border:1.5px solid {_sent_color}55;border-radius:14px;
+                padding:18px 22px;margin-bottom:6px;
+                display:flex;align-items:center;gap:16px">
+              <div style="font-size:2.4rem;line-height:1">{_sent_parts[0]}</div>
+              <div>
+                <div style="font-size:1.15rem;font-weight:800;color:{_sent_color}">
+                  {_sent_parts[1] if len(_sent_parts)>1 else ''}</div>
+                <div style="font-size:0.85rem;color:#94A3B8;margin-top:4px">{_sent_msg}</div>
+              </div>
+              <div style="margin-left:auto;text-align:right;min-width:80px">
+                <div style="font-size:0.7rem;color:#475569;text-transform:uppercase;letter-spacing:0.5px">VIX Fear Index</div>
+                <div style="font-size:2rem;font-weight:900;color:{_vix_color};line-height:1.2">
+                  {f"{_vix_val:.1f}" if _vix_val else "—"}</div>
+                <div style="font-size:0.7rem;color:#475569">
+                  {"🟢 Low fear" if (_vix_val or 0)<18 else "🟡 Elevated" if (_vix_val or 0)<25 else "🔴 High fear"}</div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+
+        with _sb_right:
+            # VIX 30-day mini chart
+            _vix_hist = _fetch_vix_chart()
+            if _vix_hist is not None and not _vix_hist.empty:
+                _vfig = go.Figure()
+                _vfig.add_trace(go.Scatter(
+                    x=_vix_hist.iloc[:,0], y=_vix_hist.iloc[:,1],
+                    fill="tozeroy", line=dict(color=_vix_color, width=2),
+                    fillcolor=f"{_vix_color}22", name="VIX"
+                ))
+                _vfig.add_hline(y=20, line_dash="dot", line_color="#F59E0B",
+                                annotation_text="20 (caution)", annotation_font_size=9)
+                _vfig.update_layout(
+                    height=120, margin=dict(l=0,r=0,t=4,b=0),
+                    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                    showlegend=False, xaxis=dict(visible=False),
+                    yaxis=dict(showgrid=False, tickfont=dict(size=9, color="#64748B")),
+                    title=dict(text="VIX — 30 days", font=dict(size=10,color="#64748B"), x=0)
+                )
+                st.plotly_chart(_vfig, use_container_width=True, config={"displayModeBar":False})
+
+        # ── AI Explanation expander ───────────────────────────
+        _spx_pct = _bd.get("^GSPC", {}).get("chg_pct")
+        _explanation = _generate_risk_explanation(
+            _sentiment, _vix_val, _spx_pct,
+            _gold_d.get("chg_pct"), _dxy_d.get("chg_pct"))
+        with st.expander("🤖 What does this mean for me? (AI Market Explanation)"):
+            st.markdown(_explanation)
 
         # ── Indices by region ─────────────────────────────────
         for _region in ["US", "Futures", "UK", "Europe", "Asia"]:
@@ -2640,11 +2764,14 @@ with tab_brief:
             _news = _fetch_market_news()
         if _news:
             for _n in _news:
+                # Handle both FMP and yfinance schemas
                 _title     = _n.get("title", "")
-                _link      = _n.get("link", "#")
-                _publisher = _n.get("publisher", "")
-                _ts        = _n.get("providerPublishTime", 0)
-                _dt        = datetime.fromtimestamp(_ts).strftime("%d %b %H:%M") if _ts else ""
+                _link      = _n.get("url") or _n.get("link", "#")
+                _publisher = _n.get("site") or _n.get("publisher", "")
+                _raw_dt    = _n.get("publishedDate") or _n.get("date", "")
+                _dt        = _raw_dt[:16].replace("T", " ") if _raw_dt else ""
+                if not _title:
+                    continue
                 st.markdown(
                     f'<div style="background:#0D1F33;border:1px solid rgba(100,116,139,0.2);'
                     f'border-radius:8px;padding:10px 14px;margin-bottom:8px">'
@@ -2712,7 +2839,7 @@ with tab_brief:
             ("Financial Juice", "https://www.financialjuice.com", "Real-time news squawk"),
             ("Investing.com", "https://www.investing.com/economic-calendar/", "Economic calendar"),
             ("TradingView", "https://www.tradingview.com", "Charts & technicals"),
-            ("Reuters", "https://www.reuters.com/finance/markets/", "Market news"),
+            ("Reuters", "https://www.reuters.com/markets/", "Market news"),
             ("Bloomberg", "https://www.bloomberg.com/markets", "Global markets"),
         ]
         for _name, _url, _desc in _links:
