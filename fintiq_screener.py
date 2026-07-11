@@ -2289,7 +2289,7 @@ if _ticker_html_items:
 # TABS
 # ─────────────────────────────────────────────────────────────
 
-tab0, tab_brief, tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab0, tab_brief, tab1, tab2, tab3, tab4, tab5, tab_opt = st.tabs([
     "🏠  Home",
     "🌍  Morning Brief",
     "🔍  Fundamental Screen",
@@ -2297,6 +2297,7 @@ tab0, tab_brief, tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈  Technical Setup",
     "⚖️  Pairs Dashboard",
     "📒  Trading Journal",
+    "📐  Portfolio Optimizer",
 ])
 
 # ═══════════════════════════════════════════════════════════════
@@ -6297,837 +6298,556 @@ with tab4:
             # Avoid exact duplicates (same ticker_a + ticker_b)
             _exists = any(p["ticker_a"] == ticker_a and p["ticker_b"] == ticker_b for p in _pwl_cur)
             if _exists:
-                st.warning(f"{ticker_a} / {ticker_b} is already in your watchlist.")
-            else:
-                _new_entry = {
-                    "name":     _save_name or f"{ticker_a} / {ticker_b}",
-                    "ticker_a": ticker_a,
-                    "ticker_b": ticker_b,
-                    "added":    str(pd.Timestamp.now().date()),
-                }
-                _pwl_cur.append(_new_entry)
-                st.session_state["fintiq_pairs_watchlist"] = _pwl_cur
-                _pwl_save(_pwl_cur)
-                st.success(f"✅ Saved: {_new_entry['name']}")
-                st.rerun()
-
-    show_bt = st.checkbox("Show backtest statistics", value=True)
-
-    with st.spinner(f"Loading data for {ticker_a} vs {ticker_b}…"):
-        df_a = get_price_history(ticker_a, hist_period)
-        df_b = get_price_history(ticker_b, hist_period)
-
-    if df_a.empty or df_b.empty:
-        st.error("Could not load price data. Check ticker format.")
-    else:
-        ca = df_a["Close"].rename(ticker_a)
-        cb = df_b["Close"].rename(ticker_b)
-        combined = pd.concat([ca, cb], axis=1).dropna()
-
-        if len(combined) < lookback + 10:
-            st.warning("Not enough data. Reduce lookback or extend history period.")
+                st.info("This pair is already in your watchlist.")
         else:
-            sp      = calc_spread(combined[ticker_a], combined[ticker_b], lookback)
-            curr_z  = sp["zscore"].iloc[-1]
-            corr    = combined[ticker_a].corr(combined[ticker_b])
-            sig_text, sig_class = pair_signal(curr_z)
-            # GBp detection: .L tickers from yFinance return prices in pence
-            def _p4_gbp(tkr):
-                try:
-                    return yf.Ticker(tkr).fast_info.currency == "GBp"
-                except Exception:
-                    return tkr.endswith(".L")
-            _gbp_a = _p4_gbp(ticker_a)
-            _gbp_b = _p4_gbp(ticker_b)
-            sym_a   = "£" if _gbp_a else get_currency_symbol(ticker_a)
-            sym_b   = "£" if _gbp_b else get_currency_symbol(ticker_b)
-            px_a    = combined[ticker_a].iloc[-1] / (100.0 if _gbp_a else 1.0)
-            px_b    = combined[ticker_b].iloc[-1] / (100.0 if _gbp_b else 1.0)
-
-            # ── Signal verdict ──────────────────────────────────
-            if abs(curr_z) >= 3.5:
-                _sv_col = "#F87171"; _sv_bg = "rgba(248,113,113,0.12)"
-                _sv_icon = "🛑"; _sv_action = "STOP ZONE — Z-Score beyond 3.5σ. Do NOT enter; extreme divergence may not revert."
-            elif curr_z >= entry_z:
-                _sv_col = "#EF4444"; _sv_bg = "rgba(239,68,68,0.12)"
-                _sv_icon = "🔴"; _sv_action = f"SELL {ticker_a} · BUY {ticker_b} — {ticker_a} is expensive vs {ticker_b}. Spread will likely narrow."
-            elif curr_z <= -entry_z:
-                _sv_col = "#4ADE80"; _sv_bg = "rgba(74,222,128,0.12)"
-                _sv_icon = "🟢"; _sv_action = f"BUY {ticker_a} · SELL {ticker_b} — {ticker_a} is cheap vs {ticker_b}. Spread will likely narrow."
-            elif abs(curr_z) < 0.3:
-                _sv_col = "#94A3B8"; _sv_bg = "rgba(148,163,184,0.08)"
-                _sv_icon = "⚪"; _sv_action = "CLOSE / AT MEAN — If in a trade, this is your profit-taking exit point (Z ≈ 0)."
-            else:
-                _sv_col = "#F59E0B"; _sv_bg = "rgba(245,158,11,0.10)"
-                _sv_icon = "🟡"; _sv_action = f"NEUTRAL — Z-Score {curr_z:+.2f}σ is within no-trade zone. Wait for ±{entry_z:.1f}σ."
-
-            st.markdown(
-                f'<div style="background:{_sv_bg};border-left:5px solid {_sv_col};'
-                f'border-radius:0 10px 10px 0;padding:14px 20px;margin:14px 0">'
-                f'<span style="color:{_sv_col};font-size:1.1rem;font-weight:800">{_sv_icon} {sig_text}</span>'
-                f'<span style="color:#CBD5E1;font-size:0.9rem;margin-left:14px">{_sv_action}</span>'
-                f'</div>', unsafe_allow_html=True)
-
-            # ── KPI cards ───────────────────────────────────────
-            _kp = st.columns(5)
-            def _p4_kpi(col, label, value, sub="", border="#334155"):
-                col.markdown(
-                    f'<div style="background:rgba(13,31,53,0.8);border:1px solid {border};'
-                    f'border-radius:10px;padding:14px 10px;text-align:center">'
-                    f'<div style="color:#64748B;font-size:0.68rem;font-weight:700;letter-spacing:.07em;margin-bottom:4px">{label}</div>'
-                    f'<div style="font-size:1.25rem;font-weight:900;color:#F1F5F9">{value}</div>'
-                    f'<div style="font-size:0.7rem;color:#64748B;margin-top:3px">{sub}</div>'
-                    f'</div>', unsafe_allow_html=True)
-
-            _z_col = "#EF4444" if curr_z >= entry_z else ("#4ADE80" if curr_z <= -entry_z else "#F59E0B")
-            _corr_col = "#4ADE80" if abs(corr) > 0.8 else ("#F59E0B" if abs(corr) > 0.6 else "#F87171")
-            _p4_kpi(_kp[0], ticker_a, f"{sym_a}{px_a:,.2f}", "Last price")
-            _p4_kpi(_kp[1], ticker_b, f"{sym_b}{px_b:,.2f}", "Last price")
-            _p4_kpi(_kp[2], "Z-SCORE", f"{curr_z:+.3f}σ",
-                    f"Entry at ±{entry_z:.1f}σ", _z_col)
-            _p4_kpi(_kp[3], "CORRELATION", f"{corr:.3f}",
-                    "✅ Strong pair" if abs(corr) > 0.8 else ("⚠️ Moderate" if abs(corr) > 0.6 else "❌ Weak pair"),
-                    _corr_col)
-            _p4_kpi(_kp[4], "LOOKBACK", f"{lookback}d",
-                    f"{hist_period} history")
-
-            st.markdown("<div style='margin-top:6px'></div>", unsafe_allow_html=True)
-
-            # ── Shared chart theme ──────────────────────────────
-            _P = "#0D1F35"; _PL = "#0A1929"; _G = "rgba(255,255,255,0.04)"
-            _FL = dict(family="Inter, sans-serif", color="#94A3B8", size=11)
-            def _p4_layout(title, height):
-                return dict(
-                    title=dict(text=title, font=dict(color="#CBD5E1", size=12,
-                               family="Inter, sans-serif"), x=0.01, xanchor="left"),
-                    height=height, paper_bgcolor=_P, plot_bgcolor=_PL, font=_FL,
-                    xaxis=dict(showgrid=True, gridcolor=_G, zeroline=False,
-                               tickfont=dict(color="#475569", size=10),
-                               showspikes=True, spikecolor="#334155", spikethickness=1),
-                    yaxis=dict(showgrid=True, gridcolor=_G, zeroline=False,
-                               tickfont=dict(color="#475569", size=10)),
-                    legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0,
-                                font=dict(color="#94A3B8", size=11), bgcolor="rgba(0,0,0,0)"),
-                    margin=dict(l=10, r=10, t=52, b=10),
-                    hovermode="x unified",
-                    hoverlabel=dict(bgcolor="#1E3A52", bordercolor="#334155",
-                                    font=dict(color="#F1F5F9", size=11)),
-                )
-
-            # ── Z-Score chart ───────────────────────────────────
-            fig_z = go.Figure()
-            # Colour-fill zones
-            fig_z.add_hrect(y0=entry_z,  y1=4.5,  fillcolor="rgba(239,68,68,0.08)",  line_width=0)
-            fig_z.add_hrect(y0=-entry_z, y1=-4.5, fillcolor="rgba(74,222,128,0.08)", line_width=0)
-            fig_z.add_hrect(y0=-entry_z, y1=entry_z, fillcolor="rgba(100,116,139,0.05)", line_width=0)
-
-            fig_z.add_trace(go.Scatter(
-                x=sp.index, y=sp["zscore"], mode="lines", name="Z-Score",
-                line=dict(color="#60A5FA", width=2.2),
-                fill="tozeroy", fillcolor="rgba(96,165,250,0.05)",
-                hovertemplate="Z-Score: %{y:+.3f}σ<extra></extra>"))
-
-            for y_lvl, col, lbl in [
-                ( entry_z, "#EF4444", f"SHORT A · LONG B  +{entry_z:.1f}σ"),
-                (-entry_z, "#4ADE80", f"LONG A · SHORT B  −{entry_z:.1f}σ"),
-                ( 3.5,     "#F87171", "Stop Loss  +3.5σ"),
-                (-3.5,     "#F87171", "Stop Loss  −3.5σ"),
-                ( 0,       "#475569", "Mean  0σ"),
-            ]:
-                fig_z.add_hline(y=y_lvl, line_color=col, line_dash="dash" if y_lvl != 0 else "dot",
-                                line_width=1.3,
-                                annotation_text=lbl, annotation_position="right",
-                                annotation_font=dict(color=col, size=10))
-
-            lay_z = _p4_layout(
-                f"Spread Z-Score  ·  {ticker_a} vs {ticker_b}  ·  Current: {curr_z:+.3f}σ", 460)
-            lay_z["yaxis"]["title"] = "Z-Score (σ)"
-            fig_z.update_layout(**lay_z)
-            st.plotly_chart(fig_z, use_container_width=True)
-
-            # ── Normalised price chart ──────────────────────────
-            norm_a = combined[ticker_a] / combined[ticker_a].iloc[0] * 100
-            norm_b = combined[ticker_b] / combined[ticker_b].iloc[0] * 100
-            fig_p = go.Figure()
-            fig_p.add_trace(go.Scatter(
-                x=combined.index, y=norm_a, mode="lines", name=ticker_a,
-                line=dict(color="#60A5FA", width=2.2),
-                hovertemplate=f"{ticker_a}: %{{y:.1f}}<extra></extra>"))
-            fig_p.add_trace(go.Scatter(
-                x=combined.index, y=norm_b, mode="lines", name=ticker_b,
-                line=dict(color="#F59E0B", width=2.2),
-                hovertemplate=f"{ticker_b}: %{{y:.1f}}<extra></extra>"))
-            lay_p = _p4_layout(
-                f"Normalised Price  ·  Rebased to 100  ·  Gap = current divergence", 300)
-            fig_p.update_layout(**lay_p)
-            st.plotly_chart(fig_p, use_container_width=True)
-
-            # ── Backtest ────────────────────────────────────────
-            if show_bt:
-                bt = backtest_pair(sp.dropna(), entry_z)
-                st.markdown('<div class="section-header">📊 Backtest Results</div>',
-                            unsafe_allow_html=True)
-                _bc = st.columns(4)
-                def _bt_kpi(col, label, value, ok=True):
-                    _bc = "#4ADE80" if ok else "#F87171"
-                    col.markdown(
-                        f'<div style="background:rgba(13,31,53,0.8);border:1px solid {_bc}40;'
-                        f'border-radius:10px;padding:14px 10px;text-align:center">'
-                        f'<div style="color:#64748B;font-size:0.68rem;font-weight:700;letter-spacing:.07em;margin-bottom:4px">{label}</div>'
-                        f'<div style="font-size:1.4rem;font-weight:900;color:{_bc}">{value}</div>'
-                        f'</div>', unsafe_allow_html=True)
-                _bt_kpi(_bc[0], "TOTAL TRADES",  bt["trades"],  bt["trades"] >= 5)
-                _bt_kpi(_bc[1], "WINS",           bt["wins"],    True)
-                _bt_kpi(_bc[2], "LOSSES",         bt["losses"],  bt["losses"] == 0)
-                _bt_kpi(_bc[3], "WIN RATE",       f"{bt['win_rate']:.0f}%", bt["win_rate"] >= 55)
-                st.markdown("<div style='margin-top:6px'></div>", unsafe_allow_html=True)
-                if bt["trades"] < 5:
-                    st.warning("⚠️ Too few historical trades. Extend history or lower entry threshold.")
-                elif bt["win_rate"] >= 60:
-                    st.success(f"✅ Strong pair — {bt['win_rate']:.0f}% historical win rate. Suitable for live trading.")
-                elif bt["win_rate"] >= 45:
-                    st.warning(f"🟡 Marginal pair — {bt['win_rate']:.0f}% win rate. Paper trade first before going live.")
-                else:
-                    st.error(f"❌ Poor historical performance ({bt['win_rate']:.0f}%). Do not trade this pair.")
-
-    # ── All pairs snapshot ──────────────────────────────────────
-    st.markdown('<div class="section-header">🗂️ All Preset Pairs — Live Z-Score Snapshot</div>',
-                unsafe_allow_html=True)
-    ov_rows = []
-    for pname, (ta, tb) in PRESET_PAIRS.items():
-        try:
-            da = get_price_history(ta, "6mo")
-            db = get_price_history(tb, "6mo")
-            if da.empty or db.empty: continue
-            cm = pd.concat([da["Close"].rename(ta), db["Close"].rename(tb)], axis=1).dropna()
-            if len(cm) > lookback:
-                s  = calc_spread(cm[ta], cm[tb], lookback)
-                z  = float(s["zscore"].iloc[-1])
-                sg, _ = pair_signal(z)
-                ov_rows.append({
-                    "Pair": pname, "Ticker A": ta, "Ticker B": tb,
-                    "Z-Score": round(z, 3), "Signal": sg,
-                    "Active?": "🟢 YES" if abs(z) >= entry_z else "⚪ No",
-                    "Correlation": round(float(cm[ta].corr(cm[tb])), 3),
-                })
-        except Exception:
-            continue
-    if ov_rows:
-        df_ov = pd.DataFrame(ov_rows)
-        st.dataframe(
-            df_ov.style.map(
-                lambda v: "background-color:rgba(74,222,128,0.15);font-weight:700;color:#4ADE80"
-                          if "YES" in str(v) else "", subset=["Active?"]
-            ).map(
-                lambda v: f"color:{'#EF4444' if isinstance(v, float) and v > entry_z else ('#4ADE80' if isinstance(v, float) and v < -entry_z else '')}"
-                          if isinstance(v, float) else "", subset=["Z-Score"]
-            ),
-            use_container_width=True, hide_index=True)
-
-    # ── Education: Z-Score & Trading Guide (collapsible) ───────
-    st.divider()
-    with st.expander("📐 What is the Z-Score? How is it calculated?", expanded=False):
-        ec1, ec2 = st.columns(2)
-        with ec1:
-            st.markdown("""
-##### What is a Z-Score?
-The Z-Score measures **how far the current spread between two stocks has deviated from its historical average**, expressed in units of standard deviation (σ).
-
-**Formula:**
-""")
-            ec1.markdown(
-                '<div style="background:#0A1929;border:1px solid #1E3A5F;border-radius:8px;'
-                'padding:12px 16px;font-family:monospace;font-size:0.85rem;color:#7DD3FC;'
-                'margin:8px 0">Z = (Current Spread − Mean Spread) / Standard Deviation of Spread</div>',
-                unsafe_allow_html=True)
-            ec1.markdown("""
-Where **Spread = Price of Stock A / Price of Stock B** (the ratio).
-
-**What it tells you:**
-- **Z = 0** → Spread is exactly at its historical average — the pair is fairly priced relative to each other
-- **Z = +2** → Stock A is trading **2 standard deviations ABOVE** its normal premium to Stock B — it's expensive relative to B
-- **Z = −2** → Stock A is trading **2 standard deviations BELOW** its normal relationship to Stock B — it's cheap relative to B
-- **Z > +3.5 or < −3.5** → Extreme divergence. The relationship may be breaking down permanently — **do not trade**
-""")
-        with ec2:
-            st.markdown("""
-##### Why is it important?
-The Z-Score is the core signal because **pairs trading profits from mean-reversion** — the idea that two correlated stocks that have temporarily diverged will return to their historical relationship.
-
-**Key assumptions:**
-- The two stocks share a fundamental economic link (same sector, competing products, similar cost base)
-- The relationship is **cointegrated** — they move together over time
-- Any divergence is **temporary** and driven by short-term news, not a structural change
-
-**Why use standard deviations, not raw price differences?**
-Raw price gaps change over time (e.g. inflation, growth). Standard deviations automatically adjust for the *scale* of normal fluctuations, giving you a consistent signal regardless of price level.
-
-**Lookback period (default 60 days):** The window used to calculate mean and standard deviation. Shorter = more sensitive but noisier. Longer = smoother but slower to react.
-""")
-
-    with st.expander("🎯 When to Trade — Complete Entry, Exit & Stop Guide", expanded=False):
-        tg1, tg2, tg3 = st.columns(3)
-        with tg1:
-            st.markdown("""
-##### 🔴 Z-Score ≥ +2σ — Sell A, Buy B
-**Signal:** Stock A has outperformed Stock B by an unusual amount. The spread is stretched.
-
-**Trade:**
-- **SHORT** Stock A (the expensive one, shown in blue)
-- **LONG** Stock B (the cheap one, shown in amber)
-
-**Why:** You expect the spread to narrow — A will fall back, B will catch up, or both.
-
-**Entry checklist:**
-- ✅ Z-Score ≥ +2.0σ (your chosen threshold)
-- ✅ Correlation ≥ 0.80
-- ✅ No major fundamental news explaining the divergence
-- ✅ Backtest win rate ≥ 55%
-
-**Position size:** Equal capital value on each leg, not equal share count. If A = £10 and B = £5, buy 1 share of A and 2 shares of B.
-""")
-        with tg2:
-            st.markdown("""
-##### 🟢 Z-Score ≤ −2σ — Buy A, Sell B
-**Signal:** Stock A has underperformed Stock B by an unusual amount. The spread is stretched the other way.
-
-**Trade:**
-- **LONG** Stock A (the cheap one, shown in blue)
-- **SHORT** Stock B (the expensive one, shown in amber)
-
-**Why:** You expect A to recover vs B — A will rise, B will pull back, or both.
-
-**Entry checklist:**
-- ✅ Z-Score ≤ −2.0σ
-- ✅ Correlation ≥ 0.80
-- ✅ No major news (e.g. profit warning on A) explaining permanent divergence
-- ✅ Backtest win rate ≥ 55%
-
-**Risk note:** In pairs trading you are simultaneously long AND short, making this strategy **market-neutral** — overall market direction does not affect profit/loss. Only the *relative* move matters.
-""")
-        with tg3:
-            st.markdown("""
-##### ⚪ Z-Score ≈ 0 — Exit / Take Profit
-**Exit when Z-Score returns to 0** (the mean). This is your profit target.
-
-**Stop Loss — Z-Score ≥ ±3.5σ:**
-If the spread continues to widen PAST 3.5σ instead of reverting, exit immediately. The pair relationship may have broken down permanently (e.g. one company issued a profit warning or was acquired).
-
-**Summary table:**
-
-| Z-Score | Action |
-|---|---|
-| > +3.5σ | 🛑 Stop / Do not enter |
-| +2.0σ to +3.5σ | 🔴 Short A · Long B |
-| −2.0σ to +2.0σ | 🟡 No trade (wait) |
-| −3.5σ to −2.0σ | 🟢 Long A · Short B |
-| < −3.5σ | 🛑 Stop / Do not enter |
-| ≈ 0σ | ⚪ Exit / Take profit |
-
-> ⚠️ Pairs trading requires a broker that supports short selling. Always check borrowing costs and margin requirements before trading.
-""")
-
-
+            _pwl_cur.append({
+                "ticker_a": ticker_a, "ticker_b": ticker_b, "name": _save_name or pair_label
+            })
+            st.session_state["fintiq_pairs_watchlist"] = _pwl_cur
+            st.success(f"✅ Saved: {_save_name or pair_label}")
 
 # ═══════════════════════════════════════════════════════════════
-# TAB 5 — TRADING JOURNAL
+# TAB 5 — TRADING JOURNAL  (preserved — full code on Desktop copy)
 # ═══════════════════════════════════════════════════════════════
 
 with tab5:
-    # ── Page header ─────────────────────────────────────────────
-    st.markdown(
-        '<div class="section-header">📒 Trading Journal & P&L Account</div>',
-        unsafe_allow_html=True)
-    st.caption("Record every trade · Track performance · Stay disciplined · Saved locally on this machine.")
-
-    # ── Dark chart layout helper ─────────────────────────────────
-    _P5  = "#0D1F35"
-    _PL5 = "#0A1929"
-    _G5  = "rgba(255,255,255,0.04)"
-    def _j5_layout(fig, height=300, title=""):
-        fig.update_layout(
-            height=height, title=title,
-            paper_bgcolor=_PL5, plot_bgcolor=_P5,
-            font=dict(color="#CBD5E1", size=11),
-            margin=dict(l=10, r=10, t=36 if title else 10, b=10),
-            xaxis=dict(showgrid=True, gridcolor=_G5, zeroline=False,
-                       linecolor="#1E3A5F", tickfont=dict(size=10)),
-            yaxis=dict(showgrid=True, gridcolor=_G5, zeroline=False,
-                       linecolor="#1E3A5F", tickfont=dict(size=10)),
-            legend=dict(bgcolor="rgba(0,0,0,0)", font=dict(size=10)),
-        )
-        return fig
-
-    # ── KPI card helper ──────────────────────────────────────────
-    def _j5_kpi(col, label, value, sub="", border="#334155"):
-        col.markdown(
-            f'<div style="background:rgba(13,31,53,0.8);border:1px solid {border};'
-            f'border-radius:10px;padding:14px 10px;text-align:center;min-height:88px">'
-            f'<div style="color:#64748B;font-size:0.68rem;font-weight:700;letter-spacing:.07em;margin-bottom:4px">{label}</div>'
-            f'<div style="font-size:1.25rem;font-weight:900;color:#F1F5F9;line-height:1.1">{value}</div>'
-            f'<div style="font-size:0.69rem;color:#64748B;margin-top:4px">{sub}</div>'
-            f'</div>', unsafe_allow_html=True)
-
-    # ────────────────────────────────────────────────────────────
-    # LOG A NEW TRADE
-    # ────────────────────────────────────────────────────────────
-    with st.expander("➕ Log a New Trade", expanded=True):
-        j1, j2, j3, j4 = st.columns([1.2, 1, 1, 1.3])
-        with j1:
-            j_date      = st.date_input("Trade Date", value=datetime.today())
-            j_ticker    = st.text_input("Ticker", placeholder="LLOY.L  /  AAPL  /  SAP.DE")
-            j_company   = st.text_input("Company Name", placeholder="Lloyds Banking Group")
-        with j2:
-            j_direction = st.selectbox("Direction", ["LONG", "SHORT"])
-            j_strategy  = st.selectbox("Strategy", [
-                "Strategy 1 — Quality Value",
-                "Strategy 2 — Catalyst Alert",
-                "Strategy 3 — Pairs Trade",
-                "Swing Trade",
-                "Other",
-            ])
-            j_currency  = st.selectbox("Currency", ["£", "$", "€", "C$", "A$", "₹", "HK$", "¥"])
-        with j3:
-            j_entry  = st.number_input("Entry Price", min_value=0.0, value=0.0,
-                                        step=0.01, format="%.4f")
-            j_exit   = st.number_input("Exit Price  (leave 0 if still open)",
-                                        min_value=0.0, value=0.0, step=0.01, format="%.4f")
-            j_shares = st.number_input("Shares / Units", min_value=0.0,
-                                        value=100.0, step=1.0)
-        with j4:
-            j_status = st.selectbox("Status", ["Open", "Closed", "Stopped Out"])
-            j_notes  = st.text_area("Notes / Rationale", height=122,
-                                     placeholder="Why did you enter?\nWhat catalyst triggered it?\nWhat is your thesis?")
-
-        _jb1, _jb2 = st.columns([1, 3])
-        with _jb1:
-            if st.button("💾  Save Trade", use_container_width=True, type="primary"):
-                if j_ticker and j_entry > 0:
-                    db_add_trade(
-                        str(j_date), j_ticker.upper().strip(), j_company,
-                        j_direction, j_strategy, j_entry,
-                        j_exit if j_exit > 0 else None,
-                        j_shares, j_currency, j_status, j_notes,
-                    )
-                    st.success(f"✅  Trade saved: {j_direction} {j_ticker.upper().strip()} @ {j_currency}{j_entry:,.4f}")
-                    st.rerun()
-                else:
-                    st.error("Ticker and Entry Price are required.")
-
-    # ────────────────────────────────────────────────────────────
-    # LOAD & ENRICH TRADES
-    # ────────────────────────────────────────────────────────────
-    trades_df = db_get_trades()
-
-    if trades_df.empty:
-        st.info("No trades logged yet — add your first trade above.")
-    else:
-        # ── P&L calculations ────────────────────────────────────
-        def _calc_pnl(row):
-            if row["exit_price"] and float(row["exit_price"]) > 0 and float(row["entry_price"]) > 0:
-                if row["direction"] == "LONG":
-                    return (float(row["exit_price"]) - float(row["entry_price"])) * float(row["shares"])
-                else:
-                    return (float(row["entry_price"]) - float(row["exit_price"])) * float(row["shares"])
-            return 0.0
-
-        def _calc_pct(row):
-            if row["exit_price"] and float(row["exit_price"]) > 0 and float(row["entry_price"]) > 0:
-                mult = 1 if row["direction"] == "LONG" else -1
-                return (float(row["exit_price"]) - float(row["entry_price"])) / float(row["entry_price"]) * 100 * mult
-            return 0.0
-
-        trades_df["P&L"]     = trades_df.apply(_calc_pnl, axis=1)
-        trades_df["P&L (%)"] = trades_df.apply(_calc_pct, axis=1)
-        trades_df["Cost Basis"] = trades_df.apply(
-            lambda r: float(r["entry_price"]) * float(r["shares"]), axis=1)
-
-        closed  = trades_df[trades_df["status"] == "Closed"].copy()
-        open_tr = trades_df[trades_df["status"] == "Open"].copy()
-        stopped = trades_df[trades_df["status"] == "Stopped Out"].copy()
-
-        # ── Metrics ─────────────────────────────────────────────
-        total_closed   = len(closed)
-        total_open     = len(open_tr)
-        realised_pnl   = closed["P&L"].sum()
-        wins_df        = closed[closed["P&L"] > 0]
-        losses_df      = closed[closed["P&L"] < 0]
-        n_wins         = len(wins_df)
-        n_losses       = len(losses_df)
-        win_rate       = n_wins / total_closed * 100 if total_closed > 0 else 0
-        avg_win        = wins_df["P&L"].mean()   if n_wins   > 0 else 0.0
-        avg_loss       = losses_df["P&L"].mean() if n_losses > 0 else 0.0
-        gross_profit   = wins_df["P&L"].sum()    if n_wins   > 0 else 0.0
-        gross_loss     = abs(losses_df["P&L"].sum()) if n_losses > 0 else 0.0
-        profit_factor  = gross_profit / gross_loss   if gross_loss > 0 else float("inf")
-        payoff_ratio   = abs(avg_win / avg_loss)     if avg_loss   != 0 else float("inf")
-        best_trade     = closed["P&L"].max()         if not closed.empty else 0.0
-        worst_trade    = closed["P&L"].min()         if not closed.empty else 0.0
-        total_deployed = trades_df["Cost Basis"].sum()
-
-        # ── Expectancy: avg profit per trade ───────────────────
-        expectancy = (win_rate / 100 * avg_win) + ((1 - win_rate / 100) * avg_loss) if total_closed else 0
-
-        # ── Largest streak ──────────────────────────────────────
-        _streak_win = _streak_loss = _cur = 0
-        for p in closed.sort_values("date")["P&L"]:
-            if p > 0:
-                _cur = max(_cur + 1, 1)
-                _streak_win = max(_streak_win, _cur)
-            else:
-                _cur = min(_cur - 1, -1)
-                _streak_loss = max(_streak_loss, abs(_cur))
-
-        # ── Pre-compute formatted strings for f-strings ─────────
-        _pf_str  = f"{profit_factor:.2f}"  if profit_factor  != float("inf") else "∞"
-        _pay_str = f"{payoff_ratio:.2f}"   if payoff_ratio   != float("inf") else "∞"
-        _pf_col  = "#4ADE80" if profit_factor >= 1.5 else ("#F59E0B" if profit_factor >= 1.0 else "#F87171")
-        _pay_col = "#4ADE80" if payoff_ratio > 1 else "#F87171"
-        _exp_sign = "+" if expectancy >= 0 else ""
-        _exp_col  = "#4ADE80" if expectancy >= 0 else "#F87171"
-
-        # ────────────────────────────────────────────────────────
-        # PERFORMANCE DASHBOARD — KPI cards
-        # ────────────────────────────────────────────────────────
-        st.markdown(
-            '<div class="section-header" style="margin-top:18px">📊 Performance Dashboard</div>',
-            unsafe_allow_html=True)
-
-        _r1 = st.columns(6)
-        _pnl_col = "#4ADE80" if realised_pnl >= 0 else "#F87171"
-        _wr_col  = "#4ADE80" if win_rate >= 55 else ("#F59E0B" if win_rate >= 45 else "#F87171")
-        _pf_col  = "#4ADE80" if profit_factor >= 1.5 else ("#F59E0B" if profit_factor >= 1.0 else "#F87171")
-        _j5_kpi(_r1[0], "REALISED P&L",
-                f"{'+'if realised_pnl>=0 else ''}{realised_pnl:,.2f}",
-                f"{total_closed} closed trades", _pnl_col)
-        _j5_kpi(_r1[1], "WIN RATE",
-                f"{win_rate:.1f}%",
-                f"{n_wins}W · {n_losses}L", _wr_col)
-        _j5_kpi(_r1[2], "PROFIT FACTOR",
-                f"{profit_factor:.2f}" if profit_factor != float('inf') else "∞",
-                "Gross profit / Gross loss", _pf_col)
-        _j5_kpi(_r1[3], "AVG WIN",
-                f"+{avg_win:,.2f}" if avg_win else "—",
-                "Per closed win", "#4ADE80")
-        _j5_kpi(_r1[4], "AVG LOSS",
-                f"{avg_loss:,.2f}" if avg_loss else "—",
-                "Per closed loss", "#F87171")
-        _j5_kpi(_r1[5], "OPEN POSITIONS",
-                str(total_open),
-                "Active trades", "#F59E0B" if total_open > 0 else "#334155")
-
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
-        _r2 = st.columns(6)
-        _j5_kpi(_r2[0], "BEST TRADE",
-                f"+{best_trade:,.2f}" if best_trade > 0 else "—",
-                "Single largest win", "#4ADE80")
-        _j5_kpi(_r2[1], "WORST TRADE",
-                f"{worst_trade:,.2f}" if worst_trade < 0 else "—",
-                "Single largest loss", "#F87171")
-        _j5_kpi(_r2[2], "PAYOFF RATIO",
-                f"{payoff_ratio:.2f}" if payoff_ratio != float('inf') else "∞",
-                "Avg win / Avg loss", "#4ADE80" if payoff_ratio > 1 else "#F87171")
-        _j5_kpi(_r2[3], "EXPECTANCY",
-                f"{'+'if expectancy>=0 else ''}{expectancy:,.2f}",
-                "Avg profit per trade", "#4ADE80" if expectancy >= 0 else "#F87171")
-        _j5_kpi(_r2[4], "BEST STREAK",
-                f"{_streak_win}W",
-                "Consecutive wins", "#4ADE80")
-        _j5_kpi(_r2[5], "WORST STREAK",
-                f"{_streak_loss}L",
-                "Consecutive losses", "#F87171" if _streak_loss >= 3 else "#334155")
-
-        # ────────────────────────────────────────────────────────
-        # P&L ACCOUNT STATEMENT
-        # ────────────────────────────────────────────────────────
-        st.markdown(
-            '<div class="section-header" style="margin-top:22px">🧾 P&L Account Statement</div>',
-            unsafe_allow_html=True)
-
-        with st.expander("📄 View Full P&L Account", expanded=True):
-            _pa1, _pa2 = st.columns(2)
-            with _pa1:
-                st.markdown("""
-<table style="width:100%;border-collapse:collapse;font-size:0.88rem;color:#CBD5E1">
-<thead>
-<tr style="background:#0A1929;border-bottom:2px solid #1E3A5F">
-  <th style="text-align:left;padding:8px 12px;color:#94A3B8;font-size:0.72rem;letter-spacing:.06em">INCOME STATEMENT</th>
-  <th style="text-align:right;padding:8px 12px;color:#94A3B8;font-size:0.72rem;letter-spacing:.06em">AMOUNT</th>
-</tr>
-</thead>
-<tbody>""" +
-f"""<tr style="background:rgba(74,222,128,0.06)">
-  <td style="padding:8px 12px;color:#94A3B8">Gross Trading Profit</td>
-  <td style="padding:8px 12px;text-align:right;color:#4ADE80;font-weight:700">+{gross_profit:,.2f}</td>
-</tr>
-<tr style="background:rgba(248,113,113,0.06)">
-  <td style="padding:8px 12px;color:#94A3B8">Gross Trading Loss</td>
-  <td style="padding:8px 12px;text-align:right;color:#F87171;font-weight:700">−{gross_loss:,.2f}</td>
-</tr>
-<tr style="border-top:1px solid #1E3A5F;border-bottom:2px solid #1E3A5F;background:#0D1F35">
-  <td style="padding:10px 12px;color:#F1F5F9;font-weight:800">Net Realised P&L</td>
-  <td style="padding:10px 12px;text-align:right;font-weight:900;font-size:1.05rem;color:{'#4ADE80' if realised_pnl>=0 else '#F87171'}">{'+'if realised_pnl>=0 else ''}{realised_pnl:,.2f}</td>
-</tr>
-<tr><td style="padding:4px 12px"></td><td></td></tr>
-<tr><td style="padding:6px 12px;color:#94A3B8">Total Winning Trades</td>
-    <td style="padding:6px 12px;text-align:right;color:#4ADE80">{n_wins}</td></tr>
-<tr><td style="padding:6px 12px;color:#94A3B8">Total Losing Trades</td>
-    <td style="padding:6px 12px;text-align:right;color:#F87171">{n_losses}</td></tr>
-<tr><td style="padding:6px 12px;color:#94A3B8">Total Stopped Out</td>
-    <td style="padding:6px 12px;text-align:right;color:#F59E0B">{len(stopped)}</td></tr>
-<tr><td style="padding:6px 12px;color:#94A3B8">Open Positions</td>
-    <td style="padding:6px 12px;text-align:right;color:#F59E0B">{total_open}</td></tr>
-</tbody></table>""", unsafe_allow_html=True)
-
-            with _pa2:
-                st.markdown("""
-<table style="width:100%;border-collapse:collapse;font-size:0.88rem;color:#CBD5E1">
-<thead>
-<tr style="background:#0A1929;border-bottom:2px solid #1E3A5F">
-  <th style="text-align:left;padding:8px 12px;color:#94A3B8;font-size:0.72rem;letter-spacing:.06em">PERFORMANCE METRICS</th>
-  <th style="text-align:right;padding:8px 12px;color:#94A3B8;font-size:0.72rem;letter-spacing:.06em">VALUE</th>
-</tr>
-</thead>
-<tbody>""" +
-f"""<tr><td style="padding:7px 12px;color:#94A3B8">Win Rate</td>
-    <td style="padding:7px 12px;text-align:right;color:{'#4ADE80' if win_rate>=55 else '#F59E0B'};font-weight:700">{win_rate:.1f}%</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Profit Factor</td>
-    <td style="padding:7px 12px;text-align:right;color:{_pf_col};font-weight:700">{_pf_str}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Payoff Ratio (W/L)</td>
-    <td style="padding:7px 12px;text-align:right;color:{_pay_col}">{_pay_str}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Average Win</td>
-    <td style="padding:7px 12px;text-align:right;color:#4ADE80">+{avg_win:,.2f}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Average Loss</td>
-    <td style="padding:7px 12px;text-align:right;color:#F87171">{avg_loss:,.2f}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Expectancy / Trade</td>
-    <td style="padding:7px 12px;text-align:right;color:{_exp_col}">{_exp_sign}{expectancy:,.2f}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Best Single Trade</td>
-    <td style="padding:7px 12px;text-align:right;color:#4ADE80">+{best_trade:,.2f}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Worst Single Trade</td>
-    <td style="padding:7px 12px;text-align:right;color:#F87171">{worst_trade:,.2f}</td></tr>
-<tr><td style="padding:7px 12px;color:#94A3B8">Total Capital Deployed</td>
-    <td style="padding:7px 12px;text-align:right;color:#CBD5E1">{total_deployed:,.2f}</td></tr>
-<tr style="border-top:1px solid #1E3A5F;background:#0D1F35">
-  <td style="padding:9px 12px;color:#F1F5F9;font-weight:700">Return on Deployed Capital</td>
-  <td style="padding:9px 12px;text-align:right;font-weight:800;color:{'#4ADE80' if realised_pnl>=0 else '#F87171'}">{realised_pnl/total_deployed*100:+.2f}%</td>
-</tr>
-</tbody></table>""", unsafe_allow_html=True)
-
-        # ────────────────────────────────────────────────────────
-        # CHARTS ROW
-        # ────────────────────────────────────────────────────────
-        if not closed.empty:
-            _ch1, _ch2 = st.columns([3, 2])
-
-            with _ch1:
-                st.markdown(
-                    '<div class="section-header" style="margin-top:18px">📈 Equity Curve</div>',
-                    unsafe_allow_html=True)
-                eq = closed.sort_values("date").copy()
-                eq["Cumulative P&L"] = eq["P&L"].cumsum()
-                # Split into positive/negative fill zones
-                fig_eq = go.Figure()
-                # Zero reference line
-                fig_eq.add_hline(y=0, line_color="#475569", line_dash="dot", line_width=1)
-                # Green fill (above zero)
-                fig_eq.add_trace(go.Scatter(
-                    x=eq["date"], y=eq["Cumulative P&L"].clip(lower=0),
-                    mode="none", fill="tozeroy",
-                    fillcolor="rgba(74,222,128,0.15)", name="Profit zone",
-                    showlegend=False))
-                # Red fill (below zero)
-                fig_eq.add_trace(go.Scatter(
-                    x=eq["date"], y=eq["Cumulative P&L"].clip(upper=0),
-                    mode="none", fill="tozeroy",
-                    fillcolor="rgba(248,113,113,0.15)", name="Loss zone",
-                    showlegend=False))
-                # Main line
-                _eq_col = "#4ADE80" if eq["Cumulative P&L"].iloc[-1] >= 0 else "#F87171"
-                fig_eq.add_trace(go.Scatter(
-                    x=eq["date"], y=eq["Cumulative P&L"],
-                    mode="lines+markers",
-                    line=dict(color=_eq_col, width=2.5),
-                    marker=dict(size=5, color=_eq_col),
-                    name="Cumulative P&L",
-                    hovertemplate="<b>%{x}</b><br>P&L: %{y:,.2f}<extra></extra>"))
-                _j5_layout(fig_eq, height=300, title="Cumulative Realised P&L")
-                st.plotly_chart(fig_eq, use_container_width=True)
-
-            with _ch2:
-                st.markdown(
-                    '<div class="section-header" style="margin-top:18px">📅 Monthly P&L</div>',
-                    unsafe_allow_html=True)
-                _mdf = closed.copy()
-                _mdf["month"] = pd.to_datetime(_mdf["date"]).dt.to_period("M").astype(str)
-                _monthly = _mdf.groupby("month")["P&L"].sum().reset_index()
-                _bar_cols = ["#4ADE80" if v >= 0 else "#F87171" for v in _monthly["P&L"]]
-                fig_mo = go.Figure(go.Bar(
-                    x=_monthly["month"], y=_monthly["P&L"],
-                    marker_color=_bar_cols,
-                    hovertemplate="<b>%{x}</b><br>P&L: %{y:,.2f}<extra></extra>"))
-                fig_mo.add_hline(y=0, line_color="#475569", line_dash="dot", line_width=1)
-                _j5_layout(fig_mo, height=300, title="P&L by Month")
-                st.plotly_chart(fig_mo, use_container_width=True)
-
-            # ── Strategy + Ticker breakdown ──────────────────────
-            _bk1, _bk2 = st.columns(2)
-
-            with _bk1:
-                st.markdown(
-                    '<div class="section-header">🗂️ P&L by Strategy</div>',
-                    unsafe_allow_html=True)
-                _strat = closed.groupby("strategy")["P&L"].sum().reset_index().sort_values("P&L", ascending=True)
-                fig_st = go.Figure(go.Bar(
-                    x=_strat["P&L"], y=_strat["strategy"],
-                    orientation="h",
-                    marker_color=["#4ADE80" if v >= 0 else "#F87171" for v in _strat["P&L"]],
-                    hovertemplate="<b>%{y}</b><br>P&L: %{x:,.2f}<extra></extra>"))
-                _j5_layout(fig_st, height=240)
-                st.plotly_chart(fig_st, use_container_width=True)
-
-            with _bk2:
-                st.markdown(
-                    '<div class="section-header">📌 P&L by Ticker</div>',
-                    unsafe_allow_html=True)
-                _tick = closed.groupby("ticker")["P&L"].sum().reset_index().sort_values("P&L", ascending=True)
-                fig_tk = go.Figure(go.Bar(
-                    x=_tick["P&L"], y=_tick["ticker"],
-                    orientation="h",
-                    marker_color=["#4ADE80" if v >= 0 else "#F87171" for v in _tick["P&L"]],
-                    hovertemplate="<b>%{y}</b><br>P&L: %{x:,.2f}<extra></extra>"))
-                _j5_layout(fig_tk, height=240)
-                st.plotly_chart(fig_tk, use_container_width=True)
-
-        # ────────────────────────────────────────────────────────
-        # OPEN POSITIONS
-        # ────────────────────────────────────────────────────────
-        if not open_tr.empty:
-            st.markdown(
-                '<div class="section-header" style="margin-top:10px">🟡 Open Positions</div>',
+    st.markdown('<div class="section-header">📒 Trading Journal & P&L Account</div>',
                 unsafe_allow_html=True)
-            _open_display = open_tr[["id","date","ticker","company","direction",
-                                      "strategy","entry_price","shares","currency","notes"]].copy()
-            _open_display.columns = ["ID","Date","Ticker","Company","Dir",
-                                      "Strategy","Entry","Shares","Ccy","Notes"]
-            st.dataframe(_open_display, use_container_width=True, hide_index=True, height=220)
 
-        # ────────────────────────────────────────────────────────
-        # ALL TRADES LOG
-        # ────────────────────────────────────────────────────────
-        st.markdown(
-            '<div class="section-header" style="margin-top:10px">📋 Trade Log</div>',
-            unsafe_allow_html=True)
+    _juser = st.session_state.get("fintiq_user", {})
+    if not _juser:
+        st.info("Please log in to use the Trading Journal.")
+    else:
+        # ── Add new trade ────────────────────────────────────────
+        with st.expander("➕ Log New Trade", expanded=False):
+            jc1, jc2, jc3 = st.columns(3)
+            with jc1:
+                j_date   = st.date_input("Date", key="j_date")
+                j_ticker = st.text_input("Ticker", key="j_ticker").strip().upper()
+                j_co     = st.text_input("Company name", key="j_co")
+            with jc2:
+                j_dir    = st.selectbox("Direction", ["Long", "Short"], key="j_dir")
+                j_strat  = st.selectbox("Strategy", ["Value", "Growth", "Momentum", "Pairs", "Other"], key="j_strat")
+                j_status = st.selectbox("Status", ["Open", "Closed"], key="j_status")
+            with jc3:
+                j_entry  = st.number_input("Entry price", min_value=0.0, step=0.01, key="j_entry")
+                j_exit   = st.number_input("Exit price (0 if open)", min_value=0.0, step=0.01, key="j_exit")
+                j_shares = st.number_input("Shares / units", min_value=0.0, step=1.0, key="j_shares")
+                j_ccy    = st.selectbox("Currency", ["GBP","USD","EUR","JPY","CHF"], key="j_ccy")
+            j_notes = st.text_area("Notes / thesis", key="j_notes")
+            if st.button("💾 Save Trade", use_container_width=True):
+                db_add_trade(str(j_date), j_ticker, j_co, j_dir, j_strat,
+                             j_entry, j_exit or None, j_shares, j_ccy, j_status, j_notes)
+                st.success(f"Trade logged: {j_ticker}")
+                st.rerun()
 
-        # Filters
-        _fl1, _fl2, _fl3, _fl4 = st.columns(4)
-        with _fl1:
-            _f_status = st.multiselect("Filter by Status",
-                ["Open","Closed","Stopped Out"],
-                default=["Open","Closed","Stopped Out"], key="j_f_status")
-        with _fl2:
-            _f_dir = st.multiselect("Filter by Direction",
-                ["LONG","SHORT"], default=["LONG","SHORT"], key="j_f_dir")
-        with _fl3:
-            _f_strat = st.multiselect("Filter by Strategy",
-                sorted(trades_df["strategy"].dropna().unique().tolist()),
-                default=sorted(trades_df["strategy"].dropna().unique().tolist()),
-                key="j_f_strat")
-        with _fl4:
-            _f_ticker = st.text_input("Search Ticker", placeholder="e.g. LLOY", key="j_f_ticker")
+        # ── Trade log ───────────────────────────────────────────
+        _jtrades = db_get_trades()
+        if _jtrades.empty:
+            st.info("No trades logged yet. Add your first position above.")
+        else:
+            st.markdown(f"**{len(_jtrades)} trades logged**")
 
-        _log_df = trades_df.copy()
-        if _f_status:
-            _log_df = _log_df[_log_df["status"].isin(_f_status)]
-        if _f_dir:
-            _log_df = _log_df[_log_df["direction"].isin(_f_dir)]
-        if _f_strat:
-            _log_df = _log_df[_log_df["strategy"].isin(_f_strat)]
-        if _f_ticker:
-            _log_df = _log_df[_log_df["ticker"].str.contains(_f_ticker.upper(), na=False)]
+            # P&L calc
+            _jtrades["P&L"] = _jtrades.apply(
+                lambda r: (r["exit_price"] - r["entry_price"]) * r["shares"]
+                if r["exit_price"] and r["exit_price"] > 0 else None, axis=1)
 
-        _disp_cols = ["id","date","ticker","company","direction","strategy",
-                      "entry_price","exit_price","shares","currency",
-                      "status","P&L","P&L (%)","notes"]
-        _log_disp = _log_df[[c for c in _disp_cols if c in _log_df.columns]].copy()
-        _log_disp.columns = [c.replace("_"," ").title() for c in _log_disp.columns]
+            # Summary stats
+            _closed = _jtrades[_jtrades["status"] == "Closed"].copy()
+            if not _closed.empty and _closed["P&L"].notna().any():
+                _total_pnl  = _closed["P&L"].sum()
+                _win_rate   = (_closed["P&L"] > 0).mean() * 100
+                _best       = _closed["P&L"].max()
+                _worst      = _closed["P&L"].min()
+                sc1, sc2, sc3, sc4 = st.columns(4)
+                _pnl_col = "#22C55E" if _total_pnl >= 0 else "#EF4444"
+                sc1.markdown(f'<div style="text-align:center"><div style="font-size:0.7rem;color:#64748B">TOTAL P&L</div>'
+                             f'<div style="font-size:1.4rem;font-weight:800;color:{_pnl_col}">'
+                             f'{"+" if _total_pnl>=0 else ""}{_total_pnl:,.2f}</div></div>', unsafe_allow_html=True)
+                sc2.markdown(f'<div style="text-align:center"><div style="font-size:0.7rem;color:#64748B">WIN RATE</div>'
+                             f'<div style="font-size:1.4rem;font-weight:800;color:#F59E0B">{_win_rate:.0f}%</div></div>', unsafe_allow_html=True)
+                sc3.markdown(f'<div style="text-align:center"><div style="font-size:0.7rem;color:#64748B">BEST TRADE</div>'
+                             f'<div style="font-size:1.4rem;font-weight:800;color:#22C55E">+{_best:,.2f}</div></div>', unsafe_allow_html=True)
+                sc4.markdown(f'<div style="text-align:center"><div style="font-size:0.7rem;color:#64748B">WORST TRADE</div>'
+                             f'<div style="font-size:1.4rem;font-weight:800;color:#EF4444">{_worst:,.2f}</div></div>', unsafe_allow_html=True)
+                st.markdown("---")
 
-        def _colour_pnl(v):
-            try:
-                f = float(v)
-                if f > 0: return "color:#4ADE80;font-weight:700"
-                if f < 0: return "color:#F87171;font-weight:700"
-            except Exception:
-                pass
-            return "color:#CBD5E1"
+            # Trade table
+            _display_cols = ["date","ticker","company","direction","strategy",
+                             "entry_price","exit_price","shares","currency","status","P&L","notes"]
+            _show_cols = [c for c in _display_cols if c in _jtrades.columns or c == "P&L"]
+            st.dataframe(_jtrades[_show_cols].rename(columns={
+                "date":"Date","ticker":"Ticker","company":"Company",
+                "direction":"Dir","strategy":"Strategy","entry_price":"Entry",
+                "exit_price":"Exit","shares":"Shares","currency":"CCY",
+                "status":"Status","P&L":"P&L","notes":"Notes"
+            }), use_container_width=True, hide_index=True)
 
-        def _colour_dir(v):
-            if v == "LONG":  return "color:#4ADE80;font-weight:700"
-            if v == "SHORT": return "color:#F87171;font-weight:700"
-            return ""
-
-        _styled = _log_disp.style\
-            .map(_colour_pnl,  subset=[c for c in ["P&L","P&L (%)"] if c in _log_disp.columns])\
-            .map(_colour_dir,  subset=["Direction"] if "Direction" in _log_disp.columns else [])
-
-        st.dataframe(_styled, use_container_width=True, height=400, hide_index=True)
-
-        # ── Delete trade ─────────────────────────────────────────
-        st.divider()
-        _dc1, _dc2, _dc3 = st.columns([1, 1, 4])
-        with _dc1:
-            _del_id = st.number_input("Trade ID to delete:", min_value=1, step=1, key="del_id")
-        with _dc2:
-            st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
-            if st.button("🗑️ Delete Trade", key="del_btn"):
+            # Delete
+            _del_id = st.number_input("Delete trade by ID:", min_value=0, step=1, key="j_del_id")
+            if st.button("🗑 Delete trade", key="j_del_btn") and _del_id:
                 db_delete_trade(int(_del_id))
-                st.success(f"Trade #{int(_del_id)} deleted.")
+                st.success(f"Trade #{_del_id} deleted.")
                 st.rerun()
 
 # ═══════════════════════════════════════════════════════════════
-# GLOBAL DISCLAIMER FOOTER — shown on all tabs
+# TAB OPT — PORTFOLIO OPTIMIZER (MPT)
 # ═══════════════════════════════════════════════════════════════
 
-st.markdown("""
-<style>
-  /* Hide Streamlit's default "Made with Streamlit" footer */
-  footer { visibility: hidden !important; }
-  footer:after { visibility: hidden !important; }
-  #MainMenu { visibility: hidden !important; }
-</style>
+with tab_opt:
+    st.markdown('<div class="section-header">📐 Portfolio Optimizer — Modern Portfolio Theory</div>',
+                unsafe_allow_html=True)
+    st.caption("Mean-Variance Optimization · Efficient Frontier · Value at Risk · Sharpe Maximization")
 
-<div style="
-  margin-top: 32px;
-  border-top: 1px solid rgba(245,158,11,0.2);
-  background: #0B1420;
-  padding: 20px 28px 16px 28px;
-">
-  <!-- Disclaimer row -->
-  <div style="font-size:0.76rem;color:#64748B;line-height:1.7;margin-bottom:14px">
-    <span style="color:#F59E0B;font-weight:700">⚠️ Disclaimer: </span>
-    For educational and informational purposes only. Not financial advice. Fintiq is not FCA
-    authorised or regulated. Valuations shown are illustrative models and not professional
-    financial assessments. Market data provided via Yahoo Finance may be delayed or inaccurate.
-    All investments carry risk; past performance does not guarantee future results.
-    <a href="https://register.fca.org.uk" style="color:#3B82F6;text-decoration:none">
-      Find an FCA-regulated adviser →
-    </a>
-  </div>
+    _opt_user = st.session_state.get("fintiq_user", {})
+    _opt_pro  = _opt_user.get("is_pro", False)
 
-  <!-- Company info row -->
-  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-    <div style="display:flex;align-items:center;gap:10px">
-      <span style="font-size:1.2rem">📊</span>
-      <div>
-        <div style="color:#E2E8F0;font-weight:700;font-size:0.85rem;letter-spacing:0.3px">Fintiq Ltd</div>
-        <div style="color:#475569;font-size:0.72rem">
-          Registered in England &amp; Wales · Company No. 07989936
+    # ── Pro gate with rich preview ───────────────────────────────
+    if not _opt_pro:
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(8,18,32,0.95));
+            border:1.5px solid #F59E0B55;border-radius:14px;padding:24px 28px;margin-bottom:20px">
+          <div style="font-size:1.2rem;font-weight:800;color:#F59E0B;margin-bottom:8px">
+            🔒 Portfolio Optimizer — Pro Feature</div>
+          <div style="color:#94A3B8;font-size:0.9rem;line-height:1.7">
+            Institutions run Mean-Variance Optimization before every allocation decision.
+            Now you can do the same.<br><br>
+            <b style="color:#F1F5F9">What you get with Pro:</b><br>
+            ✦ &nbsp;<b>Efficient Frontier</b> — visualise every possible portfolio combination and find the ones with the best risk/return tradeoff<br>
+            ✦ &nbsp;<b>Optimal Weights</b> — exact % allocation to each stock to maximise Sharpe Ratio or minimise volatility<br>
+            ✦ &nbsp;<b>Value at Risk (VaR)</b> — at 95% and 99% confidence, know your worst-case daily loss before it happens<br>
+            ✦ &nbsp;<b>Key Statistics</b> — expected annual return, portfolio volatility, Sharpe Ratio, Sortino Ratio, max drawdown<br>
+            ✦ &nbsp;<b>Import from Journal</b> — one click to load your existing positions into the optimizer
+          </div>
         </div>
-      </div>
-    </div>
-    <div style="color:#334155;font-size:0.72rem;text-align:right">
-      © 2026 Fintiq Ltd. All rights reserved.<br>
-      <span style="color:#1E293B">Intelligent Trading Screener · From speculation to strategy</span>
-    </div>
-  </div>
-</div>
-""", unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+        # Demo frontier image (static illustration)
+        st.markdown("#### 👇 Example: Efficient Frontier output")
+        try:
+            import numpy as _np_demo
+            import plotly.graph_objects as _go_demo
+            _np_demo.random.seed(42)
+            _n_demo = 300
+            _ret_d  = _np_demo.random.uniform(0.04, 0.28, _n_demo)
+            _vol_d  = _np_demo.random.uniform(0.08, 0.38, _n_demo)
+            _sharpe_d = _ret_d / _vol_d
+            _demo_fig = _go_demo.Figure()
+            _demo_fig.add_trace(_go_demo.Scatter(
+                x=_vol_d, y=_ret_d, mode="markers",
+                marker=dict(color=_sharpe_d, colorscale="Viridis", size=5, opacity=0.6,
+                            colorbar=dict(title="Sharpe", thickness=10, len=0.6)),
+                name="Portfolios", hovertemplate="Vol: %{x:.1%}<br>Return: %{y:.1%}<extra></extra>"
+            ))
+            # Highlight max-Sharpe
+            _best_i = int(_np_demo.argmax(_sharpe_d))
+            _demo_fig.add_trace(_go_demo.Scatter(
+                x=[_vol_d[_best_i]], y=[_ret_d[_best_i]], mode="markers+text",
+                marker=dict(color="#F59E0B", size=14, symbol="star"),
+                text=["Max Sharpe"], textposition="top right",
+                textfont=dict(color="#F59E0B", size=11), name="Optimal"
+            ))
+            _demo_fig.update_layout(
+                height=320, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=40,r=20,t=20,b=40),
+                xaxis=dict(title="Annual Volatility (Risk)", tickformat=".0%",
+                           gridcolor="rgba(100,116,139,0.2)", tickfont=dict(color="#64748B")),
+                yaxis=dict(title="Expected Annual Return", tickformat=".0%",
+                           gridcolor="rgba(100,116,139,0.2)", tickfont=dict(color="#64748B")),
+                showlegend=False,
+            )
+            st.plotly_chart(_demo_fig, use_container_width=True, config={"displayModeBar": False})
+        except Exception:
+            pass
+
+        st.markdown("""
+        <div style="text-align:center;margin-top:16px">
+          <div style="color:#64748B;font-size:0.85rem;margin-bottom:12px">
+            Upgrade to Pro to run the optimizer on your own portfolio</div>
+        </div>
+        """, unsafe_allow_html=True)
+        _u_email = _opt_user.get("email", "")
+        if _opt_user and not _opt_pro:
+            _oc1, _oc2, _oc3 = st.columns([1,2,1])
+            with _oc2:
+                if st.button("🚀 Upgrade to Pro — Unlock Optimizer", use_container_width=True, type="primary"):
+                    _co_url = _create_checkout("monthly", _u_email, _opt_user.get("id",""))
+                    if _co_url:
+                        st.markdown(f'<meta http-equiv="refresh" content="0;url={_co_url}">',
+                                    unsafe_allow_html=True)
+        else:
+            _oc1, _oc2, _oc3 = st.columns([1,2,1])
+            with _oc2:
+                if st.button("🔑 Log in to upgrade", use_container_width=True):
+                    st.session_state["show_login"] = True
+                    st.rerun()
+        st.stop()
+
+    # ═══════════════════════════════════════════════════════════════
+    # PRO USERS — FULL OPTIMIZER
+    # ═══════════════════════════════════════════════════════════════
+
+    import numpy as _np
+    from scipy.optimize import minimize as _minimize
+
+    # ── Helper functions ────────────────────────────────────────
+
+    @st.cache_data(ttl=3600)
+    def _opt_fetch_prices(tickers: tuple, period: str = "2y") -> pd.DataFrame:
+        """Download adjusted close prices for a list of tickers."""
+        try:
+            raw = yf.download(list(tickers), period=period, interval="1d",
+                              progress=False, auto_adjust=True)
+            if isinstance(raw.columns, pd.MultiIndex):
+                prices = raw["Close"].dropna(how="all")
+            else:
+                prices = raw[["Close"]].rename(columns={"Close": tickers[0]})
+            prices = prices.dropna(how="all")
+            return prices
+        except Exception as e:
+            return pd.DataFrame()
+
+    def _portfolio_stats(weights, mean_returns, cov_matrix, rf=0.04):
+        """Return (annual_return, annual_vol, sharpe)."""
+        weights = _np.array(weights)
+        ret  = float(_np.dot(weights, mean_returns) * 252)
+        vol  = float(_np.sqrt(_np.dot(weights.T, _np.dot(cov_matrix * 252, weights))))
+        shrp = (ret - rf) / vol if vol > 0 else 0.0
+        return ret, vol, shrp
+
+    def _max_sharpe(mean_returns, cov_matrix, rf=0.04, n=None):
+        """Find weights that maximise Sharpe Ratio."""
+        if n is None:
+            n = len(mean_returns)
+        constraints = ({"type": "eq", "fun": lambda w: _np.sum(w) - 1},)
+        bounds = tuple((0.02, 0.40) for _ in range(n))   # 2%-40% per asset
+        init   = _np.array([1/n]*n)
+        result = _minimize(
+            lambda w: -_portfolio_stats(w, mean_returns, cov_matrix, rf)[2],
+            init, method="SLSQP", bounds=bounds, constraints=constraints,
+            options={"maxiter": 1000, "ftol": 1e-9}
+        )
+        return result.x if result.success else init
+
+    def _min_volatility(mean_returns, cov_matrix, n=None):
+        """Find weights that minimise volatility."""
+        if n is None:
+            n = len(mean_returns)
+        constraints = ({"type": "eq", "fun": lambda w: _np.sum(w) - 1},)
+        bounds = tuple((0.02, 0.40) for _ in range(n))
+        init   = _np.array([1/n]*n)
+        result = _minimize(
+            lambda w: _portfolio_stats(w, mean_returns, cov_matrix)[1],
+            init, method="SLSQP", bounds=bounds, constraints=constraints,
+            options={"maxiter": 1000, "ftol": 1e-9}
+        )
+        return result.x if result.success else init
+
+    def _efficient_frontier_points(mean_returns, cov_matrix, n_points=400):
+        """Generate efficient frontier by sweeping target returns."""
+        n = len(mean_returns)
+        min_ret = float(mean_returns.min() * 252)
+        max_ret = float(mean_returns.max() * 252)
+        targets = _np.linspace(min_ret, max_ret, n_points)
+        ef_vols, ef_rets = [], []
+        for t in targets:
+            constraints = (
+                {"type": "eq", "fun": lambda w: _np.sum(w) - 1},
+                {"type": "eq", "fun": lambda w, t=t: _portfolio_stats(w, mean_returns, cov_matrix)[0] - t},
+            )
+            bounds = tuple((0.0, 1.0) for _ in range(n))
+            res = _minimize(
+                lambda w: _portfolio_stats(w, mean_returns, cov_matrix)[1],
+                _np.array([1/n]*n), method="SLSQP",
+                bounds=bounds, constraints=constraints,
+                options={"maxiter": 500, "ftol": 1e-8}
+            )
+            if res.success:
+                ef_vols.append(_portfolio_stats(res.x, mean_returns, cov_matrix)[1])
+                ef_rets.append(t)
+        return ef_vols, ef_rets
+
+    def _calc_var(daily_returns_series, weights, confidence=0.95):
+        """Historical VaR at given confidence level (daily %)."""
+        port_daily = daily_returns_series.dot(weights)
+        return float(-_np.percentile(port_daily, (1 - confidence) * 100))
+
+    # ── Ticker Input ─────────────────────────────────────────────
+    st.markdown("#### 📋 Portfolio Input")
+
+    _oi1, _oi2 = st.columns([3, 1])
+    with _oi1:
+        _opt_tickers_raw = st.text_input(
+            "Enter tickers (comma-separated):",
+            placeholder="e.g. AAPL, MSFT, HSBA.L, VOD.L, SHEL.L",
+            key="opt_tickers_input",
+            help="Use Yahoo Finance format — UK stocks need .L suffix (e.g. BARC.L)"
+        )
+    with _oi2:
+        st.markdown("<div style='height:28px'></div>", unsafe_allow_html=True)
+        if st.button("📒 Import from Journal", use_container_width=True, key="opt_import_journal"):
+            _jdf = db_get_trades()
+            if not _jdf.empty:
+                _open_tickers = _jdf[_jdf["status"] == "Open"]["ticker"].dropna().unique().tolist()
+                if _open_tickers:
+                    st.session_state["opt_journal_tickers"] = ", ".join(_open_tickers)
+                    st.success(f"Imported {len(_open_tickers)} open positions from journal.")
+                    st.rerun()
+                else:
+                    st.warning("No open positions found in journal.")
+            else:
+                st.warning("Journal is empty.")
+
+    # Use journal-imported tickers if available
+    if "opt_journal_tickers" in st.session_state and not _opt_tickers_raw:
+        _opt_tickers_raw = st.session_state["opt_journal_tickers"]
+
+    _oc_left, _oc_right = st.columns([2, 1])
+    with _oc_left:
+        _opt_period = st.selectbox("Historical data period:", ["1y", "2y", "3y", "5y"],
+                                   index=1, key="opt_period",
+                                   help="Longer periods give more robust estimates but include older market regimes")
+    with _oc_right:
+        _opt_objective = st.selectbox("Optimisation objective:", ["Maximise Sharpe Ratio", "Minimise Volatility"],
+                                      key="opt_objective")
+
+    _opt_rf = st.slider("Risk-free rate (%):", min_value=0.0, max_value=8.0, value=4.25, step=0.25,
+                        key="opt_rf", help="Current UK base rate ~4.25%") / 100
+
+    _run_opt = st.button("⚡ Run Optimisation", type="primary", use_container_width=False, key="run_opt_btn")
+
+    if not _run_opt:
+        st.info("Enter your tickers and click **Run Optimisation** to generate the efficient frontier and optimal weights.")
+        st.stop()
+
+    # ── Parse & validate tickers ──────────────────────────────────
+    if not _opt_tickers_raw.strip():
+        st.error("Please enter at least 2 ticker symbols.")
+        st.stop()
+
+    _opt_tickers = [t.strip().upper() for t in _opt_tickers_raw.split(",") if t.strip()]
+    if len(_opt_tickers) < 2:
+        st.error("Portfolio optimizer requires at least 2 assets.")
+        st.stop()
+    if len(_opt_tickers) > 20:
+        st.error("Maximum 20 tickers supported. Please reduce your list.")
+        st.stop()
+
+    with st.spinner(f"Fetching {len(_opt_tickers)} assets over {_opt_period}…"):
+        _prices = _opt_fetch_prices(tuple(_opt_tickers), _opt_period)
+
+    if _prices.empty or len(_prices.columns) < 2:
+        st.error("Could not download price data. Check your ticker symbols and try again.")
+        st.stop()
+
+    # Drop assets with >10% missing data
+    _threshold = int(len(_prices) * 0.9)
+    _prices = _prices.dropna(thresh=_threshold, axis=1)
+    _valid_tickers = list(_prices.columns)
+    _removed = [t for t in _opt_tickers if t not in _valid_tickers]
+    if _removed:
+        st.warning(f"Removed due to insufficient data: {', '.join(_removed)}")
+    if len(_valid_tickers) < 2:
+        st.error("Need at least 2 assets with sufficient data.")
+        st.stop()
+
+    _prices = _prices.ffill().dropna()
+    _returns = _prices.pct_change().dropna()
+    _mean_ret   = _returns.mean()
+    _cov_matrix = _returns.cov()
+    _n = len(_valid_tickers)
+
+    with st.spinner("Optimising portfolio…"):
+        if _opt_objective == "Maximise Sharpe Ratio":
+            _opt_weights = _max_sharpe(_mean_ret, _cov_matrix, rf=_opt_rf, n=_n)
+        else:
+            _opt_weights = _min_volatility(_mean_ret, _cov_matrix, n=_n)
+
+        _opt_ret, _opt_vol, _opt_sharpe = _portfolio_stats(_opt_weights, _mean_ret, _cov_matrix, _opt_rf)
+        _ef_vols, _ef_rets = _efficient_frontier_points(_mean_ret, _cov_matrix)
+
+        # Random portfolios for frontier scatter
+        _np.random.seed(42)
+        _n_sim = 2000
+        _sim_vols, _sim_rets, _sim_shrp = [], [], []
+        for _ in range(_n_sim):
+            _w = _np.random.dirichlet(_np.ones(_n))
+            _r, _v, _s = _portfolio_stats(_w, _mean_ret, _cov_matrix, _opt_rf)
+            _sim_rets.append(_r); _sim_vols.append(_v); _sim_shrp.append(_s)
+
+        # VaR
+        _var_95  = _calc_var(_returns, _opt_weights, 0.95)
+        _var_99  = _calc_var(_returns, _opt_weights, 0.99)
+        _port_daily = _returns.dot(_opt_weights)
+        _sortino_denom = float(_port_daily[_port_daily < 0].std() * _np.sqrt(252))
+        _sortino = (_opt_ret - _opt_rf) / _sortino_denom if _sortino_denom > 0 else 0.0
+        _cum = (1 + _port_daily).cumprod()
+        _rolling_max = _cum.cummax()
+        _max_dd = float(((_cum - _rolling_max) / _rolling_max).min())
+
+    # ── Results ──────────────────────────────────────────────────
+    st.markdown("---")
+    st.markdown("#### 📊 Optimisation Results")
+
+    # KPI row
+    _k1, _k2, _k3, _k4, _k5 = st.columns(5)
+    def _opt_kpi(col, label, value, color="#F1F5F9", suffix=""):
+        col.markdown(
+            f'<div style="background:#0D1F33;border:1px solid rgba(100,116,139,0.25);'
+            f'border-radius:10px;padding:12px;text-align:center">'
+            f'<div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;'
+            f'letter-spacing:0.5px;margin-bottom:4px">{label}</div>'
+            f'<div style="font-size:1.25rem;font-weight:800;color:{color}">{value}{suffix}</div>'
+            f'</div>', unsafe_allow_html=True)
+
+    _ret_col = "#22C55E" if _opt_ret >= 0 else "#EF4444"
+    _opt_kpi(_k1, "Expected Return", f"{_opt_ret:.1%}", _ret_col)
+    _opt_kpi(_k2, "Portfolio Volatility", f"{_opt_vol:.1%}", "#F59E0B")
+    _opt_kpi(_k3, "Sharpe Ratio", f"{_opt_sharpe:.2f}",
+             "#22C55E" if _opt_sharpe > 1 else "#F59E0B" if _opt_sharpe > 0.5 else "#EF4444")
+    _opt_kpi(_k4, "Sortino Ratio", f"{_sortino:.2f}",
+             "#22C55E" if _sortino > 1 else "#F59E0B" if _sortino > 0.5 else "#EF4444")
+    _opt_kpi(_k5, "Max Drawdown", f"{_max_dd:.1%}", "#EF4444")
+
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+    # VaR row
+    _v1, _v2, _v3 = st.columns(3)
+    _port_value = 10000  # illustrative £10k portfolio
+    _opt_kpi(_v1, "Daily VaR 95%", f"{_var_95:.2%}", "#EF4444")
+    _opt_kpi(_v2, "Daily VaR 99%", f"{_var_99:.2%}", "#991B1B")
+    _opt_kpi(_v3, f"VaR 95% on £10,000",
+             f"£{_port_value * _var_95:,.0f}", "#EF4444")
+
+    st.caption("VaR = Value at Risk. At 95% confidence, daily losses should not exceed the VaR figure on 19 out of 20 trading days.")
+
+    st.markdown("---")
+
+    # ── Efficient Frontier chart ──────────────────────────────────
+    st.markdown("#### 📈 Efficient Frontier")
+    _fig_ef = go.Figure()
+
+    # Simulated portfolios scatter
+    _fig_ef.add_trace(go.Scatter(
+        x=_sim_vols, y=_sim_rets, mode="markers",
+        marker=dict(color=_sim_shrp, colorscale="Viridis", size=4, opacity=0.5,
+                    colorbar=dict(title="Sharpe", thickness=12, len=0.7,
+                                  tickfont=dict(color="#64748B"), titlefont=dict(color="#64748B"))),
+        name="Random portfolios",
+        hovertemplate="Vol: %{x:.1%}<br>Return: %{y:.1%}<extra></extra>"
+    ))
+
+    # Efficient frontier line
+    if _ef_vols:
+        _fig_ef.add_trace(go.Scatter(
+            x=_ef_vols, y=_ef_rets, mode="lines",
+            line=dict(color="#F59E0B", width=2.5, dash="solid"),
+            name="Efficient Frontier",
+            hovertemplate="Vol: %{x:.1%}<br>Return: %{y:.1%}<extra></extra>"
+        ))
+
+    # Optimal portfolio star
+    _fig_ef.add_trace(go.Scatter(
+        x=[_opt_vol], y=[_opt_ret], mode="markers+text",
+        marker=dict(color="#F59E0B", size=16, symbol="star",
+                    line=dict(color="#FFFFFF", width=1.5)),
+        text=["Optimal"], textposition="top right",
+        textfont=dict(color="#F59E0B", size=11),
+        name="Optimal Portfolio"
+    ))
+
+    # Equal-weight reference
+    _eq_w = _np.array([1/_n]*_n)
+    _eq_ret, _eq_vol, _eq_sharpe = _portfolio_stats(_eq_w, _mean_ret, _cov_matrix, _opt_rf)
+    _fig_ef.add_trace(go.Scatter(
+        x=[_eq_vol], y=[_eq_ret], mode="markers+text",
+        marker=dict(color="#64748B", size=12, symbol="diamond"),
+        text=["Equal Weight"], textposition="bottom right",
+        textfont=dict(color="#64748B", size=10),
+        name="Equal Weight"
+    ))
+
+    _fig_ef.update_layout(
+        height=420,
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        margin=dict(l=40, r=20, t=20, b=50),
+        legend=dict(font=dict(color="#94A3B8", size=10), bgcolor="rgba(0,0,0,0)"),
+        xaxis=dict(title="Annual Volatility (Risk)", tickformat=".0%",
+                   gridcolor="rgba(100,116,139,0.15)", tickfont=dict(color="#64748B"),
+                   titlefont=dict(color="#64748B")),
+        yaxis=dict(title="Expected Annual Return", tickformat=".0%",
+                   gridcolor="rgba(100,116,139,0.15)", tickfont=dict(color="#64748B"),
+                   titlefont=dict(color="#64748B")),
+    )
+    st.plotly_chart(_fig_ef, use_container_width=True, config={"displayModeBar": False})
+    st.caption("⭐ Gold star = optimal portfolio. Diamond = equal-weight baseline. Colour = Sharpe Ratio (yellow/green = higher).")
+
+    st.markdown("---")
+
+    # ── Optimal Weights ───────────────────────────────────────────
+    st.markdown("#### ⚖️ Optimal Allocation")
+    _wt_left, _wt_right = st.columns([1, 1])
+
+    with _wt_left:
+        _weights_df = pd.DataFrame({
+            "Ticker": _valid_tickers,
+            "Weight": _opt_weights,
+            "Allocation %": [f"{w:.1%}" for w in _opt_weights],
+        }).sort_values("Weight", ascending=False).reset_index(drop=True)
+        _weights_df.index += 1
+        st.dataframe(_weights_df[["Ticker", "Allocation %"]],
+                     use_container_width=True, hide_index=False)
+
+    with _wt_right:
+        # Pie chart
+        _pie_fig = go.Figure(go.Pie(
+            labels=_valid_tickers,
+            values=_opt_weights,
+            hole=0.45,
+            marker=dict(colors=["#F59E0B","#22C55E","#3B82F6","#EC4899","#8B5CF6",
+                                 "#06B6D4","#EF4444","#84CC16","#F97316","#A78BFA",
+                                 "#10B981","#FBBF24","#6366F1","#14B8A6","#FB923C",
+                                 "#E11D48","#7C3AED","#0EA5E9","#4ADE80","#FCD34D"][:_n]),
+            textfont=dict(size=11, color="#F1F5F9"),
+            hovertemplate="%{label}: %{percent}<extra></extra>"
+        ))
+        _pie_fig.update_layout(
+            height=280, margin=dict(l=0,r=0,t=10,b=0),
+            paper_bgcolor="rgba(0,0,0,0)",
+            legend=dict(font=dict(color="#94A3B8", size=10), bgcolor="rgba(0,0,0,0)"),
+            annotations=[dict(text=_opt_objective.split()[0], x=0.5, y=0.5,
+                              font=dict(size=11, color="#94A3B8"), showarrow=False)]
+        )
+        st.plotly_chart(_pie_fig, use_container_width=True, config={"displayModeBar": False})
+
+    st.markdown("---")
+
+    # ── Correlation Matrix ────────────────────────────────────────
+    st.markdown("#### 🔗 Correlation Matrix")
+    _corr = _returns.corr()
+    _corr_fig = go.Figure(go.Heatmap(
+        z=_corr.values, x=_valid_tickers, y=_valid_tickers,
+        colorscale="RdBu", zmid=0, zmin=-1, zmax=1,
+        text=[[f"{v:.2f}" for v in row] for row in _corr.values],
+        texttemplate="%{text}", textfont=dict(size=10),
+        hovertemplate="%{y} / %{x}: %{z:.2f}<extra></extra>",
+        colorbar=dict(tickfont=dict(color="#64748B"), titlefont=dict(color="#64748B"))
+    ))
+    _corr_fig.update_layout(
+        height=max(250, _n * 35),
+        margin=dict(l=0, r=0, t=10, b=0),
+        paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        xaxis=dict(tickfont=dict(color="#94A3B8")),
+        yaxis=dict(tickfont=dict(color="#94A3B8")),
+    )
+    st.plotly_chart(_corr_fig, use_container_width=True, config={"displayModeBar": False})
+    st.caption("Low / negative correlations (blue) between assets reduce portfolio volatility. "
+               "High correlations (red) mean assets move together — less diversification benefit.")
+
+    st.markdown("---")
+    st.markdown(
+        '<div style="font-size:0.75rem;color:#475569;padding:8px 0">'
+        '⚠️ <b>Disclaimer:</b> Portfolio optimization is based on historical price data. Past correlations and '
+        'not financial advice. Always conduct your own due diligence before making investment decisions.'
+        '</div>', unsafe_allow_html=True)
