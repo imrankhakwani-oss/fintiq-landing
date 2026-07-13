@@ -735,10 +735,10 @@ def _show_upgrade_wall(user_email: str, user_id: str):
         </div>
         <div style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.4);
             border-radius:12px;padding:18px 28px;min-width:160px;position:relative">
-          <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+          <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);
               background:#22C55E;color:#fff;font-size:0.7rem;font-weight:700;
-              padding:2px 10px;border-radius:10px">SAVE 2 MONTHS</div>
-          <div style="color:#4ADE80;font-weight:700;font-size:1.4rem">£100</div>
+              padding:3px 12px;border-radius:10px;white-space:nowrap">SAVE 2 MONTHS</div>
+          <div style="color:#4ADE80;font-weight:700;font-size:1.4rem;margin-top:8px">£100</div>
           <div style="color:#CBD5E1;font-size:0.85rem">per year</div>
         </div>
       </div>
@@ -752,23 +752,24 @@ def _show_upgrade_wall(user_email: str, user_id: str):
                          type="primary", key="upgrade_monthly"):
                 url = _create_checkout("monthly", user_email, user_id)
                 if url:
-                    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
-                                unsafe_allow_html=True)
-                    st.info("Redirecting to secure checkout…")
-                    st.stop()
+                    st.session_state["_pending_checkout_url"] = url
+                    st.rerun()
                 else:
-                    st.error("Could not start checkout. Please try again.")
+                    st.error("Stripe checkout unavailable — check STRIPE_SECRET_KEY in Railway variables.")
         with c2:
             if st.button("⭐ Annual — £100/yr", use_container_width=True,
                          key="upgrade_annual"):
                 url = _create_checkout("annual", user_email, user_id)
                 if url:
-                    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
-                                unsafe_allow_html=True)
-                    st.info("Redirecting to secure checkout…")
-                    st.stop()
+                    st.session_state["_pending_checkout_url"] = url
+                    st.rerun()
                 else:
-                    st.error("Could not start checkout. Please try again.")
+                    st.error("Stripe checkout unavailable — check STRIPE_SECRET_KEY in Railway variables.")
+
+    # JS redirect fired on next render (avoids meta-refresh stripping)
+    if "_pending_checkout_url" in st.session_state:
+        _co_url = st.session_state.pop("_pending_checkout_url")
+        _stc.html(f'<script>window.top.location.href = "{_co_url}";</script>', height=0)
 
 # ── Logged-in user email (empty string if guest) ─────────────
 _user_email = st.session_state.get("fintiq_user", {}).get("email", "")
@@ -2147,8 +2148,8 @@ if _qp_page == "pricing":
                     else:
                         url = _create_checkout("monthly", _pu_email, _pu_id)
                         if url:
-                            st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
-                                        unsafe_allow_html=True)
+                            st.session_state["_pending_checkout_url"] = url
+                            st.rerun()
                             st.info("Redirecting to checkout…")
                             st.stop()
                         else:
@@ -2163,8 +2164,8 @@ if _qp_page == "pricing":
                     else:
                         url = _create_checkout("annual", _pu_email, _pu_id)
                         if url:
-                            st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">',
-                                        unsafe_allow_html=True)
+                            st.session_state["_pending_checkout_url"] = url
+                            st.rerun()
                             st.info("Redirecting to checkout…")
                             st.stop()
                         else:
@@ -6706,8 +6707,8 @@ with tab_opt:
                 if st.button("🚀 Upgrade to Pro — Unlock Optimizer", use_container_width=True, type="primary"):
                     _co_url = _create_checkout("monthly", _u_email, _opt_user.get("id", ""))
                     if _co_url:
-                        st.markdown(f'<meta http-equiv="refresh" content="0;url={_co_url}">',
-                                    unsafe_allow_html=True)
+                        st.session_state["_pending_checkout_url"] = _co_url
+                        st.rerun()
             else:
                 if st.button("🔑 Log in to upgrade", use_container_width=True, type="primary"):
                     st.session_state["show_login"] = True
