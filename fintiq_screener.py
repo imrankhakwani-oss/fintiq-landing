@@ -3111,56 +3111,67 @@ with tab1:
             "af_cap": "Large  (10B – 200B)", "af_pe": (5, 60), "af_pb": 20.0,
             "af_roe": 15, "af_gm": 20, "af_nm": 5, "af_de": 1.5,
             "af_cc": 0.5, "af_div": False, "af_vol": 1.0,
+            "af_50ma": True, "af_200ma": True, "af_52h": 5, "af_vspike": 150,
         },
         "🔄 2. Early Trend Reversal": {
             "af_cap": "Any", "af_pe": (0, 50), "af_pb": 15.0,
             "af_roe": 8, "af_gm": 15, "af_nm": 0, "af_de": 2.5,
             "af_cc": 0.4, "af_div": False, "af_vol": 0.5,
+            "af_50ma": True, "af_200ma": False, "af_52h": 30, "af_vspike": 100,
         },
         "📈 3. High Growth Companies": {
             "af_cap": "Mid    (2B – 10B)", "af_pe": (0, 80), "af_pb": 20.0,
             "af_roe": 20, "af_gm": 40, "af_nm": 10, "af_de": 0.5,
             "af_cc": 0.8, "af_div": False, "af_vol": 0.5,
+            "af_50ma": True, "af_200ma": True, "af_52h": 20, "af_vspike": 0,
         },
         "💎 4. Undervalued Quality (Buffett-Style)": {
             "af_cap": "Mid    (2B – 10B)", "af_pe": (0, 20), "af_pb": 5.0,
             "af_roe": 18, "af_gm": 30, "af_nm": 8, "af_de": 0.4,
             "af_cc": 0.8, "af_div": True, "af_vol": 0.2,
+            "af_50ma": False, "af_200ma": False, "af_52h": 50, "af_vspike": 0,
         },
         "💥 5. Short Squeeze Candidates": {
             "af_cap": "Small  (300M – 2B)", "af_pe": (0, 100), "af_pb": 20.0,
             "af_roe": 0, "af_gm": 0, "af_nm": 0, "af_de": 3.0,
             "af_cc": 0.0, "af_div": False, "af_vol": 0.5,
+            "af_50ma": False, "af_200ma": False, "af_52h": 30, "af_vspike": 200,
         },
         "📊 6. Swing Trading Candidates (5–15 Days)": {
             "af_cap": "Any", "af_pe": (0, 50), "af_pb": 15.0,
             "af_roe": 10, "af_gm": 20, "af_nm": 3, "af_de": 2.0,
             "af_cc": 0.4, "af_div": False, "af_vol": 1.0,
+            "af_50ma": True, "af_200ma": False, "af_52h": 25, "af_vspike": 0,
         },
         "⚡ 7. Earnings Momentum Plays": {
             "af_cap": "Mid    (2B – 10B)", "af_pe": (0, 60), "af_pb": 20.0,
             "af_roe": 15, "af_gm": 25, "af_nm": 8, "af_de": 1.5,
             "af_cc": 0.6, "af_div": False, "af_vol": 1.0,
+            "af_50ma": True, "af_200ma": True, "af_52h": 15, "af_vspike": 300,
         },
         "🏛 8. Institutional Accumulation": {
             "af_cap": "Large  (10B – 200B)", "af_pe": (0, 40), "af_pb": 10.0,
             "af_roe": 15, "af_gm": 25, "af_nm": 5, "af_de": 1.0,
             "af_cc": 0.7, "af_div": False, "af_vol": 1.0,
+            "af_50ma": False, "af_200ma": True, "af_52h": 20, "af_vspike": 125,
         },
         "🏆 9. High Relative Strength Sector Leaders": {
             "af_cap": "Large  (10B – 200B)", "af_pe": (5, 50), "af_pb": 20.0,
             "af_roe": 20, "af_gm": 35, "af_nm": 10, "af_de": 1.0,
             "af_cc": 0.7, "af_div": False, "af_vol": 1.0,
+            "af_50ma": True, "af_200ma": True, "af_52h": 10, "af_vspike": 0,
         },
         "🎯 10. Multi-Factor Hedge Fund Screen": {
             "af_cap": "Mega   (> 200B)", "af_pe": (0, 45), "af_pb": 15.0,
             "af_roe": 18, "af_gm": 30, "af_nm": 10, "af_de": 0.5,
             "af_cc": 0.8, "af_div": False, "af_vol": 2.0,
+            "af_50ma": True, "af_200ma": True, "af_52h": 8, "af_vspike": 0,
         },
         "🦁 Buffett + Graham + Munger Master": {
             "af_cap": "Mid    (2B – 10B)", "af_pe": (0, 20), "af_pb": 3.0,
             "af_roe": 18, "af_gm": 35, "af_nm": 10, "af_de": 0.5,
             "af_cc": 0.85, "af_div": True, "af_vol": 0.2,
+            "af_50ma": False, "af_200ma": True, "af_52h": 50, "af_vspike": 0,
         },
     }
     _PRESET_NOTES = {
@@ -3221,15 +3232,18 @@ with tab1:
             'Adjust sliders below, then click <b>▶ Run Screen</b>.</p>',
             unsafe_allow_html=True)
 
-        _af1, _af2, _af3, _af4 = st.columns(4)
+        _af1, _af2, _af3, _af4, _af5 = st.columns(5)
 
         with _af1:
-            st.markdown("**📏 Size**")
+            st.markdown("**📏 Size & Liquidity**")
             cap_bucket = st.selectbox(
                 "Market Cap Size", list(_CAP_BUCKETS.keys()), index=0,
                 key="af_cap",
                 help="Filters by market capitalisation in the stock's local currency.")
             min_cap, max_cap = _CAP_BUCKETS[cap_bucket]
+            min_vol_m = st.slider("Min Avg Daily Vol (M)", 0.0, 5.0, 0.0, 0.25,
+                key="af_vol",
+                help="0 = no minimum. 1.0 = at least 1M shares/day. Higher = more liquid.")
 
         with _af2:
             st.markdown("**💹 Valuation**")
@@ -3264,20 +3278,26 @@ with tab1:
             div_filter = st.checkbox("Dividend payers only", key="af_div",
                 help="Only show stocks that paid a dividend in the last 12 months.")
 
-        # ── Volume row ───────────────────────────────────────────
-        _vl1, _vl2 = st.columns([1, 3])
-        with _vl1:
-            st.markdown("**📊 Liquidity**")
-            min_vol_m = st.slider("Min Avg Daily Volume (M shares)", 0.0, 5.0, 0.0, 0.25,
-                key="af_vol",
-                help="0 = no minimum. 1.0 = at least 1 million shares traded per day on average. "
-                     "Higher volume = easier to enter/exit without moving the price.")
+        with _af5:
+            st.markdown("**📐 Technical**")
+            above_50ma  = st.checkbox("Above 50-day MA", key="af_50ma",
+                help="Price must be above its 50-day moving average (uptrend confirmation).")
+            above_200ma = st.checkbox("Above 200-day MA", key="af_200ma",
+                help="Price must be above its 200-day moving average (long-term uptrend).")
+            max_from_52h = st.slider("Max % below 52-wk High", 0, 50, 50, 5,
+                key="af_52h",
+                help="50 = disabled. 5 = stock must be within 5% of its 52-week high (near breakout).")
+            min_vol_spike = st.slider("Min Volume Spike (%)", 0, 300, 0, 25,
+                key="af_vspike",
+                help="0 = disabled. 150 = today's volume must be ≥150% of the 30-day average "
+                     "(institutional buying signal).")
 
         _rst1, _rst2 = st.columns([1, 5])
         with _rst1:
             if st.button("↺ Reset to Defaults", key="af_reset"):
                 for _k in ["af_cap","af_pe","af_pb","af_roe","af_gm","af_nm",
-                            "af_de","af_cc","af_div","af_vol","af_preset_sel"]:
+                            "af_de","af_cc","af_div","af_vol","af_preset_sel",
+                            "af_50ma","af_200ma","af_52h","af_vspike"]:
                     if _k in st.session_state: del st.session_state[_k]
                 st.rerun()
 
@@ -3293,8 +3313,12 @@ with tab1:
     min_nm  = st.session_state.get("af_nm",  0)  / 100
     max_de  = st.session_state.get("af_de",  3.0)
     min_cc  = st.session_state.get("af_cc",  0.5)
-    div_filter = st.session_state.get("af_div", False)
-    min_vol_m  = st.session_state.get("af_vol", 0.0)  # millions of shares
+    div_filter    = st.session_state.get("af_div",   False)
+    min_vol_m     = st.session_state.get("af_vol",   0.0)    # millions of shares
+    above_50ma    = st.session_state.get("af_50ma",  False)
+    above_200ma   = st.session_state.get("af_200ma", False)
+    max_from_52h  = st.session_state.get("af_52h",   50)     # % below 52-week high; 50 = disabled
+    min_vol_spike = st.session_state.get("af_vspike", 0)     # % of avg; 0 = disabled
 
     # ── Run Screen button ────────────────────────────────────────
     _rb1, _rb2, _rb3 = st.columns([2, 1, 2])
@@ -3337,7 +3361,15 @@ with tab1:
             _cc   = qs["cash_conv"]  or 0
             _pe   = qs["pe"]         or 0
             _pb   = info.get("priceToBook") or 0
-            _avg_vol_m = (info.get("averageVolume") or 0) / 1_000_000
+            _avg_vol_m  = (info.get("averageVolume") or 0) / 1_000_000
+            _curr_price = info.get("currentPrice") or info.get("regularMarketPrice") or 0
+            _ma50       = info.get("fiftyDayAverage") or 0
+            _ma200      = info.get("twoHundredDayAverage") or 0
+            _wk52_high  = info.get("fiftyTwoWeekHigh") or 0
+            _today_vol  = info.get("volume") or info.get("regularMarketVolume") or 0
+            _avg_vol_raw= info.get("averageVolume") or 0
+            _pct_from_52h = ((_wk52_high - _curr_price) / _wk52_high * 100) if _wk52_high > 0 else 100
+            _vol_spike_pct= (_today_vol / _avg_vol_raw * 100) if _avg_vol_raw > 0 else 0
             passes = (
                 _roe  >= min_roe and
                 _gm   >= min_gm  and
@@ -3347,7 +3379,11 @@ with tab1:
                 (_pe  <= 0 or max_pe == 100 or _pe <= max_pe) and
                 (min_pe == 0 or _pe >= min_pe) and
                 (pb_max >= 20.0 or (0 < _pb <= pb_max)) and
-                (min_vol_m == 0.0 or _avg_vol_m >= min_vol_m)
+                (min_vol_m == 0.0 or _avg_vol_m >= min_vol_m) and
+                (not above_50ma  or (_ma50  > 0 and _curr_price >= _ma50)) and
+                (not above_200ma or (_ma200 > 0 and _curr_price >= _ma200)) and
+                (max_from_52h >= 50 or _pct_from_52h <= max_from_52h) and
+                (min_vol_spike == 0 or _vol_spike_pct >= min_vol_spike)
             )
             if passes:
                 curr     = _f(info.get("currentPrice") or info.get("regularMarketPrice"))
@@ -3370,6 +3406,11 @@ with tab1:
                     "Debt/Equity":   fmt_number(qs["debt_equity"],2) if qs["debt_equity"] is not None else "–",
                     "Cash Conv":     fmt_number(qs["cash_conv"],2) if qs["cash_conv"]  else "–",
                     "Avg Vol (M)":   f"{_avg_vol_m:.1f}" if _avg_vol_m > 0 else "–",
+                    "vs 50d MA":     (f"▲ {((_curr_price/_ma50-1)*100):+.1f}%" if _curr_price >= _ma50
+                                      else f"▼ {((_curr_price/_ma50-1)*100):+.1f}%") if _ma50 > 0 else "–",
+                    "vs 200d MA":    (f"▲ {((_curr_price/_ma200-1)*100):+.1f}%" if _curr_price >= _ma200
+                                      else f"▼ {((_curr_price/_ma200-1)*100):+.1f}%") if _ma200 > 0 else "–",
+                    "52w High %":    f"-{_pct_from_52h:.1f}%" if _wk52_high > 0 else "–",
                     "Market Cap":    fmt_currency(cap_m*1_000_000, mc_sym),
                     "Price":         get_price_display(curr, sym, info) if curr else "–",
                 })
