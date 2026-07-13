@@ -505,12 +505,16 @@ def _show_auth():
                 else:
                     res = _sb.auth.sign_in_with_password({"email": email, "password": password})
                     if res.user:
+                        _tok = res.session.access_token if res.session else None
                         st.session_state["fintiq_user"] = {
                             "email": res.user.email,
                             "id": res.user.id,
-                            "session": res.session.access_token if res.session else None,
+                            "session": _tok,
                         }
-                        # Process any pending Stripe payment from pre-login redirect
+                        # Save token in URL so browser refresh restores session
+                        if _tok:
+                            st.query_params["_t"] = _tok
+                        # Process any pending Stripe payment
                         _pss = st.session_state.pop("_pending_stripe_session", "")
                         if _pss:
                             _verify_stripe_session(_pss, res.user.id)
@@ -711,9 +715,12 @@ def _show_auth_wall():
                 else:
                     res = _sb.auth.sign_in_with_password({"email": email, "password": password})
                     if res.user:
+                        _tok2 = res.session.access_token if res.session else None
                         st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
                         st.session_state["free_searches"] = 0
-                        # Process any pending Stripe payment from pre-login redirect
+                        if _tok2:
+                            st.query_params["_t"] = _tok2
+                        # Process any pending Stripe payment
                         _pss = st.session_state.pop("_pending_stripe_session", "")
                         if _pss:
                             _verify_stripe_session(_pss, res.user.id)
@@ -792,10 +799,31 @@ def _show_upgrade_wall(user_email: str, user_id: str):
         else:
             st.error(f"Payment system error: {_last_err or _stripe_last_error or 'unknown — check Railway logs'}")
 
+# ── Restore session from URL token on browser refresh ────────
+# After login we store the Supabase access_token in ?_t= URL param.
+# On page refresh Streamlit loses session_state but the URL param survives.
+# We validate it with Supabase and restore the session silently.
+_qp_token = st.query_params.get("_t", "")
+if _qp_token and "fintiq_user" not in st.session_state and _sb:
+    try:
+        _tok_resp = _sb.auth.get_user(_qp_token)
+        if _tok_resp and _tok_resp.user:
+            st.session_state["fintiq_user"] = {
+                "email": _tok_resp.user.email,
+                "id": _tok_resp.user.id,
+                "session": _qp_token,
+            }
+            # Also load pro status immediately
+            _tok_prof = _get_profile(_tok_resp.user.id)
+            if _tok_prof.get("is_pro"):
+                st.session_state["fintiq_user"]["is_pro"] = True
+            st.session_state["fintiq_profile"] = _tok_prof
+    except Exception:
+        # Token expired — clear it silently
+        try: st.query_params.pop("_t")
+        except Exception: pass
+
 # ── Capture stripe_session BEFORE any login redirect clears it ──
-# When Stripe redirects back with ?stripe_session=X, user may not be logged in.
-# Clicking Login changes URL to ?action=login, losing the stripe_session param.
-# Save it to session_state here so it survives the login redirect.
 _early_stripe = st.query_params.get("stripe_session", "")
 if _early_stripe:
     st.session_state["_pending_stripe_session"] = _early_stripe
@@ -2255,6 +2283,7 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                         else:
                             res = _sb.auth.sign_in_with_password({"email": _lf_email, "password": _lf_pw})
                             if res.user:
+                                _tok3 = res.session.access_token if res.session else None
                                 st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
                                 st.session_state["free_searches"] = 0
                                 # Process Stripe payment carried through login URL
@@ -2262,6 +2291,8 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                                 if _qp_ss:
                                     _verify_stripe_session(_qp_ss, res.user.id)
                                 st.query_params.clear()
+                                if _tok3:
+                                    st.query_params["_t"] = _tok3
                                 st.rerun()
                             else:
                                 st.error("Invalid email or password.")
@@ -6257,17 +6288,34 @@ with tab3:
                     row=1, col=1)
 
             # Support / Resistance horizontal lines
-            for _lvl in _res_levels:
+            # De-duplicate levels within 2% of each other to avoid label overlap
+            def _dedup_levels(levels, pct=0.02):
+                if not levels:
+                    return []
+                srt = sorted(levels)
+                out = [srt[0]]
+                for lv in srt[1:]:
+                    if abs(lv - out[-1]) / max(abs(out[-1]), 1e-9) > pct:
+                        out.append(lv)
+                return out
+
+            _res_clean = _dedup_levels(_res_levels)
+            _sup_clean = _dedup_levels(_sup_levels)
+
+            # Alternate annotation sides to prevent overlap when levels are close
+            for _i, _lvl in enumerate(_res_clean):
+                _pos = "right" if _i % 2 == 0 else "top right"
                 fig.add_hline(y=_lvl, line_color="rgba(248,113,113,0.5)", line_dash="dot",
                               line_width=1,
                               annotation_text=f"R {sym_c}{_lvl:,.2f}",
-                              annotation_position="right",
+                              annotation_position=_pos,
                               annotation_font=dict(color="#F87171", size=9), row=1, col=1)
-            for _lvl in _sup_levels:
+            for _i, _lvl in enumerate(_sup_clean):
+                _pos = "right" if _i % 2 == 0 else "bottom right"
                 fig.add_hline(y=_lvl, line_color="rgba(74,222,128,0.5)", line_dash="dot",
                               line_width=1,
                               annotation_text=f"S {sym_c}{_lvl:,.2f}",
-                              annotation_position="right",
+                              annotation_position=_pos,
                               annotation_font=dict(color="#4ADE80", size=9), row=1, col=1)
 
             # Volume bars (row 2)
@@ -6641,6 +6689,15 @@ with tab_opt:
 
     _opt_user = st.session_state.get("fintiq_user", {})
     _opt_pro  = _opt_user.get("is_pro", False)
+
+    # If is_pro not yet loaded (user went straight to optimizer without a search),
+    # fetch from Supabase now so Pro users aren't blocked
+    if not _opt_pro and _opt_user.get("id"):
+        _opt_prof = st.session_state.get("fintiq_profile") or _get_profile(_opt_user["id"])
+        if _opt_prof.get("is_pro"):
+            st.session_state["fintiq_user"]["is_pro"] = True
+            st.session_state["fintiq_profile"] = _opt_prof
+            _opt_pro = True
 
     # ── Pro gate with rich preview ───────────────────────────────
     if not _opt_pro:
@@ -7196,13 +7253,14 @@ This is what fund managers do every morning.
     _fig_ef.update_layout(
         height=440,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=40, r=160, t=20, b=50),
+        margin=dict(l=40, r=30, t=20, b=50),
         legend=dict(
             font=dict(color="#94A3B8", size=10),
-            bgcolor="rgba(13,31,51,0.8)",
+            bgcolor="rgba(13,31,51,0.85)",
             bordercolor="rgba(100,116,139,0.3)",
             borderwidth=1,
-            x=1.02, y=1, xanchor="left", yanchor="top"
+            orientation="h",
+            x=0, y=1.08, xanchor="left", yanchor="bottom"
         ),
         annotations=_ef_annotations,
         xaxis=dict(title=dict(text="Annual Volatility (Risk)", font=dict(color="#64748B")),
