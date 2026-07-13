@@ -6819,7 +6819,7 @@ This is what fund managers do every morning.
         if n is None:
             n = len(mean_returns)
         constraints = ({"type": "eq", "fun": lambda w: _np.sum(w) - 1},)
-        bounds = tuple((0.02, 0.40) for _ in range(n))   # 2%-40% per asset
+        bounds = tuple((0.02, 0.40) for _ in range(n))
         init   = _np.array([1/n]*n)
         result = _minimize(
             lambda w: -_portfolio_stats(w, mean_returns, cov_matrix, rf)[2],
@@ -6841,6 +6841,74 @@ This is what fund managers do every morning.
             options={"maxiter": 1000, "ftol": 1e-9}
         )
         return result.x if result.success else init
+
+    def _max_return(mean_returns, cov_matrix, n=None):
+        """Maximise expected return (concentrated, high-conviction)."""
+        if n is None:
+            n = len(mean_returns)
+        constraints = ({"type": "eq", "fun": lambda w: _np.sum(w) - 1},)
+        bounds = tuple((0.02, 0.60) for _ in range(n))  # allow higher concentration
+        init   = _np.array([1/n]*n)
+        result = _minimize(
+            lambda w: -_portfolio_stats(w, mean_returns, cov_matrix)[0],
+            init, method="SLSQP", bounds=bounds, constraints=constraints,
+            options={"maxiter": 1000, "ftol": 1e-9}
+        )
+        return result.x if result.success else init
+
+    def _risk_parity(mean_returns, cov_matrix, n=None):
+        """Risk Parity — equal risk contribution from each asset (Ray Dalio All Weather style)."""
+        if n is None:
+            n = len(mean_returns)
+        cov = cov_matrix.values
+        def _risk_contributions(w):
+            port_var = float(w @ cov @ w)
+            marginal = cov @ w
+            return w * marginal / port_var
+        def _obj(w):
+            rc = _risk_contributions(w)
+            target = 1.0 / n
+            return float(_np.sum((rc - target)**2))
+        constraints = ({"type": "eq", "fun": lambda w: _np.sum(w) - 1},)
+        bounds = tuple((0.01, 0.60) for _ in range(n))
+        init   = _np.array([1/n]*n)
+        result = _minimize(_obj, init, method="SLSQP", bounds=bounds,
+                           constraints=constraints, options={"maxiter": 2000, "ftol": 1e-12})
+        return result.x if result.success else init
+
+    def _max_diversification(mean_returns, cov_matrix, n=None):
+        """Maximum Diversification — maximises ratio of weighted avg vol to portfolio vol."""
+        if n is None:
+            n = len(mean_returns)
+        cov = cov_matrix.values
+        asset_vols = _np.sqrt(_np.diag(cov))
+        def _obj(w):
+            weighted_avg_vol = float(_np.dot(w, asset_vols))
+            port_vol = float(_np.sqrt(w @ cov @ w))
+            return -weighted_avg_vol / port_vol if port_vol > 0 else 0.0
+        constraints = ({"type": "eq", "fun": lambda w: _np.sum(w) - 1},)
+        bounds = tuple((0.02, 0.40) for _ in range(n))
+        init   = _np.array([1/n]*n)
+        result = _minimize(_obj, init, method="SLSQP", bounds=bounds,
+                           constraints=constraints, options={"maxiter": 1000, "ftol": 1e-9})
+        return result.x if result.success else init
+
+    def _target_return_min_vol(mean_returns, cov_matrix, target_ret, n=None):
+        """Minimum volatility portfolio that achieves a target annual return."""
+        if n is None:
+            n = len(mean_returns)
+        constraints = (
+            {"type": "eq", "fun": lambda w: _np.sum(w) - 1},
+            {"type": "eq", "fun": lambda w: _portfolio_stats(w, mean_returns, cov_matrix)[0] - target_ret},
+        )
+        bounds = tuple((0.0, 0.60) for _ in range(n))
+        init   = _np.array([1/n]*n)
+        result = _minimize(
+            lambda w: _portfolio_stats(w, mean_returns, cov_matrix)[1],
+            init, method="SLSQP", bounds=bounds, constraints=constraints,
+            options={"maxiter": 2000, "ftol": 1e-9}
+        )
+        return result.x if result.success else None
 
     def _efficient_frontier_points(mean_returns, cov_matrix, n_points=400):
         """Generate efficient frontier by sweeping target returns."""
@@ -6901,14 +6969,43 @@ This is what fund managers do every morning.
     if "opt_journal_tickers" in st.session_state and not _opt_tickers_raw:
         _opt_tickers_raw = st.session_state["opt_journal_tickers"]
 
-    _oc_left, _oc_right = st.columns([2, 1])
+    _oc_left, _oc_right = st.columns([2, 2])
     with _oc_left:
         _opt_period = st.selectbox("Historical data period:", ["1y", "2y", "3y", "5y"],
                                    index=1, key="opt_period",
                                    help="Longer periods give more robust estimates but include older market regimes")
     with _oc_right:
-        _opt_objective = st.selectbox("Optimisation objective:", ["Maximise Sharpe Ratio", "Minimise Volatility"],
-                                      key="opt_objective")
+        _OBJ_OPTIONS = [
+            "Maximise Sharpe Ratio",
+            "Minimise Volatility",
+            "Maximise Return",
+            "Risk Parity",
+            "Maximum Diversification",
+            "Target Return (Min Risk)",
+        ]
+        _opt_objective = st.selectbox(
+            "Optimisation objective:",
+            _OBJ_OPTIONS,
+            key="opt_objective",
+            help=(
+                "Sharpe: best return per unit of risk  |  "
+                "Min Vol: lowest possible volatility  |  "
+                "Max Return: highest expected return  |  "
+                "Risk Parity: equal risk from each asset (All Weather style)  |  "
+                "Max Diversification: maximise spread across uncorrelated assets  |  "
+                "Target Return: you set the annual return, optimizer minimises risk to achieve it"
+            )
+        )
+
+    _opt_target_ret = None
+    if _opt_objective == "Target Return (Min Risk)":
+        _tr_col1, _tr_col2 = st.columns([2, 1])
+        with _tr_col1:
+            _opt_target_ret = st.slider(
+                "Target annual return (%):", min_value=2.0, max_value=50.0, value=12.0, step=0.5,
+                key="opt_target_ret",
+                help="The optimizer will find the lowest-risk portfolio that achieves this return"
+            ) / 100
 
     _opt_rf = st.slider("Risk-free rate (%):", min_value=0.0, max_value=8.0, value=4.25, step=0.25,
                         key="opt_rf", help="Current UK base rate ~4.25%") / 100
@@ -6956,11 +7053,30 @@ This is what fund managers do every morning.
     _cov_matrix = _returns.cov()
     _n = len(_valid_tickers)
 
+    _target_ret_feasible = True
     with st.spinner("Optimising portfolio…"):
         if _opt_objective == "Maximise Sharpe Ratio":
             _opt_weights = _max_sharpe(_mean_ret, _cov_matrix, rf=_opt_rf, n=_n)
-        else:
+        elif _opt_objective == "Minimise Volatility":
             _opt_weights = _min_volatility(_mean_ret, _cov_matrix, n=_n)
+        elif _opt_objective == "Maximise Return":
+            _opt_weights = _max_return(_mean_ret, _cov_matrix, n=_n)
+        elif _opt_objective == "Risk Parity":
+            _opt_weights = _risk_parity(_mean_ret, _cov_matrix, n=_n)
+        elif _opt_objective == "Maximum Diversification":
+            _opt_weights = _max_diversification(_mean_ret, _cov_matrix, n=_n)
+        elif _opt_objective == "Target Return (Min Risk)":
+            _tr = _opt_target_ret if _opt_target_ret is not None else 0.12
+            _tr_weights = _target_return_min_vol(_mean_ret, _cov_matrix, _tr, n=_n)
+            if _tr_weights is None:
+                st.warning(f"⚠️ Target return of {_tr:.0%} is not achievable with this portfolio. "
+                           f"Falling back to Maximise Sharpe. Try a lower target.")
+                _target_ret_feasible = False
+                _opt_weights = _max_sharpe(_mean_ret, _cov_matrix, rf=_opt_rf, n=_n)
+            else:
+                _opt_weights = _tr_weights
+        else:
+            _opt_weights = _max_sharpe(_mean_ret, _cov_matrix, rf=_opt_rf, n=_n)
 
         _opt_ret, _opt_vol, _opt_sharpe = _portfolio_stats(_opt_weights, _mean_ret, _cov_matrix, _opt_rf)
         _ef_vols, _ef_rets = _efficient_frontier_points(_mean_ret, _cov_matrix)
@@ -7045,32 +7161,50 @@ This is what fund managers do every morning.
             hovertemplate="Vol: %{x:.1%}<br>Return: %{y:.1%}<extra></extra>"
         ))
 
-    # Optimal portfolio star
+    # Optimal portfolio star — use annotation (not text trace) to avoid legend overlap
+    _eq_w = _np.array([1/_n]*_n)
+    _eq_ret, _eq_vol, _eq_sharpe = _portfolio_stats(_eq_w, _mean_ret, _cov_matrix, _opt_rf)
+
     _fig_ef.add_trace(go.Scatter(
-        x=[_opt_vol], y=[_opt_ret], mode="markers+text",
+        x=[_opt_vol], y=[_opt_ret], mode="markers",
         marker=dict(color="#F59E0B", size=16, symbol="star",
                     line=dict(color="#FFFFFF", width=1.5)),
-        text=["Optimal"], textposition="top right",
-        textfont=dict(color="#F59E0B", size=11),
-        name="Optimal Portfolio"
+        name="Optimal Portfolio",
+        hovertemplate=f"<b>Optimal</b><br>Vol: {_opt_vol:.1%}<br>Return: {_opt_ret:.1%}<br>Sharpe: {_opt_sharpe:.2f}<extra></extra>"
     ))
 
     # Equal-weight reference
-    _eq_w = _np.array([1/_n]*_n)
-    _eq_ret, _eq_vol, _eq_sharpe = _portfolio_stats(_eq_w, _mean_ret, _cov_matrix, _opt_rf)
     _fig_ef.add_trace(go.Scatter(
-        x=[_eq_vol], y=[_eq_ret], mode="markers+text",
+        x=[_eq_vol], y=[_eq_ret], mode="markers",
         marker=dict(color="#64748B", size=12, symbol="diamond"),
-        text=["Equal Weight"], textposition="bottom right",
-        textfont=dict(color="#64748B", size=10),
-        name="Equal Weight"
+        name="Equal Weight",
+        hovertemplate=f"<b>Equal Weight</b><br>Vol: {_eq_vol:.1%}<br>Return: {_eq_ret:.1%}<br>Sharpe: {_eq_sharpe:.2f}<extra></extra>"
     ))
 
+    # Use annotations instead of inline text — no overlap
+    _ef_annotations = [
+        dict(x=_opt_vol, y=_opt_ret, text="⭐ Optimal",
+             xanchor="left", yanchor="bottom", xshift=8, yshift=4,
+             font=dict(color="#F59E0B", size=11), showarrow=False,
+             bgcolor="rgba(13,31,51,0.7)", borderpad=3),
+        dict(x=_eq_vol, y=_eq_ret, text="Equal Wt",
+             xanchor="left", yanchor="top", xshift=8, yshift=-4,
+             font=dict(color="#94A3B8", size=10), showarrow=False,
+             bgcolor="rgba(13,31,51,0.7)", borderpad=3),
+    ]
+
     _fig_ef.update_layout(
-        height=420,
+        height=440,
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=40, r=20, t=20, b=50),
-        legend=dict(font=dict(color="#94A3B8", size=10), bgcolor="rgba(0,0,0,0)"),
+        margin=dict(l=40, r=160, t=20, b=50),
+        legend=dict(
+            font=dict(color="#94A3B8", size=10),
+            bgcolor="rgba(13,31,51,0.8)",
+            bordercolor="rgba(100,116,139,0.3)",
+            borderwidth=1,
+            x=1.02, y=1, xanchor="left", yanchor="top"
+        ),
+        annotations=_ef_annotations,
         xaxis=dict(title=dict(text="Annual Volatility (Risk)", font=dict(color="#64748B")),
                    tickformat=".0%", gridcolor="rgba(100,116,139,0.15)",
                    tickfont=dict(color="#64748B")),
@@ -7079,7 +7213,7 @@ This is what fund managers do every morning.
                    tickfont=dict(color="#64748B")),
     )
     st.plotly_chart(_fig_ef, use_container_width=True, config={"displayModeBar": False})
-    st.caption("Star = optimal portfolio. Diamond = equal-weight baseline. Colour = Sharpe Ratio.")
+    st.caption("⭐ Star = optimal portfolio. ◆ Diamond = equal-weight baseline. Colour = Sharpe Ratio. Hover any point for details.")
 
     st.markdown("---")
 
@@ -7138,7 +7272,198 @@ This is what fund managers do every morning.
     st.caption("Low or negative correlations (blue) reduce portfolio volatility. "
                "High correlations (red) mean assets move together - less diversification benefit.")
 
+    # ── Weight Drift Monitor ──────────────────────────────────────
     st.markdown("---")
+    st.markdown("#### 📡 Live Weight Drift Monitor")
+    st.caption("Compares your optimal target weights to where the portfolio sits today based on live prices.")
+
+    with st.spinner("Fetching live prices for drift analysis…"):
+        try:
+            import yfinance as _yf_drift
+            _live_data = _yf_drift.download(_valid_tickers, period="5d", auto_adjust=True, progress=False)["Close"]
+            if isinstance(_live_data, pd.Series):
+                _live_data = _live_data.to_frame()
+            _live_prices = _live_data.ffill().iloc[-1]
+
+            # Reconstruct current market-value weights from live prices
+            # Assume we started with equal capital allocation, then let prices drift
+            _start_prices = _live_data.ffill().iloc[0]
+            _shares = _opt_weights / _start_prices.values  # notional shares per unit capital
+            _current_values = _shares * _live_prices.values
+            _current_weights = _current_values / _current_values.sum()
+
+            _drift_df = pd.DataFrame({
+                "Ticker": _valid_tickers,
+                "Target %": [f"{w:.1%}" for w in _opt_weights],
+                "Current %": [f"{w:.1%}" for w in _current_weights],
+                "Drift": _current_weights - _opt_weights,
+            })
+            _drift_df["Action"] = _drift_df["Drift"].apply(
+                lambda d: "🔴 Trim" if d > 0.03 else ("🟢 Top Up" if d < -0.03 else "✅ On Track")
+            )
+            _drift_df["Drift %"] = _drift_df["Drift"].apply(lambda d: f"{d:+.1%}")
+            _drift_df = _drift_df.drop(columns=["Drift"]).reset_index(drop=True)
+            _drift_df.index += 1
+
+            _needs_rebal = (_drift_df["Action"] != "✅ On Track").any()
+            if _needs_rebal:
+                st.warning("⚠️ Portfolio has drifted from target. Review positions flagged below.")
+            else:
+                st.success("✅ Portfolio is within tolerance of target weights (±3%).")
+
+            st.dataframe(_drift_df, use_container_width=True)
+            st.caption("Drift > +3%: position has grown too large → consider trimming. Drift < -3%: position has shrunk → consider topping up.")
+        except Exception as _drift_err:
+            st.info(f"Live drift data unavailable: {_drift_err}")
+
+    # ── AI Commentary & Glossary ──────────────────────────────────
+    st.markdown("---")
+    with st.expander("🤖 AI Commentary — What This Portfolio Is Telling You", expanded=False):
+        # Generate plain-English interpretation of the numbers
+        _sharpe_comment = (
+            "excellent — this portfolio generates strong return per unit of risk, comparable to top institutional funds"
+            if _opt_sharpe > 1.5 else
+            "good — above 1.0 is considered solid by professional standards"
+            if _opt_sharpe > 1.0 else
+            "moderate — acceptable but there may be room to improve through diversification"
+            if _opt_sharpe > 0.5 else
+            "low — the portfolio is taking significant risk for the return it generates"
+        )
+        _vol_comment = (
+            "very low volatility — suitable for conservative investors"
+            if _opt_vol < 0.10 else
+            "moderate volatility — typical of a diversified equity portfolio"
+            if _opt_vol < 0.18 else
+            "above-average volatility — expect meaningful swings in portfolio value"
+            if _opt_vol < 0.25 else
+            "high volatility — this portfolio can move sharply; ensure this matches your risk appetite"
+        )
+        _dd_comment = (
+            "minimal drawdown — strong capital preservation"
+            if _max_dd > -0.10 else
+            "moderate drawdown — manageable for most investors"
+            if _max_dd > -0.20 else
+            "significant drawdown — the portfolio has experienced meaningful peak-to-trough losses historically"
+        )
+        _corr_avg = float(_corr.values[_np.triu_indices_from(_corr.values, k=1)].mean())
+        _div_comment = (
+            "excellent diversification — assets move largely independently"
+            if _corr_avg < 0.3 else
+            "reasonable diversification — some correlation but meaningful spread"
+            if _corr_avg < 0.5 else
+            "moderate correlation — assets tend to move together; consider adding uncorrelated assets like bonds or commodities"
+        )
+
+        st.markdown(f"""
+**Portfolio Summary — {_opt_objective}**
+
+Your optimised portfolio of **{_n} assets** targets an expected annual return of **{_opt_ret:.1%}**
+with a volatility of **{_opt_vol:.1%}**.
+
+**Risk-adjusted performance:** The Sharpe Ratio is **{_opt_sharpe:.2f}** — {_sharpe_comment}.
+The Sortino Ratio is **{_sortino:.2f}**, which measures return per unit of *downside* risk only —
+a Sortino above 1.0 is considered strong.
+
+**Volatility:** {_vol_comment.capitalize()}. In practical terms, a portfolio with {_opt_vol:.0%} annual
+volatility could swing by roughly **±{_opt_vol/16:.1%}** on a typical trading day.
+
+**Drawdown:** The worst historical peak-to-trough decline was **{_max_dd:.1%}** — {_dd_comment}.
+
+**Diversification:** Average pairwise correlation is **{_corr_avg:.2f}** — {_div_comment}.
+
+**Risk (VaR):** On 95% of trading days, daily losses on a £10,000 portfolio should not exceed
+**£{10000*_var_95:,.0f}**. On the worst 1% of days (VaR 99%), losses could reach **£{10000*_var_99:,.0f}**.
+
+**Compared to equal weight:** The optimised allocation delivers
+{'**better**' if _opt_sharpe > _eq_sharpe else '**similar**'} risk-adjusted returns
+(Sharpe {_opt_sharpe:.2f} vs {_eq_sharpe:.2f} for equal weight).
+""")
+
+    with st.expander("📚 Glossary — What Every Term Means & How to Read This Screen", expanded=False):
+        st.markdown("""
+**Efficient Frontier**
+The curved line on the chart represents every *mathematically optimal* portfolio —
+meaning no other combination of your assets gives higher return for the same level of risk.
+Portfolios below the curve are inefficient (you're taking more risk than necessary).
+The gold star marks your optimised portfolio on this frontier.
+
+---
+
+**Sharpe Ratio**
+Measures how much return you earn per unit of total risk.
+Formula: `(Portfolio Return − Risk-Free Rate) ÷ Volatility`
+- Above 1.0 = good  |  Above 1.5 = excellent  |  Below 0.5 = poor
+Think of it as: "am I being compensated fairly for the risk I'm taking?"
+
+---
+
+**Sortino Ratio**
+Like the Sharpe Ratio but only counts *downside* volatility (bad days).
+Upward volatility (good days) is not penalised. Preferred by many professional investors.
+- Above 1.0 = solid  |  Above 2.0 = strong
+
+---
+
+**Volatility (Annual)**
+The standard deviation of portfolio returns, annualised.
+A 15% volatility means returns fluctuate roughly ±15% around the average in a typical year.
+Lower is calmer; higher means bigger swings — up *and* down.
+
+---
+
+**Max Drawdown**
+The largest peak-to-trough fall in portfolio value over the historical period.
+A drawdown of -20% means at some point the portfolio fell 20% from its recent high before recovering.
+This is the number that tests whether you'd panic-sell.
+
+---
+
+**VaR (Value at Risk)**
+A statistical estimate of potential daily loss.
+*Daily VaR 95%* = on 95% of days, losses should not exceed this amount.
+*Daily VaR 99%* = the worst 1% of days — the "tail risk."
+Important: VaR does *not* tell you how bad losses can get on those worst days, only that they exceed the threshold.
+
+---
+
+**Correlation Matrix**
+Shows how closely pairs of assets move together (scale: −1 to +1).
+- **+1.0** = perfectly correlated — they move identically (no diversification benefit)
+- **0.0** = uncorrelated — they move independently (good diversification)
+- **−1.0** = perfectly inverse — one rises when the other falls (best diversification)
+Blue cells = low/negative correlation = good for reducing portfolio risk.
+
+---
+
+**Risk Parity**
+An objective where each asset contributes *equally* to total portfolio risk —
+not equal capital allocation. Made famous by Ray Dalio's All Weather fund.
+Assets with lower volatility get higher weights to equalise their risk contribution.
+
+---
+
+**Maximum Diversification**
+Maximises the ratio of the weighted-average asset volatility to total portfolio volatility.
+A higher ratio means you're getting more diversification benefit from your asset mix.
+
+---
+
+**Weight Drift**
+Over time, assets that perform well grow as a share of your portfolio,
+and underperformers shrink. This "drift" moves you away from your target allocation.
+The drift monitor shows where each position stands today vs. your optimal targets.
+A ±3% tolerance is standard; beyond that, rebalancing is worth considering.
+
+---
+
+**How to use this screen**
+1. Enter your tickers (or import from Journal)
+2. Choose an objective matching your goal — Sharpe for balanced growth, Min Vol for capital preservation, Risk Parity for institutional-style balance
+3. Review the Efficient Frontier — your portfolio should be *on* the curve, not below it
+4. Check the Correlation Matrix — if everything is dark blue, you need more diversification
+5. Monitor Weight Drift regularly — rebalance when any position drifts more than ±5%
+""")
+
     st.markdown(
         '<div style="font-size:0.75rem;color:#475569;padding:8px 0">'
         'Disclaimer: Portfolio optimization uses historical price data. Past performance'
