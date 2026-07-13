@@ -2031,9 +2031,13 @@ if _user_email:
         'text-decoration:none">Logout</a>'
     )
 else:
+    # If arriving from Stripe redirect, carry the stripe_session through the login URL
+    # so it's still available as a query param after the user logs in
+    _login_qs = st.query_params.get("stripe_session", "")
+    _login_href = f"?action=login&stripe_session={_login_qs}" if _login_qs else "?action=login"
     _nav_right_html = (
         _pricing_link +
-        '<a href="?action=login" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        f'<a href="{_login_href}" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
         'color:#F59E0B;padding:5px 18px;border-radius:20px;font-size:0.8rem;font-weight:600;'
         'text-decoration:none;letter-spacing:0.3px">Login</a>'
     )
@@ -2207,8 +2211,13 @@ if _qp_page == "pricing":
     """, unsafe_allow_html=True)
     st.stop()
 
-# ── Login / Sign-up form (shown when ?action=login) ──────────
-if _qp_action == "login" and not _user_email:
+# ── Post-Stripe banner (stripe_session in URL but user not logged in) ──
+_banner_stripe_session = st.query_params.get("stripe_session", "")
+if _banner_stripe_session and not _user_email:
+    st.success("✅ Payment received! Log in below to activate your Fintiq Pro account.")
+
+# ── Login / Sign-up form (shown when ?action=login OR stripe_session present) ──
+if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
     st.markdown("<hr style='border-color:rgba(245,158,11,0.15);margin:6px 0 16px 0'>",
                 unsafe_allow_html=True)
     _, _lc, _ = st.columns([1, 2, 1])
@@ -2248,6 +2257,10 @@ if _qp_action == "login" and not _user_email:
                             if res.user:
                                 st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
                                 st.session_state["free_searches"] = 0
+                                # Process Stripe payment carried through login URL
+                                _qp_ss = st.query_params.get("stripe_session", "") or st.session_state.pop("_pending_stripe_session", "")
+                                if _qp_ss:
+                                    _verify_stripe_session(_qp_ss, res.user.id)
                                 st.query_params.clear()
                                 st.rerun()
                             else:
