@@ -510,6 +510,10 @@ def _show_auth():
                             "id": res.user.id,
                             "session": res.session.access_token if res.session else None,
                         }
+                        # Process any pending Stripe payment from pre-login redirect
+                        _pss = st.session_state.pop("_pending_stripe_session", "")
+                        if _pss:
+                            _verify_stripe_session(_pss, res.user.id)
                         st.rerun()
                     else:
                         st.markdown('<div class="auth-err">Invalid email or password.</div>',
@@ -709,6 +713,10 @@ def _show_auth_wall():
                     if res.user:
                         st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
                         st.session_state["free_searches"] = 0
+                        # Process any pending Stripe payment from pre-login redirect
+                        _pss = st.session_state.pop("_pending_stripe_session", "")
+                        if _pss:
+                            _verify_stripe_session(_pss, res.user.id)
                         st.rerun()
                     else:
                         st.error("Invalid email or password.")
@@ -783,6 +791,14 @@ def _show_upgrade_wall(user_email: str, user_id: str):
             st.caption("🔒 Secure payment via Stripe · Cancel anytime · Card never stored by Fintiq")
         else:
             st.error(f"Payment system error: {_last_err or _stripe_last_error or 'unknown — check Railway logs'}")
+
+# ── Capture stripe_session BEFORE any login redirect clears it ──
+# When Stripe redirects back with ?stripe_session=X, user may not be logged in.
+# Clicking Login changes URL to ?action=login, losing the stripe_session param.
+# Save it to session_state here so it survives the login redirect.
+_early_stripe = st.query_params.get("stripe_session", "")
+if _early_stripe:
+    st.session_state["_pending_stripe_session"] = _early_stripe
 
 # ── Logged-in user email (empty string if guest) ─────────────
 _user_email = st.session_state.get("fintiq_user", {}).get("email", "")
