@@ -32,8 +32,8 @@ try:
     import stripe as _stripe
     _STRIPE_SECRET  = os.environ.get("STRIPE_SECRET_KEY", "")
     _STRIPE_PUB     = os.environ.get("STRIPE_PUBLISHABLE_KEY", "")
-    _PRICE_MONTHLY  = "price_1TrhHVFTN1XDVLFMznTk6ZXR"
-    _PRICE_ANNUAL   = "price_1TrhItFTN1XDVLFMTVceBUT0"
+    _PRICE_MONTHLY  = "price_1Tt8fXFSQ5tKKNExQf7T2t92"
+    _PRICE_ANNUAL   = "price_1Tt8fXFSQ5tKKNExXuntkPsI"
     _APP_URL        = "https://fintiq.uk"
     if _STRIPE_SECRET:
         _stripe.api_key = _STRIPE_SECRET
