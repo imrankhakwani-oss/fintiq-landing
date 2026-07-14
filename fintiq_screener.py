@@ -3098,6 +3098,13 @@ with tab0:
         Fintiq is not a regulated investment adviser. Nothing on this platform constitutes
         financial advice. Past performance does not guarantee future results. Always conduct
         your own due diligence before making any investment decision.
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(239,68,68,0.15);
+                    font-size:0.75rem;color:#475569;display:flex;justify-content:center;gap:20px;flex-wrap:wrap">
+          <span><strong style="color:#F59E0B">Fintiq</strong> &nbsp;·&nbsp; © 2025 Fintiq Ltd &nbsp;·&nbsp; Registered in England &amp; Wales</span>
+          <span>✉ <a href="mailto:contactfintiq@gmail.com" style="color:#64748B;text-decoration:none">contactfintiq@gmail.com</a></span>
+          <span>💡 <a href="mailto:contactfintiq@gmail.com?subject=Feature%20Suggestion" style="color:#64748B;text-decoration:none">Suggest a feature</a></span>
+          <a href="https://fintiq.uk" style="color:#64748B;text-decoration:none">fintiq.uk</a>
+        </div>
       </div>
 
     </div>
