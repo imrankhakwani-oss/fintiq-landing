@@ -996,19 +996,17 @@ st.markdown("""
 
   /* ── FINTIQ GLOBAL FOOTER ── */
   .fintiq-global-footer {
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+    position: relative;
     background: rgba(8,18,32,0.97);
     border-top: 1px solid rgba(245,158,11,0.2);
-    padding: 6px 24px;
+    padding: 10px 24px;
     display: flex; align-items: center; justify-content: space-between;
     font-size: 0.72rem; color: #475569;
-    backdrop-filter: blur(8px);
+    margin-top: 48px;
   }
   .fintiq-global-footer a { color: #64748B; text-decoration: none; }
   .fintiq-global-footer a:hover { color: #F59E0B; }
   .fintiq-global-footer .fg-brand { color: #F59E0B; font-weight: 700; }
-  /* Push page content up so footer doesn't overlap last element */
-  section[data-testid="stAppViewContainer"] { padding-bottom: 40px !important; }
   /* Remove ALL top padding from every Streamlit wrapper — covers v1.30+ and v1.40+ element names */
   section[data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
   div[data-testid="stAppViewBlockContainer"] { padding-top: 0 !important; }
