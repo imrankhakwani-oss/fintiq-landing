@@ -2475,91 +2475,34 @@ with tab0:
         </div>
       </div>
 
-      <!-- Investment Decision Tree -->
-      <div style="color:#F59E0B;font-weight:700;font-size:1.1rem;margin-bottom:16px">
-        🧭 The Fintiq Investment Decision Framework
-      </div>
-      <div style="background:rgba(13,31,53,0.6);border-radius:14px;padding:24px 28px;margin-bottom:28px;
-                  border:1px solid rgba(245,158,11,0.15)">
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch">
+    </div>
+    """, unsafe_allow_html=True)
 
-          <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);
-                      border-radius:12px;padding:18px 14px;text-align:center;position:relative">
-            <div style="font-size:1.6rem;margin-bottom:6px">🔍</div>
-            <div style="color:#F59E0B;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 1<br>Screen</div>
-            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
-              Filter 10+ global markets for quality: ROE, margins, debt, cash flow
-            </div>
-            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Fundamental tab</div>
-          </div>
+    # ── Decision Framework — separate st.markdown to avoid Markdown code-block heuristic ──
+    st.markdown("""<div style="max-width:920px;margin:0 auto">
+<div style="color:#F59E0B;font-weight:700;font-size:1.1rem;margin-bottom:16px">🧭 The Fintiq Investment Decision Framework</div>
+<div style="background:rgba(13,31,53,0.6);border-radius:14px;padding:24px 28px;margin-bottom:28px;border:1px solid rgba(245,158,11,0.15)">
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch">
+<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:18px 14px;text-align:center"><div style="font-size:1.6rem;margin-bottom:6px">🔍</div><div style="color:#F59E0B;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 1<br>Screen</div><div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">Filter 10+ global markets for quality: ROE, margins, debt, cash flow</div><div style="font-size:0.65rem;color:#475569;margin-top:8px">Fundamental tab</div></div>
+<div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+<div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:12px;padding:18px 14px;text-align:center"><div style="font-size:1.6rem;margin-bottom:6px">💎</div><div style="color:#60A5FA;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 2<br>Value</div><div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">Is the business cheap? DCF, Graham Number &amp; Industry P/E give intrinsic value</div><div style="font-size:0.65rem;color:#475569;margin-top:8px">Fundamental → Deep Dive</div></div>
+<div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+<div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:12px;padding:18px 14px;text-align:center"><div style="font-size:1.6rem;margin-bottom:6px">🎲</div><div style="color:#A78BFA;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 3<br>Simulate</div><div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">Run 10,000 Monte Carlo paths. What prices are statistically possible?</div><div style="font-size:0.65rem;color:#475569;margin-top:8px">Monte Carlo tab</div></div>
+</div>
+<div style="display:flex;justify-content:center;margin:8px 0;font-size:1.4rem;color:#475569">↓</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch">
+<div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);border-radius:12px;padding:18px 14px;text-align:center"><div style="font-size:1.6rem;margin-bottom:6px">📈</div><div style="color:#4ADE80;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 4<br>Time</div><div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">Technical chart + catalyst alerts — when is the right moment to enter?</div><div style="font-size:0.65rem;color:#475569;margin-top:8px">Technical + Catalyst tabs</div></div>
+<div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+<div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:18px 14px;text-align:center"><div style="font-size:1.6rem;margin-bottom:6px">📐</div><div style="color:#F59E0B;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 5<br>Size</div><div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">MPT Portfolio Optimiser — how much to allocate to each position?</div><div style="font-size:0.65rem;color:#475569;margin-top:8px">Optimiser tab ⭐ Pro</div></div>
+<div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+<div style="background:rgba(34,197,94,0.15);border:2px solid rgba(34,197,94,0.4);border-radius:12px;padding:18px 14px;text-align:center"><div style="font-size:1.6rem;margin-bottom:6px">🎯</div><div style="color:#22C55E;font-weight:700;font-size:0.85rem;margin-bottom:6px">Decision<br>Dashboard</div><div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">Fundamental + Monte Carlo + Technical signals combined → one recommendation</div><div style="font-size:0.65rem;color:#22C55E;margin-top:8px">Monte Carlo → Decision Dashboard</div></div>
+</div>
+<div style="text-align:center;margin-top:16px;font-size:0.8rem;color:#64748B">Fintiq is not just a screener — it guides you from discovery all the way to a conviction decision.</div>
+</div>
+</div>""", unsafe_allow_html=True)
 
-          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
-
-          <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);
-                      border-radius:12px;padding:18px 14px;text-align:center">
-            <div style="font-size:1.6rem;margin-bottom:6px">💎</div>
-            <div style="color:#60A5FA;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 2<br>Value</div>
-            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
-              Is the business cheap? DCF, Graham Number &amp; Industry P/E give intrinsic value
-            </div>
-            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Fundamental → Deep Dive</div>
-          </div>
-
-          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
-
-          <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);
-                      border-radius:12px;padding:18px 14px;text-align:center">
-            <div style="font-size:1.6rem;margin-bottom:6px">🎲</div>
-            <div style="color:#A78BFA;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 3<br>Simulate</div>
-            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
-              Run 10,000 Monte Carlo paths. What prices are statistically possible?
-            </div>
-            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Monte Carlo tab</div>
-          </div>
-        </div>
-
-        <div style="display:flex;justify-content:center;margin:8px 0 8px;font-size:1.4rem;color:#475569">↓</div>
-
-        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch">
-
-          <div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);
-                      border-radius:12px;padding:18px 14px;text-align:center">
-            <div style="font-size:1.6rem;margin-bottom:6px">📈</div>
-            <div style="color:#4ADE80;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 4<br>Time</div>
-            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
-              Technical chart + catalyst alerts — when is the right moment to enter?
-            </div>
-            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Technical + Catalyst tabs</div>
-          </div>
-
-          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
-
-          <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);
-                      border-radius:12px;padding:18px 14px;text-align:center">
-            <div style="font-size:1.6rem;margin-bottom:6px">📐</div>
-            <div style="color:#F59E0B;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 5<br>Size</div>
-            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
-              MPT Portfolio Optimiser — how much to allocate to each position?
-            </div>
-            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Optimiser tab ⭐ Pro</div>
-          </div>
-
-          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
-
-          <div style="background:rgba(34,197,94,0.15);border:2px solid rgba(34,197,94,0.4);
-                      border-radius:12px;padding:18px 14px;text-align:center">
-            <div style="font-size:1.6rem;margin-bottom:6px">🎯</div>
-            <div style="color:#22C55E;font-weight:700;font-size:0.85rem;margin-bottom:6px">Decision<br>Dashboard</div>
-            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
-              Fundamental + Monte Carlo + Technical signals combined → one recommendation
-            </div>
-            <div style="font-size:0.65rem;color:#22C55E;margin-top:8px">Monte Carlo → Decision Dashboard</div>
-          </div>
-        </div>
-        <div style="text-align:center;margin-top:16px;font-size:0.8rem;color:#64748B">
-          Fintiq is not just a screener — it guides you from discovery all the way to a conviction decision.
-        </div>
-      </div>
+    st.markdown("""
+    <div style="max-width:920px;margin:0 auto;padding:0">
 
       <!-- Three Strategies -->
       <div style="color:#F59E0B;font-weight:700;font-size:1.1rem;margin-bottom:16px">
