@@ -996,17 +996,21 @@ st.markdown("""
 
   /* ── FINTIQ GLOBAL FOOTER ── */
   .fintiq-global-footer {
-    position: relative;
-    background: rgba(8,18,32,0.97);
-    border-top: 1px solid rgba(245,158,11,0.2);
-    padding: 10px 24px;
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+    background: rgba(8,18,32,0.85);
+    border-top: 1px solid rgba(245,158,11,0.15);
+    padding: 3px 24px;
     display: flex; align-items: center; justify-content: space-between;
-    font-size: 0.72rem; color: #475569;
-    margin-top: 48px;
+    font-size: 0.65rem; color: #334155;
+    backdrop-filter: blur(4px);
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
   }
-  .fintiq-global-footer a { color: #64748B; text-decoration: none; }
+  .fintiq-global-footer:hover { opacity: 1; }
+  .fintiq-global-footer a { color: #475569; text-decoration: none; }
   .fintiq-global-footer a:hover { color: #F59E0B; }
-  .fintiq-global-footer .fg-brand { color: #F59E0B; font-weight: 700; }
+  .fintiq-global-footer .fg-brand { color: #64748B; font-weight: 700; }
+  section[data-testid="stAppViewContainer"] { padding-bottom: 28px !important; }
   /* Remove ALL top padding from every Streamlit wrapper — covers v1.30+ and v1.40+ element names */
   section[data-testid="stAppViewContainer"] > div:first-child { padding-top: 0 !important; }
   div[data-testid="stAppViewBlockContainer"] { padding-top: 0 !important; }
