@@ -2395,16 +2395,16 @@ if _ticker_html_items:
 # TABS
 # ─────────────────────────────────────────────────────────────
 
-tab0, tab_brief, tab1, tab2, tab3, tab_mc, tab4, tab5, tab_opt = st.tabs([
+tab0, tab_brief, tab1, tab2, tab3, tab_mc, tab5, tab_opt, tab4 = st.tabs([
     "🏠  Home",
-    "🌍  Morning Brief",
-    "🔍  Fundamental Screen",
-    "⚡  Catalyst Alerts",
+    "🌍  Brief",
+    "🔍  Fundamental",
+    "⚡  Catalyst",
     "📈  Technical",
     "🎲  Monte Carlo",
-    "⚖️  Pairs Dashboard",
     "📒  Journal",
-    "📐  Portfolio Optimizer",
+    "📐  Optimiser",
+    "⚖️  Pairs",
 ])
 
 # ═══════════════════════════════════════════════════════════════
@@ -2422,12 +2422,12 @@ with tab0:
                   box-shadow:0 8px 50px rgba(0,0,0,0.7);margin-bottom:28px;text-align:center">
         <div class="fintiq-hero-title">Invest like an institution</div>
         <div style="font-size:1rem;color:#94A3B8;max-width:680px;margin:12px auto 0;line-height:1.7">
-          Screen 10+ global markets for quality value stocks · Value companies with
-          <strong style="color:#F1F5F9">DCF, Graham &amp; industry models</strong> ·
-          Detect catalysts before the crowd · Trade pairs like a hedge fund ·
-          Optimise your portfolio allocation with <strong style="color:#F1F5F9">Nobel Prize-winning MPT</strong> ·
-          Journal every position —
-          <strong style="color:#F59E0B">all in one platform.</strong>
+          Fintiq doesn't just screen stocks — it guides your entire investment decision.
+          Find quality businesses · Value them with <strong style="color:#F1F5F9">DCF, Graham &amp; Industry models</strong> ·
+          Map statistical price scenarios with <strong style="color:#F1F5F9">Monte Carlo simulation</strong> ·
+          Confirm timing with Technical analysis · Optimise allocation with
+          <strong style="color:#F1F5F9">Nobel Prize-winning MPT</strong> —
+          <strong style="color:#F59E0B">every signal in one place, one decision at a time.</strong>
         </div>
       </div>
 
@@ -2450,8 +2450,8 @@ with tab0:
         </div>
         <div style="background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.25);
                     border-radius:12px;padding:18px;text-align:center">
-          <div style="font-size:2rem;font-weight:900;color:#A78BFA">AI</div>
-          <div style="font-size:0.8rem;color:#94A3B8;margin-top:4px">Analyst Commentary<br>Powered by Claude</div>
+          <div style="font-size:2rem;font-weight:900;color:#A78BFA">🎲</div>
+          <div style="font-size:0.8rem;color:#94A3B8;margin-top:4px">Monte Carlo<br>10,000 price simulations</div>
         </div>
       </div>
 
@@ -2459,16 +2459,105 @@ with tab0:
       <div style="background:rgba(13,31,53,0.7);border-radius:14px;padding:28px 32px;
                   border-left:4px solid #F59E0B;margin-bottom:28px">
         <div style="color:#F59E0B;font-weight:700;font-size:1.1rem;margin-bottom:12px">
-          💡 Our Philosophy
+          💡 Our Philosophy — More Than a Stock Screener
         </div>
         <div style="color:#CBD5E1;line-height:1.85;font-size:0.95rem">
-          Most retail investors lose money not because markets are unfair, but because they trade on
-          noise rather than signal. Fintiq was built on one conviction:
-          <strong style="color:#F1F5F9"> process beats impulse, every time.</strong><br><br>
-          We believe in owning high-quality businesses at reasonable prices, being patient enough to
-          wait for catalysts, and sizing positions with statistical discipline. Every screen in Fintiq
-          is designed to surface <em>conviction opportunities</em> — stocks where multiple independent
-          signals align, not just one headline.
+          Most retail investors lose money not because markets are unfair, but because they act on
+          <em>one signal in isolation</em> — a hot tip, a moving average, a gut feeling.
+          Fintiq was built on one conviction:
+          <strong style="color:#F1F5F9">process beats impulse, every time.</strong><br><br>
+          We believe in owning high-quality businesses at reasonable prices, backed by multiple
+          independent lines of evidence before a single pound or dollar is committed.
+          Fintiq is designed to smooth the decision — taking you from
+          <em style="color:#F59E0B">"is this stock interesting?"</em> all the way to
+          <em style="color:#F59E0B">"here is the probability-weighted case for entering, and here is how much to size"</em>
+          in one seamless workflow. No spreadsheets, no fragmented tools, no guesswork.
+        </div>
+      </div>
+
+      <!-- Investment Decision Tree -->
+      <div style="color:#F59E0B;font-weight:700;font-size:1.1rem;margin-bottom:16px">
+        🧭 The Fintiq Investment Decision Framework
+      </div>
+      <div style="background:rgba(13,31,53,0.6);border-radius:14px;padding:24px 28px;margin-bottom:28px;
+                  border:1px solid rgba(245,158,11,0.15)">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch">
+
+          <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);
+                      border-radius:12px;padding:18px 14px;text-align:center;position:relative">
+            <div style="font-size:1.6rem;margin-bottom:6px">🔍</div>
+            <div style="color:#F59E0B;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 1<br>Screen</div>
+            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
+              Filter 10+ global markets for quality: ROE, margins, debt, cash flow
+            </div>
+            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Fundamental tab</div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+
+          <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);
+                      border-radius:12px;padding:18px 14px;text-align:center">
+            <div style="font-size:1.6rem;margin-bottom:6px">💎</div>
+            <div style="color:#60A5FA;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 2<br>Value</div>
+            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
+              Is the business cheap? DCF, Graham Number &amp; Industry P/E give intrinsic value
+            </div>
+            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Fundamental → Deep Dive</div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+
+          <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);
+                      border-radius:12px;padding:18px 14px;text-align:center">
+            <div style="font-size:1.6rem;margin-bottom:6px">🎲</div>
+            <div style="color:#A78BFA;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 3<br>Simulate</div>
+            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
+              Run 10,000 Monte Carlo paths. What prices are statistically possible?
+            </div>
+            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Monte Carlo tab</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;margin:8px 0 8px;font-size:1.4rem;color:#475569">↓</div>
+
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0;align-items:stretch">
+
+          <div style="background:rgba(74,222,128,0.1);border:1px solid rgba(74,222,128,0.3);
+                      border-radius:12px;padding:18px 14px;text-align:center">
+            <div style="font-size:1.6rem;margin-bottom:6px">📈</div>
+            <div style="color:#4ADE80;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 4<br>Time</div>
+            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
+              Technical chart + catalyst alerts — when is the right moment to enter?
+            </div>
+            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Technical + Catalyst tabs</div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+
+          <div style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);
+                      border-radius:12px;padding:18px 14px;text-align:center">
+            <div style="font-size:1.6rem;margin-bottom:6px">📐</div>
+            <div style="color:#F59E0B;font-weight:700;font-size:0.85rem;margin-bottom:6px">Step 5<br>Size</div>
+            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
+              MPT Portfolio Optimiser — how much to allocate to each position?
+            </div>
+            <div style="font-size:0.65rem;color:#475569;margin-top:8px">Optimiser tab ⭐ Pro</div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#475569;padding:0 4px">→</div>
+
+          <div style="background:rgba(34,197,94,0.15);border:2px solid rgba(34,197,94,0.4);
+                      border-radius:12px;padding:18px 14px;text-align:center">
+            <div style="font-size:1.6rem;margin-bottom:6px">🎯</div>
+            <div style="color:#22C55E;font-weight:700;font-size:0.85rem;margin-bottom:6px">Decision<br>Dashboard</div>
+            <div style="color:#94A3B8;font-size:0.75rem;line-height:1.5">
+              Fundamental + Monte Carlo + Technical signals combined → one recommendation
+            </div>
+            <div style="font-size:0.65rem;color:#22C55E;margin-top:8px">Monte Carlo → Decision Dashboard</div>
+          </div>
+        </div>
+        <div style="text-align:center;margin-top:16px;font-size:0.8rem;color:#64748B">
+          Fintiq is not just a screener — it guides you from discovery all the way to a conviction decision.
         </div>
       </div>
 
@@ -2571,30 +2660,91 @@ with tab0:
         </div>
       </div>
 
+      <!-- GBM Monte Carlo Feature Highlight -->
+      <div style="background:linear-gradient(135deg,rgba(13,31,53,0.95),rgba(8,18,32,0.99));
+                  border-radius:16px;padding:28px 32px;margin-bottom:28px;
+                  border:1px solid rgba(167,139,250,0.3)">
+        <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
+          <div style="flex:1;min-width:260px">
+            <div style="font-size:0.7rem;font-weight:700;color:#A78BFA;text-transform:uppercase;
+                        letter-spacing:1.5px;margin-bottom:8px">🆕 New Feature</div>
+            <div style="font-size:1.25rem;font-weight:900;color:#F1F5F9;margin-bottom:10px">
+              🎲 Monte Carlo Risk Simulator
+            </div>
+            <div style="color:#94A3B8;font-size:0.9rem;line-height:1.75;margin-bottom:16px">
+              Professional investment banks don't rely on a single price target —
+              they model the <em style="color:#F1F5F9">entire distribution of possible futures</em>.
+              The Fintiq Monte Carlo Simulator brings this institutional technique to retail investors.
+              Run <strong style="color:#F1F5F9">10,000 simulated price paths</strong> in seconds,
+              see your probability of hitting a target, and understand your real downside before you commit.
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:0.82rem;color:#94A3B8">
+              <div>✅ 3 simulation models</div>
+              <div>✅ Fan chart with confidence bands</div>
+              <div>✅ Probability of hitting target</div>
+              <div>✅ VaR &amp; Expected Shortfall</div>
+              <div>✅ Jump Diffusion (crash modelling)</div>
+              <div>✅ EWMA volatility clustering</div>
+              <div>✅ Integrates with your DCF value</div>
+              <div>✅ Decision Dashboard (3 signals)</div>
+            </div>
+          </div>
+          <div style="flex:0 0 210px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);
+                      border-radius:12px;padding:16px;font-size:0.78rem">
+            <div style="color:#64748B;text-transform:uppercase;font-size:0.65rem;margin-bottom:10px">
+              Example output — AAPL · 1 year · 10,000 sims</div>
+            <div style="margin-bottom:8px">
+              <div style="color:#94A3B8;margin-bottom:2px">P(profit)</div>
+              <div style="background:#1E3A5F;border-radius:3px;height:7px">
+                <div style="background:#22C55E;width:63%;height:7px;border-radius:3px"></div></div>
+              <div style="color:#22C55E;font-weight:700;font-size:0.82rem">63%</div>
+            </div>
+            <div style="margin-bottom:8px">
+              <div style="color:#94A3B8;margin-bottom:2px">P(≥ target price)</div>
+              <div style="background:#1E3A5F;border-radius:3px;height:7px">
+                <div style="background:#A78BFA;width:38%;height:7px;border-radius:3px"></div></div>
+              <div style="color:#A78BFA;font-weight:700;font-size:0.82rem">38%</div>
+            </div>
+            <div>
+              <div style="color:#94A3B8;margin-bottom:2px">VaR 95% (max loss)</div>
+              <div style="background:#1E3A5F;border-radius:3px;height:7px">
+                <div style="background:#EF4444;width:22%;height:7px;border-radius:3px"></div></div>
+              <div style="color:#EF4444;font-weight:700;font-size:0.82rem">-22% in worst 5%</div>
+            </div>
+            <div style="font-size:0.65rem;color:#475569;text-align:center;margin-top:12px;
+                        border-top:1px solid rgba(100,116,139,0.2);padding-top:8px">
+              Illustrative only — based on historical data
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- How to use -->
       <div style="background:rgba(13,31,53,0.7);border-radius:14px;padding:28px 32px;
                   border-left:4px solid #4ADE80;margin-bottom:28px">
         <div style="color:#4ADE80;font-weight:700;font-size:1.1rem;margin-bottom:16px">
-          🚀 How to Use Fintiq
+          🚀 How to Use Fintiq — Step by Step
         </div>
         <div style="color:#CBD5E1;font-size:0.9rem;line-height:1.85">
-          <strong style="color:#F1F5F9">Step 1 — Run the Fundamental Screen</strong> (Fundamental Screen tab)<br>
+          <strong style="color:#F1F5F9">Step 1 — Run the Fundamental Screen</strong> (Fundamental tab)<br>
           Select your market (e.g. GB London LSE), set quality thresholds, and click Run Screen.
-          Fintiq will score every stock in the universe and surface the highest-quality names.<br><br>
-          <strong style="color:#F1F5F9">Step 2 — Deep-Dive the candidates</strong><br>
-          Click any row in the results table to open the Stock Deep-Dive. Review the 5-year
-          financial history, adjust your DCF assumptions, and read the intrinsic value estimates.
-          Use the AI Commentary button for a quick analyst perspective.<br><br>
-          <strong style="color:#F1F5F9">Step 3 — Check Catalysts &amp; Technicals</strong><br>
-          Your screened stocks auto-populate into Catalyst Alerts and Technical Setup. Look for
+          Fintiq scores every stock and surfaces the highest-quality names.<br><br>
+          <strong style="color:#F1F5F9">Step 2 — Deep-Dive &amp; Value the business</strong><br>
+          Click any row in the results table to open the Stock Deep-Dive. Adjust your DCF assumptions
+          and read the 3-method intrinsic value estimate. Note your target price.<br><br>
+          <strong style="color:#F1F5F9">Step 3 — Run Monte Carlo Simulation</strong> (Monte Carlo tab) 🆕<br>
+          Enter the ticker and paste your DCF target price as the "Target". The simulator runs 10,000
+          price paths and tells you the probability of reaching your target, your VaR, and the
+          Decision Dashboard combines all signals into a buy/hold/avoid verdict.<br><br>
+          <strong style="color:#F1F5F9">Step 4 — Check Catalysts &amp; Technicals</strong><br>
+          Your screened stocks auto-populate into Catalyst and Technical tabs. Look for
           earnings dates, analyst revisions, RSI levels and volume signals to time your entry.<br><br>
-          <strong style="color:#F1F5F9">Step 4 — Optimise your allocation</strong> ⭐ Pro<br>
+          <strong style="color:#F1F5F9">Step 5 — Optimise your allocation</strong> ⭐ Pro<br>
           Enter your chosen tickers into the Portfolio Optimiser. Select an objective
-          (Maximise Sharpe, Risk Parity, Target Return and more), review the Efficient Frontier,
-          and get the mathematically optimal weight for each position.<br><br>
-          <strong style="color:#F1F5F9">Step 5 — Log your trades</strong> (Journal tab)<br>
-          Use the Trading Journal to record entries, exits and notes. Track your equity curve
-          and win rate over time to identify what's actually working.
+          (Maximise Sharpe, Risk Parity, Target Return and more) and get the mathematically
+          optimal weight for each position.<br><br>
+          <strong style="color:#F1F5F9">Step 6 — Log your trades</strong> (Journal tab)<br>
+          Record entries, exits and notes. Track your equity curve and win rate over time.
         </div>
       </div>
 
@@ -4664,6 +4814,16 @@ Return ONLY valid JSON (no markdown):
                    [(v,"Industry P/E") for v in [pe_iv_val] if v]
             if vals and curr_px:
                 avg_iv = sum(v for v,_ in vals) / len(vals)
+                # Save to session_state so Monte Carlo Decision Dashboard can read it
+                st.session_state["fintiq_dcf"] = {
+                    "ticker":   pick,
+                    "dcf":      dcf_per_share,
+                    "graham":   graham_val,
+                    "pe_iv":    pe_iv_val,
+                    "avg_iv":   avg_iv,
+                    "curr_px":  curr_px,
+                    "sym":      sym_cur,
+                }
                 tot_up = (avg_iv - curr_px) / curr_px * 100
                 banner_col = "#4ADE80" if tot_up >= 0 else "#F87171"
                 st.markdown(f"""
@@ -6987,29 +7147,51 @@ with tab_mc:
             st.markdown("#### 🎯 Investment Decision Dashboard")
             st.caption("Synthesises Fundamental, Monte Carlo and Technical signals into one decision framework")
 
-            # Gather signals
+            # Gather signals — primary source: Fundamental tab DCF session state
+            _saved_dcf   = st.session_state.get("fintiq_dcf", {})
             _screened_df = st.session_state.get("screened_df")
             _tech_signal = None
             _dcf_val     = None
+            _graham_val  = None
+            _pe_iv_val   = None
+            _avg_iv      = None
             _fund_score  = None
             _mc_signal_colour = "#F59E0B"
             _mc_signal_label  = "Neutral"
 
+            # Read from Fundamental DCF if ticker matches
+            if _saved_dcf.get("ticker", "").upper() == _mc_ticker.upper():
+                _dcf_val   = _saved_dcf.get("dcf")
+                _graham_val = _saved_dcf.get("graham")
+                _pe_iv_val  = _saved_dcf.get("pe_iv")
+                _avg_iv     = _saved_dcf.get("avg_iv")
+                # Use avg_iv as the primary comparison value
+                if _avg_iv:
+                    _dcf_val = _avg_iv
+
+            # Fallback: try screened_df
+            if not _dcf_val and _screened_df is not None and not _screened_df.empty:
+                try:
+                    _match = _screened_df[_screened_df["Ticker"].str.upper() == _mc_ticker.upper()]
+                    if not _match.empty:
+                        _row = _match.iloc[0]
+                        _tech_signal = _row.get("Tech Signal", None)
+                        for _dcf_col in ["DCF Value", "DCF", "Intrinsic Value"]:
+                            if _dcf_col in _row and pd.notna(_row[_dcf_col]):
+                                try: _dcf_val = float(str(_row[_dcf_col]).replace("£","").replace("$","").replace(",",""))
+                                except: pass
+                                break
+                except Exception:
+                    pass
+
+            # Tech signal from screened_df regardless
             if _screened_df is not None and not _screened_df.empty:
-                _match = _screened_df[_screened_df.get("Ticker", pd.Series()).str.upper() == _mc_ticker.upper()]
-                if not _match.empty:
-                    _row = _match.iloc[0]
-                    _tech_signal = _row.get("Tech Signal", None)
-                    for _dcf_col in ["DCF Value", "DCF", "Intrinsic Value"]:
-                        if _dcf_col in _row and pd.notna(_row[_dcf_col]):
-                            try: _dcf_val = float(str(_row[_dcf_col]).replace("£","").replace("$","").replace(",",""))
-                            except: pass
-                            break
-                    for _fs_col in ["Score", "Quality Score", "Fintiq Score"]:
-                        if _fs_col in _row and pd.notna(_row[_fs_col]):
-                            try: _fund_score = float(_row[_fs_col])
-                            except: pass
-                            break
+                try:
+                    _match2 = _screened_df[_screened_df["Ticker"].str.upper() == _mc_ticker.upper()]
+                    if not _match2.empty:
+                        _tech_signal = _match2.iloc[0].get("Tech Signal", None)
+                except Exception:
+                    pass
 
             # Monte Carlo signal
             if _mc_p_target is not None:
@@ -7034,21 +7216,32 @@ with tab_mc:
                 _margin = (_dcf_val - _mc_S0) / _mc_S0
                 _fund_col = "#22C55E" if _margin > 0.1 else "#F59E0B" if _margin > -0.1 else "#EF4444"
                 _fund_label = "Undervalued" if _margin > 0.1 else "Fair Value" if _margin > -0.1 else "Overvalued"
+                _fund_detail = ""
+                if _saved_dcf.get("ticker", "").upper() == _mc_ticker.upper():
+                    _parts = []
+                    if _saved_dcf.get("dcf"):    _parts.append(f"DCF {_mc_sym}{_saved_dcf['dcf']:,.0f}")
+                    if _saved_dcf.get("graham"): _parts.append(f"Graham {_mc_sym}{_saved_dcf['graham']:,.0f}")
+                    if _saved_dcf.get("pe_iv"):  _parts.append(f"P/E {_mc_sym}{_saved_dcf['pe_iv']:,.0f}")
+                    _fund_detail = " · ".join(_parts) if _parts else ""
                 _dd_html += (
                     f'<div style="background:#0D1F33;border:1px solid {_fund_col}40;border-top:3px solid {_fund_col};'
                     f'border-radius:10px;padding:14px;text-align:center">'
-                    f'<div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;margin-bottom:6px">① Fundamental</div>'
+                    f'<div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;margin-bottom:6px">① Fundamental (DCF)</div>'
                     f'<div style="font-size:1.1rem;font-weight:800;color:{_fund_col}">{_fund_label}</div>'
-                    f'<div style="font-size:0.75rem;color:#94A3B8;margin-top:4px">'
-                    f'DCF {_mc_sym}{_dcf_val:,.0f} vs {_mc_sym}{_mc_S0:,.0f} now<br>'
-                    f'Margin of safety: <b style="color:{_fund_col}">{_margin:+.1%}</b></div></div>'
+                    f'<div style="font-size:0.72rem;color:#94A3B8;margin-top:4px">'
+                    f'Avg IV {_mc_sym}{_dcf_val:,.0f} vs {_mc_sym}{_mc_S0:,.0f}<br>'
+                    f'Margin: <b style="color:{_fund_col}">{_margin:+.1%}</b><br>'
+                    f'<span style="font-size:0.65rem;color:#64748B">{_fund_detail}</span>'
+                    f'</div></div>'
                 )
             else:
                 _dd_html += (
                     '<div style="background:#0D1F33;border:1px solid rgba(100,116,139,0.3);border-top:3px solid #475569;'
                     'border-radius:10px;padding:14px;text-align:center">'
-                    '<div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;margin-bottom:6px">① Fundamental</div>'
-                    '<div style="font-size:0.85rem;color:#64748B">Run screen<br>for DCF data</div></div>'
+                    '<div style="font-size:0.65rem;color:#64748B;text-transform:uppercase;margin-bottom:6px">① Fundamental (DCF)</div>'
+                    '<div style="font-size:0.85rem;color:#64748B">Open this ticker in<br>Fundamental tab first</div>'
+                    '<div style="font-size:0.7rem;color:#475569;margin-top:4px">Runs DCF · Graham · P/E</div>'
+                    '</div>'
                 )
 
             # 2. Monte Carlo
@@ -7122,25 +7315,117 @@ with tab_mc:
                 unsafe_allow_html=True
             )
 
-            with st.expander("📚 Model Notes & Limitations", expanded=False):
+            with st.expander("📚 Model Guide — How to read this simulator (start here if you're new)", expanded=False):
                 st.markdown(f"""
-**Model used:** {_mc_model} · **Simulations:** {_mc_n_sims:,} · **Horizon:** {_mc_horizon}
+## 🎲 What is Monte Carlo Simulation?
 
-**Annual volatility (σ):** {_mc_sigma:.1%} — {'EWMA (RiskMetrics λ=0.94), captures volatility clustering' if _mc_model == 'EWMA Volatility' else 'historical standard deviation of log-returns, annualised'}
+Imagine flipping a coin 10,000 times. You can't predict each individual flip, but you can say with confidence that roughly half will be heads. Monte Carlo simulation applies this same logic to stock prices.
 
-**Annual drift (μ):** {_mc_mu:+.1%} — {_mc_ret_src}
+Instead of predicting **one** future price, it simulates **{_mc_n_sims:,} different scenarios** — each representing a possible path the stock price could take over the next {_mc_horizon}. Some paths go up, some go down, most land somewhere in the middle. The result is a **probability map** of the future.
 
-{'**Jump parameters (Merton):** λ=' + f'{_mc_lam_j:.1f} jumps/year · μⱼ=' + f'{_mc_mu_j:+.2%} · σⱼ=' + f'{_mc_sig_j:.2%}' if _mc_model == 'Jump Diffusion' else ''}
+> **In plain English:** The fan chart shows the range of outcomes the maths considers plausible. The green middle band is where the price is most likely to end up. The red outer bands show the extreme scenarios.
 
-**Known limitations of GBM:**
-- Assumes log-normal returns; real markets have fat tails (kurtosis)
-- Standard GBM assumes constant volatility — EWMA model partially addresses this
-- Does not model structural breaks, regime changes or liquidity crises
-- Jump Diffusion improves on sudden shocks but estimates are backward-looking
-- Garbage In / Garbage Out: if the historical period used is a bull market, drift μ will be optimistic. Always sense-check the μ input.
-- Past price behaviour does not guarantee future outcomes
+---
 
-**Best practice:** Run all three models and compare. If they broadly agree, confidence is higher. Wide divergence signals model sensitivity.
+## 📊 How to Read the Fan Chart
+
+The coloured bands on the fan chart represent probability ranges:
+
+| Band | Colour | Meaning |
+|------|--------|---------|
+| 25–75% | Green | The **most likely** 50% of outcomes — if you had to bet, this is where |
+| 10–90% | Amber | 80% of simulations landed here |
+| 5–95% | Yellow | 90% of simulations — only 1 in 10 paths went outside this zone |
+| 1–99% | Red edge | Almost all simulations — the rarest outcomes live in this thin outer band |
+
+The **gold median line** is the middle path — exactly half the simulations ended higher, half lower. Think of it as the "best guess" path (though not a prediction).
+
+---
+
+## 📈 How to Read the Numbers
+
+| Term | What it means in plain English |
+|------|-------------------------------|
+| **Mean outcome** | The average price across all {_mc_n_sims:,} simulations |
+| **Median outcome** | The middle outcome — half above, half below. Often more useful than mean |
+| **Expected CAGR** | The annualised return the maths implies, based on past behaviour |
+| **P(profit)** | Probability the stock is higher than today at the end of the period |
+| **P(≥ target)** | If you set a target price, this is the chance of hitting it |
+| **VaR 95%** | "Value at Risk" — in a bad month (worst 5% of scenarios), how much could you lose? |
+| **Expected Shortfall** | If you land in that worst 5%, what's the *average* loss? Worse than VaR |
+| **Max Sim Drawdown** | The deepest peak-to-trough fall seen across simulations — the gut-punch test |
+
+---
+
+## 🔬 Which Simulation Model Should I Use?
+
+Fintiq offers three models. Each has different assumptions about how markets behave:
+
+### 1. Standard GBM (Geometric Brownian Motion)
+**Best for:** Blue-chip stable companies (AAPL, Unilever, HSBA)
+
+This is the classic textbook model — the same one used in the famous Black-Scholes options pricing formula. It assumes the stock wanders randomly with a steady average drift (like walking randomly on a slope).
+
+- ✅ Simple and well-understood
+- ✅ Works well for stable, mature businesses
+- ❌ Assumes volatility is constant (it isn't — markets get more volatile in crashes)
+- ❌ Doesn't model sudden crashes or spikes
+
+**Current parameters (this run):** Annual drift μ = {_mc_mu:+.1%} · Volatility σ = {_mc_sigma:.1%}
+
+---
+
+### 2. Jump Diffusion (Merton Model)
+**Best for:** Volatile stocks, small-caps, biotech, commodity-sensitive companies
+
+Developed by Nobel Prize winner Robert Merton. Takes Standard GBM and adds **random jump events** — sudden large moves (crashes and spikes) that happen occasionally, modelled using a Poisson process.
+
+- ✅ Captures the "fat tails" of real markets (crashes happen more than normal distribution predicts)
+- ✅ Better for stocks prone to sudden news-driven moves
+- ❌ Jump parameters are estimated from history — past jumps may not predict future ones
+{'- 📌 **Jump parameters detected from history:** ' + f'{_mc_lam_j:.1f} jumps/year · avg jump size {_mc_mu_j:+.2%} · jump volatility {_mc_sig_j:.2%}' if _mc_model == 'Jump Diffusion' else ''}
+
+---
+
+### 3. EWMA Volatility (RiskMetrics)
+**Best for:** Periods of market stress, earnings season, highly volatile stocks
+
+"EWMA" stands for Exponentially Weighted Moving Average. Rather than assuming volatility is constant, it updates the volatility estimate in real-time, giving **more weight to recent price swings** (λ=0.94, the RiskMetrics standard used by major banks).
+
+- ✅ Captures **volatility clustering** — calm periods stay calm, stormy periods stay stormy
+- ✅ More realistic than Standard GBM in stressed markets
+- ❌ Still doesn't model structural breaks or regime changes
+
+**Current EWMA vol:** {_mc_sigma:.1%} annualised (vs historical avg {_mc_hist_vol:.1%})
+
+---
+
+## 🧠 How to Use This Tool in Practice
+
+**Step 1 — Value the business first (Fundamental tab)**
+Run the DCF valuation in the Fundamental screen. Your DCF intrinsic value becomes your **target price** here.
+
+**Step 2 — Enter the target and stop-loss**
+Put your DCF target in the "Target price" box. Set a stop-loss at the price where you'd accept the trade hasn't worked. The simulator will tell you the probability of hitting each.
+
+**Step 3 — Run all 3 models**
+Start with Standard GBM. Then run Jump Diffusion. If the probabilities are broadly similar, confidence is higher. Wide divergence means the result is model-sensitive — treat with caution.
+
+**Step 4 — Read the Decision Dashboard**
+The dashboard aggregates your DCF signal, Monte Carlo signal and Technical signal. Look for all 3 aligning before acting.
+
+---
+
+## ⚠️ Limitations — What This Tool Cannot Do
+
+- **Cannot predict the future.** No model can. This gives you probabilities, not certainties.
+- **Garbage in, garbage out.** If the historical period was a bull market, drift μ will be optimistic. Always sanity-check the μ parameter.
+- **Does not model:** earnings surprises, management changes, regulatory shocks, geopolitical events, liquidity crises.
+- **Past volatility ≠ future volatility.** A stock that was calm for 3 years may become highly volatile.
+- **This is not financial advice.** Use alongside your own research, not as a substitute for it.
+
+---
+*Model used: **{_mc_model}** · Simulations: **{_mc_n_sims:,}** · Horizon: **{_mc_horizon}** · Return source: **{_mc_ret_src}***
 """)
 
     elif not _mc_ticker and not _run_mc:
