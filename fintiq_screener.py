@@ -826,6 +826,8 @@ def _check_auth_gate() -> bool:
 
     # Read current count directly from Supabase every time
     current_searches = 0
+    _debug_read_err = None
+    _debug_write_err = None
     try:
         if _sb:
             r = _sb.table("profiles").select("monthly_searches,search_month,is_pro").eq("id", user_id).execute()
@@ -835,11 +837,10 @@ def _check_auth_gate() -> bool:
                     st.session_state["fintiq_user"]["is_pro"] = True
                     return True
                 current_searches = row.get("monthly_searches", 0) if row.get("search_month") == now_month else 0
-    except Exception:
-        pass
+    except Exception as _e:
+        _debug_read_err = str(_e)
 
     if current_searches < _MONTHLY_LIMIT:
-        # Increment in Supabase immediately
         try:
             if _sb:
                 _sb.table("profiles").upsert({
@@ -847,8 +848,12 @@ def _check_auth_gate() -> bool:
                     "monthly_searches": current_searches + 1,
                     "search_month": now_month,
                 }).execute()
-        except Exception:
-            pass
+        except Exception as _e:
+            _debug_write_err = str(_e)
+
+        # Temporary debug — remove after fixing
+        if _debug_read_err or _debug_write_err:
+            st.warning(f"DEBUG — read err: {_debug_read_err} | write err: {_debug_write_err} | count: {current_searches}")
         return True
 
     # Limit reached — show upgrade wall
