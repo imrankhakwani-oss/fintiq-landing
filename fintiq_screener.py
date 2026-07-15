@@ -639,7 +639,19 @@ def _show_auth():
                         return False
                     res = _sb.auth.sign_up({"email": email, "password": password})
                     if res.user:
-                        st.markdown('<div class="auth-ok">✅ Account created! Check your email to confirm, then log in.</div>',
+                        # Auto-login immediately (email confirmation disabled in Supabase)
+                        try:
+                            lr = _sb.auth.sign_in_with_password({"email": email, "password": password})
+                            if lr.user:
+                                _tok = lr.session.access_token if lr.session else None
+                                st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
+                                if _tok:
+                                    st.query_params["_t"] = _tok
+                                st.rerun()
+                                return True
+                        except Exception:
+                            pass
+                        st.markdown('<div class="auth-ok">✅ Account created! Please log in.</div>',
                                     unsafe_allow_html=True)
                         return False
                     else:
@@ -669,10 +681,7 @@ def _show_auth():
                         return False
             except Exception as e:
                 err_msg = str(e)
-                if "Email not confirmed" in err_msg:
-                    st.markdown('<div class="auth-err">Please confirm your email first — check your inbox.</div>',
-                                unsafe_allow_html=True)
-                elif "Invalid login" in err_msg or "invalid_grant" in err_msg:
+                if "Invalid login" in err_msg or "invalid_grant" in err_msg or "Email not confirmed" in err_msg:
                     st.markdown('<div class="auth-err">Invalid email or password.</div>',
                                 unsafe_allow_html=True)
                 else:
@@ -884,7 +893,18 @@ def _show_auth_wall():
                         st.error("Password must be at least 6 characters."); return
                     res = _sb.auth.sign_up({"email": email, "password": password})
                     if res.user:
-                        st.success("✅ Account created! Check your email to confirm, then log in.")
+                        try:
+                            lr = _sb.auth.sign_in_with_password({"email": email, "password": password})
+                            if lr.user:
+                                _tok = lr.session.access_token if lr.session else None
+                                st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
+                                st.session_state.pop("_show_auth_wall", None)
+                                st.session_state.pop("_show_upgrade_wall", None)
+                                if _tok:
+                                    st.query_params["_t"] = _tok
+                                st.rerun()
+                        except Exception:
+                            st.success("✅ Account created! Please log in.")
                     else:
                         st.error("Sign-up failed. Please try again.")
                 else:
@@ -2698,7 +2718,16 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                             else:
                                 res = _sb.auth.sign_up({"email": _lf_email, "password": _lf_pw})
                                 if res.user:
-                                    st.success("✅ Account created! Check your email to confirm, then log in.")
+                                    try:
+                                        lr = _sb.auth.sign_in_with_password({"email": _lf_email, "password": _lf_pw})
+                                        if lr.user:
+                                            _tok = lr.session.access_token if lr.session else None
+                                            st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
+                                            if _tok:
+                                                st.query_params["_t"] = _tok
+                                            st.rerun()
+                                    except Exception:
+                                        st.success("✅ Account created! Please log in.")
                                 else:
                                     st.error("Sign-up failed. Please try again.")
                         else:
