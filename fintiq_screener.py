@@ -7,6 +7,7 @@ Author: Built for Imran Khakwani | July 2026
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import requests
@@ -558,6 +559,28 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
+# ── Guest ID — persistent across refreshes via localStorage ──
+# Runs in an iframe (same origin), sets _gid in parent URL so Python reads it on next rerun
+components.html("""
+<script>
+(function() {
+  try {
+    var k = 'fg_gid';
+    var id = localStorage.getItem(k);
+    if (!id) {
+      id = 'g_' + Math.random().toString(36).substr(2,9) + Date.now().toString(36);
+      localStorage.setItem(k, id);
+    }
+    var p = new URLSearchParams(window.parent.location.search);
+    if (p.get('_gid') !== id) {
+      p.set('_gid', id);
+      window.parent.history.replaceState({}, '', window.parent.location.pathname + '?' + p.toString());
+    }
+  } catch(e) {}
+})();
+</script>
+""", height=0)
+
 # ─────────────────────────────────────────────────────────────
 # AUTH GATE — Login / Sign-up wall
 # ─────────────────────────────────────────────────────────────
@@ -758,6 +781,32 @@ def _verify_stripe_session(session_id: str, user_id: str) -> bool:
         pass
     return False
 
+# ── Guest search tracking (persistent via Supabase) ──────────
+def _get_guest_count(guest_id: str) -> int:
+    """Return how many searches this guest has done (from Supabase)."""
+    if not _sb or not guest_id:
+        return 0
+    try:
+        r = _sb.table("guest_searches").select("count").eq("id", guest_id).execute()
+        if r.data:
+            return r.data[0].get("count", 0)
+        return 0
+    except Exception:
+        return 0
+
+def _increment_guest(guest_id: str) -> int:
+    """Increment guest search count and return new total."""
+    if not _sb or not guest_id:
+        return 1
+    try:
+        r = _sb.table("guest_searches").select("count").eq("id", guest_id).execute()
+        current = r.data[0].get("count", 0) if r.data else 0
+        new_count = current + 1
+        _sb.table("guest_searches").upsert({"id": guest_id, "count": new_count}).execute()
+        return new_count
+    except Exception:
+        return 1
+
 # ── Auth / upgrade gate ───────────────────────────────────────
 def _check_auth_gate() -> bool:
     """Returns True if allowed to run a search."""
@@ -767,13 +816,18 @@ def _check_auth_gate() -> bool:
     if user.get("is_pro"):
         return True
 
-    # Guest
+    # Guest — persistent tracking via Supabase guest_searches table
     if not user:
-        if st.session_state["free_searches"] < _GUEST_LIMIT:
-            st.session_state["free_searches"] += 1
+        _gid = st.query_params.get("_gid", "")
+        if _gid:
+            _g_count = _get_guest_count(_gid)
+            if _g_count < _GUEST_LIMIT:
+                _increment_guest(_gid)
+                return True
+        else:
+            # _gid not in URL yet (first render before JS runs) — allow but don't count
             return True
-        # Clear stale results when showing any gate wall
-        for _k in ["screened_df","screened_symbols"]:
+        for _k in ["screened_df", "screened_symbols"]:
             if _k in st.session_state: del st.session_state[_k]
         _show_auth_wall()
         return False
@@ -2559,6 +2613,8 @@ if _qp_page == "pricing":
                 ✓ &nbsp;All global markets<br>
                 ✓ &nbsp;Quality Value screening<br>
                 ✓ &nbsp;Catalyst alerts<br>
+                ✓ &nbsp;<b style="color:#F59E0B">Monte Carlo simulation</b> (10,000 paths)<br>
+                ✓ &nbsp;<b style="color:#F59E0B">Portfolio Optimiser</b> (Sharpe, MPT)<br>
                 ✓ &nbsp;<b style="color:#F59E0B">Pairs trading</b><br>
                 ✓ &nbsp;<b style="color:#F59E0B">Trading journal &amp; P&amp;L</b><br>
                 ✓ &nbsp;Priority data refresh<br>
@@ -2776,14 +2832,14 @@ if _ticker_html_items:
 
 tab0, tab_brief, tab1, tab2, tab3, tab_mc, tab5, tab_opt, tab4 = st.tabs([
     "🏠  Home",
-    "🌍  Brief",
+    "🌍  Morning Brief",
     "🔍  Fundamental",
     "⚡  Catalyst",
     "📈  Technical",
     "🎲  Monte Carlo",
     "📒  Journal",
     "📐  Optimiser",
-    "⚖️  Pairs",
+    "⚖️  Pairs Trading",
 ])
 
 # ═══════════════════════════════════════════════════════════════
