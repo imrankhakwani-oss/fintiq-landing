@@ -682,7 +682,7 @@ def _show_auth():
 if "free_searches" not in st.session_state:
     st.session_state["free_searches"] = 0
 _GUEST_LIMIT   = 2   # searches before signup wall
-_MONTHLY_LIMIT = 10  # free-account searches per calendar month
+_MONTHLY_LIMIT = 5   # free-account searches per calendar month
 
 # ── Supabase profile helpers ──────────────────────────────────
 def _get_profile(user_id: str) -> dict:
@@ -2501,26 +2501,6 @@ if _qp_page == "pricing":
     _pu_id    = _pu.get("id", "")
     _pu_pro   = _pu.get("is_pro", False)
 
-    # Must be logged in to reach checkout — redirect to login with return URL
-    if not _pu_email:
-        _ret_t = st.query_params.get("_t", "")
-        _ret_url = f"?action=login&next=pricing&_t={_ret_t}" if _ret_t else "?action=login&next=pricing"
-        st.markdown(f"""
-        <div style="max-width:520px;margin:80px auto;text-align:center;
-            background:#0D1F33;border:1px solid rgba(245,158,11,0.3);
-            border-radius:16px;padding:40px">
-          <div style="font-size:2rem;margin-bottom:12px">🔒</div>
-          <div style="font-size:1.3rem;font-weight:700;color:#F59E0B;margin-bottom:8px">
-            Please log in first</div>
-          <div style="color:#94A3B8;font-size:0.9rem;margin-bottom:24px">
-            You need a Fintiq account to subscribe.</div>
-          <a href="{_ret_url}" style="background:linear-gradient(135deg,#D97706,#F59E0B);
-            color:#0F1923;padding:10px 28px;border-radius:20px;font-weight:700;
-            text-decoration:none;font-size:0.95rem">Login / Sign up</a>
-        </div>
-        """, unsafe_allow_html=True)
-        st.stop()
-
     st.markdown("""
     <div style="max-width:760px;margin:32px auto 0 auto;text-align:center">
       <div style="font-size:2.2rem;font-weight:900;color:#F59E0B;margin-bottom:6px">
@@ -2546,7 +2526,7 @@ if _qp_page == "pricing":
               <hr style="border-color:rgba(100,116,139,0.2);margin-bottom:20px">
               <div style="color:#CBD5E1;font-size:0.88rem;line-height:2">
                 ✓ &nbsp;2 searches as guest<br>
-                ✓ &nbsp;10 searches / month after sign-up<br>
+                ✓ &nbsp;5 searches / month after sign-up<br>
                 ✓ &nbsp;All global markets<br>
                 ✓ &nbsp;Quality Value screening<br>
                 ✓ &nbsp;Catalyst alerts<br>
