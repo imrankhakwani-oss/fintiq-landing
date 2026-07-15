@@ -2501,7 +2501,7 @@ if _user_email:
     _nav_right_html = (
         _pricing_link +
         f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}{_pro_badge}</span>'
-        '<a href="?_logout=1" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        '<a href="?_logout=1" target="_self" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
         'color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;'
         'text-decoration:none;white-space:nowrap">Logout</a>'
     )
