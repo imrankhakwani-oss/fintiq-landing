@@ -7,7 +7,6 @@ Author: Built for Imran Khakwani | July 2026
 """
 
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import numpy as np
 import requests
@@ -559,27 +558,30 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# ── Guest ID — persistent across refreshes via localStorage ──
-# Runs in an iframe (same origin), sets _gid in parent URL so Python reads it on next rerun
-components.html("""
-<script>
-(function() {
-  try {
-    var k = 'fg_gid';
-    var id = localStorage.getItem(k);
-    if (!id) {
-      id = 'g_' + Math.random().toString(36).substr(2,9) + Date.now().toString(36);
-      localStorage.setItem(k, id);
-    }
-    var p = new URLSearchParams(window.parent.location.search);
-    if (p.get('_gid') !== id) {
-      p.set('_gid', id);
-      window.parent.history.replaceState({}, '', window.parent.location.pathname + '?' + p.toString());
-    }
-  } catch(e) {}
-})();
-</script>
-""", height=0)
+# ── Guest ID — persistent tracking across navigations and refreshes ──
+import uuid as _uuid
+
+def _restore_gid():
+    """After any st.query_params.clear(), restore _gid and _t if present in session state."""
+    if "_guest_id" in st.session_state:
+        st.query_params["_gid"] = st.session_state["_guest_id"]
+    if st.session_state.get("fintiq_user", {}).get("session"):
+        st.query_params["_t"] = st.session_state["fintiq_user"]["session"]
+
+# Set or restore _gid for guests
+if not st.session_state.get("fintiq_user"):
+    _existing_gid = st.query_params.get("_gid", "")
+    if _existing_gid:
+        # URL has _gid — store in session state as backup
+        st.session_state["_guest_id"] = _existing_gid
+    elif "_guest_id" in st.session_state:
+        # URL lost _gid (navigation) — restore from session state
+        st.query_params["_gid"] = st.session_state["_guest_id"]
+    else:
+        # Brand new visitor — generate fresh ID
+        _new_gid = "g_" + _uuid.uuid4().hex[:20]
+        st.session_state["_guest_id"] = _new_gid
+        st.query_params["_gid"] = _new_gid
 
 # ─────────────────────────────────────────────────────────────
 # AUTH GATE — Login / Sign-up wall
@@ -727,9 +729,19 @@ def _upsert_profile(user_id: str, data: dict):
 
 def _increment_search(user_id: str, profile: dict) -> dict:
     now_month = datetime.now().strftime("%Y-%m")
-    searches  = profile.get("monthly_searches", 0)
-    if profile.get("search_month") != now_month:
-        searches = 0
+    # Always read CURRENT count from Supabase to avoid stale increments
+    try:
+        if _sb:
+            r = _sb.table("profiles").select("monthly_searches,search_month").eq("id", user_id).execute()
+            if r.data:
+                db_row = r.data[0]
+                searches = db_row.get("monthly_searches", 0) if db_row.get("search_month") == now_month else 0
+            else:
+                searches = 0
+        else:
+            searches = profile.get("monthly_searches", 0) if profile.get("search_month") == now_month else 0
+    except Exception:
+        searches = profile.get("monthly_searches", 0) if profile.get("search_month") == now_month else 0
     searches += 1
     updated = {**profile, "monthly_searches": searches, "search_month": now_month}
     _upsert_profile(user_id, {"monthly_searches": searches, "search_month": now_month})
@@ -818,14 +830,14 @@ def _check_auth_gate() -> bool:
 
     # Guest — persistent tracking via Supabase guest_searches table
     if not user:
-        _gid = st.query_params.get("_gid", "")
-        if _gid:
-            _g_count = _get_guest_count(_gid)
-            if _g_count < _GUEST_LIMIT:
-                _increment_guest(_gid)
-                return True
-        else:
-            # _gid not in URL yet (first render before JS runs) — allow but don't count
+        _gid = st.query_params.get("_gid", "") or st.session_state.get("_guest_id", "")
+        if not _gid:
+            _gid = "g_" + _uuid.uuid4().hex[:20]
+            st.session_state["_guest_id"] = _gid
+            st.query_params["_gid"] = _gid
+        _g_count = _get_guest_count(_gid)
+        if _g_count < _GUEST_LIMIT:
+            _increment_guest(_gid)
             return True
         for _k in ["screened_df", "screened_symbols"]:
             if _k in st.session_state: del st.session_state[_k]
