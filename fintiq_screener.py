@@ -826,8 +826,6 @@ def _check_auth_gate() -> bool:
 
     # Read current count directly from Supabase every time
     current_searches = 0
-    _debug_read_err = None
-    _debug_write_err = None
     try:
         if _sb:
             r = _sb.table("profiles").select("monthly_searches,search_month,is_pro").eq("id", user_id).execute()
@@ -837,8 +835,8 @@ def _check_auth_gate() -> bool:
                     st.session_state["fintiq_user"]["is_pro"] = True
                     return True
                 current_searches = row.get("monthly_searches", 0) if row.get("search_month") == now_month else 0
-    except Exception as _e:
-        _debug_read_err = str(_e)
+    except Exception:
+        pass
 
     if current_searches < _MONTHLY_LIMIT:
         try:
@@ -848,12 +846,8 @@ def _check_auth_gate() -> bool:
                     "monthly_searches": current_searches + 1,
                     "search_month": now_month,
                 }).execute()
-        except Exception as _e:
-            _debug_write_err = str(_e)
-
-        # Temporary debug — remove after fixing
-        if _debug_read_err or _debug_write_err:
-            st.warning(f"DEBUG — read err: {_debug_read_err} | write err: {_debug_write_err} | count: {current_searches}")
+        except Exception:
+            pass
         return True
 
     # Limit reached — show upgrade wall
@@ -2501,7 +2495,8 @@ if _user_email:
     _nav_right_html = (
         _pricing_link +
         f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}{_pro_badge}</span>'
-        '<a href="?action=logout" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        '<a href="#" onclick="window.top.location.href=\'?action=logout\';return false;" '
+        'style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
         'color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;'
         'text-decoration:none">Logout</a>'
     )
