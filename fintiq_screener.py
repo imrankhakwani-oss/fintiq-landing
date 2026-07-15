@@ -811,20 +811,22 @@ def _increment_guest(guest_id: str) -> int:
         return 1
 
 def _seed_search_count_on_login(user_id: str):
-    """After login, read real search count from Supabase and put it in URL param.
-    This ensures the correct count is restored for this user, clearing any stale
-    count left from a previous user or session."""
+    """After login, restore search count from URL param (if it belongs to this user).
+    Format in URL: _sc=USERID:COUNT|YYYY-MM
+    This works without Supabase — the count stays in the URL across logout/login."""
     now_month = datetime.now().strftime("%Y-%m")
     count = 0
     try:
-        if _sb and user_id:
-            r = _sb.table("user_searches").select("monthly_searches,search_month").eq("user_id", user_id).execute()
-            if r.data and r.data[0].get("search_month") == now_month:
-                count = int(r.data[0].get("monthly_searches", 0))
+        _qp = st.query_params.get("_sc", "")
+        # Format: USERID:COUNT|YYYY-MM
+        if ":" in _qp and "|" in _qp:
+            _uid_part, _rest = _qp.split(":", 1)
+            _count_part, _month_part = _rest.split("|", 1)
+            if _uid_part == user_id and _month_part == now_month:
+                count = int(_count_part)
     except Exception:
         pass
-    # Write to URL — _check_auth_gate will read this on next search
-    st.query_params["_sc"] = f"{count}|{now_month}"
+    st.query_params["_sc"] = f"{user_id}:{count}|{now_month}"
 
 # ── Auth / upgrade gate ───────────────────────────────────────
 def _check_auth_gate() -> bool:
@@ -847,8 +849,7 @@ def _check_auth_gate() -> bool:
     now_month = datetime.now().strftime("%Y-%m")
 
     # ── Persistent search counter via URL query params ──────────────
-    # st.query_params survives browser refresh (URL is preserved).
-    # Format: _sc=<count>|<YYYY-MM>  e.g. _sc=3|2026-07
+    # Format: _sc=USERID:COUNT|YYYY-MM  — tied to user so logout/login is safe
     _ss_key = f"_sc_{user_id}"
     _ss_month_key = f"_sm_{user_id}"
 
@@ -857,10 +858,11 @@ def _check_auth_gate() -> bool:
         seeded = 0
         try:
             _qp = st.query_params.get("_sc", "")
-            if "|" in _qp:
-                _qp_count, _qp_month = _qp.split("|", 1)
-                if _qp_month == now_month:
-                    seeded = int(_qp_count)
+            if ":" in _qp and "|" in _qp:
+                _uid_part, _rest = _qp.split(":", 1)
+                _count_part, _month_part = _rest.split("|", 1)
+                if _uid_part == user_id and _month_part == now_month:
+                    seeded = int(_count_part)
         except Exception:
             pass
         st.session_state[_ss_key] = seeded
@@ -871,8 +873,8 @@ def _check_auth_gate() -> bool:
     if current_searches < _MONTHLY_LIMIT:
         new_count = current_searches + 1
         st.session_state[_ss_key] = new_count
-        # Persist count in URL — survives refresh
-        st.query_params["_sc"] = f"{new_count}|{now_month}"
+        # Persist count in URL — survives refresh and logout/login
+        st.query_params["_sc"] = f"{user_id}:{new_count}|{now_month}"
         # Best-effort sync to Supabase (for future admin reporting)
         try:
             if _sb:
@@ -1042,7 +1044,10 @@ def _show_upgrade_wall(user_email: str, user_id: str):
 if st.query_params.get("_logout") == "1":
     for _k in list(st.session_state.keys()):
         st.session_state.pop(_k, None)
-    st.query_params.clear()   # clears _logout, _t, _sc — everything
+    _sc_preserved = st.query_params.get("_sc", "")  # keep — has user ID prefix
+    st.query_params.clear()
+    if _sc_preserved:
+        st.query_params["_sc"] = _sc_preserved  # restore after clear
     st.rerun()
 
 _qp_token = st.query_params.get("_t", "")
