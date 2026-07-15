@@ -830,23 +830,30 @@ def _check_auth_gate() -> bool:
 
     # Read current count via admin client (bypasses RLS)
     current_searches = 0
+    _dbg_read_err = None
+    _dbg_write_err = None
+    _dbg_row = None
     try:
         if _sb_admin:
             r = _sb_admin.table("profiles").select("monthly_searches,search_month,is_pro").eq("id", user_id).execute()
+            _dbg_row = r.data
             if r.data:
                 row = r.data[0]
                 if row.get("is_pro"):
                     st.session_state["fintiq_user"]["is_pro"] = True
                     return True
                 current_searches = row.get("monthly_searches", 0) if row.get("search_month") == now_month else 0
-    except Exception:
-        pass
+    except Exception as e:
+        _dbg_read_err = str(e)
+
+    st.info(f"DEBUG: admin_client={'YES' if _sb_admin and _sb_admin is not _sb else 'FALLBACK'} | row={_dbg_row} | count={current_searches} | limit={_MONTHLY_LIMIT} | read_err={_dbg_read_err}")
 
     if current_searches < _MONTHLY_LIMIT:
-        _upsert_profile(user_id, {
-            "monthly_searches": current_searches + 1,
-            "search_month": now_month,
-        })
+        try:
+            _sb_admin.table("profiles").upsert({"id": user_id, "monthly_searches": current_searches + 1, "search_month": now_month}).execute()
+        except Exception as e:
+            _dbg_write_err = str(e)
+            st.warning(f"DEBUG write err: {_dbg_write_err}")
         return True
 
     # Limit reached — show upgrade wall
@@ -2494,6 +2501,9 @@ if _user_email:
     _nav_right_html = (
         _pricing_link +
         f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}{_pro_badge}</span>'
+        '<a href="?_logout=1" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        'color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;'
+        'text-decoration:none;white-space:nowrap">Logout</a>'
     )
 else:
     # If arriving from Stripe redirect, carry the stripe_session through the login URL
@@ -2539,41 +2549,6 @@ st.markdown(_nav_html, unsafe_allow_html=True)
 
 # ── Logout button — real Streamlit button pulled into navbar via CSS ──
 if _user_email:
-    st.markdown("""<style>
-    /* Position the logout button fixed in the navbar */
-    div[data-testid="stButton"]:has(button[data-testid="baseButton-secondary"]) {
-        position: fixed !important;
-        top: 10px !important;
-        right: 20px !important;
-        z-index: 99999 !important;
-        width: auto !important;
-    }
-    div[data-testid="stButton"] button[data-testid="baseButton-secondary"] {
-        background: rgba(245,158,11,0.12) !important;
-        border: 1px solid rgba(245,158,11,0.4) !important;
-        color: #F59E0B !important;
-        border-radius: 20px !important;
-        font-size: 0.78rem !important;
-        font-weight: 600 !important;
-        padding: 4px 18px !important;
-        white-space: nowrap !important;
-        min-height: 30px !important;
-        height: 30px !important;
-        line-height: 22px !important;
-    }
-    div[data-testid="stButton"] button[data-testid="baseButton-secondary"]:hover {
-        background: rgba(245,158,11,0.28) !important;
-        color: #FCD34D !important;
-    }
-    </style>""", unsafe_allow_html=True)
-    if st.button("Logout", key="nav_logout_btn"):
-        if _sb:
-            try: _sb.auth.sign_out()
-            except Exception: pass
-        for _k in ["fintiq_user", "fintiq_profile", "_show_auth_wall", "_show_upgrade_wall"]:
-            st.session_state.pop(_k, None)
-        st.query_params.clear()
-        st.rerun()
 
 # ── Pricing page (?page=pricing) ─────────────────────────────
 _qp_page = st.query_params.get("page", "")
