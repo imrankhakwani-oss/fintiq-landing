@@ -2540,35 +2540,42 @@ st.markdown(_nav_html, unsafe_allow_html=True)
 # ── Logout button — real Streamlit button pulled into navbar via CSS ──
 if _user_email:
     st.markdown("""<style>
-    /* Pull the logout button up into the navbar */
-    div[data-testid="stMainBlockContainer"] > div:first-child
-        div[data-testid="stHorizontalBlock"]:first-of-type { margin-top: -52px; }
-    #logout-row { display:flex; justify-content:flex-end; margin-top:-52px; padding-right:8px; }
-    #logout-row button {
+    button[kind="secondary"][data-testid="baseButton-secondary"]:has(+ div),
+    div[data-testid="stBaseButton-secondary"] { display:none; }
+    #fintiq-logout-wrap {
+        position: fixed;
+        top: 13px;
+        right: 20px;
+        z-index: 99999;
+    }
+    #fintiq-logout-wrap button {
         background: rgba(245,158,11,0.12) !important;
         border: 1px solid rgba(245,158,11,0.4) !important;
         color: #F59E0B !important;
         border-radius: 20px !important;
         font-size: 0.78rem !important;
         font-weight: 600 !important;
-        padding: 2px 18px !important;
+        padding: 4px 18px !important;
+        white-space: nowrap !important;
         min-height: 0 !important;
         height: 30px !important;
-        line-height: 1 !important;
+        line-height: 22px !important;
+        cursor: pointer !important;
     }
-    #logout-row button:hover { background: rgba(245,158,11,0.25) !important; }
-    </style>""", unsafe_allow_html=True)
-    st.markdown('<div id="logout-row">', unsafe_allow_html=True)
-    _cols = st.columns([10, 1])
-    with _cols[1]:
-        if st.button("Logout", key="nav_logout_btn"):
-            if _sb:
-                try: _sb.auth.sign_out()
-                except Exception: pass
-            for _k in ["fintiq_user", "fintiq_profile", "_show_auth_wall", "_show_upgrade_wall"]:
-                st.session_state.pop(_k, None)
-            st.query_params.clear()
-            st.rerun()
+    #fintiq-logout-wrap button:hover {
+        background: rgba(245,158,11,0.28) !important;
+        color: #FCD34D !important;
+    }
+    </style>
+    <div id="fintiq-logout-wrap">""", unsafe_allow_html=True)
+    if st.button("Logout", key="nav_logout_btn"):
+        if _sb:
+            try: _sb.auth.sign_out()
+            except Exception: pass
+        for _k in ["fintiq_user", "fintiq_profile", "_show_auth_wall", "_show_upgrade_wall"]:
+            st.session_state.pop(_k, None)
+        st.query_params.clear()
+        st.rerun()
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ── Pricing page (?page=pricing) ─────────────────────────────
