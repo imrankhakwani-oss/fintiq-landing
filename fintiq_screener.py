@@ -651,6 +651,7 @@ def _show_auth():
                                 st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
                                 if _tok:
                                     st.query_params["_t"] = _tok
+                                _seed_search_count_on_login(lr.user.id)
                                 st.rerun()
                                 return True
                         except Exception:
@@ -678,6 +679,7 @@ def _show_auth():
                         _pss = st.session_state.pop("_pending_stripe_session", "")
                         if _pss:
                             _verify_stripe_session(_pss, res.user.id)
+                        _seed_search_count_on_login(res.user.id)
                         st.rerun()
                     else:
                         st.markdown('<div class="auth-err">Invalid email or password.</div>',
@@ -808,6 +810,22 @@ def _increment_guest(guest_id: str) -> int:
     except Exception:
         return 1
 
+def _seed_search_count_on_login(user_id: str):
+    """After login, read real search count from Supabase and put it in URL param.
+    This ensures the correct count is restored for this user, clearing any stale
+    count left from a previous user or session."""
+    now_month = datetime.now().strftime("%Y-%m")
+    count = 0
+    try:
+        if _sb and user_id:
+            r = _sb.table("user_searches").select("monthly_searches,search_month").eq("user_id", user_id).execute()
+            if r.data and r.data[0].get("search_month") == now_month:
+                count = int(r.data[0].get("monthly_searches", 0))
+    except Exception:
+        pass
+    # Write to URL — _check_auth_gate will read this on next search
+    st.query_params["_sc"] = f"{count}|{now_month}"
+
 # ── Auth / upgrade gate ───────────────────────────────────────
 def _check_auth_gate() -> bool:
     """Returns True if allowed to run a search."""
@@ -824,46 +842,47 @@ def _check_auth_gate() -> bool:
         st.session_state["_show_auth_wall"] = True
         st.rerun()
 
-    # Free registered user — always read count from Supabase (source of truth)
+    # Free registered user
     user_id = user.get("id", "")
     now_month = datetime.now().strftime("%Y-%m")
 
-    # Session-state counter — works reliably within a session
+    # ── Persistent search counter via URL query params ──────────────
+    # st.query_params survives browser refresh (URL is preserved).
+    # Format: _sc=<count>|<YYYY-MM>  e.g. _sc=3|2026-07
     _ss_key = f"_sc_{user_id}"
     _ss_month_key = f"_sm_{user_id}"
+
     if st.session_state.get(_ss_month_key) != now_month:
-        # New month or first load — try seeding from Supabase
+        # First call this session — seed from URL query param
         seeded = 0
-        _read_err = None
         try:
-            if _sb:
-                r = _sb.table("user_searches").select("monthly_searches,search_month").eq("user_id", user_id).execute()
-                if r.data and r.data[0].get("search_month") == now_month:
-                    seeded = r.data[0].get("monthly_searches", 0)
-        except Exception as e:
-            _read_err = str(e)
+            _qp = st.query_params.get("_sc", "")
+            if "|" in _qp:
+                _qp_count, _qp_month = _qp.split("|", 1)
+                if _qp_month == now_month:
+                    seeded = int(_qp_count)
+        except Exception:
+            pass
         st.session_state[_ss_key] = seeded
         st.session_state[_ss_month_key] = now_month
-        # Debug: show what was read from Supabase on session start
-        st.session_state["_debug_seed"] = f"seeded={seeded} err={_read_err}"
 
     current_searches = st.session_state.get(_ss_key, 0)
 
     if current_searches < _MONTHLY_LIMIT:
-        st.session_state[_ss_key] = current_searches + 1
-        # Best-effort persist to Supabase
-        _write_err = None
+        new_count = current_searches + 1
+        st.session_state[_ss_key] = new_count
+        # Persist count in URL — survives refresh
+        st.query_params["_sc"] = f"{new_count}|{now_month}"
+        # Best-effort sync to Supabase (for future admin reporting)
         try:
             if _sb:
                 _sb.table("user_searches").upsert({
                     "user_id": user_id,
-                    "monthly_searches": current_searches + 1,
+                    "monthly_searches": new_count,
                     "search_month": now_month,
                 }).execute()
-        except Exception as e:
-            _write_err = str(e)
-        if _write_err:
-            st.session_state["_debug_write"] = f"write err={_write_err}"
+        except Exception:
+            pass
         return True
 
     # Limit reached — show upgrade wall
@@ -920,6 +939,7 @@ def _show_auth_wall():
                                 st.session_state.pop("_show_upgrade_wall", None)
                                 if _tok:
                                     st.query_params["_t"] = _tok
+                                _seed_search_count_on_login(lr.user.id)
                                 st.rerun()
                         except Exception:
                             st.success("✅ Account created! Please log in.")
@@ -930,7 +950,6 @@ def _show_auth_wall():
                     if res.user:
                         _tok2 = res.session.access_token if res.session else None
                         st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
-                        st.session_state["free_searches"] = 0
                         st.session_state.pop("_show_auth_wall", None)
                         st.session_state.pop("_show_upgrade_wall", None)
                         if _tok2:
@@ -939,6 +958,7 @@ def _show_auth_wall():
                         _pss = st.session_state.pop("_pending_stripe_session", "")
                         if _pss:
                             _verify_stripe_session(_pss, res.user.id)
+                        _seed_search_count_on_login(res.user.id)
                         st.rerun()
                     else:
                         st.error("Invalid email or password.")
@@ -1018,6 +1038,13 @@ def _show_upgrade_wall(user_email: str, user_id: str):
 # After login we store the Supabase access_token in ?_t= URL param.
 # On page refresh Streamlit loses session_state but the URL param survives.
 # We validate it with Supabase and restore the session silently.
+# ── Handle logout ────────────────────────────────────────────
+if st.query_params.get("_logout") == "1":
+    for _k in list(st.session_state.keys()):
+        st.session_state.pop(_k, None)
+    st.query_params.clear()   # clears _logout, _t, _sc — everything
+    st.rerun()
+
 _qp_token = st.query_params.get("_t", "")
 if _qp_token and "fintiq_user" not in st.session_state and _sb:
     try:
@@ -2734,6 +2761,7 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                                             st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
                                             if _tok:
                                                 st.query_params["_t"] = _tok
+                                            _seed_search_count_on_login(lr.user.id)
                                             st.rerun()
                                     except Exception:
                                         st.success("✅ Account created! Please log in.")
@@ -2744,7 +2772,6 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                             if res.user:
                                 _tok3 = res.session.access_token if res.session else None
                                 st.session_state["fintiq_user"] = {"email": res.user.email, "id": res.user.id}
-                                st.session_state["free_searches"] = 0
                                 # Process Stripe payment carried through login URL
                                 _qp_ss = st.query_params.get("stripe_session", "") or st.session_state.pop("_pending_stripe_session", "")
                                 if _qp_ss:
@@ -2755,6 +2782,7 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                                     st.query_params["_t"] = _tok3
                                 if _next_page:
                                     st.query_params["page"] = _next_page
+                                _seed_search_count_on_login(res.user.id)
                                 st.rerun()
                             else:
                                 st.error("Invalid email or password.")
@@ -3727,18 +3755,6 @@ with tab1:
         _uw = st.session_state["_show_upgrade_wall"]
         _show_upgrade_wall(_uw[0], _uw[1])
         st.stop()
-
-    # ── TEMP DEBUG — remove after confirming refresh persistence ──
-    if st.session_state.get("_debug_seed") or st.session_state.get("_debug_write"):
-        _u = st.session_state.get("fintiq_user", {})
-        _uid = _u.get("id","")
-        _sc = st.session_state.get(f"_sc_{_uid}", "?")
-        with st.expander("🔧 Debug (temp)", expanded=True):
-            st.code(
-                f"searches this session: {_sc}/{_MONTHLY_LIMIT}\n"
-                f"seed on load: {st.session_state.get('_debug_seed','')}\n"
-                f"write: {st.session_state.get('_debug_write','ok')}"
-            )
 
     st.markdown(
         '<div style="display:flex;align-items:center;gap:10px;padding:2px 0 2px 0;margin-bottom:2px">'
