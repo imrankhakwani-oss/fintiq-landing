@@ -2542,10 +2542,12 @@ if _user_email:
     _pro_badge = (' <span style="background:#F59E0B;color:#0F1923;font-size:0.65rem;font-weight:800;'
                   'padding:1px 7px;border-radius:8px;vertical-align:middle">PRO</span>'
                   if _is_pro else "")
+    _sc_now = st.query_params.get("_sc", "")
+    _logout_url = f"?_logout=1&_sc={_sc_now}" if _sc_now else "?_logout=1"
     _nav_right_html = (
         _pricing_link +
         f'<span style="color:#94A3B8;font-size:0.8rem;margin-right:8px">👤 {_user_email}{_pro_badge}</span>'
-        '<a href="?_logout=1" target="_self" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
+        f'<a href="{_logout_url}" target="_self" style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);'
         'color:#F59E0B;padding:5px 16px;border-radius:20px;font-size:0.78rem;font-weight:600;'
         'text-decoration:none;white-space:nowrap">Logout</a>'
     )
