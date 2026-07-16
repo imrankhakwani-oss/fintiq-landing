@@ -701,43 +701,19 @@ if "free_searches" not in st.session_state:
 _MONTHLY_LIMIT = 5   # free-account searches per calendar month
 
 # ── In-process search counter ─────────────────────────────────
-# Module-level dict: survives browser refresh, logout, login.
-# Resets only on Railway redeploy (acceptable; Supabase sync added below).
-# Key: (user_id, "YYYY-MM")  Value: int
-from collections import defaultdict
-_search_counts: dict = defaultdict(int)
-
-def _sc_key(user_id: str) -> tuple:
-    return (user_id, datetime.now().strftime("%Y-%m"))
-
-def _sc_get(user_id: str) -> int:
-    return _search_counts[_sc_key(user_id)]
-
-def _sc_increment(user_id: str) -> int:
-    k = _sc_key(user_id)
-    _search_counts[k] += 1
-    # Best-effort DB sync
-    try:
-        if _sb:
-            _sb.table("user_searches").upsert({
-                "user_id": user_id,
-                "monthly_searches": _search_counts[k],
-                "search_month": k[1],
-            }).execute()
-    except Exception:
-        pass
-    return _search_counts[k]
+# _counter.py is a separate module — Python caches it in sys.modules
+# so its state survives across ALL Streamlit reruns, refreshes,
+# logouts and logins within the same Railway process.
+import _counter as _sc
 
 def _sc_seed_from_db(user_id: str):
-    """On first use, seed in-memory counter from Supabase if available."""
-    k = _sc_key(user_id)
-    if _search_counts[k] > 0:
-        return  # already seeded
+    """Seed in-memory counter from Supabase on first process-level access."""
+    now_month = datetime.now().strftime("%Y-%m")
     try:
         if _sb:
             r = _sb.table("user_searches").select("monthly_searches,search_month").eq("user_id", user_id).execute()
-            if r.data and r.data[0].get("search_month") == k[1]:
-                _search_counts[k] = int(r.data[0].get("monthly_searches", 0))
+            if r.data and r.data[0].get("search_month") == now_month:
+                _sc.seed(user_id, int(r.data[0].get("monthly_searches", 0)))
     except Exception:
         pass
 
@@ -887,13 +863,13 @@ def _check_auth_gate() -> bool:
     # Free registered user
     user_id = user.get("id", "")
 
-    # Seed from DB once per process lifetime (no-op if already seeded or DB unavailable)
+    # Seed from DB on first access (no-op if DB unavailable)
     _sc_seed_from_db(user_id)
 
-    current_searches = _sc_get(user_id)
+    current_searches = _sc.get(user_id)
 
     if current_searches < _MONTHLY_LIMIT:
-        _sc_increment(user_id)
+        _sc.increment(user_id)
         return True
 
     # Limit reached — show upgrade wall
