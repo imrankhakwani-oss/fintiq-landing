@@ -651,7 +651,7 @@ def _show_auth():
                                 st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
                                 if _tok:
                                     st.query_params["_t"] = _tok
-                                _seed_search_count_on_login(lr.user.id)
+                                pass  # counter lives in module-level _search_counts
                                 st.rerun()
                                 return True
                         except Exception:
@@ -679,7 +679,7 @@ def _show_auth():
                         _pss = st.session_state.pop("_pending_stripe_session", "")
                         if _pss:
                             _verify_stripe_session(_pss, res.user.id)
-                        _seed_search_count_on_login(res.user.id)
+                        pass  # counter lives in module-level _search_counts
                         st.rerun()
                     else:
                         st.markdown('<div class="auth-err">Invalid email or password.</div>',
@@ -699,6 +699,47 @@ def _show_auth():
 if "free_searches" not in st.session_state:
     st.session_state["free_searches"] = 0
 _MONTHLY_LIMIT = 5   # free-account searches per calendar month
+
+# ── In-process search counter ─────────────────────────────────
+# Module-level dict: survives browser refresh, logout, login.
+# Resets only on Railway redeploy (acceptable; Supabase sync added below).
+# Key: (user_id, "YYYY-MM")  Value: int
+from collections import defaultdict
+_search_counts: dict = defaultdict(int)
+
+def _sc_key(user_id: str) -> tuple:
+    return (user_id, datetime.now().strftime("%Y-%m"))
+
+def _sc_get(user_id: str) -> int:
+    return _search_counts[_sc_key(user_id)]
+
+def _sc_increment(user_id: str) -> int:
+    k = _sc_key(user_id)
+    _search_counts[k] += 1
+    # Best-effort DB sync
+    try:
+        if _sb:
+            _sb.table("user_searches").upsert({
+                "user_id": user_id,
+                "monthly_searches": _search_counts[k],
+                "search_month": k[1],
+            }).execute()
+    except Exception:
+        pass
+    return _search_counts[k]
+
+def _sc_seed_from_db(user_id: str):
+    """On first use, seed in-memory counter from Supabase if available."""
+    k = _sc_key(user_id)
+    if _search_counts[k] > 0:
+        return  # already seeded
+    try:
+        if _sb:
+            r = _sb.table("user_searches").select("monthly_searches,search_month").eq("user_id", user_id).execute()
+            if r.data and r.data[0].get("search_month") == k[1]:
+                _search_counts[k] = int(r.data[0].get("monthly_searches", 0))
+    except Exception:
+        pass
 
 # ── Supabase profile helpers ──────────────────────────────────
 def _get_profile(user_id: str) -> dict:
@@ -845,45 +886,14 @@ def _check_auth_gate() -> bool:
 
     # Free registered user
     user_id = user.get("id", "")
-    now_month = datetime.now().strftime("%Y-%m")
 
-    # ── Persistent search counter via URL query params ──────────────
-    # Format: _sc=USERID:COUNT|YYYY-MM  — tied to user so logout/login is safe
-    _ss_key = f"_sc_{user_id}"
-    _ss_month_key = f"_sm_{user_id}"
+    # Seed from DB once per process lifetime (no-op if already seeded or DB unavailable)
+    _sc_seed_from_db(user_id)
 
-    if st.session_state.get(_ss_month_key) != now_month:
-        # First call this session — seed from URL query param
-        seeded = 0
-        try:
-            _qp = st.query_params.get("_sc", "")
-            if ":" in _qp and "|" in _qp:
-                _uid_part, _rest = _qp.split(":", 1)
-                _count_part, _month_part = _rest.split("|", 1)
-                if _uid_part == user_id and _month_part == now_month:
-                    seeded = int(_count_part)
-        except Exception:
-            pass
-        st.session_state[_ss_key] = seeded
-        st.session_state[_ss_month_key] = now_month
-
-    current_searches = st.session_state.get(_ss_key, 0)
+    current_searches = _sc_get(user_id)
 
     if current_searches < _MONTHLY_LIMIT:
-        new_count = current_searches + 1
-        st.session_state[_ss_key] = new_count
-        # Persist count in URL — survives refresh and logout/login
-        st.query_params["_sc"] = f"{user_id}:{new_count}|{now_month}"
-        # Best-effort sync to Supabase (for future admin reporting)
-        try:
-            if _sb:
-                _sb.table("user_searches").upsert({
-                    "user_id": user_id,
-                    "monthly_searches": new_count,
-                    "search_month": now_month,
-                }).execute()
-        except Exception:
-            pass
+        _sc_increment(user_id)
         return True
 
     # Limit reached — show upgrade wall
@@ -940,7 +950,7 @@ def _show_auth_wall():
                                 st.session_state.pop("_show_upgrade_wall", None)
                                 if _tok:
                                     st.query_params["_t"] = _tok
-                                _seed_search_count_on_login(lr.user.id)
+                                pass  # counter lives in module-level _search_counts
                                 st.rerun()
                         except Exception:
                             st.success("✅ Account created! Please log in.")
@@ -959,7 +969,7 @@ def _show_auth_wall():
                         _pss = st.session_state.pop("_pending_stripe_session", "")
                         if _pss:
                             _verify_stripe_session(_pss, res.user.id)
-                        _seed_search_count_on_login(res.user.id)
+                        pass  # counter lives in module-level _search_counts
                         st.rerun()
                     else:
                         st.error("Invalid email or password.")
@@ -1043,10 +1053,11 @@ def _show_upgrade_wall(user_email: str, user_id: str):
 if st.query_params.get("_logout") == "1":
     for _k in list(st.session_state.keys()):
         st.session_state.pop(_k, None)
-    _sc_preserved = st.query_params.get("_sc", "")  # keep — has user ID prefix
-    st.query_params.clear()
-    if _sc_preserved:
-        st.query_params["_sc"] = _sc_preserved  # restore after clear
+    # Never clear — just remove _logout and _t; keep _sc intact
+    _params = dict(st.query_params)
+    _params.pop("_logout", None)
+    _params.pop("_t", None)
+    st.query_params.from_dict(_params)
     st.rerun()
 
 _qp_token = st.query_params.get("_t", "")
@@ -2770,7 +2781,7 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                                             st.session_state["fintiq_user"] = {"email": lr.user.email, "id": lr.user.id, "session": _tok}
                                             if _tok:
                                                 st.query_params["_t"] = _tok
-                                            _seed_search_count_on_login(lr.user.id)
+                                            pass  # counter lives in module-level _search_counts
                                             st.rerun()
                                     except Exception:
                                         st.success("✅ Account created! Please log in.")
@@ -2786,13 +2797,13 @@ if (_qp_action == "login" or _banner_stripe_session) and not _user_email:
                                 if _qp_ss:
                                     _verify_stripe_session(_qp_ss, res.user.id)
                                 _next_page = st.query_params.get("next", "")
-                                _sc_before_clear = st.query_params.get("_sc", "")
-                                st.query_params.clear()
+                                # Never clear all params — just set what we need
                                 if _tok3:
                                     st.query_params["_t"] = _tok3
-                                if _next_page:
-                                    st.query_params["page"] = _next_page
-                                _seed_search_count_on_login(res.user.id, _sc_before_clear)
+                                # Remove login-flow params cleanly
+                                for _rp in ["action", "next", "stripe_session", "_logout"]:
+                                    try: st.query_params.pop(_rp)
+                                    except: pass
                                 st.rerun()
                             else:
                                 st.error("Invalid email or password.")
