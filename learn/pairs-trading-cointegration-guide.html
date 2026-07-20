@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pairs Trading with Cointegration: A Practical Guide | Fintiq Pro</title>
+<meta name="description" content="Complete pairs trading guide using cointegration. Learn Z-score entry and exit rules, position sizing, risk management, and step-by-step Fintiq Pairs tab walkthrough.">
+<meta name="keywords" content="pairs trading guide UK, cointegration trading strategy, Z-score pairs trading, statistical arbitrage strategy, pairs trading Fintiq">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}.breadcrumb a{color:#94A3B8}.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-align:700;margin-bottom:16px}.badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}.badge-pro{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}.info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}.divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}table{width:100%;border-collapse:collapse;margin:24px 0}th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}.cta-box p{color:#94A3B8;margin-bottom:24px}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}@media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<nav><a href="https://fintiq.uk" class="logo">&#128202; Fintiq</a><div class="nav-links"><a href="https://fintiq.uk/learn.html">&#8592; Learn</a><a href="https://app.fintiq.uk" class="btn-cta">Try the App &#8594;</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="https://fintiq.uk">Home</a> &rsaquo; <a href="https://fintiq.uk/learn.html">Learn</a> &rsaquo; Pairs Trading Guide</div>
+<span class="badge badge-pro">Pro Article</span>
+<h1>Pairs Trading with Cointegration: A Practical Guide</h1>
+<p class="meta">Updated July 2026 &middot; 14 min read &middot; Advanced</p>
+<p>Pairs trading is one of the oldest market-neutral strategies in institutional finance, dating back to the quantitative trading groups at Morgan Stanley in the 1980s. It has been systematically applied by hedge funds, proprietary trading desks, and statistical arbitrage programmes for four decades. And yet, despite its institutional pedigree, the core mechanics are accessible to any serious retail investor willing to learn the underlying statistics.</p>
+<p>If you have not read our free introduction to cointegration, start there: <a href="cointegration-explained.html">Cointegration Explained: The Strategy Institutional Traders Use</a>. This Pro guide assumes you understand what cointegration is and why it differs from correlation, and focuses on the practical implementation of a cointegration-based pairs trading strategy using Fintiq's Pairs tab.</p>
+
+<h2>The Academic Evidence: Why the Edge Exists</h2>
+<p>Pairs trading is one of the few quantitative strategies with robust long-run academic evidence supporting its effectiveness. The landmark study is by <strong>Gatev, Goetzmann, and Rouwenhorst (2006)</strong>, published in the Review of Financial Studies. Their key findings:</p>
+<ul>
+<li>A simple pairs trading strategy, applied to US stocks from 1962 to 2002 (a 40-year period), generated average excess returns of approximately <strong>11% per year</strong> above the market.</li>
+<li>The strategy was <strong>market-neutral</strong>: the excess returns were not explained by market beta, size, or value factor exposures. The alpha was genuine.</li>
+<li>Returns were <strong>persistent over time</strong>: the strategy worked across multiple decades and market cycles, suggesting structural rather than coincidental profits.</li>
+</ul>
+<p>The key question is: why does the edge persist? If pairs trading generates reliable excess returns, why don't institutional arbitrageurs trade it away immediately?</p>
+<p>The answer is structural. Many institutional funds have mandates that prevent pairs trading: they must be long-only, or they have sector concentration limits that prevent simultaneously holding two competing stocks, or they face regulatory restrictions on short positions. Retail investors simply do not know the strategy exists or lack the tools to implement it. This structural under-participation in statistical arbitrage allows the spread divergences to persist longer than a pure-market-efficiency model would predict, generating ongoing opportunities for those who do participate.</p>
+
+<h2>The Half-Life of Mean Reversion</h2>
+<p>Not all cointegrated pairs revert to their mean at the same speed. A pair with a very long half-life might take 60-90 days for the spread to halve from its current deviation. A pair with a short half-life might revert in 5-15 days. The half-life determines the practical tradeability of a pair.</p>
+<div class="formula">Half-Life of Mean Reversion (Ornstein-Uhlenbeck model):
+
+Spread reversion: dS_t = theta * (mu - S_t) * dt + sigma * dW_t
+
+Where:
+  theta  = mean reversion speed (higher = faster reversion)
+  mu     = long-run mean of the spread
+  sigma  = volatility of the spread
+  dW_t   = Wiener process (random component)
+
+Half-Life = ln(2) / theta
+
+Practical interpretation:
+  Half-life &lt; 15 days:   Excellent tradeable pair (fast reversion)
+  Half-life 15-30 days:  Good tradeable pair
+  Half-life 30-60 days:  Acceptable but requires patience
+  Half-life &gt; 60 days:  Questionable tradeability (capital tied up too long)</div>
+<p>Fintiq's Pairs tab calculates and displays the estimated half-life of mean reversion for each pair you enter. This is one of the most important outputs to check before committing to a pairs trade: a pair with strong cointegration (low ADF p-value) but a 90-day half-life is much harder to trade profitably than one with the same cointegration strength but a 12-day half-life.</p>
+
+<h2>Classic LSE Pairs with Strong Cointegration History</h2>
+<table>
+<thead><tr><th>Pair</th><th>Sector</th><th>Economic Link</th><th>Typical Half-Life</th></tr></thead>
+<tbody>
+<tr><td>BP / Shell (SHEL)</td><td>Integrated Oil</td><td>Oil price, refining margins, ESG transition</td><td>10-20 days</td></tr>
+<tr><td>Lloyds / Barclays</td><td>UK Retail Banking</td><td>Bank Rate, UK mortgage market, PRA regulation</td><td>15-25 days</td></tr>
+<tr><td>Rio Tinto / BHP</td><td>Diversified Mining</td><td>Iron ore, copper, Australian operations</td><td>12-22 days</td></tr>
+<tr><td>Whitbread / IHG</td><td>Hotels / Hospitality</td><td>UK hotel occupancy, RevPAR, consumer spending</td><td>20-35 days</td></tr>
+<tr><td>Tesco / Sainsbury's</td><td>UK Grocery</td><td>UK food retail market share, consumer spending</td><td>18-30 days</td></tr>
+</tbody>
+</table>
+<p>Note: the Tesco/Sainsbury's pair was disrupted by Tesco's 2014 accounting scandal, illustrating the structural break risk. Always verify that the economic rationale for a pair remains intact before trading it.</p>
+
+<h2>The Z-Score Trading Signal</h2>
+<p>Once you have confirmed cointegration and checked the half-life, the trading signal is generated from the Z-score of the spread &mdash; how many standard deviations the current spread is from its historical mean:</p>
+<div class="formula">Spread = Price_A - (beta * Price_B)
+  where beta = hedge ratio from cointegrating regression
+
+Z-Score = (Current Spread - Mean Spread) / Std Dev of Spread
+
+Entry rules:
+  Z &gt; +2.0: Enter trade (sell A, buy B) — spread too wide
+  Z &lt; -2.0: Enter trade (buy A, sell B) — spread too narrow
+
+Exit rules:
+  |Z| &lt; 0.5: Close position, take profit
+  |Z| &gt; 3.5: Consider stop-loss (spread may be breaking down)
+
+Position sizing:
+  Long leg: +1 unit of Stock B
+  Short leg: -beta units of Stock A
+  (beta = hedge ratio, ensuring dollar-neutral position)</div>
+
+<h2>Why the Hedge Ratio Matters</h2>
+<p>A critical technical point: the long and short positions in a pairs trade must be sized correctly to create a truly market-neutral position. The <strong>hedge ratio</strong> (beta from the cointegrating regression) tells you how many units of Stock A to short for every unit of Stock B you buy (or vice versa).</p>
+<p>If you simply buy &pound;10,000 of Lloyds and sell &pound;10,000 of Barclays, you have a dollar-neutral position but not a beta-neutral position &mdash; if Barclays is more volatile than Lloyds, your combined position has a directional bias. The correct approach is to scale the position sizes such that the market exposure (beta * position value) is equal on both legs.</p>
+<p>Fintiq's Pairs tab calculates the hedge ratio automatically from the cointegrating regression and displays both the suggested position sizes and the resulting market neutrality of the trade.</p>
+
+<div style="position:relative;margin-top:40px"><div style="filter:blur(3px);pointer-events:none;user-select:none;max-height:280px;overflow:hidden;color:#CBD5E1"><h2 style="color:#F59E0B">Advanced Strategy &amp; Fintiq Walkthrough</h2><p>In this section we cover the exact parameters, step-by-step Fintiq walkthrough, and advanced strategy details available to Pro members...</p><p>Professional analysts use specific thresholds that differ from conventional wisdom. The nuances of implementation separate average results from exceptional ones...</p></div><div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,#0D1B2A 70%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:40px"><div style="text-align:center;padding:0 20px"><div style="font-size:1.3rem;font-weight:700;color:#F1F5F9;margin-bottom:8px">&#128274; Continue Reading</div><div style="color:#94A3B8;margin-bottom:20px;font-size:0.9rem">Unlock the complete guide with step-by-step Fintiq walkthroughs and expert strategy</div><a href="https://buy.stripe.com/3cI8wP3KigyObAkabiaZi03" style="background:#F59E0B;color:#0A1628;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block">Unlock Full Guide &mdash; &pound;2.50</a><div style="color:#64748B;font-size:0.8rem;margin-top:12px">Or get all 6 Pro guides for &pound;10 &middot; <a href="https://buy.stripe.com/28E14ncgObeu5bWgzGaZi06" style="color:#F59E0B">Bundle deal</a> &middot; Instant access &middot; One-off payment</div></div></div></div>
+</div>
+<footer>
+<div class="f-logo">&#128202; Fintiq</div>
+<div class="f-sub">Free stock screener &amp; investing tools for UK investors</div>
+<div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div>
+<div class="f-copy">&copy; 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+</body>
+</html>

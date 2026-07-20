@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Use the DCF Financial Model in Fintiq to Value Any Company | Fintiq</title>
+<meta name="description" content="Step-by-step DCF valuation guide for Fintiq. Every assumption explained — WACC, terminal growth, operating margin — so you can calculate a stock's true intrinsic value.">
+<meta name="keywords" content="DCF valuation UK, discounted cash flow explained, intrinsic value calculator, how to value a stock UK, DCF model tutorial, WACC explained, terminal value">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}.breadcrumb a{color:#94A3B8}.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;margin-bottom:16px}.badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}.badge-pro{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}.info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}.divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}table{width:100%;border-collapse:collapse;margin:24px 0}th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}.cta-box p{color:#94A3B8;margin-bottom:24px}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}@media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<nav><a href="https://fintiq.uk" class="logo">&#128202; Fintiq</a><div class="nav-links"><a href="https://fintiq.uk/learn.html">&#8592; Learn</a><a href="https://app.fintiq.uk" class="btn-cta">Try the App &#8594;</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="https://fintiq.uk">Home</a> &rsaquo; <a href="https://fintiq.uk/learn.html">Learn</a> &rsaquo; DCF Model in Fintiq</div>
+<span class="badge badge-free">Free Article</span>
+<h1>How to Use the DCF Financial Model in Fintiq to Value Any Company</h1>
+<p class="meta">Updated July 2026 &middot; 15 min read &middot; Intermediate to Advanced</p>
+<p>The Discounted Cash Flow (DCF) model is the gold standard of company valuation. It is the method used by Goldman Sachs analysts building equity research reports, by private equity firms valuing acquisition targets, and by Warren Buffett and Howard Marks when assessing whether a business is worth buying. Its central principle is elegant and intuitive: <strong>a company is worth the present value of all the cash flows it will ever generate, discounted back to today at a rate that reflects the riskiness of those cash flows.</strong></p>
+<p>Everything else in investing &mdash; P/E ratios, EV/EBITDA multiples, price-to-book &mdash; is a shortcut for a DCF. When you pay 20x earnings for a stock, you are implicitly making assumptions about future growth rates, margins, and the appropriate discount rate. The DCF makes those assumptions explicit, which is precisely what makes it so powerful and so uncomfortable: it forces you to state and defend your assumptions rather than hiding behind a simple multiple.</p>
+<p>This guide explains Fintiq's three-stage DCF model in full detail: every assumption, every formula step, and how to interpret the outputs to make better investment decisions.</p>
+
+<h2>Why Think in DCF Terms?</h2>
+<p>The DCF framework forces you to think like a business owner rather than a stock market speculator. The question it asks is: "What is this business actually worth?" &mdash; not "Where will the share price go tomorrow?" This distinction matters enormously for long-term investment returns.</p>
+<p>Charlie Munger famously said: "All intelligent investing is value investing — acquiring more than you are paying for." The DCF is the formal apparatus for answering the question of what you are getting for what you are paying. A stock trading at &pound;10 is cheap if the intrinsic value is &pound;18 and expensive if the intrinsic value is &pound;6. The price tells you nothing without the value.</p>
+<div class="highlight">
+<strong>The margin of safety:</strong> Benjamin Graham's most important principle was to buy with a margin of safety — only invest when the intrinsic value is significantly above the current price (20-40% discount). The DCF provides the intrinsic value estimate against which you measure the margin of safety. Fintiq displays this margin of safety automatically alongside the DCF output.
+</div>
+
+<h2>Fintiq's Three-Stage DCF Model</h2>
+<p>Fintiq uses a three-stage DCF structure that mirrors professional investment bank models. The three stages reflect the natural evolution of a company's growth trajectory over time:</p>
+<h3>Stage 1: Short-Term Forecast (Years 1-3)</h3>
+<p>The period where your conviction is highest. You have the most visibility into the company's near-term prospects: analyst guidance, management commentary, recent contract wins, product pipelines, and competitive dynamics. In Stage 1, you set revenue growth rates and operating margins explicitly for each year.</p>
+<h3>Stage 2: Medium-Term Transition (Years 4-7)</h3>
+<p>The period where growth and margins gradually converge toward industry averages or long-run sustainable levels. Most businesses cannot sustain above-average growth and margins indefinitely — competition, capital allocation, and market saturation all exert downward pressure. Stage 2 captures this mean reversion, with growth and margins interpolating between your Stage 1 estimates and the long-run steady state.</p>
+<h3>Terminal Period (Year 8 Onwards)</h3>
+<p>The period extending from Year 8 to infinity, captured as a single "terminal value" using the Gordon Growth Model. The terminal value assumes the company has reached a steady state: a constant long-run growth rate applied indefinitely. This is the most sensitive part of the model &mdash; the terminal value often represents 60-80% of the total estimated enterprise value.</p>
+
+<h2>Every Assumption Explained</h2>
+
+<h3>WACC: Weighted Average Cost of Capital</h3>
+<p>WACC is the discount rate applied to future cash flows. It represents the minimum return that investors (both debt holders and equity holders) require from the company. Cash flows discounted at a higher WACC are worth less today; discounted at a lower WACC, they are worth more. WACC is the single most sensitive assumption in the entire model.</p>
+<div class="formula">WACC = [E/(E+D)] * Cost of Equity + [D/(E+D)] * Cost of Debt * (1 - Tax Rate)
+
+Cost of Equity (CAPM) = Risk-Free Rate + Beta * Equity Risk Premium
+  Risk-Free Rate   = UK 10-year gilt yield (~4.5% mid-2026)
+  Beta             = sensitivity of stock to market movements (1.0 = market average)
+  Equity Risk Prem = ~5.5% for UK equities (long-run historical average)
+
+Example (AstraZeneca, Beta ~0.5):
+  Cost of Equity = 4.5% + 0.5 * 5.5% = 7.25%
+
+Cost of Debt = interest rate on borrowings * (1 - 25% corporation tax)
+  Example: 5% borrowing rate → Cost of Debt = 5% * 0.75 = 3.75%</div>
+<p>Typical WACC ranges by company type:</p>
+<table>
+<thead><tr><th>Company Type</th><th>Typical WACC Range</th><th>Examples</th></tr></thead>
+<tbody>
+<tr><td>Blue-chip defensive</td><td>7% - 9%</td><td>Unilever, National Grid, AstraZeneca</td></tr>
+<tr><td>Established growth</td><td>9% - 11%</td><td>RELX, Rightmove, Games Workshop</td></tr>
+<tr><td>Cyclical/financial</td><td>10% - 12%</td><td>Banks, miners, energy</td></tr>
+<tr><td>High-risk / small-cap</td><td>12% - 16%</td><td>AIM stocks, early-stage businesses</td></tr>
+</tbody>
+</table>
+<p><strong>Sensitivity warning:</strong> Getting the WACC wrong by just 2 percentage points typically changes the intrinsic value estimate by 30-40%. Always run your DCF with a range of WACC assumptions (the sensitivity table in Fintiq) rather than relying on a single number.</p>
+
+<h3>Revenue Growth Rate</h3>
+<p>The expected rate at which the company's revenues will grow each year. In Fintiq, you set this explicitly for Stage 1 (Years 1-3) and the model blends it toward a lower medium-term rate in Stage 2. Best practice is to use the lower of:</p>
+<ul>
+<li>The company's own trailing 5-year revenue growth rate (available in Fintiq's fundamentals)</li>
+<li>Analyst consensus estimates for the next 2-3 years</li>
+<li>Your own assessment of the market size, competitive position, and pricing power</li>
+</ul>
+<p>Never simply extrapolate recent strong growth indefinitely. AstraZeneca may be growing revenues at 15% currently driven by oncology blockbusters, but it is appropriate to fade that to 5-8% in Stage 2 as the patent cycle matures. Good DCF practice is conservative on growth: it is better to be pleasantly surprised than to build a model on blue-sky assumptions.</p>
+
+<h3>Operating Margin</h3>
+<p>Operating margin is Operating Profit divided by Revenue. It represents the percentage of revenue that converts to operating profit before interest and tax. Different sectors have very different structural margin profiles:</p>
+<table>
+<thead><tr><th>Sector</th><th>Typical Operating Margin</th><th>Drivers</th></tr></thead>
+<tbody>
+<tr><td>Pharmaceuticals / Biotech</td><td>25% - 40%</td><td>Patent-protected pricing, high R&amp;D cost base</td></tr>
+<tr><td>Software / SaaS</td><td>20% - 35%</td><td>High gross margins, scalable distribution</td></tr>
+<tr><td>Professional services</td><td>12% - 20%</td><td>Labour-intensive, billing rate leverage</td></tr>
+<tr><td>Energy / Mining</td><td>10% - 25%</td><td>Commodity price exposure, high capital costs</td></tr>
+<tr><td>Consumer staples</td><td>8% - 15%</td><td>Volume-driven, brand pricing, distribution costs</td></tr>
+<tr><td>Retail</td><td>3% - 8%</td><td>High volume, low margins, working capital intensive</td></tr>
+<tr><td>Banks</td><td>N/A (use ROE)</td><td>Banks require different valuation approaches</td></tr>
+</tbody>
+</table>
+<p>Margins mean-revert over time. Unusually high margins attract competition that erodes them; unusually low margins eventually attract capital exit that allows survivors to recover pricing power. Your Stage 2 margin assumption should converge toward the sector average unless you have a specific and sustainable reason to believe the company can sustain above-average margins indefinitely (e.g., a genuine monopoly or regulatory moat).</p>
+
+<h3>Terminal Growth Rate</h3>
+<p>The assumed perpetual growth rate of free cash flows from Year 8 onwards. This is typically set equal to long-run nominal GDP growth: 2-3% for a UK or European company, 2.5-3.5% for a globally diversified business.</p>
+<p><strong>Never use a terminal growth rate above 4%.</strong> Doing so implies the company will grow faster than the global economy indefinitely &mdash; meaning it will eventually become larger than the entire economy. This is mathematically impossible. Even if you believe strongly in a company's long-run prospects, the terminal growth rate should remain conservative. The terminal growth rate has an enormous impact on the terminal value because of the perpetuity formula: even a 0.5% change in terminal growth can alter the overall valuation by 15-20%.</p>
+<div class="formula">Terminal Value (Gordon Growth Model) = FCF_year7 * (1 + g) / (WACC - g)
+
+Where:
+  FCF_year7 = free cash flow in Year 7
+  g         = terminal growth rate (typically 2.0% - 3.0%)
+  WACC      = discount rate
+
+Example: FCF_7 = £500m, g = 2.5%, WACC = 9%
+  TV = £500m * 1.025 / (0.09 - 0.025) = £512.5m / 0.065 = £7,885m
+
+Note: TV must then be discounted back 7 years:
+  PV of TV = £7,885m / (1.09)^7 = £4,312m</div>
+
+<h3>Net Debt</h3>
+<p>Total borrowings minus cash and cash equivalents. The DCF model calculates <strong>Enterprise Value</strong> (the total value of the business to all capital providers). To convert Enterprise Value to <strong>Equity Value</strong> (the value belonging to shareholders), you subtract net debt.</p>
+<p>A company with &pound;2 billion Enterprise Value and &pound;500 million net debt has an equity value of &pound;1.5 billion. A company with net cash (negative net debt) of &pound;300 million has an equity value of Enterprise Value + &pound;300 million. This step is often overlooked by retail investors, leading to significant errors in per-share valuation.</p>
+
+<h3>Shares Outstanding</h3>
+<p>The number of shares in issue, used to convert total equity value to intrinsic value per share. Use the <strong>diluted</strong> share count, which includes shares that could be created through exercise of options, convertible bonds, or warrants. Using the undiluted share count overstates the per-share intrinsic value because it ignores the dilution effect of these instruments. Fintiq pulls the diluted share count automatically from the company's latest annual report.</p>
+
+<h2>The 11-Step DCF Formula</h2>
+<div class="formula">STEP 1: Forecast revenues for Years 1-7
+  Revenue_t = Revenue_(t-1) * (1 + growth_rate_t)
+
+STEP 2: Calculate EBIT (Operating Profit)
+  EBIT_t = Revenue_t * Operating_Margin_t
+
+STEP 3: Apply UK corporation tax (25%)
+  NOPAT_t = EBIT_t * (1 - 0.25)
+
+STEP 4: Calculate Free Cash Flow
+  FCF_t = NOPAT_t * FCF_Conversion_Ratio
+  (FCF conversion typically 70-90%; lower for capex-heavy businesses)
+
+STEP 5: Discount each FCF to present value
+  PV_FCF_t = FCF_t / (1 + WACC)^t
+
+STEP 6: Sum all discounted FCFs
+  PV_Forecast = Sum(PV_FCF_1 to PV_FCF_7)
+
+STEP 7: Calculate Terminal Value
+  TV = FCF_7 * (1 + g) / (WACC - g)
+
+STEP 8: Discount Terminal Value
+  PV_TV = TV / (1 + WACC)^7
+
+STEP 9: Calculate Enterprise Value
+  Enterprise Value = PV_Forecast + PV_TV
+
+STEP 10: Subtract Net Debt
+  Equity Value = Enterprise Value - Net Debt
+
+STEP 11: Calculate Intrinsic Value Per Share
+  Intrinsic Value = Equity Value / Diluted Shares Outstanding</div>
+
+<h2>Additional Valuation Methods in Fintiq</h2>
+<h3>The Graham Number</h3>
+<p>Benjamin Graham's conservative floor value for a stock, calculated as:</p>
+<div class="formula">Graham Number = SQRT(22.5 * EPS * Book Value Per Share)
+
+The 22.5 factor = 15 (max P/E) * 1.5 (max P/Book) — Graham's maximum reasonable multiples
+
+Example: EPS = 150p, Book Value = 800p
+  Graham Number = SQRT(22.5 * 150 * 800) = SQRT(2,700,000) = 1,643p
+
+If current price is 1,200p: trading at 27% discount to Graham Number — potentially attractive</div>
+<p>The Graham Number is deliberately conservative &mdash; it is a screening tool, not a precise valuation. Many high-quality companies trade permanently above their Graham Number because of their superior earnings power and moat. Use it as a lower-bound sanity check rather than a target price.</p>
+
+<h3>Industry P/E Valuation</h3>
+<p>A relative valuation method that multiplies the company's earnings per share by the average P/E ratio of its sector peers:</p>
+<div class="formula">Relative Fair Value = Sector Average P/E * Company EPS
+
+Example: FTSE 100 pharma sector average P/E = 18x, Company EPS = 200p
+  Relative Fair Value = 18 * 200p = 3,600p
+
+If current price = 3,000p: 20% discount to sector — potential relative value</div>
+
+<h3>Fintiq's Consensus Valuation</h3>
+<p>Fintiq averages the three valuation methods &mdash; DCF intrinsic value, Graham Number, and Industry P/E &mdash; to produce a <strong>consensus estimate</strong> of fair value. This multi-method approach is more robust than any single method: each captures different aspects of value and has different sensitivities to assumptions. The consensus estimate, combined with the current market price, gives you the implied upside or downside to fair value.</p>
+
+<h2>The Sensitivity Table</h2>
+<p>Because the DCF is highly sensitive to its assumptions &mdash; particularly WACC and terminal growth rate &mdash; Fintiq automatically generates a <strong>sensitivity table</strong> showing how the intrinsic value changes across a range of WACC and growth rate combinations.</p>
+<div class="formula">Example Sensitivity Table (Intrinsic Value Per Share):
+
+                Terminal Growth Rate
+WACC        2.0%    2.5%    3.0%    3.5%
+  7%       2,450   2,680   2,950   3,280
+  8%       2,100   2,280   2,490   2,740
+  9%       1,820   1,960   2,120   2,310
+ 10%       1,600   1,710   1,840   1,990
+ 11%       1,420   1,510   1,620   1,740
+
+Current Price: 1,900p
+Central Case (9% WACC, 2.5% growth): 1,960p — modest 3% upside
+Bull Case (8% WACC, 3.0% growth): 2,490p — 31% upside
+Bear Case (10% WACC, 2.0% growth): 1,600p — 16% downside</div>
+<p>The sensitivity table tells you whether the current price is attractive across a range of realistic scenarios, not just your central estimate. A stock that looks cheap under your base case but collapses under even slightly conservative assumptions is far more dangerous than one that looks cheap across the entire sensitivity range.</p>
+
+<h2>Common Mistakes in DCF Valuation</h2>
+<ul>
+<li><strong>Too optimistic on revenue growth:</strong> Investors consistently overestimate how long companies can sustain above-average growth. Use analyst consensus as a reality check, then consider being even more conservative.</li>
+<li><strong>WACC too low:</strong> Using an 8% WACC for a cyclical, debt-laden business that should be at 12% can overvalue the company by 40% or more. Spend time calibrating the discount rate carefully.</li>
+<li><strong>Ignoring terminal value sensitivity:</strong> Many investors focus on perfecting Stage 1 and 2 assumptions while barely thinking about the terminal growth rate, even though the terminal value often represents 60-80% of the total estimated value. A 1% change in terminal growth matters far more than a 1% change in Year 2 revenue growth.</li>
+<li><strong>Not adjusting for dilution:</strong> Using the basic (undiluted) share count instead of the diluted share count overstates per-share intrinsic value, sometimes by 5-15% for companies with heavy option programmes.</li>
+<li><strong>Treating DCF as precise:</strong> The DCF produces a point estimate of value, but it is built on assumptions that could easily be 10-20% different from reality. Treat the output as a range (the sensitivity table is your friend) and only invest when there is a meaningful margin of safety below the most likely scenario.</li>
+</ul>
+
+<h2>Step-by-Step in Fintiq</h2>
+<ol>
+<li>Open the <strong>Fundamental Screener</strong> in Fintiq and search for your company by name or ticker.</li>
+<li>Navigate to the <strong>Intrinsic Value</strong> section on the company page.</li>
+<li>Review the pre-populated assumptions: Fintiq uses analyst consensus revenue growth estimates, trailing operating margins, and a WACC calibrated to the company's sector and beta as defaults.</li>
+<li>Adjust any assumptions you disagree with: you can override the WACC, growth rates, operating margin, terminal growth rate, and FCF conversion ratio.</li>
+<li>Review the output: Fintiq displays the intrinsic value per share, the current market price, and the implied upside or downside as a percentage.</li>
+<li>Check the sensitivity table to understand how robust the valuation is across different assumption scenarios.</li>
+<li>Compare the DCF value to the Graham Number and Industry P/E valuation, and review the consensus estimate.</li>
+</ol>
+
+<div class="cta-box">
+<h3>Ready to put this into practice?</h3>
+<p>Use Fintiq's free tools to screen stocks, run Monte Carlo simulations, and optimise your portfolio.</p>
+<a href="https://app.fintiq.uk" class="cta-btn">Launch Fintiq Free &#8594;</a>
+</div>
+</div>
+<footer>
+<div class="f-logo">&#128202; Fintiq</div>
+<div class="f-sub">Free stock screener &amp; investing tools for UK investors</div>
+<div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div>
+<div class="f-copy">&copy; 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+</body>
+</html>

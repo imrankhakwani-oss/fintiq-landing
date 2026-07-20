@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Retirement Monte Carlo Simulator — Fintiq</title>
+<meta name="description" content="Free retirement Monte Carlo simulator for UK and US investors. Calculate your probability of retirement success with State Pension, Social Security, FIRE planning and sequence-of-returns risk.">
+<link rel="canonical" href="https://fintiq.uk/monte-carlo-retirement.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://fintiq.uk/monte-carlo-retirement.html" />
+<meta property="og:title" content="Retirement Monte Carlo Simulator — Fintiq" />
+<meta property="og:description" content="Free retirement Monte Carlo simulator. Run 5,000 scenarios to find your real probability of financial success. Built for UK and US investors." />
+<meta property="og:image" content="https://fintiq.uk/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Free Retirement Monte Carlo Simulator — Fintiq" />
+<meta name="twitter:description" content="Run 5,000 retirement simulations free. UK State Pension and US Social Security included. No sign-up." />
+<meta name="twitter:image" content="https://fintiq.uk/og-image.png" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6;min-height:100vh}
+a{color:#F59E0B;text-decoration:none}
+
+/* NAV */
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.88rem}
+.btn-nav{background:#F59E0B!important;color:#0A1628!important;padding:7px 18px;border-radius:6px;font-weight:700;font-size:0.88rem}
+
+/* HERO */
+.hero{text-align:center;padding:52px 24px 36px;max-width:760px;margin:0 auto}
+.hero-tag{display:inline-block;background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;margin-bottom:16px;letter-spacing:0.5px}
+.hero h1{font-size:2.4rem;font-weight:900;line-height:1.15;margin-bottom:14px}
+.hero h1 span{color:#F59E0B}
+.hero p{color:#94A3B8;font-size:1rem;max-width:580px;margin:0 auto}
+
+/* MODE TOGGLE */
+.mode-wrap{display:flex;justify-content:center;padding:0 24px 32px}
+.mode-toggle{display:flex;background:#0A1628;border:1px solid rgba(245,158,11,0.25);border-radius:10px;padding:4px;gap:4px}
+.mode-btn{padding:9px 32px;border-radius:7px;border:none;cursor:pointer;font-size:0.9rem;font-weight:700;font-family:'Inter',sans-serif;transition:all 0.2s;color:#64748B;background:transparent}
+.mode-btn.active{background:#F59E0B;color:#0A1628}
+
+/* MAIN LAYOUT */
+.main{max-width:1140px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:360px 1fr;gap:28px;align-items:start}
+
+/* FORM PANEL */
+.panel{background:rgba(10,22,40,0.8);border:1px solid rgba(245,158,11,0.18);border-radius:14px;padding:28px}
+.panel-title{font-size:0.7rem;font-weight:700;letter-spacing:1.5px;color:#F59E0B;text-transform:uppercase;margin-bottom:20px}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:0.78rem;font-weight:600;color:#94A3B8;margin-bottom:6px}
+.field input,.field select{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:10px 12px;color:#F1F5F9;font-size:0.9rem;font-family:'Inter',sans-serif;transition:border-color 0.2s}
+.field input:focus,.field select:focus{outline:none;border-color:rgba(245,158,11,0.5)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-hint{font-size:0.72rem;color:#475569;margin-top:4px}
+.field-group{background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.12);border-radius:8px;padding:14px;margin-bottom:18px}
+.field-group-title{font-size:0.72rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.run-btn{width:100%;background:#F59E0B;color:#0A1628;border:none;border-radius:8px;padding:14px;font-size:1rem;font-weight:700;font-family:'Inter',sans-serif;cursor:pointer;transition:opacity 0.2s;margin-top:4px}
+.run-btn:hover{opacity:0.9}
+.run-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* RESULTS */
+.results{display:flex;flex-direction:column;gap:20px}
+.results-placeholder{background:rgba(10,22,40,0.8);border:1px solid rgba(245,158,11,0.18);border-radius:14px;padding:60px 32px;text-align:center;color:#475569}
+.results-placeholder .icon{font-size:3rem;margin-bottom:16px}
+.results-placeholder p{font-size:0.95rem;max-width:340px;margin:0 auto}
+
+/* SUCCESS METER */
+.success-bar{background:rgba(10,22,40,0.8);border:1px solid rgba(245,158,11,0.18);border-radius:14px;padding:28px}
+.success-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.success-pct{font-size:3.6rem;font-weight:900;line-height:1}
+.success-label{font-size:0.8rem;color:#64748B;margin-top:4px}
+.verdict{text-align:right}
+.verdict-badge{display:inline-block;padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700}
+.verdict-great{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+.verdict-ok{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}
+.verdict-risk{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+.progress-track{background:#0A1628;border-radius:99px;height:12px;overflow:hidden;margin-bottom:8px}
+.progress-fill{height:100%;border-radius:99px;transition:width 0.8s ease}
+.progress-labels{display:flex;justify-content:space-between;font-size:0.72rem;color:#475569}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat-card{background:rgba(10,22,40,0.8);border:1px solid rgba(245,158,11,0.18);border-radius:12px;padding:18px}
+.stat-label{font-size:0.7rem;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.stat-value{font-size:1.4rem;font-weight:700;color:#F1F5F9}
+.stat-sub{font-size:0.72rem;color:#475569;margin-top:3px}
+
+/* CHART */
+.chart-card{background:rgba(10,22,40,0.8);border:1px solid rgba(245,158,11,0.18);border-radius:14px;padding:24px}
+.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.chart-title{font-size:0.9rem;font-weight:700;color:#F1F5F9}
+.chart-legend{display:flex;gap:16px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#64748B}
+.legend-dot{width:10px;height:10px;border-radius:50%}
+.chart-wrap{position:relative;height:300px}
+
+/* INSIGHTS */
+.insights-card{background:rgba(10,22,40,0.8);border:1px solid rgba(245,158,11,0.18);border-radius:14px;padding:24px}
+.insights-title{font-size:0.9rem;font-weight:700;color:#F1F5F9;margin-bottom:16px}
+.insight-item{display:flex;gap:12px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.05)}
+.insight-item:last-child{margin-bottom:0;padding-bottom:0;border-bottom:none}
+.insight-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px}
+.insight-text{font-size:0.84rem;color:#CBD5E1;line-height:1.5}
+.insight-text strong{color:#F1F5F9}
+
+/* CTA */
+.cta-card{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:32px;text-align:center}
+.cta-card h3{font-size:1.2rem;font-weight:700;color:#F59E0B;margin-bottom:10px}
+.cta-card p{color:#94A3B8;font-size:0.88rem;margin-bottom:20px}
+.cta-btn{background:#F59E0B;color:#0A1628;padding:12px 28px;border-radius:8px;font-weight:700;font-size:0.9rem;display:inline-block}
+
+/* DISCLAIMER */
+.disclaimer{max-width:1140px;margin:0 auto 40px;padding:0 24px}
+.disclaimer p{font-size:0.75rem;color:#334155;line-height:1.6}
+
+/* FOOTER */
+footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
+.f-logo{font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
+.f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
+.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.f-links a{color:#94A3B8;font-size:0.82rem}
+.f-copy{color:#334155;font-size:0.72rem}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .main{grid-template-columns:1fr}
+  .stats-row{grid-template-columns:repeat(2,1fr)}
+  .hero h1{font-size:1.8rem}
+}
+@media(max-width:520px){
+  .stats-row{grid-template-columns:1fr 1fr}
+  .hero h1{font-size:1.5rem}
+  nav{padding:10px 16px}
+  .main{padding:0 16px 60px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/tools.html">← Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk" class="btn-nav">Stock Screener →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">FREE TOOL</div>
+  <h1>Retirement <span>Monte Carlo</span><br>Simulator</h1>
+  <p>Run 5,000 simulated retirement paths to find your real probability of financial success — built for UK and US investors.</p>
+</div>
+
+<div class="mode-wrap">
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="btn-uk" onclick="setMode('uk')">🇬🇧 UK Investor</button>
+    <button class="mode-btn" id="btn-us" onclick="setMode('us')">🇺🇸 US Investor</button>
+  </div>
+</div>
+
+<div class="main">
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <div class="panel-title">Your Details</div>
+
+    <div class="field-group">
+      <div class="field-group-title">👤 Your Ages</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Current Age</label>
+          <input type="number" id="currentAge" value="45" min="18" max="80">
+        </div>
+        <div class="field">
+          <label>Retirement Age</label>
+          <input type="number" id="retirementAge" value="65" min="40" max="85">
+        </div>
+      </div>
+      <div class="field">
+        <label>Plan To Age (Life Expectancy)</label>
+        <input type="number" id="lifeExpectancy" value="90" min="70" max="110">
+        <div class="field-hint">Conservative: use 95. Average UK life expectancy: 81 (men), 83 (women).</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">💼 Portfolio</div>
+      <div class="field">
+        <label id="portfolioLabel">Current Portfolio Value (£)</label>
+        <input type="number" id="portfolioValue" value="350000" min="0" step="10000">
+      </div>
+      <div class="field">
+        <label id="savingsLabel">Additional Annual Savings Until Retirement (£)</label>
+        <input type="number" id="annualSavings" value="15000" min="0" step="1000">
+        <div class="field-hint">Include pension contributions, ISA savings, etc.</div>
+      </div>
+      <div class="field">
+        <label id="withdrawalLabel">Annual Income Needed in Retirement (£)</label>
+        <input type="number" id="annualWithdrawal" value="35000" min="0" step="1000">
+        <div class="field-hint">Before any State Pension / Social Security offset.</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title" id="stateLabel">🏛️ UK State Pension</div>
+      <div class="field-row">
+        <div class="field">
+          <label id="statePensionLabel">Annual Amount (£)</label>
+          <input type="number" id="statePension" value="11502" min="0" step="100">
+        </div>
+        <div class="field">
+          <label id="stateAgeLabel">Starts at Age</label>
+          <input type="number" id="stateAge" value="67" min="60" max="75">
+        </div>
+      </div>
+      <div class="field-hint" id="stateHint">Full new State Pension 2024/25: £11,502/yr. Check your forecast at gov.uk/check-state-pension.</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-group-title">📈 Market Assumptions</div>
+      <div class="field-row">
+        <div class="field">
+          <label>Expected Annual Return (%)</label>
+          <input type="number" id="expectedReturn" value="7" min="1" max="20" step="0.5">
+        </div>
+        <div class="field">
+          <label>Annual Volatility (%)</label>
+          <input type="number" id="volatility" value="15" min="1" max="40" step="0.5">
+        </div>
+      </div>
+      <div class="field">
+        <label>Annual Inflation (%)</label>
+        <input type="number" id="inflation" value="2.5" min="0" max="10" step="0.1">
+        <div class="field-hint">UK long-run average: 2.5%. US: 3%. Your withdrawals grow with inflation.</div>
+      </div>
+    </div>
+
+    <button class="run-btn" id="runBtn" onclick="runSimulation()">▶ Run 5,000 Simulations</button>
+  </div>
+
+  <!-- RESULTS PANEL -->
+  <div class="results" id="results">
+    <div class="results-placeholder" id="placeholder">
+      <div class="icon">📊</div>
+      <p>Fill in your details on the left and click <strong>Run 5,000 Simulations</strong> to see your retirement probability analysis.</p>
+    </div>
+  </div>
+</div>
+
+<div class="disclaimer">
+  <p>⚠️ <strong>Educational tool only. Not financial advice.</strong> Monte Carlo simulation uses historical volatility assumptions and random sampling — actual outcomes will differ. Past market returns do not guarantee future performance. UK State Pension figures based on 2024/25 full new State Pension. Consult a qualified financial adviser before making retirement decisions. Fintiq Ltd is not FCA authorised.</p>
+</div>
+
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Professional investing tools for retail investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk">Stock Screener</a>
+    <a href="https://fintiq.uk/monte-carlo-retirement.html">Retirement Simulator</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+
+<script>
+// ─── MODE ────────────────────────────────────────────────────────────────────
+let currentMode = 'uk';
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById('btn-uk').classList.toggle('active', mode === 'uk');
+  document.getElementById('btn-us').classList.toggle('active', mode === 'us');
+
+  const sym = mode === 'uk' ? '£' : '$';
+  document.getElementById('portfolioLabel').textContent = `Current Portfolio Value (${sym})`;
+  document.getElementById('savingsLabel').textContent = `Additional Annual Savings Until Retirement (${sym})`;
+  document.getElementById('withdrawalLabel').textContent = `Annual Income Needed in Retirement (${sym})`;
+  document.getElementById('statePensionLabel').textContent = mode === 'uk' ? 'Annual Amount (£)' : 'Annual Amount ($)';
+
+  if (mode === 'uk') {
+    document.getElementById('stateLabel').textContent = '🏛️ UK State Pension';
+    document.getElementById('stateAgeLabel').textContent = 'Starts at Age';
+    document.getElementById('stateHint').textContent = 'Full new State Pension 2024/25: £11,502/yr. Check your forecast at gov.uk/check-state-pension.';
+    document.getElementById('statePension').value = 11502;
+    document.getElementById('stateAge').value = 67;
+    document.getElementById('inflation').value = 2.5;
+    document.getElementById('portfolioValue').value = 350000;
+    document.getElementById('annualSavings').value = 15000;
+    document.getElementById('annualWithdrawal').value = 35000;
+  } else {
+    document.getElementById('stateLabel').textContent = '🏛️ Social Security (USA)';
+    document.getElementById('stateAgeLabel').textContent = 'Starts at Age';
+    document.getElementById('stateHint').textContent = 'Average SS benefit 2024: ~$22,000/yr. Check your estimate at ssa.gov/myaccount.';
+    document.getElementById('statePension').value = 22000;
+    document.getElementById('stateAge').value = 67;
+    document.getElementById('inflation').value = 3.0;
+    document.getElementById('portfolioValue').value = 500000;
+    document.getElementById('annualSavings').value = 20000;
+    document.getElementById('annualWithdrawal').value = 60000;
+  }
+}
+
+// ─── RANDOM NORMAL (Box-Muller) ───────────────────────────────────────────────
+function randNormal() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+// ─── SIMULATION ───────────────────────────────────────────────────────────────
+function runSimulation() {
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running simulations...';
+
+  setTimeout(() => {
+    try {
+      const inputs = {
+        currentAge:      +document.getElementById('currentAge').value,
+        retirementAge:   +document.getElementById('retirementAge').value,
+        lifeExpectancy:  +document.getElementById('lifeExpectancy').value,
+        portfolio:       +document.getElementById('portfolioValue').value,
+        annualSavings:   +document.getElementById('annualSavings').value,
+        withdrawal:      +document.getElementById('annualWithdrawal').value,
+        returnRate:      +document.getElementById('expectedReturn').value / 100,
+        volatility:      +document.getElementById('volatility').value / 100,
+        inflation:       +document.getElementById('inflation').value / 100,
+        statePension:    +document.getElementById('statePension').value,
+        stateAge:        +document.getElementById('stateAge').value,
+      };
+
+      if (inputs.retirementAge <= inputs.currentAge) {
+        alert('Retirement age must be greater than current age.');
+        return;
+      }
+      if (inputs.lifeExpectancy <= inputs.retirementAge) {
+        alert('Plan-to age must be greater than retirement age.');
+        return;
+      }
+
+      const NUM_SIMS = 5000;
+      const totalYears = inputs.lifeExpectancy - inputs.currentAge;
+      const retirementYear = inputs.retirementAge - inputs.currentAge;
+
+      // Track paths for percentile chart (from retirement age to life expectancy)
+      const drawdownYears = inputs.lifeExpectancy - inputs.retirementAge;
+      const pathMatrix = []; // each row = one sim, values = portfolio at each drawdown year
+      let successCount = 0;
+      const finalValues = [];
+
+      for (let s = 0; s < NUM_SIMS; s++) {
+        let port = inputs.portfolio;
+
+        // Accumulation phase
+        for (let y = 0; y < retirementYear; y++) {
+          const r = inputs.returnRate + inputs.volatility * randNormal();
+          port = port * (1 + r) + inputs.annualSavings;
+        }
+
+        // Drawdown phase
+        const path = [Math.max(0, port)];
+        let ruined = false;
+
+        for (let y = 0; y < drawdownYears; y++) {
+          if (ruined) { path.push(0); continue; }
+
+          const age = inputs.retirementAge + y;
+          // Inflation-adjusted withdrawal
+          const inflAdj = Math.pow(1 + inputs.inflation, y);
+          let netWithdrawal = inputs.withdrawal * inflAdj;
+
+          // Offset by state pension / SS once it starts
+          if (age >= inputs.stateAge) {
+            const spAdj = inputs.statePension * Math.pow(1 + inputs.inflation, Math.max(0, age - inputs.stateAge));
+            netWithdrawal = Math.max(0, netWithdrawal - spAdj);
+          }
+
+          const r = inputs.returnRate + inputs.volatility * randNormal();
+          port = port * (1 + r) - netWithdrawal;
+
+          if (port <= 0) {
+            port = 0;
+            ruined = true;
+          }
+          path.push(Math.max(0, port));
+        }
+
+        pathMatrix.push(path);
+        if (!ruined) { successCount++; finalValues.push(path[path.length - 1]); }
+        else { finalValues.push(0); }
+      }
+
+      const successRate = (successCount / NUM_SIMS) * 100;
+
+      // Compute percentiles at each year
+      const ages = [];
+      for (let y = 0; y <= drawdownYears; y++) ages.push(inputs.retirementAge + y);
+
+      const pct10 = [], pct25 = [], pct50 = [], pct75 = [], pct90 = [];
+
+      for (let y = 0; y <= drawdownYears; y++) {
+        const col = pathMatrix.map(p => p[y]).sort((a, b) => a - b);
+        const n = col.length;
+        pct10.push(col[Math.floor(n * 0.10)]);
+        pct25.push(col[Math.floor(n * 0.25)]);
+        pct50.push(col[Math.floor(n * 0.50)]);
+        pct75.push(col[Math.floor(n * 0.75)]);
+        pct90.push(col[Math.floor(n * 0.90)]);
+      }
+
+      // Stats
+      const sortedFinals = [...finalValues].sort((a, b) => a - b);
+      const medianFinal = sortedFinals[Math.floor(sortedFinals.length * 0.5)];
+      const worstDecile = sortedFinals[Math.floor(sortedFinals.length * 0.10)];
+      const bestDecile  = sortedFinals[Math.floor(sortedFinals.length * 0.90)];
+
+      // Ruin age: average age at which ruined sims run out
+      const ruinedPaths = pathMatrix.filter(p => p[p.length - 1] === 0);
+      let avgRuinAge = null;
+      if (ruinedPaths.length > 0) {
+        const ruinAges = ruinedPaths.map(p => {
+          const zeroIdx = p.findIndex(v => v === 0);
+          return inputs.retirementAge + (zeroIdx >= 0 ? zeroIdx : drawdownYears);
+        });
+        avgRuinAge = Math.round(ruinAges.reduce((a, b) => a + b, 0) / ruinAges.length);
+      }
+
+      renderResults({ successRate, pct10, pct25, pct50, pct75, pct90, ages,
+                      medianFinal, worstDecile, bestDecile, avgRuinAge,
+                      successCount, inputs, drawdownYears });
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '▶ Run 5,000 Simulations';
+    }
+  }, 50);
+}
+
+// ─── FORMAT ───────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n === null || n === undefined) return 'N/A';
+  const sym = currentMode === 'uk' ? '£' : '$';
+  if (Math.abs(n) >= 1000000) return sym + (n / 1000000).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1000) return sym + Math.round(n / 1000) + 'K';
+  return sym + Math.round(n).toLocaleString();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+let myChart = null;
+
+function renderResults({ successRate, pct10, pct25, pct50, pct75, pct90, ages,
+                         medianFinal, worstDecile, bestDecile, avgRuinAge,
+                         successCount, inputs, drawdownYears }) {
+  const sym = currentMode === 'uk' ? '£' : '$';
+
+  // Verdict
+  let verdictClass, verdictText;
+  if (successRate >= 85) { verdictClass = 'verdict-great'; verdictText = '✅ Strong Plan'; }
+  else if (successRate >= 70) { verdictClass = 'verdict-ok'; verdictText = '⚠️ Consider Adjustments'; }
+  else { verdictClass = 'verdict-risk'; verdictText = '🔴 Significant Risk'; }
+
+  // Progress bar colour
+  const barColour = successRate >= 85 ? '#22c55e' : successRate >= 70 ? '#F59E0B' : '#ef4444';
+
+  // Insights
+  const insights = generateInsights(successRate, inputs, avgRuinAge, medianFinal, sym);
+
+  const html = `
+    <!-- SUCCESS RATE -->
+    <div class="success-bar">
+      <div class="success-top">
+        <div>
+          <div class="success-pct" style="color:${barColour}">${successRate.toFixed(1)}%</div>
+          <div class="success-label">Probability of Success across 5,000 simulations</div>
+        </div>
+        <div class="verdict">
+          <div class="verdict-badge ${verdictClass}">${verdictText}</div>
+          <div style="font-size:0.75rem;color:#475569;margin-top:8px">${successCount.toLocaleString()} of 5,000 paths succeeded</div>
+        </div>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width:${successRate}%;background:${barColour}"></div>
+      </div>
+      <div class="progress-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Median Portfolio at ${inputs.lifeExpectancy}</div>
+        <div class="stat-value">${fmt(medianFinal)}</div>
+        <div class="stat-sub">50th percentile outcome</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Best 10% Outcome</div>
+        <div class="stat-value">${fmt(bestDecile)}</div>
+        <div class="stat-sub">90th percentile at ${inputs.lifeExpectancy}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Worst 10% Outcome</div>
+        <div class="stat-value" style="color:${worstDecile <= 0 ? '#ef4444' : '#F1F5F9'}">${worstDecile <= 0 ? 'Depleted' : fmt(worstDecile)}</div>
+        <div class="stat-sub">10th percentile at ${inputs.lifeExpectancy}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg Age Money Runs Out</div>
+        <div class="stat-value" style="color:${avgRuinAge ? '#ef4444' : '#22c55e'}">${avgRuinAge ? avgRuinAge : 'Never'}</div>
+        <div class="stat-sub">${avgRuinAge ? 'in scenarios that fail' : 'in all simulated paths'}</div>
+      </div>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Portfolio Value — Simulation Fan Chart (Age ${inputs.retirementAge}–${inputs.lifeExpectancy})</div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div>90th pct</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Median</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>10th pct</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="simChart"></canvas></div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div class="insights-card">
+      <div class="insights-title">📋 Key Insights for Your Plan</div>
+      ${insights.map(i => `
+        <div class="insight-item">
+          <div class="insight-icon">${i.icon}</div>
+          <div class="insight-text">${i.text}</div>
+        </div>
+      `).join('')}
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-card">
+      <h3>Now Screen Stocks for Your Portfolio</h3>
+      <p>Use Fintiq's free stock screener to find quality investments that can support your retirement target — FTSE 100, NASDAQ, NYSE and global markets.</p>
+      <a href="https://app.fintiq.uk" class="cta-btn">Open Free Stock Screener →</a>
+    </div>
+  `;
+
+  document.getElementById('placeholder') && document.getElementById('placeholder').remove();
+  document.getElementById('results').innerHTML = html;
+
+  // Draw chart
+  if (myChart) { myChart.destroy(); myChart = null; }
+  const ctx = document.getElementById('simChart').getContext('2d');
+
+  myChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ages,
+      datasets: [
+        {
+          label: '90th Percentile',
+          data: pct90,
+          borderColor: '#22c55e',
+          backgroundColor: 'rgba(34,197,94,0.08)',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+        },
+        {
+          label: '75th Percentile',
+          data: pct75,
+          borderColor: 'rgba(34,197,94,0.35)',
+          backgroundColor: 'rgba(34,197,94,0.06)',
+          borderWidth: 1,
+          borderDash: [4, 4],
+          fill: '-1',
+          tension: 0.3,
+          pointRadius: 0,
+        },
+        {
+          label: 'Median (50th)',
+          data: pct50,
+          borderColor: '#F59E0B',
+          backgroundColor: 'transparent',
+          borderWidth: 2.5,
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+        },
+        {
+          label: '25th Percentile',
+          data: pct25,
+          borderColor: 'rgba(239,68,68,0.35)',
+          backgroundColor: 'rgba(239,68,68,0.06)',
+          borderWidth: 1,
+          borderDash: [4, 4],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+        },
+        {
+          label: '10th Percentile',
+          data: pct10,
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239,68,68,0.08)',
+          borderWidth: 2,
+          fill: '-1',
+          tension: 0.3,
+          pointRadius: 0,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#0A1628',
+          borderColor: 'rgba(245,158,11,0.3)',
+          borderWidth: 1,
+          titleColor: '#F59E0B',
+          bodyColor: '#CBD5E1',
+          callbacks: {
+            title: ctx => `Age ${ctx[0].label}`,
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: { color: '#475569', font: { size: 11 } },
+          title: { display: true, text: 'Age', color: '#64748B', font: { size: 11 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.04)' },
+          ticks: {
+            color: '#475569',
+            font: { size: 11 },
+            callback: v => fmt(v)
+          },
+          title: { display: true, text: 'Portfolio Value', color: '#64748B', font: { size: 11 } }
+        }
+      }
+    }
+  });
+}
+
+// ─── INSIGHTS ─────────────────────────────────────────────────────────────────
+function generateInsights(successRate, inputs, avgRuinAge, medianFinal, sym) {
+  const insights = [];
+  const yearsToRetirement = inputs.retirementAge - inputs.currentAge;
+  const drawdownYears = inputs.lifeExpectancy - inputs.retirementAge;
+  const spBenefit = inputs.statePension > 0;
+  const spLabel = currentMode === 'uk' ? 'State Pension' : 'Social Security';
+
+  // Success rate insight
+  if (successRate >= 90) {
+    insights.push({ icon: '✅', text: `<strong>Excellent plan.</strong> A ${successRate.toFixed(0)}% success rate means your portfolio survives in 9 out of 10 simulated scenarios. You may even be able to increase spending or retire earlier.` });
+  } else if (successRate >= 80) {
+    insights.push({ icon: '🟡', text: `<strong>Good, with room to improve.</strong> ${successRate.toFixed(0)}% success is solid but financial planners typically target 85–90%. Consider reducing withdrawal by 5–10% or working 1–2 extra years.` });
+  } else if (successRate >= 65) {
+    insights.push({ icon: '⚠️', text: `<strong>Meaningful risk.</strong> ${(100 - successRate).toFixed(0)}% of simulations fail — meaning your portfolio runs out before age ${inputs.lifeExpectancy}. Consider increasing savings, delaying retirement by 2–3 years, or reducing spending.` });
+  } else {
+    insights.push({ icon: '🔴', text: `<strong>High risk of portfolio depletion.</strong> Only ${successRate.toFixed(0)}% of simulations succeed. Consider significant adjustments: increase savings rate, delay retirement, reduce planned withdrawal, or take on a modest side income in early retirement.` });
+  }
+
+  // Withdrawal rate
+  const withdrawalRate = (inputs.withdrawal / (inputs.portfolio + inputs.annualSavings * yearsToRetirement)) * 100;
+  const effectiveWithdrawal = Math.max(0, inputs.withdrawal - (spBenefit ? inputs.statePension : 0));
+  insights.push({ icon: '📉', text: `<strong>Sequence-of-returns risk</strong> is your biggest danger. A market crash in your first 3–5 years of retirement does far more damage than one later. Consider keeping 2–3 years of spending in cash when you retire to avoid forced selling at low prices.` });
+
+  // State pension / SS impact
+  if (spBenefit) {
+    const spOffset = ((inputs.statePension / inputs.withdrawal) * 100).toFixed(0);
+    insights.push({ icon: '🏛️', text: `<strong>${spLabel} covers ${spOffset}% of your income need.</strong> Once it starts at age ${inputs.stateAge}, your portfolio drawdown reduces significantly — this is one of the most powerful factors improving your success rate. Deferring ${spLabel} by even 1–2 years can boost your annual benefit.` });
+  }
+
+  // Inflation impact
+  insights.push({ icon: '📊', text: `<strong>At ${inputs.inflation}% inflation</strong>, your ${sym}${inputs.withdrawal.toLocaleString()} withdrawal grows to ${sym}${Math.round(inputs.withdrawal * Math.pow(1 + inputs.inflation / 100, drawdownYears)).toLocaleString()} by age ${inputs.lifeExpectancy}. Make sure your portfolio is weighted towards equities to outpace inflation over the long term.` });
+
+  // Accumulation phase
+  if (yearsToRetirement > 5) {
+    insights.push({ icon: '💰', text: `<strong>You have ${yearsToRetirement} years until retirement.</strong> Continuing to save ${sym}${inputs.annualSavings.toLocaleString()}/year is crucial. Increasing your savings rate by even ${sym}${(5000).toLocaleString()}/year now could meaningfully improve your success rate — compounding has ${yearsToRetirement} years to work.` });
+  }
+
+  return insights;
+}
+</script>
+</body>
+</html>

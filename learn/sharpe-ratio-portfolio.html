@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Build a Balanced Portfolio Using the Sharpe Ratio | Fintiq</title>
+<meta name="description" content="The Sharpe Ratio explained for UK investors. Learn the formula, what makes a good Sharpe Ratio, and how to use it to build and compare portfolios in Fintiq.">
+<meta name="keywords" content="sharpe ratio explained, sharpe ratio portfolio, sharpe ratio UK investing, risk-adjusted returns, portfolio performance measure, sortino ratio">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}.breadcrumb a{color:#94A3B8}.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;margin-bottom:16px}.badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}.badge-pro{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}.info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}.divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}table{width:100%;border-collapse:collapse;margin:24px 0}th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}.cta-box p{color:#94A3B8;margin-bottom:24px}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}@media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<nav><a href="https://fintiq.uk" class="logo">&#128202; Fintiq</a><div class="nav-links"><a href="https://fintiq.uk/learn.html">&#8592; Learn</a><a href="https://app.fintiq.uk" class="btn-cta">Try the App &#8594;</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="https://fintiq.uk">Home</a> &rsaquo; <a href="https://fintiq.uk/learn.html">Learn</a> &rsaquo; Sharpe Ratio &amp; Portfolio</div>
+<span class="badge badge-free">Free Article</span>
+<h1>How to Build a Balanced Portfolio Using the Sharpe Ratio</h1>
+<p class="meta">Updated July 2026 &middot; 10 min read &middot; Suitable for all investors</p>
+<p>In 1966, Stanford professor William Sharpe published a paper introducing a single number that would become the universal language of investment performance. That number &mdash; now simply called the <strong>Sharpe Ratio</strong> &mdash; answers one of the most important questions in investing: not just how much did you earn, but how much risk did you take to earn it?</p>
+<p>Sharpe was awarded the Nobel Prize in Economic Sciences in 1990, alongside Harry Markowitz and Merton Miller, for his contribution to financial economics. Today his ratio is used by virtually every professional fund manager, risk manager, and institutional investor in the world. It is the most common single metric for comparing the quality of returns across different portfolios, asset classes, strategies, and managers.</p>
+<p>This guide explains the Sharpe Ratio from the ground up: the formula, how to interpret it, how it connects to portfolio construction, and how to use Fintiq's Portfolio Optimiser to maximise it in practice.</p>
+
+<h2>The Sharpe Ratio Formula</h2>
+<p>The Sharpe Ratio is defined simply as:</p>
+<div class="formula">Sharpe Ratio = (Portfolio Return - Risk-Free Rate) / Standard Deviation of Portfolio Returns
+
+Where:
+  Portfolio Return   = annualised total return of the portfolio
+  Risk-Free Rate     = return on a risk-free asset (UK 10-yr gilt: ~4.5% mid-2026)
+  Standard Deviation = annualised volatility of the portfolio's returns</div>
+<p>The numerator &mdash; Portfolio Return minus the Risk-Free Rate &mdash; is called the <strong>excess return</strong> or <strong>risk premium</strong>. It measures how much extra return you earned beyond what you could have achieved simply by holding gilts with no risk at all. The denominator, standard deviation, measures the volatility of those returns &mdash; how much the portfolio bounced around to generate that excess return.</p>
+<p>The ratio therefore expresses how many percentage points of excess return you earned per percentage point of risk taken. A higher Sharpe Ratio means you earned more excess return per unit of risk &mdash; a better use of risk capital.</p>
+
+<h2>What the Number Actually Means</h2>
+<p>To interpret the Sharpe Ratio, you need benchmarks:</p>
+<table>
+<thead><tr><th>Sharpe Ratio</th><th>Interpretation</th><th>Example</th></tr></thead>
+<tbody>
+<tr><td>Below 0</td><td>Negative risk-adjusted return — worse than cash</td><td>A portfolio losing money while gilts pay 4.5%</td></tr>
+<tr><td>0 to 0.5</td><td>Poor — taking risk but not being rewarded adequately</td><td>A concentrated, volatile portfolio with mediocre returns</td></tr>
+<tr><td>0.5 to 1.0</td><td>Acceptable — decent but not exceptional</td><td>S&amp;P 500 historically 0.5-0.8 depending on period</td></tr>
+<tr><td>1.0 to 1.5</td><td>Good — solid risk-adjusted returns</td><td>Well-diversified multi-asset portfolio</td></tr>
+<tr><td>1.5 to 2.0</td><td>Very good — institutional quality</td><td>Top-quartile actively managed funds</td></tr>
+<tr><td>Above 2.0</td><td>Excellent — elite performance</td><td>Best hedge funds target 2.0+</td></tr>
+</tbody>
+</table>
+<p>For context: the <strong>S&amp;P 500</strong> has historically produced a Sharpe Ratio of approximately 0.5-0.8 depending on the measurement period. <strong>Berkshire Hathaway</strong> has achieved approximately 0.76 over the long term. Elite hedge funds such as Renaissance Technologies' Medallion Fund have reportedly achieved Sharpe Ratios well above 2.0, though these are exceptionally rare and often involve strategies inaccessible to retail investors.</p>
+<p>As a practical target for a well-constructed individual stock portfolio, a Sharpe Ratio of 0.7-1.2 is a realistic and worthwhile goal.</p>
+
+<h2>Why the Risk-Free Rate Matters</h2>
+<p>The Sharpe Ratio is not an absolute number &mdash; it changes as the risk-free rate changes. As of mid-2026, the UK 10-year gilt yield is approximately 4.5%. This means:</p>
+<ul>
+<li>A portfolio returning 10% with 15% volatility has a Sharpe of (10% - 4.5%) / 15% = <strong>0.37</strong></li>
+<li>In 2020, when gilt yields were near 0%, the same portfolio would have had a Sharpe of 10% / 15% = <strong>0.67</strong></li>
+</ul>
+<p>The portfolio did not change &mdash; only the risk-free hurdle rate changed. This is why Sharpe Ratios from different periods are not directly comparable without checking what risk-free rate was used. Always clarify the risk-free rate assumption when comparing Sharpe Ratios across time periods.</p>
+<div class="highlight">
+<strong>UK investors in 2026:</strong> With gilts yielding approximately 4.5%, the bar for "beating the risk-free rate" is meaningfully higher than it was in the near-zero rate era of 2015-2022. Every investment you consider must clear a 4.5% return threshold before it starts generating positive risk-adjusted returns. This raises the required quality of stock selection considerably.
+</div>
+
+<h2>The Sharpe Ratio and Portfolio Construction</h2>
+<p>One of the most powerful applications of the Sharpe Ratio is in portfolio construction. Maximising the Sharpe Ratio of a portfolio is equivalent to finding the <strong>Tangency Portfolio</strong> on the Efficient Frontier &mdash; the point where a line from the risk-free rate is tangent to the frontier of possible portfolios.</p>
+<p>This has a crucial practical implication: adding a new asset to a portfolio does not improve the portfolio's Sharpe Ratio by having a high Sharpe Ratio itself. What matters is how the new asset's returns correlate with the existing portfolio. An asset with a low individual Sharpe Ratio can <em>raise</em> the portfolio's Sharpe Ratio significantly if it has low correlation with existing holdings.</p>
+<h3>A Practical Example</h3>
+<p>Suppose you have a portfolio of UK growth stocks with a Sharpe Ratio of 0.8. You are considering adding either:</p>
+<ul>
+<li><strong>Option A:</strong> Another UK growth stock with a Sharpe Ratio of 1.2 but high correlation (0.85) with your existing holdings.</li>
+<li><strong>Option B:</strong> A UK gilt ETF with a Sharpe Ratio of only 0.4 but a negative correlation (-0.3) with your existing holdings.</li>
+</ul>
+<p>Despite its lower individual Sharpe Ratio, Option B (the gilt ETF) will likely <em>increase</em> your portfolio's Sharpe Ratio more than Option A. The diversification benefit of its negative correlation outweighs its lower standalone performance. This is the mathematical reason why many investors hold bonds even when bond returns look unimpressive in isolation.</p>
+
+<h2>The Sortino Ratio: A Better Metric for Many Investors</h2>
+<p>The Sharpe Ratio has one significant limitation: it penalises <em>all</em> volatility equally, including upside volatility. If your portfolio frequently jumps 5% in a single day, the Sharpe Ratio counts those upward jumps as "risk" &mdash; even though no rational investor minds positive surprises.</p>
+<p>The <strong>Sortino Ratio</strong> addresses this by only penalising <em>downside</em> volatility:</p>
+<div class="formula">Sortino Ratio = (Portfolio Return - Risk-Free Rate) / Downside Standard Deviation
+
+Where:
+  Downside Std Dev = standard deviation of returns that fall BELOW the risk-free rate
+                     (upside deviations are excluded from this calculation)</div>
+<p>For a portfolio that generates frequent large positive returns but occasionally suffers sharp drops, the Sortino Ratio will be higher than the Sharpe Ratio &mdash; correctly reflecting that the "volatility" is mostly welcome upside rather than painful downside.</p>
+<p>For a portfolio with symmetric volatility (roughly equal upward and downward fluctuations), the two ratios will be similar. For most practical purposes, Sharpe is more widely used and easier to compare across sources, but the Sortino Ratio provides valuable additional context, particularly for equity strategies with a growth bias.</p>
+<div class="info-box">
+<strong>When to prefer the Sortino Ratio:</strong> If you are evaluating a momentum or growth strategy where large upside moves are common, the Sortino Ratio gives a more accurate picture of downside risk management. Fintiq displays both Sharpe and Sortino Ratios for optimised portfolios.
+</div>
+
+<h2>Step-by-Step Portfolio Construction Using the Sharpe Ratio</h2>
+<p>Here is a practical, repeatable process for building a UK equity portfolio optimised for risk-adjusted returns using Fintiq:</p>
+<h3>Step 1: Shortlist 15-20 Candidates</h3>
+<p>Use Fintiq's Fundamental Screener to identify 15-20 candidate stocks from the FTSE 350 or AIM that meet your quality criteria. Suggested baseline filters: Return on Equity above 12%, Debt/Equity below 1.0, positive free cash flow, P/E below 25. Aim for broad sector coverage &mdash; you want candidates from at least 6-8 different sectors to give the optimiser raw material for diversification.</p>
+<h3>Step 2: Run the Portfolio Optimiser</h3>
+<p>Enter your 15-20 candidates into Fintiq's Portfolio Optimiser. The tool will fetch historical price data, calculate returns, standard deviations, and the full correlation matrix automatically. You do not need to provide any data manually.</p>
+<h3>Step 3: Set Weight Constraints</h3>
+<p>Before running the optimisation, define minimum and maximum weight constraints. Recommended starting point: minimum 3% per stock (to ensure meaningful exposure), maximum 20-25% per stock (to prevent dangerous concentration). Also consider setting sector concentration limits if you wish to avoid having more than 30-35% in any single sector.</p>
+<h3>Step 4: Select the Maximum Sharpe Portfolio</h3>
+<p>Run the optimisation and review the Efficient Frontier chart. Select the Tangency Portfolio (Maximum Sharpe point). Fintiq displays the specific weights, the expected annualised return, the expected volatility, and the Sharpe Ratio for this portfolio.</p>
+<h3>Step 5: Check the Sortino Ratio</h3>
+<p>Review the Sortino Ratio as a secondary metric. If the Sharpe and Sortino Ratios are both strong (above 0.8), this suggests the volatility in the portfolio is reasonably balanced. If the Sharpe is high but the Sortino is significantly lower, the portfolio may be carrying material downside risk that is being masked by occasional large upside moves.</p>
+<h3>Step 6: Apply Investment Judgment</h3>
+<p>The optimiser gives you a mathematically optimal starting point, not a final answer. Review each stock in the optimal portfolio: do you have fundamental conviction in the business? Is there a quality story behind the numbers? Are there any positions the model has allocated heavily to that you have concerns about? Apply qualitative filters to refine the final portfolio.</p>
+<h3>Step 7: Rebalance Quarterly</h3>
+<p>Portfolio weights drift as individual stocks rise and fall. Rebalance back toward your target weights every quarter. Also re-run the optimisation quarterly to check whether the optimal weights have shifted materially as correlations and return estimates evolve. Annual full reviews are a minimum; quarterly is better for active portfolios.</p>
+
+<h2>Common Pitfalls When Using the Sharpe Ratio</h2>
+<ul>
+<li><strong>Backward-looking:</strong> The Sharpe Ratio is calculated from historical data. A fund or strategy with a high historical Sharpe Ratio is not guaranteed to maintain it. Always consider whether the conditions that produced the high Sharpe are likely to persist.</li>
+<li><strong>Assumes normal distribution:</strong> Like all volatility-based metrics, the Sharpe Ratio assumes returns are normally distributed. In reality, financial returns have fat tails and negative skew. During crashes, actual losses can be much larger than the Sharpe Ratio implies.</li>
+<li><strong>Can be gamed:</strong> A manager who sells downside options ("picking up pennies in front of a steamroller") can generate artificially high Sharpe Ratios for extended periods, until the inevitable large loss occurs. Always understand the strategy behind a high Sharpe Ratio.</li>
+<li><strong>Not suited for comparing across asset classes:</strong> The Sharpe Ratio of an equity portfolio and a bond portfolio are not directly comparable without adjusting for the different nature of the risks involved.</li>
+<li><strong>Short time period distortion:</strong> Sharpe Ratios calculated over less than 3-5 years of data can be significantly distorted by lucky or unlucky market timing. Always use sufficiently long historical periods.</li>
+</ul>
+
+<h2>How Fintiq Displays the Sharpe Ratio</h2>
+<p>Fintiq shows the Sharpe Ratio prominently in two places. First, in the <strong>Portfolio Optimiser</strong>, the Sharpe Ratio is displayed for the optimised portfolio alongside annualised expected return and volatility. The Efficient Frontier chart highlights the Maximum Sharpe point clearly. Second, in the <strong>Fundamental Screener</strong>, you can filter stocks by their individual Sharpe Ratios (calculated from 3-year historical returns) as part of a multi-factor screen.</p>
+<p>For individual UK stocks as of mid-2026, a Sharpe Ratio above 0.6 calculated over a 3-5 year window is considered good. Above 1.0 is excellent and suggests a stock that has delivered strong returns with controlled volatility. However, remember that individual stock Sharpe Ratios are far less meaningful than portfolio Sharpe Ratios &mdash; it is the interaction between stocks that matters most.</p>
+
+<div class="cta-box">
+<h3>Ready to put this into practice?</h3>
+<p>Use Fintiq's free tools to screen stocks, run Monte Carlo simulations, and optimise your portfolio.</p>
+<a href="https://app.fintiq.uk" class="cta-btn">Launch Fintiq Free &#8594;</a>
+</div>
+</div>
+<footer>
+<div class="f-logo">&#128202; Fintiq</div>
+<div class="f-sub">Free stock screener &amp; investing tools for UK investors</div>
+<div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div>
+<div class="f-copy">&copy; 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+</body>
+</html>

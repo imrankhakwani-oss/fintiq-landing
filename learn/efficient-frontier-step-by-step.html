@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Building Your Optimal Portfolio with the Efficient Frontier — Step by Step | Fintiq Pro</title>
+<meta name="description" content="Step-by-step guide to building an optimal portfolio using the Efficient Frontier in Fintiq. Learn how to input stocks, read the frontier and set rebalancing rules.">
+<meta name="keywords" content="efficient frontier step by step, portfolio optimisation tutorial, Fintiq portfolio optimiser, optimal portfolio construction UK">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}.breadcrumb a{color:#94A3B8}.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;margin-bottom:16px}.badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}.badge-pro{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}.info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}.divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}table{width:100%;border-collapse:collapse;margin:24px 0}th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}.cta-box p{color:#94A3B8;margin-bottom:24px}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}@media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<nav><a href="https://fintiq.uk" class="logo">&#128202; Fintiq</a><div class="nav-links"><a href="https://fintiq.uk/learn.html">&#8592; Learn</a><a href="https://app.fintiq.uk" class="btn-cta">Try the App &#8594;</a></div></nav>
+<div class="container">
+<div class="breadcrumb"><a href="https://fintiq.uk">Home</a> &rsaquo; <a href="https://fintiq.uk/learn.html">Learn</a> &rsaquo; Efficient Frontier Step by Step</div>
+<span class="badge badge-pro">Pro Article</span>
+<h1>Building Your Optimal Portfolio with the Efficient Frontier &mdash; Step by Step</h1>
+<p class="meta">Updated July 2026 &middot; 12 min read &middot; Intermediate</p>
+<p>Understanding the theory of the Efficient Frontier is one thing. Actually building an optimised portfolio with it &mdash; choosing the right stocks, setting appropriate constraints, interpreting the output, and maintaining the portfolio over time &mdash; is where most investors get stuck. This guide bridges the gap between concept and practice, taking you step by step through the process of constructing an optimised UK equity portfolio using Fintiq's Portfolio Optimiser.</p>
+<p>If you have not yet read our free introduction to the Efficient Frontier, start there: <a href="efficient-frontier-mpt.html">What is the Efficient Frontier? Modern Portfolio Theory Explained</a>. This guide assumes you understand the basics and focuses entirely on the practical implementation.</p>
+
+<h2>The Uncomfortable Truth About Most Retail Portfolios</h2>
+<p>Research consistently shows that the typical retail investor's portfolio is dramatically sub-optimal from a risk-return perspective. The reasons are predictable:</p>
+<ul>
+<li><strong>Random stock selection:</strong> Stocks are added to portfolios based on tips, news, familiarity ("I use this company's products"), or vague fundamental impressions rather than a systematic process.</li>
+<li><strong>Sector concentration:</strong> Many retail investors unconsciously concentrate in sectors they know &mdash; typically financials (banks they bank with), consumer brands (companies they shop with), or technology. This creates hidden sector risk.</li>
+<li><strong>Ignoring correlation:</strong> Two stocks that look different on the surface can be highly correlated in practice. Owning five UK banking stocks is not diversification &mdash; they will all move together when interest rates change or credit losses rise.</li>
+<li><strong>Equal weighting by default:</strong> Many investors default to roughly equal weights for every position, with no consideration of whether each stock's risk-return contribution justifies its weighting.</li>
+</ul>
+<p>The result is a portfolio that typically sits significantly below the Efficient Frontier. This means the investor is accepting more risk than necessary for the level of return they are achieving, or achieving less return than they could for the level of risk they are comfortable with.</p>
+<div class="highlight">
+<strong>A measured gap:</strong> Academic studies of retail investor portfolios consistently find that the average retail portfolio has a Sharpe Ratio 30-50% below what would be achievable on the Efficient Frontier using the same set of stocks. The gap is not from stock selection &mdash; it is from sub-optimal weighting and poor diversification.
+</div>
+
+<h2>The Optimisation Problem</h2>
+<p>Portfolio optimisation is formally a constrained mathematical optimisation problem. The objective is to find the set of portfolio weights (w1, w2, ..., wn) that maximises the Sharpe Ratio:</p>
+<div class="formula">Maximise: Sharpe Ratio = (w'R - Rf) / SQRT(w'Cw)
+
+Subject to:
+  Sum(wi) = 1         (weights sum to 100%)
+  wi >= w_min         (minimum weight per stock)
+  wi <= w_max         (maximum weight per stock)
+  Sector_j <= S_max   (optional sector concentration limit)
+
+Where:
+  w   = vector of portfolio weights
+  R   = vector of expected returns
+  Rf  = risk-free rate
+  C   = covariance matrix of returns
+  '   = transpose operator</div>
+<p>Fintiq solves this problem numerically using a quadratic programming algorithm that runs thousands of simulations to map the full Efficient Frontier, then identifies the Tangency Portfolio (maximum Sharpe) and other key points. The entire computation takes a few seconds &mdash; what would have required a Bloomberg terminal and a quant analyst in 2010 is now available free at app.fintiq.uk.</p>
+
+<h2>What Data You Need</h2>
+<p>The good news: Fintiq provides all the necessary data automatically. You do not need to download price series, calculate covariance matrices, or build your own model. Here is what the optimiser uses behind the scenes:</p>
+<h3>Historical Price Data</h3>
+<p>Fintiq downloads 3 years of daily closing prices for each stock you enter. This provides 756+ observations per stock, which is sufficient for statistically reliable return, volatility, and correlation estimates.</p>
+<h3>Expected Return Estimates</h3>
+<p>By default, Fintiq uses the trailing 3-year annualised total return (price + dividends) for each stock as the expected return input. You can override this with your own estimates if you have a view that differs from the historical trend. For example, if a stock has just been through a period of unusually strong performance driven by a one-off catalyst, you might adjust the expected return downward to reflect more normalised conditions.</p>
+<h3>The Covariance Matrix</h3>
+<p>Fintiq calculates the full covariance matrix from the historical price data. This is the computational backbone of the optimisation. The covariance between each pair of stocks captures how much they move together &mdash; the foundation of MPT's diversification mathematics.</p>
+
+<h2>The Most Common Mistakes in Portfolio Optimisation</h2>
+<h3>1. Too Few Stocks</h3>
+<p>Meaningful frontier construction requires at least 8-10 stocks. With fewer than 8 stocks, the frontier becomes poorly defined and the "optimal" weights reflect noise in the historical data rather than genuine diversification opportunities. A 4-stock portfolio on the frontier is often nearly the same as a 4-stock equally-weighted portfolio &mdash; there is not enough diversity to exploit.</p>
+<p>The ideal input size for the Fintiq optimiser is 12-18 stocks from at least 6 different sectors. This provides enough diversity for the mathematical optimisation to find meaningful weight differentials, while keeping the portfolio concentrated enough to reflect genuine stock-picking conviction.</p>
+<h3>2. Ignoring Constraints</h3>
+<p>Running the optimiser without weight constraints is a common mistake that produces unreliable results. Unconstrained optimisation exploits noise in the historical data, often recommending 60-80% allocations to a single stock that happened to perform well in the lookback period. This is not investment wisdom &mdash; it is data overfitting.</p>
+<p>Always set weight constraints. The standard professional approach: minimum 3-5% per stock (to ensure positions are meaningful), maximum 20-25% per stock (to prevent dangerous concentration). Many professional funds also apply sector caps (maximum 30% in any single sector) to prevent hidden sector concentration risk.</p>
+<h3>3. Sector Concentration</h3>
+<p>The optimiser does not know what sector each stock is in. It only sees price histories. If you enter 12 UK bank stocks, it will optimise among them &mdash; but the resulting portfolio, however "optimal" within that universe, will be dangerously concentrated in UK financial sector risk. Always ensure your input universe spans multiple sectors before running the optimisation.</p>
+<h3>4. Over-Trading</h3>
+<p>Re-running the optimiser daily and immediately rebalancing to the new "optimal" weights is a path to excessive transaction costs and tax friction. The optimal weights change frequently as prices shift, but these changes are often within the noise. A practical approach: rebalance when any position drifts more than 5% from its target weight, or quarterly at maximum.</p>
+
+<h2>Why You Need 8-10 Stocks Minimum</h2>
+<p>The mathematical reason for the minimum stock count is rooted in the behaviour of the covariance matrix. With n stocks, the covariance matrix has n*(n-1)/2 unique off-diagonal elements &mdash; the pairwise covariances that capture diversification potential.</p>
+<div class="formula">Number of unique correlations by portfolio size:
+
+5 stocks:   10 unique pairs  (limited frontier shape definition)
+8 stocks:   28 unique pairs  (minimum for meaningful frontier)
+10 stocks:  45 unique pairs  (recommended minimum)
+15 stocks:  105 unique pairs (good definition)
+20 stocks:  190 unique pairs (rich frontier, diminishing marginal benefit)
+
+Below 8 stocks: the frontier is poorly constrained and optimal weights
+                are highly sensitive to small data changes (unstable)</div>
+<p>Beyond approximately 20 stocks, the marginal diversification benefit diminishes and the portfolio starts to resemble a broad index. Professional active fund managers typically hold 25-60 stocks to maintain a balance between diversification and conviction.</p>
+
+<div style="position:relative;margin-top:40px"><div style="filter:blur(3px);pointer-events:none;user-select:none;max-height:280px;overflow:hidden;color:#CBD5E1"><h2 style="color:#F59E0B">Advanced Strategy &amp; Fintiq Walkthrough</h2><p>In this section we cover the exact parameters, step-by-step Fintiq walkthrough, and advanced strategy details available to Pro members...</p><p>Professional analysts use specific thresholds that differ from conventional wisdom. The nuances of implementation separate average results from exceptional ones...</p></div><div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 20%,#0D1B2A 70%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:40px"><div style="text-align:center;padding:0 20px"><div style="font-size:1.3rem;font-weight:700;color:#F1F5F9;margin-bottom:8px">&#128274; Continue Reading</div><div style="color:#94A3B8;margin-bottom:20px;font-size:0.9rem">Unlock the complete guide with step-by-step Fintiq walkthroughs and expert strategy</div><a href="https://buy.stripe.com/fZucN580y2HY6g02IQaZi01" style="background:#F59E0B;color:#0A1628;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block">Unlock Full Guide &mdash; &pound;2.50</a><div style="color:#64748B;font-size:0.8rem;margin-top:12px">Or get all 6 Pro guides for &pound;10 &middot; <a href="https://buy.stripe.com/28E14ncgObeu5bWgzGaZi06" style="color:#F59E0B">Bundle deal</a> &middot; Instant access &middot; One-off payment</div></div></div></div>
+</div>
+<footer>
+<div class="f-logo">&#128202; Fintiq</div>
+<div class="f-sub">Free stock screener &amp; investing tools for UK investors</div>
+<div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div>
+<div class="f-copy">&copy; 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+</body>
+</html>

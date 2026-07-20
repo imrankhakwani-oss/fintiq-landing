@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Free Investing Tools — Fintiq</title>
+<meta name="description" content="Free professional-grade investment tools for UK and US retail investors. Retirement Monte Carlo simulator, stock screener, portfolio optimiser and more.">
+<link rel="canonical" href="https://fintiq.uk/tools.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://fintiq.uk/tools.html" />
+<meta property="og:title" content="Free Investing Tools — Fintiq" />
+<meta property="og:description" content="Free professional-grade investment tools for UK and US retail investors. Retirement Monte Carlo simulator, stock screener, portfolio optimiser and more." />
+<meta property="og:image" content="https://fintiq.uk/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Free Investing Tools — Fintiq" />
+<meta name="twitter:description" content="Free retirement Monte Carlo simulator, stock screener, portfolio optimiser and more. No sign-up required." />
+<meta name="twitter:image" content="https://fintiq.uk/og-image.png" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6}
+a{color:#F59E0B;text-decoration:none}
+
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.88rem}
+.nav-links a.active{color:#F59E0B}
+.btn-nav{background:#F59E0B!important;color:#0A1628!important;padding:7px 18px;border-radius:6px;font-weight:700;font-size:0.88rem}
+
+.hero{text-align:center;padding:60px 24px 48px;max-width:680px;margin:0 auto}
+.hero-tag{display:inline-block;background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;margin-bottom:16px}
+.hero h1{font-size:2.4rem;font-weight:900;line-height:1.15;margin-bottom:14px}
+.hero h1 span{color:#F59E0B}
+.hero p{color:#94A3B8;font-size:1rem}
+
+.section{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+.section-title{font-size:0.7rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(245,158,11,0.15)}
+
+/* FEATURED TOOL */
+.tool-featured{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.3);border-radius:16px;padding:36px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:28px;transition:border-color 0.2s}
+.tool-featured:hover{border-color:rgba(245,158,11,0.6)}
+.tool-featured-tag{display:inline-block;background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;margin-bottom:12px}
+.tool-featured h2{font-size:1.5rem;font-weight:800;color:#F1F5F9;margin-bottom:10px;line-height:1.2}
+.tool-featured p{color:#94A3B8;font-size:0.9rem;max-width:560px;margin-bottom:16px}
+.tool-features{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.tool-feature{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15);border-radius:6px;padding:4px 10px;font-size:0.75rem;color:#94A3B8}
+.tool-btn{background:#F59E0B;color:#0A1628;padding:12px 28px;border-radius:8px;font-weight:700;font-size:0.9rem;white-space:nowrap;display:inline-block;flex-shrink:0}
+.tool-icon-big{font-size:5rem;text-align:center;opacity:0.7}
+
+/* TOOL GRID */
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-bottom:28px}
+.tool-card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:26px;transition:border-color 0.2s,transform 0.2s;display:flex;flex-direction:column}
+.tool-card:hover{border-color:rgba(245,158,11,0.35);transform:translateY(-2px)}
+.tool-card-tag{display:inline-block;border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;margin-bottom:12px}
+.tag-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+.tag-app{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}
+.tag-coming{background:rgba(100,116,139,0.15);color:#64748B;border:1px solid rgba(100,116,139,0.3)}
+.tool-card-icon{font-size:2rem;margin-bottom:12px}
+.tool-card h3{font-size:1rem;font-weight:700;color:#F1F5F9;margin-bottom:8px;line-height:1.3}
+.tool-card p{font-size:0.83rem;color:#64748B;margin-bottom:16px;flex:1}
+.tool-card-link{font-size:0.84rem;font-weight:600;color:#F59E0B}
+.tool-card-link.disabled{color:#334155;cursor:default;pointer-events:none}
+
+/* COMING SOON SECTION */
+.coming-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;margin-bottom:48px}
+.coming-card{background:rgba(10,22,40,0.5);border:1px solid rgba(255,255,255,0.05);border-radius:10px;padding:20px;opacity:0.7}
+.coming-card-icon{font-size:1.5rem;margin-bottom:8px}
+.coming-card h4{font-size:0.88rem;font-weight:700;color:#64748B;margin-bottom:6px}
+.coming-card p{font-size:0.78rem;color:#475569}
+
+/* CTA BOX */
+.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:40px;text-align:center}
+.cta-box h3{font-size:1.3rem;font-weight:800;color:#F59E0B;margin-bottom:10px}
+.cta-box p{color:#94A3B8;font-size:0.9rem;margin-bottom:22px}
+.cta-btn{background:#F59E0B;color:#0A1628;padding:13px 30px;border-radius:8px;font-weight:700;font-size:0.9rem;display:inline-block}
+
+footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
+.f-logo{font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
+.f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
+.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.f-links a{color:#94A3B8;font-size:0.82rem}
+.f-copy{color:#334155;font-size:0.72rem}
+
+@media(max-width:700px){
+  .tool-featured{grid-template-columns:1fr}
+  .tool-icon-big{display:none}
+  .hero h1{font-size:1.8rem}
+  nav{padding:10px 16px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/tools.html" class="active">Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk" class="btn-nav">Stock Screener →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">FREE TOOLS</div>
+  <h1>Professional Tools.<br><span>No Paywall.</span></h1>
+  <p>The same analytical tools used by institutional investors — free for retail investors. No sign-up required.</p>
+</div>
+
+<div class="section">
+
+  <!-- FEATURED -->
+  <div class="section-title">Featured Tool</div>
+  <a href="https://fintiq.uk/monte-carlo-retirement.html" class="tool-featured">
+    <div>
+      <div class="tool-featured-tag">FREE · UK & US</div>
+      <h2>🎲 Retirement Monte Carlo Simulator</h2>
+      <p>Run 5,000 retirement scenarios to find your real probability of financial success. Built for UK and US investors — includes State Pension, Social Security, inflation, and sequence-of-returns risk.</p>
+      <div class="tool-features">
+        <span class="tool-feature">5,000 simulations</span>
+        <span class="tool-feature">UK State Pension</span>
+        <span class="tool-feature">US Social Security</span>
+        <span class="tool-feature">Inflation-adjusted withdrawals</span>
+        <span class="tool-feature">Fan chart</span>
+        <span class="tool-feature">No sign-up needed</span>
+      </div>
+      <span class="tool-btn">Open Tool →</span>
+    </div>
+    <div class="tool-icon-big">🎲</div>
+  </a>
+
+  <!-- APP TOOLS -->
+  <div class="section-title">In the Free App</div>
+  <div class="tools-grid">
+
+    <div class="tool-card">
+      <span class="tool-card-tag tag-app">FREE APP</span>
+      <div class="tool-card-icon">🔍</div>
+      <h3>Multi-Factor Stock Screener</h3>
+      <p>Screen FTSE 100, NASDAQ, NYSE and global markets using quality, value and momentum signals simultaneously. Filter 10,000+ stocks in seconds.</p>
+      <a href="https://app.fintiq.uk" class="tool-card-link">Open Screener →</a>
+    </div>
+
+    <div class="tool-card">
+      <span class="tool-card-tag tag-app">FREE APP</span>
+      <div class="tool-card-icon">🎰</div>
+      <h3>Monte Carlo — Stock Risk Analysis</h3>
+      <p>Run thousands of simulations on any stock or portfolio to understand the realistic range of outcomes — not a single misleading forecast.</p>
+      <a href="https://app.fintiq.uk" class="tool-card-link">Open Tool →</a>
+    </div>
+
+    <div class="tool-card">
+      <span class="tool-card-tag tag-app">FREE APP</span>
+      <div class="tool-card-icon">⚖️</div>
+      <h3>Portfolio Optimiser (Efficient Frontier)</h3>
+      <p>Find the mathematically optimal allocation for your stocks using Nobel Prize-winning Modern Portfolio Theory. Maximise return per unit of risk.</p>
+      <a href="https://app.fintiq.uk" class="tool-card-link">Open Optimiser →</a>
+    </div>
+
+    <div class="tool-card">
+      <span class="tool-card-tag tag-app">FREE APP</span>
+      <div class="tool-card-icon">🔗</div>
+      <h3>Statistical Pairs Trading</h3>
+      <p>Find cointegrated stock pairs and calculate real-time Z-scores, half-lives, and entry signals. The market-neutral strategy used by hedge funds.</p>
+      <a href="https://app.fintiq.uk" class="tool-card-link">Open Pairs Tool →</a>
+    </div>
+
+    <div class="tool-card">
+      <span class="tool-card-tag tag-app">FREE APP</span>
+      <div class="tool-card-icon">💰</div>
+      <h3>DCF Valuation Model</h3>
+      <p>Value any company using Discounted Cash Flow analysis. Every assumption explained — WACC, terminal growth, free cash flow — step by step.</p>
+      <a href="https://app.fintiq.uk" class="tool-card-link">Open DCF Tool →</a>
+    </div>
+
+    <div class="tool-card">
+      <span class="tool-card-tag tag-app">FREE APP</span>
+      <div class="tool-card-icon">📐</div>
+      <h3>Technical Analysis — RSI, MACD & More</h3>
+      <p>Automatic RSI, MACD, Bollinger Bands, ATR, and EMA signals for any stock. Multi-timeframe analysis built in.</p>
+      <a href="https://app.fintiq.uk" class="tool-card-link">Open Tool →</a>
+    </div>
+
+  </div>
+
+  <!-- COMING SOON -->
+  <div class="section-title">Coming Soon</div>
+  <div class="coming-grid">
+    <div class="coming-card">
+      <div class="coming-card-icon">🏠</div>
+      <h4>ISA vs SIPP Calculator</h4>
+      <p>Model the tax impact of each wrapper over your lifetime based on your income, age, and expected retirement income.</p>
+    </div>
+    <div class="coming-card">
+      <div class="coming-card-icon">📊</div>
+      <h4>FIRE Number Calculator</h4>
+      <p>Calculate your personal FIRE target using your spending, inflation, State Pension bridge, and safe withdrawal rate.</p>
+    </div>
+    <div class="coming-card">
+      <div class="coming-card-icon">💷</div>
+      <h4>Dividend Income Planner</h4>
+      <p>Build a dividend portfolio that generates your target monthly income — with yield, coverage, and growth projections.</p>
+    </div>
+    <div class="coming-card">
+      <div class="coming-card-icon">📉</div>
+      <h4>Drawdown Risk Analyser</h4>
+      <p>Model sequence-of-returns risk across different asset allocations and withdrawal strategies for early retirees.</p>
+    </div>
+  </div>
+
+  <div class="cta-box">
+    <h3>Ready to Put the Tools to Work?</h3>
+    <p>The stock screener, Monte Carlo, portfolio optimiser and pairs trading are all free in the Fintiq app — no card required.</p>
+    <a href="https://app.fintiq.uk" class="cta-btn">Launch Fintiq Free →</a>
+  </div>
+
+</div>
+
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Professional investing tools for retail investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk">App</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+
+</body>
+</html>

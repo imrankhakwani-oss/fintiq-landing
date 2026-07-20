@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Building Your Optimal Portfolio with the Efficient Frontier — Full Guide | Fintiq Pro</title>
+<meta name="robots" content="noindex,nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.access-banner{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);border-radius:8px;padding:14px 20px;margin:24px 0;color:#22c55e;font-weight:600;font-size:0.9rem}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}table{width:100%;border-collapse:collapse;margin:24px 0}th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}</style>
+</head>
+<body>
+<nav><a href="https://fintiq.uk" class="logo">📊 Fintiq</a><div class="nav-links"><a href="https://fintiq.uk/learn.html">← Learn</a><a href="https://app.fintiq.uk" class="btn-cta">Try the App →</a></div></nav>
+<div class="container">
+  <div style="padding:32px 0 16px">
+    <div class="access-banner">✅ Full Guide Unlocked — Thank you for your purchase!</div>
+    <span style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);margin-bottom:16px">Pro Guide</span>
+    <h1>Building Your Optimal Portfolio with the Efficient Frontier — Step by Step</h1>
+    <div class="meta">Updated July 2026 · 18 min read · Advanced</div>
+  </div>
+
+  <p>Markowitz's 1952 paper showed that portfolio risk is not the weighted average of individual stock risks — it depends critically on how stocks move relative to each other. Two stocks that are individually risky can, when combined, produce a portfolio that is less risky than either alone. This is the mathematical foundation of diversification, and the Efficient Frontier is its visual expression.</p>
+
+  <h2>Building the Efficient Frontier: Step-by-Step with 8 Stocks</h2>
+
+  <h3>Step 1: Stock Selection</h3>
+  <p>Choose 6–12 stocks across different sectors. For this walkthrough we use 8 FTSE 100 stocks representing genuine sector diversification:</p>
+  <table>
+    <thead><tr><th>Stock</th><th>Sector</th><th>Why Included</th></tr></thead>
+    <tbody>
+      <tr><td>Shell (SHEL)</td><td>Energy</td><td>Commodity exposure, high FCF yield</td></tr>
+      <tr><td>AstraZeneca (AZN)</td><td>Healthcare</td><td>High growth, low correlation to cyclicals</td></tr>
+      <tr><td>Lloyds (LLOY)</td><td>Financials</td><td>UK economic proxy, high dividend</td></tr>
+      <tr><td>Unilever (ULVR)</td><td>Consumer Staples</td><td>Defensive, global revenues</td></tr>
+      <tr><td>BAE Systems (BA.)</td><td>Defence/Industrial</td><td>Government contracts, inflation-linked</td></tr>
+      <tr><td>Rio Tinto (RIO)</td><td>Mining</td><td>Commodity diversification, high yield</td></tr>
+      <tr><td>Next (NXT)</td><td>Consumer Discret.</td><td>UK consumer, strong FCF</td></tr>
+      <tr><td>National Grid (NG.)</td><td>Utilities</td><td>Defensive, regulated returns</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Step 2: Input Your Stocks into Fintiq's Portfolio Optimiser</h3>
+  <ol>
+    <li>Open Fintiq → Portfolio Optimiser tab</li>
+    <li>Enter each ticker symbol (SHEL, AZN, LLOY, ULVR, BA., RIO, NXT, NG.)</li>
+    <li>Set lookback period: <strong>3 years</strong> is the professional standard — long enough to include a full cycle, short enough to be relevant</li>
+    <li>Set risk-free rate: current UK 10-year gilt yield (approximately 4.2% as of mid-2026)</li>
+    <li>Click <strong>"Generate Efficient Frontier"</strong></li>
+  </ol>
+
+  <h3>Step 3: Understanding the Output</h3>
+  <p>Fintiq plots three key points on the Efficient Frontier:</p>
+  <ul>
+    <li><strong>Minimum Variance Portfolio (MVP):</strong> The leftmost point — lowest possible portfolio volatility. Often has a lower expected return but maximum diversification benefit.</li>
+    <li><strong>Maximum Sharpe Ratio Portfolio (Tangency Portfolio):</strong> The point where the Capital Market Line is tangent to the frontier. This is the mathematically optimal risk-adjusted portfolio — maximum return per unit of risk.</li>
+    <li><strong>Maximum Return Portfolio:</strong> The rightmost efficient point — highest expected return but highest volatility. Usually 90%+ concentrated in 1–2 stocks.</li>
+  </ul>
+
+  <h3>Step 4: Worked Example — Optimal Weights</h3>
+  <p>Using 3-year historical data, a typical Tangency Portfolio from these 8 stocks might look like:</p>
+  <table>
+    <thead><tr><th>Stock</th><th>Optimal Weight</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td>AstraZeneca</td><td>22%</td><td>High Sharpe ratio individually, low correlation to value stocks</td></tr>
+      <tr><td>BAE Systems</td><td>18%</td><td>Low correlation to economic cycle, positive momentum</td></tr>
+      <tr><td>Shell</td><td>15%</td><td>Inflation hedge, moderate correlation to financials</td></tr>
+      <tr><td>National Grid</td><td>14%</td><td>Very low correlation to cyclicals — stabilises the portfolio</td></tr>
+      <tr><td>Unilever</td><td>12%</td><td>Defensive ballast with global revenues</td></tr>
+      <tr><td>Rio Tinto</td><td>10%</td><td>Diversification vs energy; negative correlation to bonds</td></tr>
+      <tr><td>Next</td><td>6%</td><td>Higher volatility limits allocation despite strong returns</td></tr>
+      <tr><td>Lloyds</td><td>3%</td><td>High correlation to other UK stocks limits diversification value</td></tr>
+    </tbody>
+  </table>
+  <p><em>Note: Your actual Fintiq output will differ based on the lookback period and current market data. These weights illustrate the typical pattern — high-quality defensive stocks get overweighted, highly-correlated or high-volatility stocks get underweighted.</em></p>
+
+  <h3>Step 5: Rebalancing Rules</h3>
+  <p>The optimal weights change as correlations, returns, and volatilities shift over time. Professional practice:</p>
+  <ul>
+    <li><strong>Quarterly review:</strong> Re-run the optimisation in Fintiq every quarter. If any weight has drifted more than 5 percentage points from the target, rebalance.</li>
+    <li><strong>Event-triggered review:</strong> Rebalance after major macro shifts (central bank policy changes, geopolitical events) that structurally change correlations.</li>
+    <li><strong>Tax efficiency:</strong> In an ISA, rebalancing is free of CGT. In a GIA, consider tax-loss harvesting — selling underperformers to offset gains in winners before rebalancing.</li>
+  </ul>
+
+  <h3>Step 6: Constraints and Real-World Adjustments</h3>
+  <p>Pure mathematical optimisation can produce impractical results — e.g. 0% in most stocks and 40% in one. Apply these constraints in Fintiq's settings:</p>
+  <ul>
+    <li>Minimum weight per stock: 3% (ensures genuine diversification)</li>
+    <li>Maximum weight per stock: 25% (limits concentration risk)</li>
+    <li>Maximum sector weight: 30% (prevents sector concentration)</li>
+  </ul>
+
+  <div class="highlight">
+    <strong>Key Insight: Correlation Is Everything</strong><br>
+    Adding a stock with a lower expected return than your existing holdings can <em>improve</em> your portfolio's Sharpe ratio if it has a sufficiently low or negative correlation. This is why National Grid (modest returns, very low volatility) earns a 14% weighting alongside high-growth AstraZeneca — the combination is mathematically superior to holding either alone.
+  </div>
+
+  <div class="cta-box">
+    <h3 style="color:#F59E0B">Build Your Efficient Frontier in Fintiq</h3>
+    <p style="color:#94A3B8;margin-bottom:24px">Enter your stocks and let Fintiq calculate the mathematically optimal allocation in seconds.</p>
+    <a href="https://app.fintiq.uk" class="cta-btn">Open Portfolio Optimiser →</a>
+  </div>
+</div>
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Free stock screener &amp; investing tools for UK investors</div>
+  <div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+</body>
+</html>
