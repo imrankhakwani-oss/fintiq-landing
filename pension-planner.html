@@ -132,6 +132,33 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .income-label{font-size:0.83rem;color:#94A3B8}
 .income-val{font-size:0.88rem;font-weight:600;color:#F1F5F9}
 
+/* ── Employment Toggle ── */
+.emp-toggle-wrap{display:flex;gap:0;margin-bottom:20px}
+.etoggle{flex:1;background:rgba(10,22,40,0.6);border:1px solid rgba(255,255,255,0.1);padding:9px 10px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:600;color:#64748B;transition:all 0.2s;text-align:center}
+.etoggle:first-child{border-radius:8px 0 0 8px}
+.etoggle:last-child{border-radius:0 8px 8px 0;border-left:none}
+.etoggle.active{background:rgba(245,158,11,0.15);color:#F59E0B;border-color:rgba(245,158,11,0.4)}
+.selfemployed-note{background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:8px;padding:12px 14px;font-size:0.75rem;color:#A78BFA;margin-bottom:14px;line-height:1.5;display:none}
+
+/* ── AI Summary ── */
+.ai-summary{background:linear-gradient(135deg,#060F1A,#0A1628);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:24px;margin-bottom:20px}
+.ai-summary-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ai-badge{background:rgba(124,58,237,0.15);color:#A78BFA;border:1px solid rgba(124,58,237,0.3);border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px}
+.ai-summary-title{font-size:0.85rem;font-weight:700;color:#F1F5F9}
+.ai-summary p{font-size:0.85rem;color:#CBD5E1;line-height:1.7;margin-bottom:10px}
+.ai-summary p:last-child{margin-bottom:0}
+.ai-action{background:rgba(34,197,94,0.08);border-left:3px solid #22C55E;padding:10px 14px;border-radius:0 6px 6px 0;font-size:0.82rem;color:#CBD5E1;margin-top:12px;line-height:1.6}
+.ai-action strong{color:#22C55E}
+
+/* Print AI summary */
+@media print{
+.ai-summary{background:#F8FAFC!important;border:1px solid #E2E8F0!important}
+.ai-summary p{color:#374151!important}
+.ai-action{background:rgba(34,197,94,0.05)!important;color:#374151!important}
+.ai-badge{color:#7C3AED!important}
+.ai-summary-title{color:#0A1628!important}
+}
+
 /* ── Country Toggle ── */
 .country-toggle-wrap{display:flex;justify-content:center;margin:0 0 28px;gap:0}
 .ctoggle{background:rgba(10,22,40,0.6);border:1px solid rgba(255,255,255,0.1);padding:12px 32px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;color:#64748B;transition:all 0.2s;display:flex;align-items:center;gap:8px}
@@ -350,6 +377,14 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <div class="inputs-panel">
     <h2>🎯 Your Details</h2>
 
+    <div class="emp-toggle-wrap">
+      <button class="etoggle active" id="empBtn" onclick="setEmpType('employed')">👔 Employed</button>
+      <button class="etoggle" id="selfBtn" onclick="setEmpType('self-employed')">💼 Self-Employed</button>
+    </div>
+    <div class="selfemployed-note" id="selfNote">
+      <strong>Self-employed:</strong> Enter your <em>net</em> monthly pension contribution. HMRC automatically adds 20% basic rate tax relief — so £800/month becomes £1,000 in your SIPP. Higher rate taxpayers can claim a further 20–25% via Self Assessment.
+    </div>
+
     <div class="input-section">
       <div class="input-section-title">Personal</div>
       <div class="input-row">
@@ -374,7 +409,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <div class="input-section">
       <div class="input-section-title">Current Savings</div>
       <div class="input-row">
-        <label>Current Pension Pot (SIPP / Workplace)</label>
+        <label id="pensionPotLabel">Current Pension Pot (SIPP / Workplace)</label>
         <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="currentPension" value="120000" min="0"></div>
       </div>
       <div class="input-row">
@@ -386,15 +421,15 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <div class="input-section">
       <div class="input-section-title">Monthly Contributions</div>
       <div class="input-row">
-        <label>Your Monthly Contribution</label>
+        <label id="monthlyContribLabel">Your Monthly Contribution</label>
         <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="monthlyContrib" value="600" min="0"></div>
       </div>
-      <div class="input-row">
+      <div class="input-row" id="employerPctRow">
         <label>Employer Contribution (% of your salary)</label>
         <div class="prefix-wrap"><span class="prefix">%</span><input type="number" id="employerPct" value="5" min="0" max="30"></div>
-        <div class="input-hint">Average UK employer contributes 4–6%. Enter 0 if self-employed.</div>
+        <div class="input-hint">Average UK employer contributes 4–6%.</div>
       </div>
-      <div class="input-row">
+      <div class="input-row" id="annualSalaryRow">
         <label>Your Annual Salary (for employer calc)</label>
         <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="annualSalary" value="60000" min="0"></div>
       </div>
@@ -452,6 +487,15 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
         <div class="success-pct" id="successPct">—</div>
         <div class="success-sub" id="successSub"></div>
         <div class="success-verdict" id="successVerdict"></div>
+      </div>
+
+      <!-- AI Summary -->
+      <div class="ai-summary" id="aiSummary">
+        <div class="ai-summary-header">
+          <span class="ai-badge">✦ AI Analysis</span>
+          <span class="ai-summary-title">Personalised Retirement Assessment</span>
+        </div>
+        <div id="aiSummaryText"></div>
       </div>
 
       <!-- Key Metrics -->
@@ -628,6 +672,16 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <div class="print-section-sub">Based on your inputs and 5,000 Monte Carlo simulations</div>
   <div class="print-kpi-grid" id="printKPIs"></div>
   <div class="print-success-bar" id="printSuccessBar"></div>
+
+  <!-- AI Summary in print -->
+  <div class="ai-summary" id="printAISummary" style="margin-bottom:24px">
+    <div class="ai-summary-header">
+      <span class="ai-badge">✦ AI Analysis</span>
+      <span class="ai-summary-title">Personalised Retirement Assessment</span>
+    </div>
+    <div id="printAISummaryText"></div>
+  </div>
+
   <div class="print-assumptions">
     <h4>Inputs &amp; Assumptions Used</h4>
     <div class="print-assumptions-grid" id="printAssumptions"></div>
@@ -798,8 +852,11 @@ function _run(){
   if(rAge>=lExp||cAge>=rAge){ alert('Please check your ages — retirement must be before life expectancy.'); return; }
 
   const totalPot = curP+curI;
-  const empAnnual = (salary*(empPct/100));
-  const annualContrib = myCon*12 + empAnnual;
+  // Self-employed: HMRC adds 20% basic rate relief automatically (net × 1.25 = gross)
+  const taxReliefMultiplier = empType==='self-employed' ? 1.25 : 1;
+  const grossMonthly = myCon * taxReliefMultiplier;
+  const empAnnual = empType==='self-employed' ? 0 : (salary*(empPct/100));
+  const annualContrib = grossMonthly*12 + empAnnual;
   const annualIncomeTgt = tgtIn*12;
   const annualSP = sp;
   const mu = ret/100;
@@ -910,6 +967,12 @@ function _run(){
     tbody.appendChild(tr);
   });
 
+  // ── AI Summary ──
+  const summaryInputs = {cAge,rAge,lExp,spAge,tgtIn,sp,ret,infl,vol,annualContrib};
+  const aiHTML = generateAISummary(summaryInputs, successRate, potMedian, bridgeYrs, wRate, sensResults, empType);
+  document.getElementById('aiSummaryText').innerHTML = aiHTML;
+  document.getElementById('printAISummaryText').innerHTML = aiHTML;
+
   // Build fan chart
   buildFanChart(res.percs, cAge, lExp, rAge, spAge);
 
@@ -939,6 +1002,7 @@ function _run(){
     <div class="print-assump-item"><strong>Volatility</strong>${vol}%</div>
     <div class="print-assump-item"><strong>Simulations</strong>5,000</div>
     <div class="print-assump-item"><strong>Bridge Period</strong>${bridgeYrs>0?bridgeYrs+' years':'None'}</div>
+    <div class="print-assump-item"><strong>Employment</strong>${empType==='self-employed'?'Self-Employed (25% tax relief applied)':'Employed'}</div>
   `;
 }
 
@@ -1030,6 +1094,71 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
 // ── PDF generation ────────────────────────────────────
 function generatePDF(){
   window.print();
+}
+
+// ── Employment type toggle ────────────────────────────
+let empType = 'employed';
+function setEmpType(type){
+  empType = type;
+  const isself = type==='self-employed';
+  document.getElementById('empBtn').classList.toggle('active',!isself);
+  document.getElementById('selfBtn').classList.toggle('active',isself);
+  document.getElementById('selfNote').style.display = isself?'block':'none';
+  document.getElementById('employerPctRow').style.display = isself?'none':'block';
+  document.getElementById('annualSalaryRow').style.display = isself?'none':'block';
+  document.getElementById('pensionPotLabel').textContent = isself
+    ? 'Current Personal Pension / SIPP Value'
+    : 'Current Pension Pot (SIPP / Workplace)';
+  document.getElementById('monthlyContribLabel').textContent = isself
+    ? 'Your Monthly Net Contribution (you pay)'
+    : 'Your Monthly Contribution';
+}
+
+// ── AI Summary generator ──────────────────────────────
+function generateAISummary(inputs, successRate, potMedian, bridgeYrs, wRate, sensResults, empType){
+  const {cAge,rAge,lExp,spAge,tgtIn,sp,ret,infl,vol,annualContrib} = inputs;
+  const yr = new Date().getFullYear();
+
+  // Verdict
+  const strong = successRate>=85, moderate = successRate>=70&&successRate<85;
+  const verdictWord = strong?'strong':moderate?'moderate':'needs attention';
+  const yearsToRetire = rAge-cAge;
+  const monthlyContribK = (annualContrib/12/1000).toFixed(1);
+
+  // Find best sensitivity action
+  const sorted = [...sensResults].sort((a,b)=>(b.rate-successRate)-(a.rate-successRate));
+  const bestAction = sorted[0];
+  const worstAction = [...sensResults].sort((a,b)=>(a.rate-successRate)-(b.rate-successRate))[0];
+
+  // Withdrawal rate comment
+  const wRateComment = wRate<=3.5
+    ? 'conservative and highly sustainable'
+    : wRate<=4.5
+    ? 'within the generally accepted safe range'
+    : 'above the safe withdrawal threshold — your income target may need revisiting';
+
+  // Self-employed note
+  const selfNote = empType==='self-employed'
+    ? ` As a self-employed individual, consistent SIPP contributions are especially important since you have no employer matching your savings. Even small monthly increases compound significantly over ${yearsToRetire} years.`
+    : '';
+
+  // Bridge comment
+  const bridgeComment = bridgeYrs>0
+    ? `One of the most significant risks in your plan is the <strong>${bridgeYrs}-year bridge period</strong> between your retirement at age ${rAge} and your State Pension starting at age ${spAge}. During these years your pot must cover your full income target of £${tgtIn.toLocaleString('en-GB')}/month with no State Pension supplement — this is the highest-pressure phase of your retirement.`
+    : `You are retiring at or after State Pension age, which means there is no bridge period — your State Pension income reduces the pressure on your pot from day one of retirement. This significantly improves your long-term sustainability.`;
+
+  const p1 = `Based on 5,000 Monte Carlo simulations, your retirement plan is in <strong>${verdictWord}</strong> shape, with a <strong>${Math.round(successRate)}% probability</strong> of your pension pot lasting to age ${lExp}. You have ${yearsToRetire} years until your target retirement age of ${rAge}, during which your combined contributions of approximately £${monthlyContribK}k/month will continue building your pot.${selfNote}`;
+
+  const p2 = bridgeComment;
+
+  const p3 = `In retirement, your effective withdrawal rate from the pot is <strong>${wRate.toFixed(1)}%</strong> — ${wRateComment}. Your State Pension of £${Math.round(sp/12).toLocaleString('en-GB')}/month (starting age ${spAge}) covers ${Math.round(sp/12/tgtIn*100)}% of your target income, meaning your pot only needs to fund the remaining ${Math.round((1-sp/12/tgtIn)*100)}%. The model assumes a ${ret}% annual return, ${infl}% inflation, and ${vol}% portfolio volatility.`;
+
+  const actionDiff = Math.round(bestAction.rate - successRate);
+  const actionText = actionDiff>0
+    ? `<strong>Highest-impact action:</strong> ${bestAction.label} would improve your success probability by approximately <strong>${actionDiff} percentage points</strong> to ${Math.round(bestAction.rate)}%. ${worstAction.rate<successRate?`Conversely, ${worstAction.label.toLowerCase()} would reduce it by ${Math.round(successRate-worstAction.rate)}pp to ${Math.round(worstAction.rate)}%.`:''}`
+    : `Your plan is already highly optimised. Continuing your current contribution level and maintaining a diversified portfolio is the primary recommendation.`;
+
+  return `<p>${p1}</p><p>${p2}</p><p>${p3}</p><div class="ai-action">${actionText}</div>`;
 }
 
 // ── Country toggle ────────────────────────────────────
