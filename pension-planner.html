@@ -226,104 +226,176 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
    PRINT / PDF STYLES
 ═══════════════════════════════════════════ */
 .print-only{display:none}
-@media print{
-  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-  nav,.inputs-panel,.pdf-section,footer,.placeholder,.calc-btn,.hero-badge{display:none!important}
-  body{background:#fff;color:#1E293B;font-size:11pt}
-  .tool-wrap{display:block;padding:0;max-width:100%}
-  .results-panel{display:block}
-  .print-only{display:block}
 
-  /* ── COVER PAGE ── */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;box-sizing:border-box}
+  @page{size:A4;margin:18mm 18mm 18mm 18mm}
+
+  /* ── Hide web-only elements ── */
+  nav,.hero,.country-toggle-wrap,.us-modal-overlay,
+  .inputs-panel,.placeholder,.pdf-section,.paywall-overlay,
+  .emp-toggle-wrap,.selfemployed-note,
+  footer,.calc-btn,.hero-badge,
+  #results .success-card,
+  #results .ai-summary,
+  #results .metrics-row{display:none!important}
+
+  /* ── Show results & unlock paywall ── */
+  body{background:#fff!important;color:#1E293B;font-size:9.5pt;font-family:'Inter',sans-serif;margin:0;padding:0}
+  .tool-wrap{display:block!important;padding:0!important;max-width:100%!important}
+  .results-panel{display:block!important}
+  #results{display:block!important}
+  .paywall-wrap{position:static!important}
+  .paywall-blur{filter:none!important;opacity:1!important;pointer-events:auto!important}
+  .print-only{display:block!important}
+
+  /* ══════════════════════════════════
+     PAGE 1 — COVER
+  ══════════════════════════════════ */
   .print-cover{
-    background:#0A1628;
-    color:#fff;
+    background:#0A1628!important;
     min-height:100vh;
     display:flex!important;
     flex-direction:column;
     justify-content:space-between;
-    padding:60px 64px;
+    padding:56px 60px;
     page-break-after:always;
-    position:relative;
+    break-after:page;
   }
-  .print-cover-top{display:flex;align-items:center;gap:12px;margin-bottom:auto}
-  .print-cover-logo{font-size:2rem;font-weight:900;color:#F59E0B;letter-spacing:-1px;font-family:'Inter',sans-serif}
-  .print-cover-tagline{color:#475569;font-size:0.85rem}
-  .print-cover-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:80px 0 60px}
-  .print-cover-eyebrow{font-size:0.75rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px;display:block}
-  .print-cover-title{font-size:3rem;font-weight:900;color:#F1F5F9;line-height:1.1;margin-bottom:16px;font-family:'Inter',sans-serif}
-  .print-cover-subtitle{font-size:1.1rem;color:#94A3B8;max-width:480px;line-height:1.5}
-  .print-cover-divider{border:none;border-top:2px solid #F59E0B;margin:32px 0;width:80px}
-  .print-cover-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:32px}
-  .print-cover-meta-item label{font-size:0.65rem;color:#64748B;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
-  .print-cover-meta-item span{font-size:1rem;font-weight:700;color:#F1F5F9}
-  .print-cover-bottom{border-top:1px solid rgba(255,255,255,0.1);padding-top:24px}
-  .print-cover-disclaimer{font-size:0.65rem;color:#475569;line-height:1.4}
+  .print-cover-logo-row{display:flex;align-items:center;justify-content:space-between}
+  .print-cover-logo{font-size:1.8rem;font-weight:900;color:#F59E0B!important;letter-spacing:-1px;font-family:'Inter',sans-serif}
+  .print-cover-logo-sub{font-size:0.72rem;color:#475569!important;margin-top:2px}
+  .print-cover-badge{background:#F59E0B!important;color:#0A1628!important;font-size:0.65rem;font-weight:800;padding:4px 12px;border-radius:20px;text-transform:uppercase;letter-spacing:1px}
+  .print-cover-center{flex:1;display:flex;flex-direction:column;justify-content:center;padding:60px 0 40px}
+  .print-cover-eyebrow{font-size:0.7rem;font-weight:700;color:#F59E0B!important;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:18px;display:block}
+  .print-cover-title{font-size:3.2rem;font-weight:900;color:#F1F5F9!important;line-height:1.05;margin-bottom:0;font-family:'Inter',sans-serif}
+  .print-cover-title-gold{color:#F59E0B!important}
+  .print-cover-subtitle{font-size:1rem;color:#94A3B8!important;margin-top:20px;max-width:440px;line-height:1.6}
+  .print-cover-rule{border:none;border-top:3px solid #F59E0B!important;width:64px;margin:32px 0}
+  .print-cover-meta{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;border:1px solid rgba(255,255,255,0.1)!important;border-radius:10px;overflow:hidden}
+  .print-cover-meta-item{padding:18px 22px}
+  .print-cover-meta-item:not(:last-child){border-right:1px solid rgba(255,255,255,0.1)!important}
+  .print-cover-meta-item label{font-size:0.6rem;color:#64748B!important;text-transform:uppercase;letter-spacing:1.2px;display:block;margin-bottom:6px}
+  .print-cover-meta-item span{font-size:0.95rem;font-weight:700;color:#F1F5F9!important}
+  .print-cover-bottom{border-top:1px solid rgba(255,255,255,0.08)!important;padding-top:20px}
+  .print-cover-disclaimer{font-size:0.6rem;color:#334155!important;line-height:1.5}
 
-  /* ── PRINT HEADER (appears on pages 2+) ── */
-  .print-page-header{display:flex!important;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:2px solid #F59E0B;margin-bottom:28px}
-  .print-page-logo{font-size:1.1rem;font-weight:900;color:#F59E0B;font-family:'Inter',sans-serif}
-  .print-page-title{font-size:0.7rem;color:#94A3B8;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+  /* ══════════════════════════════════
+     SHARED: page header (pages 2+)
+  ══════════════════════════════════ */
+  .print-page-hdr{
+    display:flex!important;align-items:center;justify-content:space-between;
+    padding-bottom:12px;border-bottom:2px solid #F59E0B!important;margin-bottom:24px
+  }
+  .print-page-hdr-logo{font-size:1rem;font-weight:900;color:#F59E0B!important;font-family:'Inter',sans-serif}
+  .print-page-hdr-right{text-align:right}
+  .print-page-hdr-title{font-size:0.62rem;color:#64748B!important;font-weight:600;text-transform:uppercase;letter-spacing:1px}
+  .print-page-hdr-name{font-size:0.62rem;color:#94A3B8!important}
 
-  /* ── EXEC SUMMARY ── */
-  .print-summary{page-break-before:always;padding:0}
-  .print-section-heading{font-size:1.3rem;font-weight:800;color:#0A1628;margin-bottom:6px;font-family:'Inter',sans-serif}
-  .print-section-sub{font-size:0.83rem;color:#64748B;margin-bottom:24px}
-  .print-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
-  .print-kpi{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:16px;text-align:center}
-  .print-kpi-val{font-size:1.8rem;font-weight:900;color:#0A1628;font-family:'Inter',sans-serif}
-  .print-kpi-label{font-size:0.65rem;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-top:4px}
-  .print-success-bar{background:#F59E0B;height:8px;border-radius:4px;margin-bottom:24px}
-  .print-assumptions{background:#F8FAFC;border-left:3px solid #F59E0B;padding:16px 20px;border-radius:0 8px 8px 0;margin-bottom:0}
-  .print-assumptions h4{font-size:0.75rem;font-weight:700;color:#0A1628;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px}
-  .print-assumptions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-  .print-assump-item{font-size:0.75rem;color:#475569}
-  .print-assump-item strong{color:#1E293B;display:block;font-size:0.78rem}
+  /* section headings */
+  .p-h1{font-size:1.25rem;font-weight:800;color:#0A1628!important;margin-bottom:4px;font-family:'Inter',sans-serif}
+  .p-h2{font-size:0.95rem;font-weight:700;color:#0A1628!important;margin:20px 0 10px;font-family:'Inter',sans-serif;border-left:3px solid #F59E0B!important;padding-left:10px}
+  .p-sub{font-size:0.78rem;color:#64748B!important;margin-bottom:20px}
 
-  /* ── CHART PAGE ── */
-  .print-chart-page{page-break-before:always}
-  .chart-section{background:#F8FAFC!important;border:1px solid #E2E8F0!important;border-radius:8px!important;padding:20px!important;margin-bottom:20px!important}
-  .section-title{color:#0A1628!important}
-  .section-desc{color:#64748B!important}
-  .leg-item{color:#475569!important}
+  /* ══════════════════════════════════
+     PAGE 2 — EXECUTIVE SUMMARY
+  ══════════════════════════════════ */
+  .print-summary{page-break-before:always;break-before:page}
 
-  /* ── BRIDGE PAGE ── */
-  .print-bridge-page{page-break-before:always}
-  .bridge-box{background:#F8FAFC!important;border:1px solid #E2E8F0!important}
-  .bridge-title{color:#7C3AED!important}
-  .bridge-note{background:rgba(124,58,237,0.05)!important;color:#475569!important}
-  .bridge-stat-val{color:#1E293B!important}
-  .bridge-stat-label{color:#64748B!important}
+  /* KPI cards */
+  .print-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+  .print-kpi{background:#F8FAFC!important;border:1px solid #E2E8F0!important;border-radius:8px;padding:14px;text-align:center}
+  .print-kpi-val{font-size:1.7rem;font-weight:900;color:#0A1628!important;font-family:'Inter',sans-serif;line-height:1}
+  .print-kpi-label{font-size:0.6rem;color:#64748B!important;text-transform:uppercase;letter-spacing:0.8px;margin-top:5px}
 
-  /* ── SENSITIVITY PAGE ── */
-  .print-sens-page{page-break-before:always}
-  .sens-table th{color:#64748B!important}
-  .sens-table td{color:#1E293B!important}
-  .income-breakdown{background:#F8FAFC!important;border:1px solid #E2E8F0!important}
-  .income-label{color:#64748B!important}
-  .income-val{color:#1E293B!important}
-  .income-row:last-child{color:#0A1628!important}
-  .metric-card{background:#F8FAFC!important;border:1px solid #E2E8F0!important}
-  .metric-label{color:#64748B!important}
-  .metric-value{color:#0A1628!important}
-  .metric-sub{color:#94A3B8!important}
+  /* Success bar */
+  .print-success-track{background:#E2E8F0!important;height:10px;border-radius:5px;margin-bottom:6px;overflow:hidden}
+  .print-success-bar{background:#F59E0B!important;height:10px;border-radius:5px}
+  .print-success-labels{display:flex;justify-content:space-between;font-size:0.6rem;color:#94A3B8!important;margin-bottom:20px}
 
-  /* ── DISCLAIMER PAGE ── */
-  .print-disc-page{page-break-before:always;font-size:0.75rem;color:#475569;line-height:1.7}
-  .print-disc-page h3{color:#0A1628;font-size:1rem;margin-bottom:12px}
+  /* AI summary in print */
+  .ai-summary{background:#FFFBEB!important;border:1px solid #FDE68A!important;border-radius:8px;padding:16px 18px;margin-bottom:18px}
+  .ai-badge{background:#F59E0B!important;color:#0A1628!important;border:none!important;font-size:0.6rem;padding:2px 8px}
+  .ai-summary-title{color:#0A1628!important;font-size:0.8rem}
+  .ai-summary p{color:#374151!important;font-size:0.78rem;line-height:1.65;margin-bottom:8px}
+  .ai-action{background:#F0FDF4!important;border-left:3px solid #22C55E!important;padding:10px 12px;font-size:0.75rem;color:#374151!important;border-radius:0 6px 6px 0}
+  .ai-action strong{color:#15803D!important}
 
-  .success-card{background:#F0FDF4!important;border:1px solid #BBF7D0!important}
-  .success-card.warning{background:#FFFBEB!important;border:1px solid #FDE68A!important}
-  .success-card.danger{background:#FEF2F2!important;border:1px solid #FECACA!important}
-  .success-pct{color:#15803D!important}
-  .success-card.warning .success-pct{color:#B45309!important}
-  .success-card.danger .success-pct{color:#B91C1C!important}
-  .success-label{color:#64748B!important}
-  .success-sub{color:#475569!important}
-  .success-verdict{background:rgba(34,197,94,0.1)!important;color:#15803D!important;border-color:#BBF7D0!important}
-  .success-card.warning .success-verdict{color:#B45309!important}
-  .success-card.danger .success-verdict{color:#B91C1C!important}
+  /* Assumptions */
+  .print-assumptions{background:#F8FAFC!important;border:1px solid #E2E8F0!important;border-left:3px solid #F59E0B!important;border-radius:0 8px 8px 0;padding:14px 18px}
+  .print-assumptions h4{font-size:0.65rem;font-weight:700;color:#0A1628!important;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px}
+  .print-assumptions-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .print-assump-item{font-size:0.7rem;color:#475569!important}
+  .print-assump-item strong{color:#1E293B!important;display:block;font-size:0.72rem;margin-bottom:1px}
+
+  /* ══════════════════════════════════
+     PAGE 3 — FAN CHART
+  ══════════════════════════════════ */
+  .chart-section{
+    background:#fff!important;border:1px solid #E2E8F0!important;
+    border-radius:8px!important;padding:18px!important;margin-bottom:16px!important;
+    page-break-before:always;break-before:page
+  }
+  .section-title{color:#0A1628!important;font-size:0.65rem!important}
+  .section-desc{color:#64748B!important;font-size:0.72rem!important}
+  .leg-item{color:#475569!important;font-size:0.65rem!important}
+  .leg-dot{border:1px solid #E2E8F0!important}
+
+  /* ══════════════════════════════════
+     PAGE 4 — BRIDGE + INCOME
+  ══════════════════════════════════ */
+  .bridge-box{
+    background:#FAFAFA!important;border:1px solid #E2E8F0!important;
+    border-left:3px solid #7C3AED!important;border-radius:0 8px 8px 0!important;
+    padding:18px!important;margin-bottom:16px!important;
+    page-break-before:always;break-before:page
+  }
+  .bridge-title{color:#7C3AED!important;font-size:0.65rem!important}
+  .bridge-stat-val{color:#1E293B!important;font-size:1.4rem!important}
+  .bridge-stat-label{color:#64748B!important;font-size:0.65rem!important}
+  .bridge-note{background:#F5F3FF!important;color:#475569!important;font-size:0.75rem!important;padding:10px 12px!important;border-radius:6px!important}
+
+  .income-breakdown{
+    background:#fff!important;border:1px solid #E2E8F0!important;
+    border-radius:8px!important;padding:18px!important;margin-bottom:16px!important
+  }
+  .income-label{color:#64748B!important;font-size:0.78rem!important}
+  .income-val{color:#1E293B!important;font-size:0.82rem!important}
+  .income-row{border-bottom:1px solid #F1F5F9!important;padding:8px 0!important}
+  .income-row:last-child{border:none!important;color:#0A1628!important}
+
+  /* ══════════════════════════════════
+     PAGE 5 — SENSITIVITY
+  ══════════════════════════════════ */
+  .chart-section:last-of-type{page-break-before:always;break-before:page}
+
+  .sens-table{font-size:0.75rem}
+  .sens-table th{color:#64748B!important;background:#F8FAFC!important;border-bottom:2px solid #E2E8F0!important;padding:8px 10px!important;font-size:0.65rem!important}
+  .sens-table td{color:#1E293B!important;border-bottom:1px solid #F1F5F9!important;padding:8px 10px!important}
+  .sens-good{background:#DCFCE7!important;color:#15803D!important}
+  .sens-bad{background:#FEE2E2!important;color:#B91C1C!important}
+  .sens-base{background:#FEF9C3!important;color:#854D0E!important}
+  .sens-mid{background:#F1F5F9!important;color:#475569!important}
+
+  /* ══════════════════════════════════
+     PAGE 6 — FINTIQ PROMO + DISCLAIMER
+  ══════════════════════════════════ */
+  .print-promo{page-break-before:always;break-before:page}
+  .print-promo-banner{
+    background:#0A1628!important;border-radius:10px;
+    padding:28px 32px;margin-bottom:24px;
+    display:flex;align-items:center;justify-content:space-between;gap:24px
+  }
+  .print-promo-left h3{font-size:1.1rem;font-weight:900;color:#F1F5F9!important;margin-bottom:6px;font-family:'Inter',sans-serif}
+  .print-promo-left p{font-size:0.78rem;color:#94A3B8!important;line-height:1.5;max-width:380px}
+  .print-promo-features{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:12px}
+  .print-promo-feat{font-size:0.72rem;color:#CBD5E1!important;display:flex;align-items:center;gap:6px}
+  .print-promo-feat::before{content:'✓';color:#F59E0B!important;font-weight:700}
+  .print-promo-url{background:#F59E0B!important;color:#0A1628!important;padding:10px 20px;border-radius:7px;font-weight:800;font-size:0.85rem;text-align:center;min-width:140px}
+  .print-disc{font-size:0.68rem;color:#64748B!important;line-height:1.65}
+  .print-disc h4{font-size:0.75rem;font-weight:700;color:#374151!important;margin:14px 0 5px}
 }
+
 </style>
 </head>
 <body>
@@ -517,7 +589,16 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
         </div>
       </div>
 
-      <!-- Fan Chart -->
+      <!-- Fan Chart — page 3 in print -->
+      <div class="print-only" id="chartPageHdr" style="display:none">
+        <div class="print-page-hdr">
+          <div class="print-page-hdr-logo">📊 Fintiq</div>
+          <div class="print-page-hdr-right">
+            <div class="print-page-hdr-title">Retirement Cashflow Projection</div>
+            <div class="print-page-hdr-name" id="hdrName3">—</div>
+          </div>
+        </div>
+      </div>
       <div class="chart-section">
         <div class="section-title">Retirement Cashflow Projection — 5,000 Scenarios</div>
         <div class="section-desc">Each band shows the range of outcomes across simulations. The wider the band, the greater the uncertainty over time.</div>
@@ -638,43 +719,47 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
      PRINT-ONLY SECTIONS
 ═══════════════════════════════════════════ -->
 
-<!-- COVER PAGE -->
+<!-- PAGE 1 — COVER -->
 <div class="print-only print-cover" id="printCover">
-  <div class="print-cover-top">
+  <div class="print-cover-logo-row">
     <div>
       <div class="print-cover-logo">📊 Fintiq</div>
-      <div class="print-cover-tagline">Professional investing tools for retail investors</div>
+      <div class="print-cover-logo-sub">fintiq.uk · Professional investing tools for retail investors</div>
     </div>
+    <div class="print-cover-badge">Pension Analysis</div>
   </div>
-  <div class="print-cover-main">
-    <span class="print-cover-eyebrow">Personalised Retirement Analysis</span>
-    <div class="print-cover-title">UK Pension<br>Lifecycle Report</div>
-    <div class="print-cover-subtitle">Monte Carlo simulation across 5,000 scenarios — your personal probability of a secure retirement</div>
-    <hr class="print-cover-divider">
-    <div class="print-cover-meta" id="coverMeta">
+  <div class="print-cover-center">
+    <span class="print-cover-eyebrow">Personalised Monte Carlo Analysis</span>
+    <div class="print-cover-title">UK Pension<br><span class="print-cover-title-gold">Lifecycle Report</span></div>
+    <div class="print-cover-subtitle">5,000 simulated retirement scenarios — your personal probability of financial security through retirement</div>
+    <hr class="print-cover-rule">
+    <div class="print-cover-meta">
       <div class="print-cover-meta-item"><label>Prepared for</label><span id="coverName">—</span></div>
-      <div class="print-cover-meta-item"><label>Generated</label><span id="coverDate">—</span></div>
+      <div class="print-cover-meta-item"><label>Date generated</label><span id="coverDate">—</span></div>
       <div class="print-cover-meta-item"><label>Simulations run</label><span>5,000</span></div>
     </div>
   </div>
   <div class="print-cover-bottom">
-    <div class="print-cover-disclaimer">This report is for illustrative purposes only and does not constitute financial advice. Past market performance does not guarantee future results. Fintiq is not regulated by the FCA. Please consult a qualified financial adviser before making pension or investment decisions. © 2026 Fintiq.</div>
+    <div class="print-cover-disclaimer">For illustrative purposes only. Not financial advice. Fintiq is not authorised or regulated by the FCA. Past market performance does not guarantee future results. Consult a qualified financial adviser before making pension or investment decisions. © 2026 Fintiq · fintiq.uk</div>
   </div>
 </div>
 
-<!-- EXEC SUMMARY (print page 2) -->
+<!-- PAGE 2 — EXECUTIVE SUMMARY -->
 <div class="print-only print-summary" id="printSummary">
-  <div class="print-page-header">
-    <div class="print-page-logo">📊 Fintiq</div>
-    <div class="print-page-title">UK Pension Lifecycle Report — Executive Summary</div>
+  <div class="print-page-hdr">
+    <div class="print-page-hdr-logo">📊 Fintiq</div>
+    <div class="print-page-hdr-right">
+      <div class="print-page-hdr-title">UK Pension Lifecycle Report</div>
+      <div class="print-page-hdr-name" id="hdrName">—</div>
+    </div>
   </div>
-  <div class="print-section-heading">Your Retirement at a Glance</div>
-  <div class="print-section-sub">Based on your inputs and 5,000 Monte Carlo simulations</div>
+  <div class="p-h1">Executive Summary</div>
+  <div class="p-sub">Based on your inputs and 5,000 Monte Carlo simulations</div>
   <div class="print-kpi-grid" id="printKPIs"></div>
-  <div class="print-success-bar" id="printSuccessBar"></div>
+  <div class="print-success-track"><div class="print-success-bar" id="printSuccessBar"></div></div>
+  <div class="print-success-labels"><span>0% — certain ruin</span><span id="successPctLabel">—</span><span>100% — certain success</span></div>
 
-  <!-- AI Summary in print -->
-  <div class="ai-summary" id="printAISummary" style="margin-bottom:24px">
+  <div class="ai-summary" id="printAISummary">
     <div class="ai-summary-header">
       <span class="ai-badge">✦ AI Analysis</span>
       <span class="ai-summary-title">Personalised Retirement Assessment</span>
@@ -683,50 +768,45 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   </div>
 
   <div class="print-assumptions">
-    <h4>Inputs &amp; Assumptions Used</h4>
+    <h4>Inputs &amp; Assumptions Used in This Analysis</h4>
     <div class="print-assumptions-grid" id="printAssumptions"></div>
   </div>
 </div>
 
-<!-- CHART PAGE (print page 3) -->
-<div class="print-only print-chart-page" id="printChartPage">
-  <div class="print-page-header">
-    <div class="print-page-logo">📊 Fintiq</div>
-    <div class="print-page-title">Retirement Cashflow Projection</div>
+<!-- PAGE 6 — FINTIQ PROMO + DISCLAIMER (comes after results in print) -->
+<div class="print-only print-promo" id="printPromo">
+  <div class="print-page-hdr">
+    <div class="print-page-hdr-logo">📊 Fintiq</div>
+    <div class="print-page-hdr-right">
+      <div class="print-page-hdr-title">UK Pension Lifecycle Report</div>
+      <div class="print-page-hdr-name" id="hdrName2">—</div>
+    </div>
   </div>
-</div>
+  <div class="p-h1" style="margin-bottom:16px">Explore More with Fintiq</div>
+  <div class="print-promo-banner">
+    <div class="print-promo-left">
+      <h3>Free Professional Investing Tools</h3>
+      <p>Fintiq gives retail investors access to the same analytical tools used by institutional fund managers — completely free. No commission, no hidden fees, no financial advice dressed up as editorial.</p>
+      <div class="print-promo-features">
+        <div class="print-promo-feat">Multi-factor FTSE 100 stock screener</div>
+        <div class="print-promo-feat">Monte Carlo simulation for stocks</div>
+        <div class="print-promo-feat">Portfolio optimiser (Efficient Frontier)</div>
+        <div class="print-promo-feat">Statistical pairs trading (Z-score)</div>
+        <div class="print-promo-feat">DCF valuation model</div>
+        <div class="print-promo-feat">Technical analysis — RSI, MACD, BB</div>
+      </div>
+    </div>
+    <div class="print-promo-url">app.fintiq.uk<br><span style="font-size:0.65rem;font-weight:400;color:#0A1628;opacity:0.7">Free · No card required</span></div>
+  </div>
 
-<!-- BRIDGE + INCOME (print page 4) -->
-<div class="print-only print-bridge-page" id="printBridgePage">
-  <div class="print-page-header">
-    <div class="print-page-logo">📊 Fintiq</div>
-    <div class="print-page-title">Bridge Period &amp; Income Analysis</div>
+  <div class="p-h2">Methodology</div>
+  <div class="print-disc">
+    This report uses Monte Carlo simulation to model 5,000 independent retirement scenarios. Each simulation draws annual investment returns from a log-normal distribution parameterised by your chosen expected return and volatility, reflecting the real-world reality that market returns vary significantly year-to-year. The model runs three phases sequentially: (1) Accumulation — contributions and investment growth build the pot until retirement; (2) Bridge — the period between retirement and State Pension start age where full income is drawn with no State Pension supplement; (3) Decumulation — withdrawals reduce the pot, partially offset by State Pension income, until the specified life expectancy. A simulation is a "failure" if the pot reaches zero before life expectancy. Success rate = percentage of 5,000 simulations where the pot survives.
+    <h4>Important Limitations</h4>
+    This model does not account for: income tax on pension withdrawals, means-tested benefits, long-term care costs, defined benefit pension income, early death, future changes to State Pension age or amount, or currency risk. Returns follow a log-normal distribution which may underestimate extreme tail events. Contributions are assumed constant throughout the accumulation phase.
+    <h4>Disclaimer</h4>
+    This report is generated by Fintiq (fintiq.uk) for illustrative and educational purposes only. It does not constitute financial advice, investment advice, tax advice, or a personal recommendation. Fintiq Ltd is not authorised or regulated by the Financial Conduct Authority (FCA). The projections shown are based on assumptions that may not be realised. You should not make pension, savings, or investment decisions based solely on this report. Always consult a qualified independent financial adviser (IFA) who is authorised by the FCA and who can take your full personal and financial circumstances into account. © 2026 Fintiq. All rights reserved.
   </div>
-</div>
-
-<!-- SENSITIVITY (print page 5) -->
-<div class="print-only print-sens-page" id="printSensPage">
-  <div class="print-page-header">
-    <div class="print-page-logo">📊 Fintiq</div>
-    <div class="print-page-title">Sensitivity Analysis</div>
-  </div>
-</div>
-
-<!-- DISCLAIMER (print page 6) -->
-<div class="print-only print-disc-page">
-  <div class="print-page-header">
-    <div class="print-page-logo">📊 Fintiq</div>
-    <div class="print-page-title">Methodology &amp; Disclaimer</div>
-  </div>
-  <h3>Methodology</h3>
-  <p>This report uses Monte Carlo simulation to model 5,000 independent retirement scenarios. Each simulation draws annual investment returns from a log-normal distribution parameterised by your chosen expected return and volatility. This reflects the real-world reality that returns are not constant year-to-year — some years markets rise sharply, others fall. By running thousands of scenarios, we estimate the realistic distribution of outcomes rather than a single deterministic forecast.</p>
-  <p style="margin-top:12px">The model incorporates three phases: (1) Accumulation — savings grow with market returns and contributions until retirement; (2) Bridge — the period between retirement and State Pension start age, during which full income must be drawn from the pot; (3) Decumulation — withdrawals continue, reduced by State Pension income, until life expectancy. All monetary values are expressed in today's money (real terms) using your specified inflation rate.</p>
-  <p style="margin-top:12px">A simulation is considered a "failure" if the pot reaches zero before the specified life expectancy. The success rate is the percentage of simulations that do not fail.</p>
-  <h3 style="margin-top:24px">Important Limitations</h3>
-  <p>This model does not account for: tax on pension withdrawals, means-tested benefits, care costs in later life, early death, changes in State Pension legislation, or currency risk. Returns are modelled as normally distributed, which may underestimate tail risks (extreme crashes). The model assumes contributions are consistent — irregular contributions will produce different results.</p>
-  <h3 style="margin-top:24px">Disclaimer</h3>
-  <p>This report is generated by Fintiq (fintiq.uk) for illustrative and educational purposes only. It does not constitute financial advice, investment advice, or a personal recommendation. Fintiq is not authorised or regulated by the Financial Conduct Authority (FCA). The projections shown are based on assumptions that may not materialise. You should not make pension or investment decisions based solely on this report. Please consult a qualified financial adviser who can take your full circumstances into account.</p>
-  <p style="margin-top:12px">© 2026 Fintiq. All rights reserved. fintiq.uk</p>
 </div>
 
 <footer>
@@ -977,8 +1057,13 @@ function _run(){
   buildFanChart(res.percs, cAge, lExp, rAge, spAge);
 
   // ── Populate print sections ──
-  document.getElementById('coverName').textContent = name||'Fintiq User';
-  document.getElementById('coverDate').textContent = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const displayName = name||'Fintiq User';
+  const displayDate = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('coverName').textContent = displayName;
+  document.getElementById('coverDate').textContent = displayDate;
+  ['hdrName','hdrName2','hdrName3'].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=displayName+' · '+displayDate; });
+  const chdr = document.getElementById('chartPageHdr'); if(chdr) chdr.style.display='block';
+  const sp2 = document.getElementById('successPctLabel'); if(sp2) sp2.textContent = Math.round(successRate)+'% success';
 
   // Print KPIs
   document.getElementById('printKPIs').innerHTML = `
@@ -987,7 +1072,7 @@ function _run(){
     <div class="print-kpi"><div class="print-kpi-val">${bridgeYrs>0?bridgeYrs+' yrs':'None'}</div><div class="print-kpi-label">Bridge Period</div></div>
     <div class="print-kpi"><div class="print-kpi-val">${wRate.toFixed(1)}%</div><div class="print-kpi-label">Withdrawal Rate</div></div>
   `;
-  document.getElementById('printSuccessBar').style.width = Math.round(successRate)+'%';
+  const psb = document.getElementById('printSuccessBar'); if(psb) psb.style.width = Math.round(successRate)+'%';
 
   document.getElementById('printAssumptions').innerHTML = `
     <div class="print-assump-item"><strong>Current Age</strong>${cAge}</div>
