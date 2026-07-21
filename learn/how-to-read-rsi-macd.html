@@ -342,8 +342,8 @@ function days(n) { return Array.from({length:n},(_,i)=>'Day '+(i+1)); }
     beforeDraw(chart) {
       const {ctx, chartArea, scales} = chart;
       if (!chartArea) return;
-      const y70 = scales.y.getPixelForValue(70);
-      const y100 = scales.y.getPixelForValue(100);
+      const y70 = scales.yRSI.getPixelForValue(70);
+      const y100 = scales.yRSI.getPixelForValue(100);
       ctx.save();
       ctx.fillStyle = 'rgba(245,158,11,0.07)';
       ctx.fillRect(chartArea.left, y100, chartArea.right - chartArea.left, y70 - y100);
