@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<title>US Retirement Planner — Free 401k Monte Carlo Calculator | Fintiq</title>
+<meta name="description" content="Free US retirement Monte Carlo simulator. Model 5,000 scenarios with 401k, IRA, Social Security timing, and Medicare bridge analysis. Find your real probability of never running out of money.">
+<meta name="keywords" content="US retirement calculator, 401k Monte Carlo simulator, Social Security timing calculator, retirement planning tool, will my 401k last, IRA retirement calculator, self employed retirement USA">
+<link rel="canonical" href="https://fintiq.uk/us-pension-planner.html">
+<meta property="og:title" content="US Retirement Planner — Free 401k Monte Carlo Calculator">
+<meta property="og:description" content="5,000 retirement simulations: 401k, IRA, Social Security timing, Medicare bridge. Your real probability of a secure retirement.">
+<meta property="og:url" content="https://fintiq.uk/us-pension-planner.html">
+<meta property="og:site_name" content="Fintiq">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6;font-size:15px}
+a{color:#F59E0B;text-decoration:none}
+
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B;letter-spacing:-0.5px}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.88rem}
+.btn-nav{background:#F59E0B!important;color:#0A1628!important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.88rem}
+
+.hero{text-align:center;padding:52px 24px 36px;max-width:760px;margin:0 auto}
+.hero-badge{display:inline-block;background:rgba(34,197,94,0.12);color:#22C55E;border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;margin-bottom:16px}
+.hero h1{font-size:2.3rem;font-weight:900;line-height:1.15;margin-bottom:14px}
+.hero h1 span{color:#F59E0B}
+.hero p{color:#94A3B8;font-size:1rem;max-width:580px;margin:0 auto}
+
+/* Country toggle */
+.country-toggle-wrap{display:flex;justify-content:center;gap:10px;margin-bottom:24px}
+.ctoggle{background:#0A1628;border:1px solid rgba(255,255,255,0.1);color:#94A3B8;padding:8px 20px;border-radius:8px;font-size:0.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all 0.2s}
+.ctoggle:hover{border-color:rgba(245,158,11,0.4);color:#F1F5F9}
+.ctoggle.active{background:rgba(245,158,11,0.12);border-color:#F59E0B;color:#F59E0B}
+.flag{font-size:1.1rem}
+
+/* Tool layout */
+.tool-wrap{max-width:1200px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:380px 1fr;gap:28px;align-items:start}
+
+/* Inputs panel */
+.inputs-panel{background:#060F1A;border:1px solid rgba(245,158,11,0.2);border-radius:14px;padding:28px;position:sticky;top:80px}
+.panel-title{font-size:1rem;font-weight:800;color:#F1F5F9;margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.panel-title span{font-size:1.2rem}
+
+/* Employment toggle */
+.emp-toggle{display:flex;background:#0D1B2A;border-radius:8px;padding:3px;margin-bottom:20px;gap:3px}
+.emp-btn{flex:1;padding:8px 10px;border-radius:6px;border:none;font-size:0.78rem;font-weight:700;cursor:pointer;background:transparent;color:#64748B;transition:all 0.2s;text-align:center}
+.emp-btn.active{background:#F59E0B;color:#0A1628}
+
+/* SS claiming toggle */
+.ss-toggle{display:flex;background:#0D1B2A;border-radius:8px;padding:3px;gap:3px;margin-top:6px}
+.ss-btn{flex:1;padding:7px 4px;border-radius:6px;border:none;font-size:0.75rem;font-weight:700;cursor:pointer;background:transparent;color:#64748B;transition:all 0.2s;text-align:center}
+.ss-btn.active{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3)}
+
+.section-divider{height:1px;background:rgba(255,255,255,0.06);margin:18px 0}
+.section-label{font-size:0.68rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+
+.form-group{margin-bottom:14px}
+.form-label{font-size:0.78rem;color:#94A3B8;margin-bottom:5px;display:block}
+.form-input{width:100%;background:#0D1B2A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:0.88rem;font-family:'Inter',sans-serif}
+.form-input:focus{outline:none;border-color:rgba(245,158,11,0.5)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Sliders */
+.slider-group{margin-bottom:14px}
+.slider-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.slider-label{font-size:0.78rem;color:#94A3B8}
+.slider-val{font-size:0.82rem;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.1);padding:2px 8px;border-radius:4px}
+input[type=range]{width:100%;accent-color:#F59E0B;height:4px}
+
+.info-note{background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.15);border-radius:8px;padding:10px 12px;font-size:0.75rem;color:#94A3B8;margin-top:8px;line-height:1.5}
+.info-note b{color:#F59E0B}
+
+.medicare-note{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px 12px;font-size:0.75rem;color:#FCA5A5;margin-top:8px;line-height:1.5;display:none}
+.medicare-note b{color:#EF4444}
+
+/* Run button */
+.run-btn{width:100%;background:linear-gradient(135deg,#F59E0B,#D97706);color:#0A1628;border:none;border-radius:10px;padding:14px;font-size:0.95rem;font-weight:800;cursor:pointer;margin-top:20px;transition:all 0.2s}
+.run-btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(245,158,11,0.3)}
+
+/* Results */
+.results-panel{min-height:400px}
+.results-placeholder{text-align:center;padding:80px 40px;color:#475569;border:2px dashed rgba(255,255,255,0.06);border-radius:14px}
+.results-placeholder h3{font-size:1.1rem;margin-bottom:8px;color:#64748B}
+
+/* Success card */
+.success-card{border-radius:14px;padding:28px;margin-bottom:20px;position:relative;overflow:hidden}
+.success-card.great{background:linear-gradient(135deg,rgba(34,197,94,0.12),rgba(34,197,94,0.04));border:1px solid rgba(34,197,94,0.25)}
+.success-card.ok{background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(245,158,11,0.04));border:1px solid rgba(245,158,11,0.25)}
+.success-card.poor{background:linear-gradient(135deg,rgba(239,68,68,0.12),rgba(239,68,68,0.04));border:1px solid rgba(239,68,68,0.25)}
+.success-pct{font-size:3.5rem;font-weight:900;line-height:1}
+.success-label{font-size:0.8rem;color:#94A3B8;margin-top:4px}
+.success-verdict{font-size:1rem;font-weight:700;margin-top:12px}
+.success-sub{font-size:0.82rem;color:#94A3B8;margin-top:6px}
+
+/* Metrics row */
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.metric-card{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:16px;text-align:center}
+.metric-val{font-size:1.4rem;font-weight:800;color:#F59E0B}
+.metric-label{font-size:0.7rem;color:#64748B;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px}
+
+/* AI Summary */
+.ai-summary{background:linear-gradient(135deg,rgba(245,158,11,0.08),rgba(245,158,11,0.02));border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:20px;margin-bottom:20px}
+.ai-summary-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ai-badge{background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;letter-spacing:0.5px}
+.ai-summary-title{font-size:0.88rem;font-weight:700;color:#F1F5F9}
+.ai-summary p{font-size:0.85rem;color:#CBD5E1;line-height:1.7;margin-bottom:10px}
+.ai-summary p:last-child{margin:0}
+.ai-action{background:rgba(34,197,94,0.08);border-left:3px solid #22C55E;padding:12px 14px;border-radius:0 8px 8px 0;font-size:0.82rem;color:#CBD5E1;margin-top:14px;line-height:1.6}
+.ai-action strong{color:#22C55E}
+
+/* Chart */
+.chart-section{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:20px}
+.section-title{font-size:0.75rem;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.section-desc{font-size:0.8rem;color:#475569;margin-bottom:14px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:#64748B}
+.leg-dot{width:10px;height:10px;border-radius:50%}
+.leg-line{width:18px;height:2px;border-radius:1px}
+
+/* Paywall */
+.paywall-wrap{position:relative;margin-bottom:20px}
+.paywall-blur{filter:blur(5px);pointer-events:none;opacity:0.6}
+.paywall-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(6,15,26,0.7);border-radius:12px;border:1px solid rgba(245,158,11,0.2);z-index:10}
+.paywall-lock{font-size:2rem;margin-bottom:12px}
+.paywall-title{font-size:1rem;font-weight:800;color:#F1F5F9;margin-bottom:6px;text-align:center}
+.paywall-sub{font-size:0.8rem;color:#94A3B8;text-align:center;max-width:280px;margin-bottom:16px}
+.paywall-btn{background:linear-gradient(135deg,#F59E0B,#D97706);color:#0A1628;border:none;border-radius:8px;padding:12px 24px;font-size:0.88rem;font-weight:800;cursor:pointer;transition:all 0.2s}
+.paywall-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(245,158,11,0.3)}
+
+/* SS Timing analysis */
+.ss-timing{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px}
+.ss-timing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:14px}
+.ss-card{border-radius:8px;padding:14px;text-align:center;border:1px solid rgba(255,255,255,0.08)}
+.ss-card.selected{border-color:#F59E0B;background:rgba(245,158,11,0.06)}
+.ss-card-age{font-size:1.3rem;font-weight:900;color:#F59E0B}
+.ss-card-benefit{font-size:0.8rem;color:#94A3B8;margin:4px 0}
+.ss-card-rate{font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:4px;display:inline-block;margin-top:4px}
+.ss-card-rate.good{background:rgba(34,197,94,0.15);color:#22C55E}
+.ss-card-rate.mid{background:rgba(245,158,11,0.15);color:#F59E0B}
+.ss-card-rate.base{background:rgba(100,116,139,0.15);color:#94A3B8}
+
+/* Medicare bridge box */
+.medicare-bridge{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:10px;padding:16px;margin-bottom:14px}
+.bridge-label{font-size:0.68rem;font-weight:700;color:#EF4444;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.bridge-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bridge-stat .val{font-size:1.5rem;font-weight:800;color:#F1F5F9}
+.bridge-stat .lbl{font-size:0.72rem;color:#94A3B8;margin-top:2px}
+.bridge-desc{font-size:0.78rem;color:#94A3B8;margin-top:10px;line-height:1.6}
+
+/* Income breakdown */
+.income-breakdown{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:14px}
+.income-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.income-row:last-child{border-bottom:none;padding-top:14px;margin-top:4px;border-top:1px solid rgba(245,158,11,0.2)}
+.income-label{font-size:0.82rem;color:#94A3B8}
+.income-val{font-size:0.88rem;font-weight:600;color:#F1F5F9}
+.income-row:last-child .income-label,.income-row:last-child .income-val{color:#F59E0B;font-weight:700}
+
+/* Sensitivity table */
+.sens-wrap{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px}
+.sens-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.sens-table th{text-align:left;padding:8px 10px;color:#475569;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.sens-table td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:#CBD5E1}
+.sens-pct{display:inline-block;padding:2px 8px;border-radius:4px;font-weight:700;font-size:0.78rem}
+.sens-good{background:rgba(34,197,94,0.15);color:#22C55E}
+.sens-bad{background:rgba(239,68,68,0.15);color:#EF4444}
+.sens-base{background:rgba(245,158,11,0.15);color:#F59E0B}
+.sens-mid{background:rgba(100,116,139,0.15);color:#94A3B8}
+
+/* PDF button */
+.pdf-btn{width:100%;background:#0A1628;border:1px solid rgba(245,158,11,0.3);color:#F59E0B;border-radius:10px;padding:12px;font-size:0.85rem;font-weight:700;cursor:pointer;margin-top:8px;transition:all 0.2s}
+.pdf-btn:hover{background:rgba(245,158,11,0.08);border-color:#F59E0B}
+
+/* RMD note */
+.rmd-note{background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.2);border-radius:8px;padding:12px 14px;font-size:0.78rem;color:#A5B4FC;margin-top:14px;line-height:1.6}
+.rmd-note b{color:#818CF8}
+
+/* Footer */
+footer{background:#060F1A;border-top:1px solid rgba(255,255,255,0.06);padding:40px 32px;text-align:center}
+.f-logo{font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
+.f-sub{font-size:0.8rem;color:#475569;margin-bottom:16px}
+.f-links{display:flex;justify-content:center;gap:20px;flex-wrap:wrap}
+.f-links a{font-size:0.8rem;color:#475569}
+.f-disc{font-size:0.72rem;color:#334155;margin-top:20px;max-width:640px;margin-left:auto;margin-right:auto;line-height:1.6}
+
+/* Screen only */
+.print-only{display:none!important}
+
+/* ═══════════════════════════════════════════
+   PRINT / PDF
+═══════════════════════════════════════════ */
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  @page{size:A4;margin:0}
+  body > nav,body > .hero,body > .country-toggle-wrap,
+  body > .tool-wrap,body > footer{display:none!important}
+  body{background:#fff!important;margin:0;padding:0;font-family:'Inter',Arial,sans-serif;font-size:8pt;color:#1E293B}
+  .print-only{display:block!important}
+  .ppage{width:210mm;page-break-after:always;break-after:page;padding:0}
+  .ppage:last-child{page-break-after:auto;break-after:auto}
+  .pcon{padding:12mm 16mm 14mm}
+  .pcov{background:#fff!important;padding:0}
+  .pcov-bar{background:#F59E0B!important;height:7mm;width:210mm;display:block}
+  .pcov-inner{padding:10mm 16mm 12mm;min-height:289mm;display:flex;flex-direction:column}
+  .pcov-body{flex:1}
+  .pcov-foot{margin-top:auto;border-top:1pt solid #E2E8F0!important;padding-top:4mm;font-size:6pt;color:#94A3B8!important;line-height:1.6}
+  .pcov-logo{font-size:20pt;font-weight:900;color:#0A1628!important}
+  .pcov-logo span{color:#F59E0B!important}
+  .pcov-sub{font-size:6.5pt;color:#64748B!important;margin-top:2mm;display:block}
+  .pcov-top{padding:0 0 8mm}
+  .pcov-eyebrow{font-size:6.5pt;font-weight:700;color:#F59E0B!important;text-transform:uppercase;letter-spacing:3pt;margin-bottom:5mm;display:block}
+  .pcov-title{font-size:32pt;font-weight:900;color:#0A1628!important;line-height:1.05;margin:0 0 5mm}
+  .pcov-title span{color:#F59E0B!important}
+  .pcov-stitle{font-size:10pt;color:#475569!important;line-height:1.6;max-width:130mm;margin-bottom:8mm}
+  .pcov-rule{border:none;border-top:3pt solid #F59E0B!important;width:24mm;margin:0 0 8mm}
+  .pcov-meta{border:1pt solid #E2E8F0!important;border-radius:3mm;overflow:hidden}
+  .pcov-meta-row{display:table;width:100%}
+  .pcov-meta-cell{display:table-cell;padding:5mm 7mm;border-right:1pt solid #E2E8F0!important;width:33.3%;vertical-align:top}
+  .pcov-meta-cell:last-child{border-right:none!important}
+  .pcov-meta-cell label{font-size:6pt;color:#94A3B8!important;text-transform:uppercase;letter-spacing:1pt;display:block;margin-bottom:2mm}
+  .pcov-meta-cell span{font-size:10pt;font-weight:700;color:#0A1628!important}
+  .phdr{border-bottom:1.5pt solid #F59E0B!important;padding-bottom:3mm;margin-bottom:6mm;display:table;width:100%}
+  .phdr-left{display:table-cell;vertical-align:middle}
+  .phdr-logo{font-size:11pt;font-weight:900;color:#0A1628!important}
+  .phdr-logo span{color:#F59E0B!important}
+  .phdr-right{display:table-cell;vertical-align:middle;text-align:right}
+  .phdr-title{font-size:6pt;color:#64748B!important;font-weight:600;text-transform:uppercase;letter-spacing:0.8pt}
+  .phdr-name{font-size:6pt;color:#94A3B8!important;margin-top:1mm}
+  .pt1{font-size:14pt;font-weight:800;color:#0A1628!important;margin:0 0 1.5mm}
+  .pt2{font-size:9.5pt;font-weight:700;color:#0A1628!important;margin:5mm 0 2.5mm;border-left:2.5pt solid #F59E0B!important;padding-left:3mm}
+  .psub{font-size:7pt;color:#64748B!important;margin-bottom:5mm}
+  .pkpi{display:table;width:100%;border-spacing:2.5mm;margin-bottom:4mm}
+  .pkpi-cell{display:table-cell;background:#F8FAFC!important;border:1pt solid #E2E8F0!important;border-top:2.5pt solid #F59E0B!important;border-radius:2mm;padding:4mm 3mm;text-align:center;width:25%}
+  .pkpi-val{font-size:17pt;font-weight:900;color:#0A1628!important;line-height:1}
+  .pkpi-lbl{font-size:5.5pt;color:#64748B!important;text-transform:uppercase;letter-spacing:0.4pt;margin-top:2mm}
+  .pbar-wrap{background:#E2E8F0!important;height:5pt;border-radius:3pt;margin-bottom:2mm}
+  .pbar-fill{background:#F59E0B!important;height:5pt;border-radius:3pt}
+  .pbar-lbls{display:table;width:100%;font-size:5.5pt;color:#94A3B8!important;margin-bottom:5mm}
+  .pbar-l{display:table-cell;text-align:left}
+  .pbar-c{display:table-cell;text-align:center;color:#F59E0B!important;font-weight:700}
+  .pbar-r{display:table-cell;text-align:right}
+  .pai{background:#FFFBEB!important;border:1pt solid #FDE68A!important;border-radius:2mm;padding:4mm 5mm;margin-bottom:4mm}
+  .pai-hdr{font-size:5.5pt;font-weight:700;color:#92400E!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm;background:#FEF3C7!important;display:inline-block;padding:1mm 3mm;border-radius:1mm}
+  .pai p{font-size:7pt;color:#374151!important;line-height:1.6;margin-bottom:2.5mm}
+  .pai p:last-child{margin:0}
+  .pai-action{background:#F0FDF4!important;border-left:2pt solid #22C55E!important;padding:2.5mm 4mm;font-size:7pt;color:#374151!important;margin-top:2.5mm;line-height:1.5}
+  .pai-action b{color:#15803D!important}
+  .pasm{background:#F8FAFC!important;border-left:2.5pt solid #F59E0B!important;padding:3.5mm 5mm;margin-top:4mm}
+  .pasm h4{font-size:6pt;font-weight:700;color:#0A1628!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm}
+  .pasm-row{display:table;width:100%}
+  .pasm-cell{display:table-cell;font-size:6.5pt;color:#475569!important;padding:1mm 2mm 1mm 0;width:25%}
+  .pasm-cell b{display:block;color:#1E293B!important;font-size:6.5pt;margin-bottom:0.5mm}
+  .pchart-img{width:100%;height:120mm;object-fit:contain;display:block}
+  .pchart-legend{display:table;width:100%;margin-bottom:3mm}
+  .pchart-leg-item{display:table-cell;font-size:6.5pt;color:#475569!important;padding-right:4mm;white-space:nowrap}
+  /* SS timing print */
+  .pss-grid{display:table;width:100%;border-spacing:3mm;margin-bottom:4mm}
+  .pss-cell{display:table-cell;background:#F8FAFC!important;border:1pt solid #E2E8F0!important;border-radius:2mm;padding:4mm;text-align:center;width:33.3%}
+  .pss-cell.selected{border-color:#F59E0B!important;background:#FFFBEB!important}
+  .pss-age{font-size:14pt;font-weight:900;color:#0A1628!important}
+  .pss-benefit{font-size:7pt;color:#64748B!important;margin:1.5mm 0}
+  .pss-rate{font-size:6.5pt;font-weight:700;color:#1E293B!important}
+  /* Medicare bridge print */
+  .pmbridge{background:#FEF2F2!important;border:1pt solid #FECACA!important;border-radius:2mm;padding:4mm 5mm;margin-bottom:4mm}
+  .pmbridge-title{font-size:6pt;font-weight:700;color:#DC2626!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2mm}
+  .pmbridge-stats{display:table;width:100%;margin-bottom:2mm}
+  .pmbridge-stat{display:table-cell;text-align:center;width:50%}
+  .pmbridge-val{font-size:14pt;font-weight:900;color:#0A1628!important}
+  .pmbridge-lbl{font-size:6pt;color:#64748B!important}
+  .pmbridge-note{font-size:7pt;color:#374151!important;line-height:1.55}
+  .pinc{width:100%;border-collapse:collapse;font-size:8pt;margin-top:2.5mm}
+  .pinc td{padding:2.5mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
+  .pinc td:first-child{color:#64748B!important}
+  .pinc tr:last-child td{border-bottom:2pt solid #F59E0B!important;font-weight:700;color:#0A1628!important}
+  .psens{width:100%;border-collapse:collapse;font-size:7.5pt}
+  .psens th{background:#F8FAFC!important;color:#64748B!important;font-size:6pt;text-transform:uppercase;padding:2.5mm 4mm;border-bottom:1.5pt solid #E2E8F0!important;text-align:left}
+  .psens td{padding:2.5mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
+  .psens tr.base-row td{background:#FFFBEB!important}
+  .sg{background:#DCFCE7!important;color:#15803D!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
+  .sb{background:#FEE2E2!important;color:#B91C1C!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
+  .sm{background:#F1F5F9!important;color:#475569!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
+  .sbase{background:#FEF9C3!important;color:#854D0E!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
+  .ppromo-box{background:#0A1628!important;border-radius:3mm;padding:7mm 8mm;margin-bottom:5mm}
+  .ppromo-box h3{font-size:11pt;font-weight:900;color:#F1F5F9!important;margin:0 0 2.5mm}
+  .ppromo-box p{font-size:7pt;color:#94A3B8!important;line-height:1.55;margin-bottom:4mm}
+  .ppromo-feat-row{display:table;width:100%;margin-bottom:1.5mm}
+  .ppromo-feat{display:table-cell;font-size:7pt;color:#CBD5E1!important;width:50%;padding:0}
+  .ppromo-feat::before{content:'✓ ';color:#F59E0B!important;font-weight:700}
+  .ppromo-url{display:inline-block;margin-top:4mm;background:#F59E0B!important;color:#0A1628!important;padding:2.5mm 7mm;border-radius:2mm;font-weight:800;font-size:8.5pt}
+  .pdisc{font-size:6pt;color:#64748B!important;line-height:1.7}
+  .pdisc h4{font-size:7pt;font-weight:700;color:#374151!important;margin:4mm 0 1.5mm}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk" class="btn-nav">Stock Screener →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">FREE · US RETIREMENT PLANNER</div>
+  <h1>Will Your Retirement Savings <span>Actually Last?</span></h1>
+  <p>Model 5,000 retirement scenarios with your 401k, IRA, and Social Security. Find your real probability of never running out of money — including Medicare bridge and SS timing analysis.</p>
+</div>
+
+<div class="country-toggle-wrap">
+  <button class="ctoggle" onclick="window.location.href='pension-planner.html'"><span class="flag">🇬🇧</span> United Kingdom</button>
+  <button class="ctoggle active" id="usBtn"><span class="flag">🇺🇸</span> United States</button>
+</div>
+
+<div class="tool-wrap">
+
+  <!-- ═══ INPUTS PANEL ═══ -->
+  <div class="inputs-panel">
+    <div class="panel-title"><span>⚙️</span> Your Details</div>
+
+    <!-- Employment type -->
+    <div class="emp-toggle">
+      <button class="emp-btn active" id="empBtn" onclick="setEmpType('employed')">💼 W-2 Employed</button>
+      <button class="emp-btn" id="selfBtn" onclick="setEmpType('self-employed')">🧾 Self-Employed / 1099</button>
+    </div>
+
+    <div class="info-note" id="selfNote" style="display:none;margin-bottom:14px">
+      <b>Self-Employed:</b> You can contribute to a Solo 401(k) (up to $70k/yr) or SEP-IRA (up to 25% of net income). Contributions are pre-tax and reduce your taxable income. You pay both sides of Social Security tax (15.3%).
+    </div>
+
+    <!-- Personal -->
+    <div class="section-label">Personal</div>
+    <div class="form-group">
+      <label class="form-label">Your name (for report)</label>
+      <input class="form-input" id="nameInput" type="text" placeholder="e.g. Sarah">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Current age</label>
+        <input class="form-input" id="currentAge" type="number" value="35" min="18" max="70">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target retirement age</label>
+        <input class="form-input" id="retirementAge" type="number" value="65" min="50" max="80" onchange="checkMedicare()">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Life expectancy</label>
+        <input class="form-input" id="lifeExpectancy" type="number" value="85" min="70" max="100">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Target monthly income</label>
+        <input class="form-input" id="targetIncome" type="number" value="5000" placeholder="$5,000">
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+    <div class="section-label">Retirement Accounts</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" id="acct401kLabel">Current 401(k) balance</label>
+        <input class="form-input" id="balance401k" type="number" value="50000" placeholder="$50,000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Current IRA / Roth IRA</label>
+        <input class="form-input" id="balanceIRA" type="number" value="10000" placeholder="$10,000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" id="contrib401kLabel">Monthly 401(k) contribution</label>
+        <input class="form-input" id="monthly401k" type="number" value="500" placeholder="$500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Monthly IRA contribution</label>
+        <input class="form-input" id="monthlyIRA" type="number" value="200" placeholder="$200">
+      </div>
+    </div>
+
+    <!-- Employer match (W-2 only) -->
+    <div id="employerRow">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Annual salary</label>
+          <input class="form-input" id="annualSalary" type="number" value="80000" placeholder="$80,000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Employer match (% of salary)</label>
+          <input class="form-input" id="employerMatch" type="number" value="3" min="0" max="20" placeholder="3">
+        </div>
+      </div>
+      <div class="info-note" style="margin-bottom:14px">
+        <b>Employer match:</b> If your employer matches 100% up to 3% of salary, enter 3. Monthly employer contribution = salary × match% / 1200.
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+    <div class="section-label">Social Security</div>
+
+    <div class="form-group">
+      <label class="form-label">Estimated monthly benefit at full retirement age (67)</label>
+      <input class="form-input" id="ssBenefitFRA" type="number" value="1800" placeholder="Check ssa.gov for your estimate">
+    </div>
+    <div class="info-note" style="margin-bottom:10px">
+      Find your estimate at <b>ssa.gov/myaccount</b>. If unsure, use $1,500–$2,500 for median earners.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Social Security claiming age</label>
+      <div class="ss-toggle">
+        <button class="ss-btn" id="ssBtnA" onclick="setSSAge(62)">62 (70% benefit)</button>
+        <button class="ss-btn active" id="ssBtnB" onclick="setSSAge(67)">67 (100% — FRA)</button>
+        <button class="ss-btn" id="ssBtnC" onclick="setSSAge(70)">70 (124% benefit)</button>
+      </div>
+    </div>
+    <div class="info-note" style="margin-bottom:14px">
+      <b>Spousal note:</b> If married, you may claim 50% of your spouse's benefit if higher than your own.
+    </div>
+
+    <!-- Medicare bridge warning -->
+    <div class="medicare-note" id="medicareBridgeNote">
+      <b>⚠️ Medicare gap detected:</b> You plan to retire before age 65. Private health insurance typically costs <b>$800–$1,500/month</b>. This is modelled as an additional bridge cost.
+    </div>
+    <div class="form-group" id="medicareCostRow" style="display:none;margin-top:10px">
+      <label class="form-label">Estimated monthly health insurance cost (before 65)</label>
+      <input class="form-input" id="medicareCost" type="number" value="900" placeholder="$900/month">
+    </div>
+
+    <div class="section-divider"></div>
+    <div class="section-label">Market Assumptions</div>
+
+    <div class="slider-group">
+      <div class="slider-header">
+        <span class="slider-label">Expected annual return</span>
+        <span class="slider-val" id="retVal">7.0%</span>
+      </div>
+      <input type="range" id="retSlider" min="3" max="12" step="0.5" value="7" oninput="document.getElementById('retVal').textContent=this.value+'%'">
+    </div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <span class="slider-label">Inflation rate</span>
+        <span class="slider-val" id="inflVal">2.5%</span>
+      </div>
+      <input type="range" id="inflSlider" min="1" max="6" step="0.5" value="2.5" oninput="document.getElementById('inflVal').textContent=this.value+'%'">
+    </div>
+    <div class="slider-group">
+      <div class="slider-header">
+        <span class="slider-label">Portfolio volatility</span>
+        <span class="slider-val" id="volVal">14%</span>
+      </div>
+      <input type="range" id="volSlider" min="5" max="25" step="1" value="14" oninput="document.getElementById('volVal').textContent=this.value+'%'">
+    </div>
+
+    <button class="run-btn" onclick="runSimulation()">🇺🇸 Run 5,000 Scenarios →</button>
+  </div>
+
+  <!-- ═══ RESULTS PANEL ═══ -->
+  <div class="results-panel" id="resultsPanel">
+    <div class="results-placeholder" id="placeholder">
+      <h3>🇺🇸 Your US Retirement Analysis</h3>
+      <p>Fill in your details and click "Run 5,000 Scenarios" to see your personalised Monte Carlo retirement projection.</p>
+    </div>
+
+    <!-- Success card -->
+    <div id="successCard" style="display:none">
+      <div class="success-card" id="successCardInner">
+        <div class="success-pct" id="successPct">—</div>
+        <div class="success-label">Probability of never running out of money</div>
+        <div class="success-verdict" id="successVerdict">—</div>
+        <div class="success-sub" id="successSub">—</div>
+      </div>
+
+      <!-- Metrics -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-val" id="metPot">—</div>
+          <div class="metric-label">Pot at Retirement (Median)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="metSS">—</div>
+          <div class="metric-label">Monthly Social Security</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="metWRate">—</div>
+          <div class="metric-label">Withdrawal Rate</div>
+        </div>
+      </div>
+
+      <!-- AI Summary -->
+      <div class="ai-summary">
+        <div class="ai-summary-header">
+          <span class="ai-badge">✦ AI Analysis</span>
+          <span class="ai-summary-title">Personalised Retirement Assessment</span>
+        </div>
+        <div id="aiSummaryText"></div>
+      </div>
+
+      <!-- Fan chart -->
+      <div class="chart-section">
+        <div class="section-title">Retirement Savings Projection — 5,000 Scenarios</div>
+        <div class="section-desc">Each band shows the spread of outcomes across simulations.</div>
+        <div class="chart-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:rgba(245,158,11,0.35)"></div>10th–90th %ile</div>
+          <div class="leg-item"><div class="leg-dot" style="background:rgba(245,158,11,0.6)"></div>25th–75th %ile</div>
+          <div class="leg-item"><div class="leg-line" style="background:#F59E0B"></div>Median</div>
+          <div class="leg-item"><div class="leg-line" style="background:#22C55E;height:2px;border-top:2px dashed #22C55E"></div>Retirement</div>
+          <div class="leg-item"><div class="leg-line" style="background:#60A5FA;height:2px;border-top:2px dashed #60A5FA"></div>SS begins</div>
+        </div>
+        <div style="position:relative;height:300px;width:100%">
+          <canvas id="fanChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Paywall wrap -->
+      <div class="paywall-wrap" id="paywallWrap">
+        <div class="paywall-blur" id="paywallBlur">
+
+          <!-- Social Security Timing Analysis -->
+          <div class="ss-timing">
+            <div class="section-title">Social Security Timing Analysis</div>
+            <div class="section-desc">How your claiming age affects lifetime income and success rate</div>
+            <div class="ss-timing-grid" id="ssTimingGrid"></div>
+          </div>
+
+          <!-- Medicare bridge (if applicable) -->
+          <div class="medicare-bridge" id="medicareBridgeResult" style="display:none">
+            <div class="bridge-label">⚠️ Medicare Bridge Period</div>
+            <div class="bridge-stats">
+              <div class="bridge-stat"><div class="val" id="bridgeYrsResult">—</div><div class="lbl">Years without Medicare</div></div>
+              <div class="bridge-stat"><div class="val" id="bridgeCostResult">—</div><div class="lbl">Total bridge cost (median)</div></div>
+            </div>
+            <div class="bridge-desc" id="bridgeDescResult">—</div>
+          </div>
+
+          <!-- Income breakdown -->
+          <div class="income-breakdown">
+            <div class="section-title" style="margin-bottom:10px">Monthly Income at Retirement</div>
+            <div class="income-row"><span class="income-label">Target monthly income</span><span class="income-val" id="incBreakTarget">—</span></div>
+            <div class="income-row"><span class="income-label">Social Security income</span><span class="income-val" id="incBreakSS">—</span></div>
+            <div class="income-row"><span class="income-label">Gap drawn from savings</span><span class="income-val" id="incBreakGap">—</span></div>
+            <div class="income-row"><span class="income-label">Required withdrawal rate</span><span class="income-val" id="incBreakRate">—</span></div>
+          </div>
+
+          <!-- Sensitivity -->
+          <div class="sens-wrap">
+            <div class="section-title" style="margin-bottom:12px">Sensitivity Analysis</div>
+            <table class="sens-table">
+              <thead><tr><th>Scenario</th><th>Change</th><th>Success</th><th>vs Base</th></tr></thead>
+              <tbody id="sensBody"></tbody>
+            </table>
+          </div>
+
+          <div class="rmd-note">
+            <b>RMD Note:</b> The IRS requires Required Minimum Distributions from tax-deferred accounts (401k, traditional IRA) starting at age 73. RMDs are calculated as account balance ÷ IRS life expectancy factor. This model does not separately model RMDs, but they don't reduce total wealth — they only affect timing of withdrawals.
+          </div>
+
+        </div><!-- /paywall-blur -->
+
+        <div class="paywall-overlay" id="paywallOverlay">
+          <div class="paywall-lock">🔒</div>
+          <div class="paywall-title">Unlock Full Analysis — $4.99</div>
+          <div class="paywall-sub">Social Security timing comparison, Medicare bridge breakdown, income breakdown, and sensitivity analysis across 8 scenarios.</div>
+          <button class="paywall-btn" onclick="unlockAnalysis()">Unlock Full Report — $4.99</button>
+        </div>
+      </div><!-- /paywall-wrap -->
+
+      <button class="pdf-btn" onclick="generatePDF()">⬇ Download PDF Report — $4.99</button>
+    </div><!-- /successCard -->
+  </div><!-- /results-panel -->
+</div><!-- /tool-wrap -->
+
+<!-- ═══════════════════════════════════════════
+     PRINT PAGES
+═══════════════════════════════════════════ -->
+<div class="print-only" id="printPages">
+
+  <!-- PAGE 1 — COVER -->
+  <div class="ppage pcov" id="printCover">
+    <div class="pcov-bar"></div>
+    <div class="pcov-inner">
+      <div class="pcov-top">
+        <div class="pcov-logo"><span>Fin</span>tiq
+          <div class="pcov-sub">fintiq.uk &nbsp;·&nbsp; Professional investing tools for retail investors</div>
+        </div>
+      </div>
+      <div class="pcov-body">
+        <span class="pcov-eyebrow">Personalised Monte Carlo Analysis</span>
+        <div class="pcov-title">US Retirement<br><span>Planning Report</span></div>
+        <div class="pcov-stitle">5,000 simulated retirement scenarios — your personal probability of financial security through retirement, including 401(k), IRA, and Social Security analysis.</div>
+        <hr class="pcov-rule">
+        <div class="pcov-meta">
+          <div class="pcov-meta-row">
+            <div class="pcov-meta-cell"><label>Prepared for</label><span id="coverName">—</span></div>
+            <div class="pcov-meta-cell"><label>Date generated</label><span id="coverDate">—</span></div>
+            <div class="pcov-meta-cell"><label>Simulations run</label><span>5,000</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pcov-foot">
+        For illustrative purposes only. Not financial advice. Fintiq is not registered with the SEC or FINRA. Consult a qualified financial adviser before making retirement or investment decisions. &copy; 2026 Fintiq &middot; fintiq.uk
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2 — EXECUTIVE SUMMARY -->
+  <div class="ppage pcon" id="printSummary">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">US Retirement Planning Report</div>
+        <div class="phdr-name" id="hdrName">—</div>
+      </div>
+    </div>
+    <div class="pt1">Executive Summary</div>
+    <div class="psub">Based on your inputs and 5,000 Monte Carlo simulations</div>
+    <div class="pkpi" id="printKPIs"></div>
+    <div class="pbar-wrap"><div class="pbar-fill" id="printSuccessBar" style="width:0%"></div></div>
+    <div class="pbar-lbls">
+      <div class="pbar-l">0% — certain ruin</div>
+      <div class="pbar-c" id="successPctLabel">—</div>
+      <div class="pbar-r">100% — certain success</div>
+    </div>
+    <div class="pai" id="printAISummary">
+      <div class="pai-hdr">AI Analysis — Personalised Retirement Assessment</div>
+      <div id="printAISummaryText"></div>
+    </div>
+    <div class="pasm">
+      <h4>Inputs &amp; Assumptions Used in This Analysis</h4>
+      <div id="printAssumptions"></div>
+    </div>
+  </div>
+
+  <!-- PAGE 3 — FAN CHART -->
+  <div class="ppage pcon" id="printChartPage">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">US Retirement Planning Report</div>
+        <div class="phdr-name" id="hdrName2">—</div>
+      </div>
+    </div>
+    <div class="pt1">Retirement Savings Projection</div>
+    <div class="psub">Fan chart showing p10–p90 range of 5,000 simulated outcomes</div>
+    <div class="pchart-legend" style="margin-bottom:3mm">
+      <div class="pchart-leg-item"><span style="display:inline-block;width:10px;height:10px;background:#D97706;border-radius:50%;margin-right:3px"></span>Median (p50)</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:10px;height:10px;background:rgba(245,158,11,0.35);border-radius:50%;margin-right:3px"></span>p25–p75</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:10px;height:10px;background:rgba(245,158,11,0.15);border-radius:50%;margin-right:3px"></span>p10–p90</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:2px;height:10px;background:#16A34A;margin-right:3px;vertical-align:middle"></span>Retirement</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:2px;height:10px;background:#1D4ED8;margin-right:3px;vertical-align:middle"></span>SS begins</div>
+    </div>
+    <canvas id="printChartCanvas" width="860" height="480" style="display:none;position:absolute;left:-9999px"></canvas>
+    <img id="printChartImg" src="" class="pchart-img" alt="Retirement savings fan chart" style="border:1pt solid #E2E8F0">
+  </div>
+
+  <!-- PAGE 4 — SS TIMING + MEDICARE -->
+  <div class="ppage pcon" id="printSSPage">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">US Retirement Planning Report</div>
+        <div class="phdr-name" id="hdrName3">—</div>
+      </div>
+    </div>
+    <div class="pt2">Social Security Timing Analysis</div>
+    <div class="psub">Impact of claiming age on your monthly benefit and success rate</div>
+    <div class="pss-grid" id="printSSGrid"></div>
+
+    <div class="pmbridge" id="printMedicareBridge" style="display:none">
+      <div class="pmbridge-title">⚠️ Medicare Bridge Period</div>
+      <div class="pmbridge-stats">
+        <div class="pmbridge-stat"><div class="pmbridge-val" id="pmBridgeYrs">—</div><div class="pmbridge-lbl">Years without Medicare</div></div>
+        <div class="pmbridge-stat"><div class="pmbridge-val" id="pmBridgeCost">—</div><div class="pmbridge-lbl">Total bridge cost (median)</div></div>
+      </div>
+      <div class="pmbridge-note" id="pmBridgeNote">—</div>
+    </div>
+
+    <div class="pt2">Monthly Income Breakdown at Retirement</div>
+    <table class="pinc">
+      <tr><td>Target monthly income</td><td id="pi-target" style="text-align:right">—</td></tr>
+      <tr><td>Social Security income</td><td id="pi-ss" style="text-align:right">—</td></tr>
+      <tr><td>Gap drawn from savings</td><td id="pi-gap" style="text-align:right">—</td></tr>
+      <tr><td><b>Required withdrawal rate</b></td><td id="pi-wrate" style="text-align:right;font-weight:700">—</td></tr>
+    </table>
+  </div>
+
+  <!-- PAGE 5 — SENSITIVITY -->
+  <div class="ppage pcon" id="printSensPage">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">US Retirement Planning Report</div>
+        <div class="phdr-name" id="hdrName4">—</div>
+      </div>
+    </div>
+    <div class="pt1">Sensitivity Analysis</div>
+    <div class="psub">How small changes affect your probability of a secure retirement</div>
+    <table class="psens">
+      <thead><tr><th>Scenario</th><th>Change</th><th style="text-align:right">Success Rate</th><th style="text-align:right">vs Base</th></tr></thead>
+      <tbody id="printSensTbody"></tbody>
+    </table>
+    <div class="pmbridge-note" style="margin-top:5mm;background:#F8FAFC;padding:3mm 4mm;border-radius:1mm;font-size:7pt;color:#475569">Each scenario re-runs 1,000 simulations with one variable changed. All other inputs held constant at the values you entered.</div>
+  </div>
+
+  <!-- PAGE 6 — PROMO + DISCLAIMER -->
+  <div class="ppage pcon" id="printPromo">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">US Retirement Planning Report</div>
+        <div class="phdr-name" id="hdrName5">—</div>
+      </div>
+    </div>
+    <div class="pt1" style="margin-bottom:5mm">Explore More with Fintiq</div>
+    <div class="ppromo-box">
+      <h3>Free Professional Investing Tools</h3>
+      <p>Fintiq gives retail investors access to the same analytical tools used by institutional fund managers — completely free.</p>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">Multi-factor stock screener</div><div class="ppromo-feat">Monte Carlo simulation for stocks</div></div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">Portfolio optimiser (Efficient Frontier)</div><div class="ppromo-feat">Statistical pairs trading (Z-score)</div></div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">DCF valuation model</div><div class="ppromo-feat">UK Pension Lifecycle Planner</div></div>
+      <div class="ppromo-url">fintiq.uk &nbsp;·&nbsp; Free, no card required</div>
+    </div>
+    <div class="pt2">Methodology</div>
+    <div class="pdisc">
+      This report uses Monte Carlo simulation to model 5,000 independent retirement scenarios. Each simulation draws annual investment returns from a log-normal distribution. The model runs two phases: (1) <b>Accumulation</b> — contributions and investment growth build the pot; (2) <b>Decumulation</b> — withdrawals reduce the pot, partially offset by Social Security income. A Medicare bridge cost is deducted from the pot for years when retiring before age 65. Social Security benefit is adjusted for claiming age: 70% at 62, 100% at 67, 124% at 70. A simulation "fails" if the pot reaches zero before life expectancy.
+      <h4>Important Limitations</h4>
+      This model does not account for: income tax on 401k/IRA withdrawals, Required Minimum Distributions (RMDs) from age 73, state income taxes, means-tested benefits, long-term care costs, defined benefit pension income, or future changes to Social Security. Spousal benefits are not modelled.
+      <h4>Disclaimer</h4>
+      This report is generated by Fintiq (fintiq.uk) for illustrative and educational purposes only. It does not constitute financial advice, investment advice, or tax advice. Fintiq is not registered with the SEC or FINRA. Always consult a qualified Certified Financial Planner (CFP) or Registered Investment Adviser (RIA) before making retirement or investment decisions. &copy; 2026 Fintiq. All rights reserved.
+    </div>
+  </div>
+
+</div><!-- /print pages -->
+
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Professional investing tools for retail investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://fintiq.uk/pension-planner.html">UK Pension Planner</a>
+  </div>
+  <div class="f-disc">For illustrative purposes only. Not financial advice. Fintiq is not registered with the SEC or FINRA. Consult a qualified Certified Financial Planner (CFP) before making retirement decisions. © 2026 Fintiq.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let empType = 'employed';
+let ssAge = 67;
+let fanChartInst = null;
+let printChartInst = null;
+let lastChartData = null;
+let lastSimResult = null;
+
+// ─────────────────────────────────────────────
+// EMPLOYMENT TYPE
+// ─────────────────────────────────────────────
+function setEmpType(type){
+  empType = type;
+  const isSelf = type === 'self-employed';
+  document.getElementById('empBtn').classList.toggle('active', !isSelf);
+  document.getElementById('selfBtn').classList.toggle('active', isSelf);
+  document.getElementById('selfNote').style.display = isSelf ? 'block' : 'none';
+  document.getElementById('employerRow').style.display = isSelf ? 'none' : 'block';
+  document.getElementById('acct401kLabel').textContent = isSelf ? 'Current Solo 401(k) / SEP-IRA' : 'Current 401(k) balance';
+  document.getElementById('contrib401kLabel').textContent = isSelf ? 'Monthly Solo 401(k) / SEP contribution' : 'Monthly 401(k) contribution';
+}
+
+// ─────────────────────────────────────────────
+// SS CLAIMING AGE
+// ─────────────────────────────────────────────
+function setSSAge(age){
+  ssAge = age;
+  ['ssBtnA','ssBtnB','ssBtnC'].forEach(id => document.getElementById(id).classList.remove('active'));
+  const map = {62:'ssBtnA', 67:'ssBtnB', 70:'ssBtnC'};
+  document.getElementById(map[age]).classList.add('active');
+}
+
+// ─────────────────────────────────────────────
+// MEDICARE CHECK
+// ─────────────────────────────────────────────
+function checkMedicare(){
+  const rAge = parseInt(document.getElementById('retirementAge').value);
+  const hasBridge = rAge < 65;
+  document.getElementById('medicareBridgeNote').style.display = hasBridge ? 'block' : 'none';
+  document.getElementById('medicareCostRow').style.display = hasBridge ? 'block' : 'none';
+}
+
+// ─────────────────────────────────────────────
+// RANDOM NORMAL (Box–Muller)
+// ─────────────────────────────────────────────
+function randNorm(){
+  let u=0,v=0;
+  while(u===0) u=Math.random();
+  while(v===0) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+// ─────────────────────────────────────────────
+// FORMAT HELPERS
+// ─────────────────────────────────────────────
+function fmt(n){ return n>=1000000?'$'+(n/1000000).toFixed(1)+'m':n>=1000?'$'+(n/1000).toFixed(0)+'k':'$'+Math.round(n); }
+function fmtFull(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+
+// ─────────────────────────────────────────────
+// SIMULATION
+// ─────────────────────────────────────────────
+function simulate(inputs, N=5000){
+  const {
+    currentAge, retirementAge, lifeExpectancy,
+    balance401k, balanceIRA, annual401k, annualEmployer, annualIRA,
+    ssBenefitFRA, ssClaimingAge, targetMonthlyIncome,
+    medicareBridgeAnnual, hasMedicareBridge,
+    mu, sigma, infl
+  } = inputs;
+
+  const ssAdj = ssClaimingAge === 62 ? 0.70 : ssClaimingAge === 70 ? 1.24 : 1.00;
+  const annualSS = ssBenefitFRA * 12 * ssAdj;
+  const annualIncomeTgt = targetMonthlyIncome * 12;
+  const totalAnnualContrib = annual401k + annualEmployer + annualIRA;
+
+  let ruins = 0;
+  const allPots = [];
+
+  for(let n=0; n<N; n++){
+    let pot = balance401k + balanceIRA;
+    let ruined = false;
+    const potByYear = [];
+
+    for(let age=currentAge; age<=lifeExpectancy; age++){
+      const ret = Math.exp((mu - sigma*sigma/2) + sigma*randNorm()) - 1;
+      if(age <= retirementAge){
+        pot = pot*(1+ret) + totalAnnualContrib;
+      } else {
+        const yrs = age - retirementAge;
+        const inflAdj = Math.pow(1+infl, yrs);
+        const realSS = age >= ssClaimingAge ? annualSS * inflAdj : 0;
+        const medicareCost = hasMedicareBridge && age < 65 ? medicareBridgeAnnual * inflAdj : 0;
+        const withdrawal = Math.max(0, annualIncomeTgt*inflAdj + medicareCost - realSS);
+        pot = pot*(1+ret) - withdrawal;
+        if(pot <= 0){ ruined=true; pot=0; }
+      }
+      potByYear.push(Math.max(0,pot));
+    }
+    allPots.push(potByYear);
+    if(ruined) ruins++;
+  }
+
+  const years = lifeExpectancy - currentAge + 1;
+  const percs = [];
+  for(let yr=0; yr<years; yr++){
+    const vals = allPots.map(p=>p[yr]||0).sort((a,b)=>a-b);
+    percs.push({
+      p10:vals[Math.floor(N*0.10)],
+      p25:vals[Math.floor(N*0.25)],
+      p50:vals[Math.floor(N*0.50)],
+      p75:vals[Math.floor(N*0.75)],
+      p90:vals[Math.floor(N*0.90)]
+    });
+  }
+
+  const successRate = ((N-ruins)/N)*100;
+  const retIdx = retirementAge - currentAge;
+  const potAtRetire = percs[retIdx]?.p50 || 0;
+  return {successRate, percs, potAtRetire};
+}
+
+// ─────────────────────────────────────────────
+// SENSITIVITY
+// ─────────────────────────────────────────────
+function runSensitivity(baseInputs, baseRate, N=1000){
+  const monthly401k = baseInputs.annual401k / 12;
+  const monthlyIRA = baseInputs.annualIRA / 12;
+  const scenarios = [
+    {label:'Save $200/month more',      change:'+$200/mo savings',  mod:i=>({...i,annual401k:i.annual401k+2400})},
+    {label:'Save $200/month less',      change:'−$200/mo savings',  mod:i=>({...i,annual401k:i.annual401k-2400})},
+    {label:'Retire 2 years later',      change:'+2 years working',  mod:i=>({...i,retirementAge:i.retirementAge+2})},
+    {label:'Retire 2 years earlier',    change:'−2 years working',  mod:i=>({...i,retirementAge:i.retirementAge-2})},
+    {label:'Target income −$300/mo',    change:'−$300/mo income',   mod:i=>({...i,targetMonthlyIncome:i.targetMonthlyIncome-300})},
+    {label:'Target income +$300/mo',    change:'+$300/mo income',   mod:i=>({...i,targetMonthlyIncome:i.targetMonthlyIncome+300})},
+    {label:'1% lower returns',          change:'Return −1%',        mod:i=>({...i,mu:(i.mu-0.01)})},
+    {label:'1% higher returns',         change:'Return +1%',        mod:i=>({...i,mu:(i.mu+0.01)})},
+    {label:'Claim SS at 62 (70%)',      change:'SS age 62',         mod:i=>({...i,ssClaimingAge:62})},
+    {label:'Claim SS at 70 (124%)',     change:'SS age 70',         mod:i=>({...i,ssClaimingAge:70})},
+  ];
+  return scenarios.map(s=>{
+    const r = simulate(s.mod(baseInputs), N);
+    return {label:s.label, change:s.change, rate:r.successRate};
+  });
+}
+
+// ─────────────────────────────────────────────
+// AI SUMMARY
+// ─────────────────────────────────────────────
+function generateAISummary(inputs, successRate, potMedian, wRate, medicareBridge, sensResults, empT, ssAge){
+  const {currentAge, retirementAge, lifeExpectancy, ssBenefitFRA, ssClaimingAge, targetMonthlyIncome} = inputs;
+  const yrsToRetire = retirementAge - currentAge;
+  const ssAdj = ssClaimingAge===62?0.70:ssClaimingAge===70?1.24:1.00;
+  const monthlySS = ssBenefitFRA * ssAdj;
+  const ssCoverage = Math.round((monthlySS / targetMonthlyIncome)*100);
+
+  const verdict = successRate>=80?'in <strong>good shape</strong>':successRate>=60?'in <strong>moderate shape</strong>':successRate>=40?'in <strong>needs attention</strong> shape':'in <strong>serious risk</strong>';
+  const empNote = empT==='self-employed'
+    ? 'As a self-employed individual, consistent Solo 401(k) or SEP-IRA contributions are especially important since you have no employer match.'
+    : `Your employer match is a guaranteed return — always contribute enough to capture the full match.`;
+
+  const ssNote = ssClaimingAge===70
+    ? `Claiming at 70 gives you 124% of your Full Retirement Age benefit. This maximises lifetime income if you live past your mid-80s.`
+    : ssClaimingAge===62
+    ? `Claiming at 62 reduces your benefit to 70% of FRA. While you receive payments earlier, your lifetime total is lower unless health or financial need requires early claiming.`
+    : `Claiming at 67 (Full Retirement Age) gives you 100% of your estimated benefit. Delaying to 70 would increase it by 24% but requires funding those 3 years from savings.`;
+
+  const wRateNote = wRate<=3.5
+    ? `Your withdrawal rate of ${wRate.toFixed(1)}% is <strong>conservative</strong> — well within the historically safe 4% rule.`
+    : wRate<=4.5
+    ? `Your withdrawal rate of ${wRate.toFixed(1)}% is <strong>borderline</strong> — near the 4% rule threshold. Consider small reductions to income target or delayed retirement.`
+    : `Your withdrawal rate of ${wRate.toFixed(1)}% is <strong>above safe levels</strong>. The 4% rule suggests this level of withdrawal carries meaningful depletion risk over 20–30 years.`;
+
+  const medicarePara = medicareBridge > 0
+    ? `<p>You plan to retire before 65, creating a <strong>${medicareBridge}-year Medicare gap</strong> where private health insurance (~$900/month) must be funded from savings. This bridge period increases the pressure on your portfolio in the early retirement years.</p>`
+    : '';
+
+  // Best sensitivity
+  const best = sensResults.filter(s=>s.rate>successRate).sort((a,b)=>b.rate-a.rate)[0];
+  const actionText = best
+    ? `<strong>Highest-impact action:</strong> ${best.label} would improve your success probability by approximately <strong>${Math.round(best.rate-successRate)} percentage points</strong> to ${Math.round(best.rate)}%.`
+    : `Your plan looks robust across all scenarios tested.`;
+
+  return `
+    <p>Based on 5,000 Monte Carlo simulations, your retirement plan is ${verdict}, with a <strong>${Math.round(successRate)}% probability</strong> of your savings lasting to age ${lifeExpectancy}. You have ${yrsToRetire} years until your target retirement age of ${retirementAge}. ${empNote}</p>
+    <p>${ssNote} Your Social Security of $${Math.round(monthlySS).toLocaleString('en-US')}/month covers <strong>${ssCoverage}%</strong> of your target income, meaning your savings need to fund the remaining ${100-ssCoverage}%. ${wRateNote}</p>
+    ${medicarePara}
+    <p>The model assumes a ${(inputs.mu*100).toFixed(1)}% annual return, ${(inputs.infl*100).toFixed(1)}% inflation, and ${(inputs.sigma*100).toFixed(0)}% portfolio volatility.</p>
+    <div class="ai-action">${actionText}</div>
+  `;
+}
+
+// ─────────────────────────────────────────────
+// MAIN RUN
+// ─────────────────────────────────────────────
+function runSimulation(){
+  const name = document.getElementById('nameInput').value.trim();
+  const currentAge = parseInt(document.getElementById('currentAge').value);
+  const retirementAge = parseInt(document.getElementById('retirementAge').value);
+  const lifeExpectancy = parseInt(document.getElementById('lifeExpectancy').value);
+  const balance401k = parseFloat(document.getElementById('balance401k').value)||0;
+  const balanceIRA = parseFloat(document.getElementById('balanceIRA').value)||0;
+  const monthly401k = parseFloat(document.getElementById('monthly401k').value)||0;
+  const monthlyIRA = parseFloat(document.getElementById('monthlyIRA').value)||0;
+  const ssBenefitFRA = parseFloat(document.getElementById('ssBenefitFRA').value)||1800;
+  const targetMonthlyIncome = parseFloat(document.getElementById('targetIncome').value)||5000;
+  const mu = parseFloat(document.getElementById('retSlider').value)/100;
+  const infl = parseFloat(document.getElementById('inflSlider').value)/100;
+  const sigma = parseFloat(document.getElementById('volSlider').value)/100;
+
+  // Medicare bridge
+  const hasMedicareBridge = retirementAge < 65;
+  const medicareBridgeMonthly = hasMedicareBridge ? (parseFloat(document.getElementById('medicareCost').value)||900) : 0;
+  const medicareBridgeAnnual = medicareBridgeMonthly * 12;
+  const medicareBridgeYrs = hasMedicareBridge ? Math.max(0, 65 - retirementAge) : 0;
+
+  // Employer contribution (W-2 only)
+  let annualEmployer = 0;
+  if(empType === 'employed'){
+    const salary = parseFloat(document.getElementById('annualSalary').value)||0;
+    const matchPct = parseFloat(document.getElementById('employerMatch').value)||0;
+    annualEmployer = salary * matchPct / 100;
+  }
+
+  const inputs = {
+    currentAge, retirementAge, lifeExpectancy,
+    balance401k, balanceIRA,
+    annual401k: monthly401k*12,
+    annualEmployer,
+    annualIRA: monthlyIRA*12,
+    ssBenefitFRA, ssClaimingAge: ssAge,
+    targetMonthlyIncome,
+    medicareBridgeAnnual, hasMedicareBridge,
+    mu, sigma, infl
+  };
+
+  const res = simulate(inputs, 5000);
+  const {successRate, percs, potAtRetire: potMedian} = res;
+
+  // SS amounts
+  const ssAdj = ssAge===62?0.70:ssAge===70?1.24:1.00;
+  const monthlySS = ssBenefitFRA * ssAdj;
+  const monthFromSavings = Math.max(0, targetMonthlyIncome - monthlySS);
+  const annualFromSavings = monthFromSavings * 12;
+  const wRate = potMedian > 0 ? (annualFromSavings / potMedian * 100) : 0;
+
+  // Sensitivity
+  const sensResults = runSensitivity(inputs, successRate);
+
+  // Show success card
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('successCard').style.display='block';
+
+  const card = document.getElementById('successCardInner');
+  card.className = 'success-card ' + (successRate>=75?'great':successRate>=50?'ok':'poor');
+  document.getElementById('successPct').textContent = Math.round(successRate)+'%';
+  document.getElementById('successVerdict').textContent =
+    successRate>=80?'✅ Strong retirement plan':successRate>=60?'⚠️ Moderate — some risk':successRate>=40?'⚠️ Needs attention':'❌ High risk of running out';
+  document.getElementById('successSub').textContent =
+    `${Math.round(successRate)}% of 5,000 simulations lasted to age ${lifeExpectancy}`;
+  document.getElementById('metPot').textContent = fmt(potMedian);
+  document.getElementById('metSS').textContent = '$'+Math.round(monthlySS).toLocaleString('en-US')+'/mo';
+  document.getElementById('metWRate').textContent = wRate.toFixed(1)+'%';
+
+  // AI summary
+  const aiHTML = generateAISummary(inputs, successRate, potMedian, wRate, medicareBridgeYrs, sensResults, empType, ssAge);
+  document.getElementById('aiSummaryText').innerHTML = aiHTML;
+
+  // Fan chart
+  buildFanChart(percs, currentAge, lifeExpectancy, retirementAge, ssAge);
+  lastChartData = {percs, cAge:currentAge, lExp:lifeExpectancy, rAge:retirementAge, ssAge};
+
+  // SS timing grid
+  const ssOptions = [{age:62,adj:0.70},{age:67,adj:1.00},{age:70,adj:1.24}];
+  document.getElementById('ssTimingGrid').innerHTML = ssOptions.map(o=>{
+    const monthly = Math.round(ssBenefitFRA * o.adj);
+    const isSelected = o.age === ssAge;
+    const rateClass = o.adj>=1.2?'good':o.adj>=1?'mid':'base';
+    const rateLabel = o.adj>=1.2?'Maximum benefit':o.adj>=1?'Full benefit (FRA)':'Reduced benefit';
+    return `<div class="ss-card ${isSelected?'selected':''}">
+      <div class="ss-card-age">${o.age}</div>
+      <div class="ss-card-benefit">$${monthly.toLocaleString('en-US')}/month</div>
+      <div class="ss-card-rate ${rateClass}">${rateLabel} · ${Math.round(o.adj*100)}%</div>
+      ${isSelected?'<div style="margin-top:6px;font-size:0.7rem;color:#F59E0B;font-weight:700">← Your selection</div>':''}
+    </div>`;
+  }).join('');
+
+  // Medicare bridge result
+  const mbrDiv = document.getElementById('medicareBridgeResult');
+  if(hasMedicareBridge){
+    const bridgeTotalCost = medicareBridgeMonthly * medicareBridgeYrs * 12;
+    document.getElementById('bridgeYrsResult').textContent = medicareBridgeYrs+' yrs';
+    document.getElementById('bridgeCostResult').textContent = fmt(bridgeTotalCost);
+    document.getElementById('bridgeDescResult').textContent =
+      `You retire at ${retirementAge} but Medicare doesn't start until 65. During these ${medicareBridgeYrs} years you need private health insurance at ~$${medicareBridgeMonthly.toLocaleString('en-US')}/month — a total of ~${fmt(bridgeTotalCost)} drawn from savings before Medicare kicks in.`;
+    mbrDiv.style.display='block';
+  } else {
+    mbrDiv.style.display='none';
+  }
+
+  // Income breakdown
+  document.getElementById('incBreakTarget').textContent = '$'+Math.round(targetMonthlyIncome).toLocaleString('en-US')+'/mo';
+  document.getElementById('incBreakSS').textContent = '$'+Math.round(monthlySS).toLocaleString('en-US')+'/mo';
+  document.getElementById('incBreakGap').textContent = '$'+Math.round(monthFromSavings).toLocaleString('en-US')+'/mo';
+  document.getElementById('incBreakRate').textContent = wRate.toFixed(1)+'% '+
+    (wRate<=3.5?'✅ Conservative':wRate<=4.5?'⚠️ Moderate':'❌ High — review income target');
+
+  // Sensitivity table
+  const tbody = document.getElementById('sensBody');
+  tbody.innerHTML = `<tr><td><strong>Your current plan</strong></td><td style="color:#F59E0B">Base</td><td><span class="sens-pct sens-base">${Math.round(successRate)}%</span></td><td>—</td></tr>`;
+  sensResults.forEach(s=>{
+    const diff = s.rate - successRate;
+    const cls = diff>3?'sens-good':diff<-3?'sens-bad':'sens-mid';
+    const arrow = diff>3?'↑':diff<-3?'↓':'→';
+    tbody.innerHTML += `<tr><td>${s.label}</td><td style="color:#64748B;font-size:0.75rem">${s.change}</td><td><span class="sens-pct ${cls}">${Math.round(s.rate)}%</span></td><td style="font-size:0.75rem;color:${diff>3?'#22C55E':diff<-3?'#EF4444':'#64748B'}">${arrow} ${Math.abs(diff).toFixed(0)}pp</td></tr>`;
+  });
+
+  // Populate print sections
+  lastSimResult = {inputs, successRate, potMedian, monthlySS, monthFromSavings, wRate, medicareBridgeYrs, medicareBridgeMonthly, hasMedicareBridge, sensResults, name};
+  populatePrint(lastSimResult);
+
+  // Paywall check
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('unlocked')==='true'){
+    document.getElementById('paywallBlur').style.filter='none';
+    document.getElementById('paywallBlur').style.pointerEvents='auto';
+    document.getElementById('paywallBlur').style.opacity='1';
+    document.getElementById('paywallOverlay').style.display='none';
+  }
+}
+
+// ─────────────────────────────────────────────
+// FAN CHART
+// ─────────────────────────────────────────────
+function buildFanChart(percs, cAge, lExp, rAge, ssStartAge){
+  const ages = percs.map((_,i)=>cAge+i);
+  const toK = arr=>arr.map(v=>v/1000);
+
+  const phasePlugin = {
+    id:'phases',
+    beforeDraw(chart){
+      const {ctx,chartArea,scales}=chart;
+      if(!chartArea) return;
+      [[rAge,'#22C55E','Retire'],[ssStartAge,'#60A5FA','SS starts']].forEach(([age,col,lbl])=>{
+        if(age<cAge||age>lExp) return;
+        const x=scales.x.getPixelForValue(age);
+        ctx.save();
+        ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);
+        ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();
+        ctx.font='bold 10px Inter,Arial';ctx.fillStyle=col;ctx.textAlign='left';
+        ctx.fillText(lbl,x+4,chartArea.top+14);
+        ctx.restore();
+      });
+    }
+  };
+
+  if(fanChartInst) fanChartInst.destroy();
+  fanChartInst = new Chart(document.getElementById('fanChart'),{
+    type:'line',
+    data:{
+      labels:ages,
+      datasets:[
+        {label:'p10',data:toK(percs.map(p=>p.p10)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+        {label:'p90',data:toK(percs.map(p=>p.p90)),borderColor:'rgba(245,158,11,0.15)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.08)',fill:'-1',tension:0.4},
+        {label:'p25',data:toK(percs.map(p=>p.p25)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+        {label:'p75',data:toK(percs.map(p=>p.p75)),borderColor:'rgba(245,158,11,0.25)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.18)',fill:'-1',tension:0.4},
+        {label:'Median',data:toK(percs.map(p=>p.p50)),borderColor:'#F59E0B',borderWidth:2.5,pointRadius:0,fill:false,tension:0.4}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false},tooltip:{
+        mode:'index',intersect:false,
+        backgroundColor:'#0A1628',titleColor:'#F1F5F9',bodyColor:'#94A3B8',
+        borderColor:'rgba(245,158,11,0.3)',borderWidth:1,
+        callbacks:{
+          title:items=>'Age '+items[0].label,
+          label:item=>{
+            const m={'Median':'Median','p90':'Best case (90th)','p10':'Worst case (10th)','p75':'Upper range (75th)','p25':'Lower range (25th)'};
+            return (m[item.dataset.label]||item.dataset.label)+': $'+(item.raw).toFixed(0)+'k';
+          }
+        }
+      }},
+      scales:{
+        x:{grid:{color:'rgba(100,116,139,0.12)'},ticks:{color:'#64748B',font:{size:11},callback:v=>v%5===0?v:''},title:{display:true,text:'Age',color:'#64748B',font:{size:11}}},
+        y:{grid:{color:'rgba(100,116,139,0.12)'},ticks:{color:'#64748B',font:{size:11},callback:v=>v>=1000?'$'+(v/1000).toFixed(0)+'m':'$'+v+'k'},title:{display:true,text:'Savings ($)',color:'#64748B',font:{size:11}},min:0}
+      }
+    },
+    plugins:[phasePlugin]
+  });
+}
+
+// ─────────────────────────────────────────────
+// POPULATE PRINT SECTIONS
+// ─────────────────────────────────────────────
+function populatePrint(d){
+  const {inputs, successRate, potMedian, monthlySS, monthFromSavings, wRate, medicareBridgeYrs, medicareBridgeMonthly, hasMedicareBridge, sensResults, name} = d;
+  const displayName = name || 'Fintiq User';
+  const displayDate = new Date().toLocaleDateString('en-US',{day:'numeric',month:'long',year:'numeric'});
+
+  document.getElementById('coverName').textContent = displayName;
+  document.getElementById('coverDate').textContent = displayDate;
+  ['hdrName','hdrName2','hdrName3','hdrName4','hdrName5'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=displayName+' · '+displayDate;
+  });
+
+  // KPIs
+  document.getElementById('printKPIs').innerHTML = `
+    <div class="pkpi-cell"><div class="pkpi-val">${Math.round(successRate)}%</div><div class="pkpi-lbl">Success Rate</div></div>
+    <div class="pkpi-cell"><div class="pkpi-val">${fmt(potMedian)}</div><div class="pkpi-lbl">Savings at Retirement</div></div>
+    <div class="pkpi-cell"><div class="pkpi-val">$${Math.round(monthlySS).toLocaleString('en-US')}</div><div class="pkpi-lbl">Monthly Social Security</div></div>
+    <div class="pkpi-cell"><div class="pkpi-val">${wRate.toFixed(1)}%</div><div class="pkpi-lbl">Withdrawal Rate</div></div>
+  `;
+
+  const psb = document.getElementById('printSuccessBar');
+  if(psb) psb.style.width = Math.round(successRate)+'%';
+  const sp2 = document.getElementById('successPctLabel');
+  if(sp2) sp2.textContent = Math.round(successRate)+'% success rate';
+
+  document.getElementById('printAISummaryText').innerHTML = document.getElementById('aiSummaryText').innerHTML;
+
+  // Assumptions
+  const {currentAge,retirementAge,lifeExpectancy,ssBenefitFRA,ssClaimingAge,targetMonthlyIncome,mu,sigma,infl,annual401k,annualEmployer,annualIRA} = inputs;
+  const asmRows = [
+    ['Current Age',currentAge],['Retirement Age',retirementAge],['Life Expectancy',lifeExpectancy],
+    ['401k + IRA Balance',fmt((inputs.balance401k||0)+(inputs.balanceIRA||0))],
+    ['Monthly Contributions','$'+Math.round((annual401k+annualIRA)/12).toLocaleString('en-US')+'/mo'],
+    ['Employer Match (annual)',annualEmployer>0?'$'+Math.round(annualEmployer).toLocaleString('en-US'):'None'],
+    ['Target Income','$'+Math.round(targetMonthlyIncome).toLocaleString('en-US')+'/mo'],
+    ['SS at FRA (est.)','$'+Math.round(ssBenefitFRA).toLocaleString('en-US')+'/mo'],
+    ['SS Claiming Age',ssClaimingAge],['Expected Return',(mu*100).toFixed(1)+'%'],
+    ['Inflation',(infl*100).toFixed(1)+'%'],['Employment',empType==='self-employed'?'Self-Employed':'W-2 Employed']
+  ];
+  const chunk = (arr,n)=>arr.reduce((acc,_,i)=>i%n===0?[...acc,arr.slice(i,i+n)]:acc,[]);
+  document.getElementById('printAssumptions').innerHTML = chunk(asmRows,4).map(row=>
+    `<div class="pasm-row">${row.map(([k,v])=>`<div class="pasm-cell"><b>${k}</b>${v}</div>`).join('')}</div>`
+  ).join('');
+
+  // SS timing grid (print)
+  const ssOptions = [{age:62,adj:0.70},{age:67,adj:1.00},{age:70,adj:1.24}];
+  document.getElementById('printSSGrid').innerHTML = ssOptions.map(o=>{
+    const monthly = Math.round(ssBenefitFRA * o.adj);
+    const isSelected = o.age === ssClaimingAge;
+    return `<div class="pss-cell ${isSelected?'selected':''}">
+      <div class="pss-age">Age ${o.age}</div>
+      <div class="pss-benefit">$${monthly.toLocaleString('en-US')}/month</div>
+      <div class="pss-rate">${Math.round(o.adj*100)}% of FRA benefit${isSelected?' ← Your choice':''}</div>
+    </div>`;
+  }).join('');
+
+  // Medicare bridge (print)
+  const pmDiv = document.getElementById('printMedicareBridge');
+  if(hasMedicareBridge){
+    const bridgeTotalCost = medicareBridgeMonthly * medicareBridgeYrs * 12;
+    document.getElementById('pmBridgeYrs').textContent = medicareBridgeYrs+' yrs';
+    document.getElementById('pmBridgeCost').textContent = fmt(bridgeTotalCost);
+    document.getElementById('pmBridgeNote').textContent =
+      `Retiring at ${retirementAge} creates a ${medicareBridgeYrs}-year gap before Medicare at 65. Private health insurance at ~$${medicareBridgeMonthly.toLocaleString('en-US')}/month totals ~${fmt(bridgeTotalCost)} drawn from savings.`;
+    pmDiv.style.display='block';
+  } else {
+    pmDiv.style.display='none';
+  }
+
+  // Income table (print)
+  document.getElementById('pi-target').textContent = '$'+Math.round(targetMonthlyIncome).toLocaleString('en-US')+'/mo';
+  document.getElementById('pi-ss').textContent = '$'+Math.round(monthlySS).toLocaleString('en-US')+'/mo';
+  document.getElementById('pi-gap').textContent = '$'+Math.round(monthFromSavings).toLocaleString('en-US')+'/mo';
+  document.getElementById('pi-wrate').textContent = wRate.toFixed(1)+'% '+(wRate<=3.5?'(Conservative)':wRate<=4.5?'(Moderate)':'(High — review income target)');
+
+  // Sensitivity (print)
+  const pstbody = document.getElementById('printSensTbody');
+  if(pstbody){
+    pstbody.innerHTML = `<tr class="base-row"><td><b>Your current plan</b></td><td>—</td><td style="text-align:right"><span class="sbase">${Math.round(successRate)}%</span></td><td style="text-align:right">Base</td></tr>`
+    + sensResults.map(s=>{
+      const diff=s.rate-successRate;
+      const cls=diff>3?'sg':diff<-3?'sb':'sm';
+      const arrow=diff>3?'↑':diff<-3?'↓':'→';
+      return `<tr><td>${s.label}</td><td style="color:#64748B;font-size:7pt">${s.change}</td><td style="text-align:right"><span class="${cls}">${Math.round(s.rate)}%</span></td><td style="text-align:right;font-size:7pt;color:${diff>3?'#15803D':diff<-3?'#B91C1C':'#64748B'}">${arrow} ${Math.abs(diff).toFixed(0)}pp</td></tr>`;
+    }).join('');
+  }
+}
+
+// ─────────────────────────────────────────────
+// UNLOCK PAYWALL
+// ─────────────────────────────────────────────
+function unlockAnalysis(){
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('unlocked')==='true' || window._unlocked){
+    document.getElementById('paywallBlur').style.filter='none';
+    document.getElementById('paywallBlur').style.pointerEvents='auto';
+    document.getElementById('paywallBlur').style.opacity='1';
+    document.getElementById('paywallOverlay').style.display='none';
+    return;
+  }
+  const returnUrl = encodeURIComponent(window.location.href + (window.location.search?'&':'?')+'unlocked=true');
+  window.location.href = 'https://app.fintiq.uk/us-retirement-report-pay?return_url='+returnUrl;
+}
+
+// ─────────────────────────────────────────────
+// PDF GENERATION
+// ─────────────────────────────────────────────
+function generatePDF(){
+  if(!lastChartData){ window.print(); return; }
+  if(printChartInst){ try{ printChartInst.destroy(); }catch(e){} printChartInst=null; }
+
+  const {percs, cAge, lExp, rAge, ssAge: chartSSAge} = lastChartData;
+  const ages = percs.map((_,i)=>cAge+i);
+  const toK = arr=>arr.map(v=>v/1000);
+
+  const printPhasePlugin = {
+    id:'printPhases',
+    beforeDraw(chart){
+      const {ctx,chartArea,scales}=chart;
+      if(!chartArea) return;
+      [[rAge,'#16A34A','Retire'],[chartSSAge,'#1D4ED8','SS starts']].forEach(([age,col,lbl])=>{
+        if(age<cAge||age>lExp) return;
+        const x=scales.x.getPixelForValue(age);
+        ctx.save();
+        ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);
+        ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();
+        ctx.font='bold 11px Inter,Arial';ctx.fillStyle=col;ctx.textAlign='left';
+        ctx.fillText(lbl,x+4,chartArea.top+14);
+        ctx.restore();
+      });
+    }
+  };
+
+  const pc = document.getElementById('printChartCanvas');
+  if(pc){
+    pc.style.position='absolute';pc.style.left='-9999px';pc.style.top='0';pc.style.display='block';
+    document.body.appendChild(pc);
+    printChartInst = new Chart(pc,{
+      type:'line',
+      data:{labels:ages,datasets:[
+        {label:'p10',data:toK(percs.map(p=>p.p10)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+        {label:'p90',data:toK(percs.map(p=>p.p90)),borderColor:'rgba(180,120,0,0.35)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.10)',fill:'-1',tension:0.4},
+        {label:'p25',data:toK(percs.map(p=>p.p25)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+        {label:'p75',data:toK(percs.map(p=>p.p75)),borderColor:'rgba(180,120,0,0.55)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.22)',fill:'-1',tension:0.4},
+        {label:'Median',data:toK(percs.map(p=>p.p50)),borderColor:'#D97706',borderWidth:2.5,pointRadius:0,fill:false,tension:0.4}
+      ]},
+      options:{responsive:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},
+        scales:{
+          x:{grid:{color:'rgba(0,0,0,0.07)'},ticks:{color:'#475569',font:{size:11},callback:v=>v%5===0?v:''},title:{display:true,text:'Age',color:'#475569',font:{size:11}}},
+          y:{grid:{color:'rgba(0,0,0,0.07)'},ticks:{color:'#475569',font:{size:11},callback:v=>v>=1000?'$'+(v/1000).toFixed(0)+'m':'$'+v+'k'},title:{display:true,text:'Savings ($)',color:'#475569',font:{size:11}},min:0}
+        }
+      },
+      plugins:[printPhasePlugin]
+    });
+
+    const offscreen = document.createElement('canvas');
+    offscreen.width=pc.width; offscreen.height=pc.height;
+    const ctx2=offscreen.getContext('2d');
+    ctx2.fillStyle='#ffffff'; ctx2.fillRect(0,0,offscreen.width,offscreen.height);
+    ctx2.drawImage(pc,0,0);
+    document.getElementById('printChartImg').src = offscreen.toDataURL('image/png');
+    pc.style.display='none';
+  }
+
+  setTimeout(()=>window.print(), 250);
+}
+
+// Init Medicare check on load
+checkMedicare();
+</script>
+</body>
+</html>
