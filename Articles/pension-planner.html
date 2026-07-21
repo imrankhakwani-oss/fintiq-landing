@@ -1280,6 +1280,9 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
 
 // ── PDF generation ────────────────────────────────────
 function generatePDF(){
+  if(!_unlocked && new URLSearchParams(window.location.search).get('unlocked')!=='true'){
+    window.location.href='https://buy.stripe.com/6oU4gza8G1DU47S5V2aZi07'; return;
+  }
   if(!lastChartData){ window.print(); return; }
 
   // Destroy previous print chart if any
@@ -1480,7 +1483,7 @@ function unlockAnalysis(){
     doUnlock();
   } else {
     // Redirect to Stripe — replace URL below with real Stripe payment link
-    window.location.href = 'https://app.fintiq.uk/pension-report-pay?return_url='+encodeURIComponent(window.location.href+'?unlocked=true');
+    window.location.href = 'https://buy.stripe.com/6oU4gza8G1DU47S5V2aZi07';
   }
 }
 function doUnlock(){
@@ -1490,7 +1493,7 @@ function doUnlock(){
   document.getElementById('paywallBlur').style.opacity='1';
   document.getElementById('paywallBlur').style.pointerEvents='auto';
   document.getElementById('pdfSection').style.display='block';
-  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:4.99});
+  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:1.99});
 }
 // Auto-unlock if returning from Stripe with ?unlocked=true
 window.addEventListener('load',function(){
