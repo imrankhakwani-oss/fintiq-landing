@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<title>UK Pension Lifecycle Planner — Free Retirement Calculator | Fintiq</title>
+<meta name="description" content="Free UK pension Monte Carlo simulator. Run 5,000 retirement scenarios and discover your real probability of never running out of money. Includes State Pension, bridge period, and ISA/SIPP modelling.">
+<meta name="keywords" content="UK pension calculator, retirement planning calculator, Monte Carlo retirement UK, pension lifecycle planner, will my pension last, state pension calculator, SIPP ISA retirement">
+<link rel="canonical" href="https://fintiq.uk/pension-planner.html">
+<meta property="og:title" content="UK Pension Lifecycle Planner — Free Retirement Calculator">
+<meta property="og:description" content="What is your probability of never running out of money in retirement? Find out in 2 minutes — free.">
+<meta property="og:url" content="https://fintiq.uk/pension-planner.html">
+<meta property="og:site_name" content="Fintiq">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════
+   BASE
+═══════════════════════════════════════════ */
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6;font-size:15px}
+a{color:#F59E0B;text-decoration:none}
+
+/* ═══════════════════════════════════════════
+   NAV
+═══════════════════════════════════════════ */
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B;letter-spacing:-0.5px}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.88rem}
+.btn-nav{background:#F59E0B!important;color:#0A1628!important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.88rem}
+
+/* ═══════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════ */
+.hero{text-align:center;padding:52px 24px 36px;max-width:760px;margin:0 auto}
+.hero-badge{display:inline-block;background:rgba(34,197,94,0.12);color:#22C55E;border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;margin-bottom:16px}
+.hero h1{font-size:2.3rem;font-weight:900;line-height:1.15;margin-bottom:14px}
+.hero h1 span{color:#F59E0B}
+.hero p{color:#94A3B8;font-size:1rem;max-width:580px;margin:0 auto}
+
+/* ═══════════════════════════════════════════
+   TOOL LAYOUT
+═══════════════════════════════════════════ */
+.tool-wrap{max-width:1200px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:360px 1fr;gap:28px;align-items:start}
+
+/* ═══════════════════════════════════════════
+   INPUTS PANEL
+═══════════════════════════════════════════ */
+.inputs-panel{background:#060F1A;border:1px solid rgba(245,158,11,0.2);border-radius:14px;padding:28px;position:sticky;top:80px}
+.inputs-panel h2{font-size:1rem;font-weight:700;color:#F59E0B;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(245,158,11,0.15)}
+.input-section{margin-bottom:20px}
+.input-section-title{font-size:0.7rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.input-row{margin-bottom:12px}
+.input-row label{display:block;font-size:0.78rem;color:#94A3B8;margin-bottom:4px;font-weight:500}
+.input-row input[type=number],.input-row input[type=text]{width:100%;background:#0A1628;border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:9px 12px;color:#F1F5F9;font-size:0.88rem;font-family:'Inter',sans-serif;transition:border-color 0.2s}
+.input-row input:focus{outline:none;border-color:rgba(245,158,11,0.5)}
+.input-hint{font-size:0.7rem;color:#475569;margin-top:3px}
+.input-row .prefix-wrap{position:relative}
+.input-row .prefix-wrap .prefix{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#64748B;font-size:0.88rem;pointer-events:none}
+.input-row .prefix-wrap input{padding-left:22px}
+.slider-row{margin-bottom:14px}
+.slider-row label{display:flex;justify-content:space-between;font-size:0.78rem;color:#94A3B8;margin-bottom:6px}
+.slider-row label span{color:#F59E0B;font-weight:600}
+.slider-row input[type=range]{width:100%;accent-color:#F59E0B;height:4px;cursor:pointer}
+.calc-btn{width:100%;background:#F59E0B;color:#0A1628;border:none;padding:14px;border-radius:9px;font-weight:800;font-size:1rem;cursor:pointer;margin-top:8px;transition:opacity 0.2s;font-family:'Inter',sans-serif}
+.calc-btn:hover{opacity:0.9}
+.calc-btn.running{opacity:0.7;cursor:wait}
+
+/* ═══════════════════════════════════════════
+   RESULTS PANEL
+═══════════════════════════════════════════ */
+.results-panel{min-height:400px}
+.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;text-align:center;color:#334155;gap:16px}
+.placeholder svg{opacity:0.3}
+.placeholder p{font-size:1rem}
+
+/* Success Rate Card */
+.success-card{background:linear-gradient(135deg,#0A1F10,#0D2A15);border:2px solid rgba(34,197,94,0.35);border-radius:14px;padding:32px;text-align:center;margin-bottom:24px;position:relative;overflow:hidden}
+.success-card.warning{background:linear-gradient(135deg,#1F1508,#2A1C0A);border-color:rgba(245,158,11,0.4)}
+.success-card.danger{background:linear-gradient(135deg,#1F0808,#2A0D0D);border-color:rgba(239,68,68,0.4)}
+.success-label{font-size:0.75rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.success-pct{font-size:5rem;font-weight:900;line-height:1;color:#22C55E}
+.success-card.warning .success-pct{color:#F59E0B}
+.success-card.danger .success-pct{color:#EF4444}
+.success-sub{font-size:0.9rem;color:#94A3B8;margin-top:8px}
+.success-verdict{display:inline-block;margin-top:16px;padding:6px 16px;border-radius:20px;font-size:0.8rem;font-weight:700;background:rgba(34,197,94,0.15);color:#22C55E;border:1px solid rgba(34,197,94,0.3)}
+.success-card.warning .success-verdict{background:rgba(245,158,11,0.15);color:#F59E0B;border-color:rgba(245,158,11,0.3)}
+.success-card.danger .success-verdict{background:rgba(239,68,68,0.15);color:#EF4444;border-color:rgba(239,68,68,0.3)}
+
+/* Metric row */
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+.metric-card{background:#060F1A;border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:18px 14px;text-align:center}
+.metric-label{font-size:0.7rem;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.metric-value{font-size:1.4rem;font-weight:800;color:#F1F5F9}
+.metric-sub{font-size:0.7rem;color:#475569;margin-top:3px}
+
+/* Chart sections */
+.chart-section{background:#060F1A;border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:22px;margin-bottom:20px}
+.section-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+.section-title{font-size:0.78rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1px}
+.section-desc{font-size:0.8rem;color:#475569;margin-bottom:14px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:0.72rem;color:#94A3B8}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.leg-line{width:16px;height:2px;flex-shrink:0}
+
+/* Bridge callout */
+.bridge-box{background:linear-gradient(135deg,#0F1E2E,#0A1628);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:22px;margin-bottom:20px}
+.bridge-title{font-size:0.78rem;font-weight:700;color:#A78BFA;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.bridge-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.bridge-stat{text-align:center}
+.bridge-stat-val{font-size:1.6rem;font-weight:900;color:#F1F5F9}
+.bridge-stat-label{font-size:0.72rem;color:#64748B;margin-top:2px}
+.bridge-note{font-size:0.8rem;color:#94A3B8;background:rgba(124,58,237,0.08);border-radius:7px;padding:12px 14px;line-height:1.5}
+
+/* Sensitivity table */
+.sens-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.sens-table th{padding:10px 12px;text-align:left;color:#64748B;font-weight:600;font-size:0.7rem;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.06)}
+.sens-table td{padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);color:#CBD5E1}
+.sens-table tr:last-child td{border:none}
+.sens-pct{display:inline-block;padding:2px 8px;border-radius:10px;font-weight:700;font-size:0.75rem}
+.sens-good{background:rgba(34,197,94,0.15);color:#22C55E}
+.sens-base{background:rgba(245,158,11,0.15);color:#F59E0B}
+.sens-bad{background:rgba(239,68,68,0.15);color:#EF4444}
+.sens-mid{background:rgba(148,163,184,0.1);color:#94A3B8}
+
+/* Income breakdown */
+.income-breakdown{background:#060F1A;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:22px;margin-bottom:20px}
+.income-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.income-row:last-child{border:none;padding-top:14px;font-weight:700;color:#F1F5F9}
+.income-label{font-size:0.83rem;color:#94A3B8}
+.income-val{font-size:0.88rem;font-weight:600;color:#F1F5F9}
+
+/* ── Employment Toggle ── */
+.emp-toggle-wrap{display:flex;gap:0;margin-bottom:20px}
+.etoggle{flex:1;background:rgba(10,22,40,0.6);border:1px solid rgba(255,255,255,0.1);padding:9px 10px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.8rem;font-weight:600;color:#64748B;transition:all 0.2s;text-align:center}
+.etoggle:first-child{border-radius:8px 0 0 8px}
+.etoggle:last-child{border-radius:0 8px 8px 0;border-left:none}
+.etoggle.active{background:rgba(245,158,11,0.15);color:#F59E0B;border-color:rgba(245,158,11,0.4)}
+.selfemployed-note{background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.25);border-radius:8px;padding:12px 14px;font-size:0.75rem;color:#A78BFA;margin-bottom:14px;line-height:1.5;display:none}
+
+/* ── AI Summary ── */
+.ai-summary{background:linear-gradient(135deg,#060F1A,#0A1628);border:1px solid rgba(124,58,237,0.3);border-radius:12px;padding:24px;margin-bottom:20px}
+.ai-summary-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ai-badge{background:rgba(124,58,237,0.15);color:#A78BFA;border:1px solid rgba(124,58,237,0.3);border-radius:20px;padding:3px 10px;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px}
+.ai-summary-title{font-size:0.85rem;font-weight:700;color:#F1F5F9}
+.ai-summary p{font-size:0.85rem;color:#CBD5E1;line-height:1.7;margin-bottom:10px}
+.ai-summary p:last-child{margin-bottom:0}
+.ai-action{background:rgba(34,197,94,0.08);border-left:3px solid #22C55E;padding:10px 14px;border-radius:0 6px 6px 0;font-size:0.82rem;color:#CBD5E1;margin-top:12px;line-height:1.6}
+.ai-action strong{color:#22C55E}
+
+/* Print AI summary */
+@media print{
+.ai-summary{background:#F8FAFC!important;border:1px solid #E2E8F0!important}
+.ai-summary p{color:#374151!important}
+.ai-action{background:rgba(34,197,94,0.05)!important;color:#374151!important}
+.ai-badge{color:#7C3AED!important}
+.ai-summary-title{color:#0A1628!important}
+}
+
+/* ── Country Toggle ── */
+.country-toggle-wrap{display:flex;justify-content:center;margin:0 0 28px;gap:0}
+.ctoggle{background:rgba(10,22,40,0.6);border:1px solid rgba(255,255,255,0.1);padding:12px 32px;cursor:pointer;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;color:#64748B;transition:all 0.2s;display:flex;align-items:center;gap:8px}
+.ctoggle:first-child{border-radius:10px 0 0 10px}
+.ctoggle:last-child{border-radius:0 10px 10px 0;border-left:none}
+.ctoggle.active{background:#F59E0B;color:#0A1628;border-color:#F59E0B}
+.ctoggle:not(.active):hover{background:rgba(245,158,11,0.08);color:#F59E0B;border-color:rgba(245,158,11,0.3)}
+.flag{font-size:1.1rem}
+
+/* ── US Coming Soon Modal ── */
+.us-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.us-modal-overlay.open{display:flex}
+.us-modal{background:#0A1628;border:1px solid rgba(245,158,11,0.35);border-radius:16px;padding:44px 40px;max-width:460px;width:90%;text-align:center;position:relative}
+.us-modal-close{position:absolute;top:16px;right:18px;background:none;border:none;color:#64748B;font-size:1.3rem;cursor:pointer;font-family:'Inter',sans-serif}
+.us-modal-close:hover{color:#F1F5F9}
+.us-flag{font-size:3rem;margin-bottom:16px;display:block}
+.us-modal h2{font-size:1.4rem;font-weight:800;color:#F1F5F9;margin-bottom:8px}
+.us-modal p{color:#94A3B8;font-size:0.88rem;margin-bottom:20px;line-height:1.6}
+.us-features{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;text-align:left}
+.us-feat{display:flex;align-items:center;gap:10px;font-size:0.83rem;color:#CBD5E1}
+.us-feat::before{content:'✓';color:#F59E0B;font-weight:700;flex-shrink:0}
+.waitlist-form{display:flex;gap:8px}
+.waitlist-form input{flex:1;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;padding:11px 14px;color:#F1F5F9;font-size:0.88rem;font-family:'Inter',sans-serif}
+.waitlist-form input:focus{outline:none;border-color:rgba(245,158,11,0.5)}
+.waitlist-btn{background:#F59E0B;color:#0A1628;border:none;padding:11px 18px;border-radius:7px;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap}
+.waitlist-success{display:none;color:#22C55E;font-size:0.85rem;margin-top:10px;font-weight:600}
+
+/* ── Paywall ── */
+.paywall-wrap{position:relative;margin-bottom:0}
+.paywall-blur{filter:blur(5px);pointer-events:none;user-select:none;opacity:0.6}
+.paywall-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10}
+.paywall-card{background:linear-gradient(135deg,#0A1F35,#0F2845);border:2px solid rgba(245,158,11,0.5);border-radius:16px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+.paywall-lock{font-size:2.5rem;margin-bottom:12px}
+.paywall-card h3{font-size:1.3rem;font-weight:800;color:#F1F5F9;margin-bottom:8px}
+.paywall-card > p{color:#94A3B8;font-size:0.85rem;margin-bottom:18px;line-height:1.5}
+.paywall-includes{display:flex;flex-direction:column;gap:6px;margin-bottom:22px;text-align:left}
+.paywall-inc{display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#CBD5E1}
+.paywall-inc::before{content:'✓';color:#22C55E;font-weight:700;flex-shrink:0}
+.paywall-unlock-btn{background:#F59E0B;color:#0A1628;border:none;width:100%;padding:14px;border-radius:9px;font-weight:800;font-size:1rem;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px;transition:opacity 0.2s}
+.paywall-unlock-btn:hover{opacity:0.9}
+.paywall-note{font-size:0.72rem;color:#475569}
+.paywall-divider{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:10px 0}
+
+/* PDF button */
+.pdf-section{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:32px;text-align:center;margin-top:8px}
+.pdf-section h3{font-size:1.2rem;font-weight:800;color:#F59E0B;margin-bottom:8px}
+.pdf-section p{color:#94A3B8;font-size:0.88rem;margin-bottom:20px;max-width:400px;margin-left:auto;margin-right:auto}
+.pdf-features{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
+.pdf-feat{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.15);border-radius:6px;padding:4px 12px;font-size:0.75rem;color:#94A3B8}
+.pdf-btn{background:#F59E0B;color:#0A1628;border:none;padding:14px 36px;border-radius:9px;font-weight:800;font-size:1rem;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity 0.2s}
+.pdf-btn:hover{opacity:0.9}
+.pdf-price{font-size:0.75rem;color:#64748B;margin-top:10px}
+
+footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
+.f-logo{font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
+.f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
+.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.f-links a{color:#94A3B8;font-size:0.82rem}
+.f-copy{color:#334155;font-size:0.72rem}
+
+@media(max-width:900px){.tool-wrap{grid-template-columns:1fr}.inputs-panel{position:static}}
+@media(max-width:600px){.hero h1{font-size:1.8rem}.metrics-row{grid-template-columns:1fr 1fr}}
+
+/* ═══════════════════════════════════════════
+   PRINT / PDF STYLES
+═══════════════════════════════════════════ */
+.print-only{display:none!important}
+
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  @page{size:A4;margin:0}
+
+  /* Hide all web UI */
+  body > nav,body > .hero,body > .country-toggle-wrap,
+  body > .us-modal-overlay,body > .tool-wrap,body > footer{display:none!important}
+  body{background:#fff!important;margin:0;padding:0;font-family:'Inter',Arial,sans-serif;font-size:8pt;color:#1E293B}
+
+  /* Show print wrapper */
+  .print-only{display:block!important}
+
+  /* Each page — natural height, forced page break */
+  .ppage{
+    width:210mm;
+    page-break-after:always;break-after:page;
+    padding:0
+  }
+  .ppage:last-child{page-break-after:auto;break-after:auto}
+
+  /* Content pages */
+  .pcon{padding:12mm 16mm 14mm}
+
+  /* Cover: full-page height so footer pins to bottom */
+  .pcov-inner{padding:10mm 16mm 12mm;min-height:289mm;display:flex;flex-direction:column}
+  .pcov-body{flex:1}
+  .pcov-foot{margin-top:auto;border-top:1pt solid #E2E8F0!important;padding-top:4mm;font-size:6pt;color:#94A3B8!important;line-height:1.6}
+
+  /* ══ COVER (all-white, gold accent bar at top) ══ */
+  .pcov{background:#fff!important;padding:0}
+  /* Gold top bar full-width */
+  .pcov-bar{background:#F59E0B!important;height:7mm;width:210mm;display:block;margin-bottom:0}
+
+  .pcov-top{padding:0 0 8mm;border-bottom:none;display:table;width:100%}
+  .pcov-logo{font-size:20pt;font-weight:900;color:#0A1628!important;letter-spacing:-0.5pt;display:table-cell;vertical-align:middle}
+  .pcov-logo span{color:#F59E0B!important}
+  .pcov-sub{font-size:6.5pt;color:#64748B!important;margin-top:2mm;display:block}
+  .pcov-body{padding:16mm 0 10mm}
+  .pcov-eyebrow{font-size:6.5pt;font-weight:700;color:#F59E0B!important;text-transform:uppercase;letter-spacing:3pt;margin-bottom:5mm;display:block}
+  .pcov-title{font-size:34pt;font-weight:900;color:#0A1628!important;line-height:1.05;margin:0 0 5mm}
+  .pcov-title span{color:#F59E0B!important}
+  .pcov-stitle{font-size:10pt;color:#475569!important;line-height:1.6;max-width:130mm;margin-bottom:8mm}
+  .pcov-rule{border:none;border-top:3pt solid #F59E0B!important;width:24mm;margin:0 0 8mm}
+  /* Meta boxes */
+  .pcov-meta{border:1pt solid #E2E8F0!important;border-radius:3mm;overflow:hidden}
+  .pcov-meta-row{display:table;width:100%}
+  .pcov-meta-cell{display:table-cell;padding:5mm 7mm;border-right:1pt solid #E2E8F0!important;width:33.3%;vertical-align:top}
+  .pcov-meta-cell:last-child{border-right:none!important}
+  .pcov-meta-cell label{font-size:6pt;color:#94A3B8!important;text-transform:uppercase;letter-spacing:1pt;display:block;margin-bottom:2mm}
+  .pcov-meta-cell span{font-size:10pt;font-weight:700;color:#0A1628!important}
+
+  /* ══ PAGE HEADER (all content pages) ══ */
+  .phdr{border-bottom:1.5pt solid #F59E0B!important;padding-bottom:3mm;margin-bottom:6mm;display:table;width:100%}
+  .phdr-left{display:table-cell;vertical-align:middle}
+  .phdr-logo{font-size:11pt;font-weight:900;color:#0A1628!important}
+  .phdr-logo span{color:#F59E0B!important}
+  /* Cover logo styling */
+  .pcov-logo span{color:#F59E0B!important}
+  .phdr-right{display:table-cell;vertical-align:middle;text-align:right}
+  .phdr-title{font-size:6pt;color:#64748B!important;font-weight:600;text-transform:uppercase;letter-spacing:0.8pt}
+  .phdr-name{font-size:6pt;color:#94A3B8!important;margin-top:1mm}
+
+  /* ══ TYPOGRAPHY ══ */
+  .pt1{font-size:14pt;font-weight:800;color:#0A1628!important;margin:0 0 1.5mm}
+  .pt2{font-size:9.5pt;font-weight:700;color:#0A1628!important;margin:5mm 0 2.5mm;border-left:2.5pt solid #F59E0B!important;padding-left:3mm}
+  .psub{font-size:7pt;color:#64748B!important;margin-bottom:5mm}
+
+  /* ══ KPI GRID ══ */
+  .pkpi{display:table;width:100%;border-spacing:2.5mm;margin-bottom:4mm}
+  .pkpi-cell{display:table-cell;background:#F8FAFC!important;border:1pt solid #E2E8F0!important;border-top:2.5pt solid #F59E0B!important;border-radius:2mm;padding:4mm 3mm;text-align:center;width:25%}
+  .pkpi-val{font-size:18pt;font-weight:900;color:#0A1628!important;line-height:1}
+  .pkpi-lbl{font-size:5.5pt;color:#64748B!important;text-transform:uppercase;letter-spacing:0.4pt;margin-top:2mm}
+
+  /* ══ SUCCESS BAR ══ */
+  .pbar-wrap{background:#E2E8F0!important;height:5pt;border-radius:3pt;margin-bottom:2mm}
+  .pbar-fill{background:#F59E0B!important;height:5pt;border-radius:3pt}
+  .pbar-lbls{display:table;width:100%;font-size:5.5pt;color:#94A3B8!important;margin-bottom:5mm}
+  .pbar-l{display:table-cell;text-align:left}
+  .pbar-c{display:table-cell;text-align:center;color:#F59E0B!important;font-weight:700}
+  .pbar-r{display:table-cell;text-align:right}
+
+  /* ══ AI SUMMARY BOX ══ */
+  .pai{background:#FFFBEB!important;border:1pt solid #FDE68A!important;border-radius:2mm;padding:4mm 5mm;margin-bottom:4mm}
+  .pai-hdr{font-size:5.5pt;font-weight:700;color:#92400E!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm;background:#FEF3C7!important;display:inline-block;padding:1mm 3mm;border-radius:1mm}
+  .pai p{font-size:7pt;color:#374151!important;line-height:1.6;margin-bottom:2.5mm}
+  .pai p:last-child{margin:0}
+  .pai-action{background:#F0FDF4!important;border-left:2pt solid #22C55E!important;padding:2.5mm 4mm;font-size:7pt;color:#374151!important;margin-top:2.5mm;line-height:1.5}
+  .pai-action b{color:#15803D!important}
+
+  /* ══ ASSUMPTIONS ══ */
+  .pasm{background:#F8FAFC!important;border-left:2.5pt solid #F59E0B!important;padding:3.5mm 5mm;margin-top:4mm}
+  .pasm h4{font-size:6pt;font-weight:700;color:#0A1628!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm}
+  .pasm-grid{width:100%}
+  .pasm-row{display:table;width:100%}
+  .pasm-cell{display:table-cell;font-size:6.5pt;color:#475569!important;padding:1mm 2mm 1mm 0;width:25%}
+  .pasm-cell b{display:block;color:#1E293B!important;font-size:6.5pt;margin-bottom:0.5mm}
+
+  /* ══ CHART IMAGE ══ */
+  .pchart-img{width:100%;height:120mm;object-fit:contain;display:block}
+  .pchart-legend{display:table;width:100%;margin-bottom:3mm}
+  .pchart-leg-item{display:table-cell;font-size:6.5pt;color:#475569!important;padding-right:4mm;white-space:nowrap}
+
+  /* ══ BRIDGE BOX ══ */
+  .pbridge{border-left:2.5pt solid #7C3AED!important;background:#FAFAFA!important;padding:4mm 5mm;margin-bottom:4mm}
+  .pbridge-title{font-size:6pt;font-weight:700;color:#7C3AED!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm}
+  .pbridge-stats{display:table;width:100%;margin-bottom:3mm}
+  .pbridge-stat{display:table-cell;text-align:center;width:50%}
+  .pbridge-val{font-size:16pt;font-weight:900;color:#0A1628!important}
+  .pbridge-lbl{font-size:6pt;color:#64748B!important;margin-top:1mm}
+  .pbridge-note{background:#F5F3FF!important;font-size:7pt;color:#374151!important;padding:3mm 4mm;border-radius:1mm;line-height:1.55}
+
+  /* ══ INCOME TABLE ══ */
+  .pinc{width:100%;border-collapse:collapse;font-size:8pt;margin-top:2.5mm}
+  .pinc td{padding:2.5mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
+  .pinc td:first-child{color:#64748B!important}
+  .pinc tr:last-child td{border-bottom:2pt solid #F59E0B!important;font-weight:700;color:#0A1628!important}
+
+  /* ══ SENSITIVITY TABLE ══ */
+  .psens{width:100%;border-collapse:collapse;font-size:7.5pt}
+  .psens th{background:#F8FAFC!important;color:#64748B!important;font-size:6pt;text-transform:uppercase;letter-spacing:0.4pt;padding:2.5mm 4mm;border-bottom:1.5pt solid #E2E8F0!important;text-align:left}
+  .psens td{padding:2.5mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
+  .psens tr.base-row td{background:#FFFBEB!important}
+  .sg{background:#DCFCE7!important;color:#15803D!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+  .sb{background:#FEE2E2!important;color:#B91C1C!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+  .sm{background:#F1F5F9!important;color:#475569!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+  .sbase{background:#FEF9C3!important;color:#854D0E!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+
+  /* ══ PROMO BANNER (dark navy box, last page only) ══ */
+  .ppromo-box{background:#0A1628!important;border-radius:3mm;padding:7mm 8mm;margin-bottom:5mm}
+  .ppromo-box h3{font-size:11pt;font-weight:900;color:#F1F5F9!important;margin:0 0 2.5mm}
+  .ppromo-box p{font-size:7pt;color:#94A3B8!important;line-height:1.55;margin-bottom:4mm}
+  /* Features as a 2-column block list */
+  .ppromo-feats{width:100%;border-spacing:0}
+  .ppromo-feat-row{display:table;width:100%;margin-bottom:1.5mm}
+  .ppromo-feat{display:table-cell;font-size:7pt;color:#CBD5E1!important;width:50%;padding:0}
+  .ppromo-feat::before{content:'✓ ';color:#F59E0B!important;font-weight:700}
+  .ppromo-url{display:inline-block;margin-top:4mm;background:#F59E0B!important;color:#0A1628!important;padding:2.5mm 7mm;border-radius:2mm;font-weight:800;font-size:8.5pt}
+
+  /* ══ DISCLAIMER ══ */
+  .pdisc{font-size:6pt;color:#64748B!important;line-height:1.7}
+  .pdisc h4{font-size:7pt;font-weight:700;color:#374151!important;margin:4mm 0 1.5mm}
+}
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk" class="btn-nav">Stock Screener →</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-badge">FREE · UK PENSION PLANNER</div>
+  <h1>Will Your Pension <span>Actually Last?</span></h1>
+  <p>Run 5,000 retirement scenarios and find your real probability of never running out of money — including State Pension, the bridge period, and inflation.</p>
+</div>
+
+<!-- Country Toggle -->
+<div class="country-toggle-wrap">
+  <button class="ctoggle active" id="ukBtn"><span class="flag">🇬🇧</span> United Kingdom</button>
+  <button class="ctoggle" onclick="window.location.href='us-pension-planner.html'"><span class="flag">🇺🇸</span> United States</button>
+</div>
+
+<!-- US Coming Soon Modal -->
+<div class="us-modal-overlay" id="usModal">
+  <div class="us-modal">
+    <button class="us-modal-close" onclick="closeUSModal()">✕</button>
+    <span class="us-flag">🇺🇸</span>
+    <h2>US Version — Coming Soon</h2>
+    <p>We're building the US Pension Lifecycle Planner with Social Security timing analysis (62 vs 67 vs 70), 401k/IRA/Roth modelling, and Medicare cost integration.</p>
+    <div class="us-features">
+      <div class="us-feat">Social Security claiming strategy (62 / 67 / 70)</div>
+      <div class="us-feat">401k, Traditional IRA, and Roth IRA modelling</div>
+      <div class="us-feat">Required Minimum Distributions (RMDs)</div>
+      <div class="us-feat">Medicare cost bridge analysis</div>
+      <div class="us-feat">State tax on pension withdrawals</div>
+    </div>
+    <div class="waitlist-form">
+      <input type="email" id="waitlistEmail" placeholder="your@email.com">
+      <button class="waitlist-btn" onclick="joinWaitlist()">Notify Me</button>
+    </div>
+    <div class="waitlist-success" id="waitlistSuccess">✅ You're on the list — we'll email you when it launches.</div>
+  </div>
+</div>
+
+<div class="tool-wrap">
+
+  <!-- ═══ INPUTS ═══ -->
+  <div class="inputs-panel">
+    <h2>🎯 Your Details</h2>
+
+    <div class="emp-toggle-wrap">
+      <button class="etoggle active" id="empBtn" onclick="setEmpType('employed')">👔 Employed</button>
+      <button class="etoggle" id="selfBtn" onclick="setEmpType('self-employed')">💼 Self-Employed</button>
+    </div>
+    <div class="selfemployed-note" id="selfNote">
+      <strong>Self-employed:</strong> Enter your <em>net</em> monthly pension contribution. HMRC automatically adds 20% basic rate tax relief — so £800/month becomes £1,000 in your SIPP. Higher rate taxpayers can claim a further 20–25% via Self Assessment.
+    </div>
+
+    <div class="input-section">
+      <div class="input-section-title">Personal</div>
+      <div class="input-row">
+        <label>Your Name (optional — for PDF)</label>
+        <input type="text" id="userName" placeholder="e.g. James Wilson">
+      </div>
+      <div class="input-row">
+        <label>Current Age</label>
+        <input type="number" id="currentAge" value="40" min="18" max="75">
+      </div>
+      <div class="input-row">
+        <label>Target Retirement Age</label>
+        <input type="number" id="retirementAge" value="65" min="50" max="80">
+      </div>
+      <div class="input-row">
+        <label>Life Expectancy</label>
+        <input type="number" id="lifeExpectancy" value="87" min="70" max="105">
+        <div class="input-hint">ONS average: men 79, women 83. Add years for health/family history.</div>
+      </div>
+    </div>
+
+    <div class="input-section">
+      <div class="input-section-title">Current Savings</div>
+      <div class="input-row">
+        <label id="pensionPotLabel">Current Pension Pot (SIPP / Workplace)</label>
+        <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="currentPension" value="120000" min="0"></div>
+      </div>
+      <div class="input-row">
+        <label>Current ISA / Other Savings</label>
+        <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="currentISA" value="30000" min="0"></div>
+      </div>
+    </div>
+
+    <div class="input-section">
+      <div class="input-section-title">Monthly Contributions</div>
+      <div class="input-row">
+        <label id="monthlyContribLabel">Your Monthly Contribution</label>
+        <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="monthlyContrib" value="600" min="0"></div>
+      </div>
+      <div class="input-row" id="employerPctRow">
+        <label>Employer Contribution (% of your salary)</label>
+        <div class="prefix-wrap"><span class="prefix">%</span><input type="number" id="employerPct" value="5" min="0" max="30"></div>
+        <div class="input-hint">Average UK employer contributes 4–6%.</div>
+      </div>
+      <div class="input-row" id="annualSalaryRow">
+        <label>Your Annual Salary (for employer calc)</label>
+        <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="annualSalary" value="60000" min="0"></div>
+      </div>
+    </div>
+
+    <div class="input-section">
+      <div class="input-section-title">Retirement Income</div>
+      <div class="input-row">
+        <label>Target Monthly Income (today's money)</label>
+        <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="targetIncome" value="2500" min="500"></div>
+        <div class="input-hint">Median UK retiree spends ~£1,900/month. Comfortable: £2,500+</div>
+      </div>
+      <div class="input-row">
+        <label>State Pension (annual)</label>
+        <div class="prefix-wrap"><span class="prefix">£</span><input type="number" id="statePension" value="11502" min="0"></div>
+        <div class="input-hint">Full new State Pension 2024/25: £11,502/yr. Check your NI record at gov.uk</div>
+      </div>
+      <div class="input-row">
+        <label>State Pension Start Age</label>
+        <input type="number" id="statePensionAge" value="66" min="60" max="70">
+      </div>
+    </div>
+
+    <div class="input-section">
+      <div class="input-section-title">Market Assumptions</div>
+      <div class="slider-row">
+        <label>Expected Annual Return <span id="returnVal">7.0%</span></label>
+        <input type="range" id="annualReturn" min="3" max="12" step="0.5" value="7" oninput="document.getElementById('returnVal').textContent=this.value+'%'">
+      </div>
+      <div class="slider-row">
+        <label>Annual Inflation <span id="inflationVal">2.5%</span></label>
+        <input type="range" id="inflation" min="1" max="6" step="0.5" value="2.5" oninput="document.getElementById('inflationVal').textContent=this.value+'%'">
+      </div>
+      <div class="slider-row">
+        <label>Portfolio Volatility <span id="volVal">12%</span></label>
+        <input type="range" id="volatility" min="5" max="25" step="1" value="12" oninput="document.getElementById('volVal').textContent=this.value+'%'">
+      </div>
+    </div>
+
+    <button class="calc-btn" id="calcBtn" onclick="runMonteCarlo()">🚀 Calculate My Retirement</button>
+  </div>
+
+  <!-- ═══ RESULTS ═══ -->
+  <div class="results-panel">
+    <div class="placeholder" id="placeholder">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="1.5"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      <p>Enter your details and click<br><strong>Calculate My Retirement</strong></p>
+    </div>
+
+    <div id="results" style="display:none">
+
+      <!-- Success Rate -->
+      <div class="success-card" id="successCard">
+        <div class="success-label">Probability of Never Running Out of Money</div>
+        <div class="success-pct" id="successPct">—</div>
+        <div class="success-sub" id="successSub"></div>
+        <div class="success-verdict" id="successVerdict"></div>
+      </div>
+
+      <!-- AI Summary -->
+      <div class="ai-summary" id="aiSummary">
+        <div class="ai-summary-header">
+          <span class="ai-badge">✦ AI Analysis</span>
+          <span class="ai-summary-title">Personalised Retirement Assessment</span>
+        </div>
+        <div id="aiSummaryText"></div>
+      </div>
+
+      <!-- Key Metrics -->
+      <div class="metrics-row">
+        <div class="metric-card">
+          <div class="metric-label">Pot at Retirement</div>
+          <div class="metric-value" id="potAtRetire">—</div>
+          <div class="metric-sub">median projection</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Bridge Period</div>
+          <div class="metric-value" id="bridgeYears">—</div>
+          <div class="metric-sub">years before State Pension</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Monthly Gap to 90%</div>
+          <div class="metric-value" id="savingsGap">—</div>
+          <div class="metric-sub">extra savings needed</div>
+        </div>
+      </div>
+
+      <div class="chart-section">
+        <div class="section-title">Retirement Cashflow Projection — 5,000 Scenarios</div>
+        <div class="section-desc">Each band shows the range of outcomes across simulations. The wider the band, the greater the uncertainty over time.</div>
+        <div class="chart-legend">
+          <div class="leg-item"><div class="leg-dot" style="background:rgba(245,158,11,0.35)"></div>10th–90th percentile range</div>
+          <div class="leg-item"><div class="leg-dot" style="background:rgba(245,158,11,0.6)"></div>25th–75th percentile range</div>
+          <div class="leg-item"><div class="leg-line" style="background:#F59E0B"></div>Median (50th)</div>
+          <div class="leg-item"><div class="leg-line" style="background:#22C55E;border-top:2px dashed #22C55E;height:0"></div>Retirement</div>
+          <div class="leg-item"><div class="leg-line" style="background:#7DD3FC;border-top:2px dashed #7DD3FC;height:0"></div>State Pension starts</div>
+        </div>
+        <div style="position:relative;height:340px"><canvas id="fanChart"></canvas></div>
+      </div>
+
+      <!-- ── PAYWALL WRAP ── -->
+      <div class="paywall-wrap" id="paywallWrap">
+        <div class="paywall-blur" id="paywallBlur">
+
+      <!-- Bridge Analysis -->
+      <div class="bridge-box" id="bridgeBox">
+        <div class="bridge-title">⚠️ The Bridge Period — The Retirement Risk Nobody Talks About</div>
+        <div class="bridge-stats">
+          <div class="bridge-stat">
+            <div class="bridge-stat-val" id="bridgeYearsBox">—</div>
+            <div class="bridge-stat-label">Years drawing full income<br>before State Pension begins</div>
+          </div>
+          <div class="bridge-stat">
+            <div class="bridge-stat-val" id="bridgeCost">—</div>
+            <div class="bridge-stat-label">Extra pot needed vs<br>retiring at State Pension age</div>
+          </div>
+        </div>
+        <div class="bridge-note" id="bridgeNote"></div>
+      </div>
+
+      <!-- Income Breakdown -->
+      <div class="income-breakdown">
+        <div style="font-size:0.78rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">Monthly Income Breakdown in Retirement</div>
+        <div class="income-row">
+          <span class="income-label">Target monthly income (today's money)</span>
+          <span class="income-val" id="incBreakTarget">—</span>
+        </div>
+        <div class="income-row">
+          <span class="income-label">State Pension contribution (monthly)</span>
+          <span class="income-val" id="incBreakSP">—</span>
+        </div>
+        <div class="income-row">
+          <span class="income-label">Required from your pension pot</span>
+          <span class="income-val" id="incBreakPot">—</span>
+        </div>
+        <div class="income-row">
+          <span class="income-label"><strong>Annual withdrawal from pot</strong></span>
+          <span class="income-val" id="incBreakAnnual">—</span>
+        </div>
+        <div class="income-row" style="border-top:1px solid rgba(245,158,11,0.2);margin-top:4px">
+          <span class="income-label">Effective withdrawal rate</span>
+          <span class="income-val" id="incBreakRate">—</span>
+        </div>
+      </div>
+
+      <!-- Sensitivity Analysis -->
+      <div class="chart-section">
+        <div class="section-title">Sensitivity Analysis — What Changes Your Odds Most?</div>
+        <div class="section-desc">How your success probability changes with different choices. Highlighted row is your current scenario.</div>
+        <table class="sens-table" id="sensTable">
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Change</th>
+              <th>Success Rate</th>
+              <th>Impact</th>
+            </tr>
+          </thead>
+          <tbody id="sensBody"></tbody>
+        </table>
+      </div>
+
+        </div><!-- /paywall-blur -->
+
+        <!-- Lock overlay -->
+        <div class="paywall-overlay" id="paywallOverlay">
+          <div class="paywall-card">
+            <div class="paywall-lock">🔒</div>
+            <h3>Unlock Your Full Analysis</h3>
+            <p>Your success rate is calculated — now find out <em>why</em> and exactly what to do about it.</p>
+            <div class="paywall-includes">
+              <div class="paywall-inc">Bridge period cost — the hidden retirement risk</div>
+              <div class="paywall-inc">Monthly income breakdown &amp; withdrawal rate</div>
+              <div class="paywall-inc">Sensitivity table — what moves your odds most</div>
+              <div class="paywall-inc">Professional PDF report with cover page</div>
+            </div>
+            <button class="paywall-unlock-btn" onclick="unlockAnalysis()">Unlock Full Report — £4.99</button>
+            <div class="paywall-note">One-time payment · No subscription · Instant access</div>
+          </div>
+        </div>
+
+      </div><!-- /paywall-wrap -->
+
+      <!-- PDF Report -->
+      <div class="pdf-section" id="pdfSection" style="display:none">
+        <h3>📄 Get Your Full PDF Report</h3>
+        <p>A professional A4 report with cover page, all charts, sensitivity analysis, and personalised recommendations — ready to share with your financial adviser.</p>
+        <div class="pdf-features">
+          <span class="pdf-feat">Cover Page</span>
+          <span class="pdf-feat">Fan Chart</span>
+          <span class="pdf-feat">Bridge Analysis</span>
+          <span class="pdf-feat">Sensitivity Table</span>
+          <span class="pdf-feat">Income Breakdown</span>
+          <span class="pdf-feat">Full Assumptions</span>
+        </div>
+        <button class="pdf-btn" onclick="generatePDF()">Download PDF Report — £4.99</button>
+        <div class="pdf-price">Secure payment · One-time · No subscription</div>
+      </div>
+
+    </div><!-- /results -->
+  </div><!-- /results-panel -->
+</div><!-- /tool-wrap -->
+
+<!-- ═══════════════════════════════════════════
+     PRINT-ONLY SECTIONS
+═══════════════════════════════════════════ -->
+
+<!-- ═══════════════════════════════════════════
+     PRINT PAGES (hidden on screen, visible in print only)
+═══════════════════════════════════════════ -->
+<div class="print-only" id="printPages">
+
+  <!-- PAGE 1 — COVER (all-white, gold bar at top) -->
+  <div class="ppage pcov" id="printCover">
+    <div class="pcov-bar"></div>
+    <div class="pcov-inner">
+      <div class="pcov-top">
+        <div class="pcov-logo"><span>Fintiq</span>
+          <div class="pcov-sub">fintiq.uk &nbsp;·&nbsp; Professional investing tools for retail investors</div>
+        </div>
+      </div>
+      <div class="pcov-body">
+        <span class="pcov-eyebrow">Personalised Monte Carlo Analysis</span>
+        <div class="pcov-title">UK Pension<br><span>Lifecycle Report</span></div>
+        <div class="pcov-stitle">5,000 simulated retirement scenarios — your personal probability of financial security through retirement.</div>
+        <hr class="pcov-rule">
+        <div class="pcov-meta">
+          <div class="pcov-meta-row">
+            <div class="pcov-meta-cell"><label>Prepared for</label><span id="coverName">—</span></div>
+            <div class="pcov-meta-cell"><label>Date generated</label><span id="coverDate">—</span></div>
+            <div class="pcov-meta-cell"><label>Simulations run</label><span>5,000</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pcov-foot">
+        For illustrative purposes only. Not financial advice. Fintiq is not authorised or regulated by the FCA. Consult a qualified financial adviser before making pension or investment decisions. &copy; 2026 Fintiq &middot; fintiq.uk
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE 2 — EXECUTIVE SUMMARY -->
+  <div class="ppage pcon" id="printSummary">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">UK Pension Lifecycle Report</div>
+        <div class="phdr-name" id="hdrName">—</div>
+      </div>
+    </div>
+    <div class="pt1">Executive Summary</div>
+    <div class="psub">Based on your inputs and 5,000 Monte Carlo simulations</div>
+
+    <!-- KPIs -->
+    <div class="pkpi" id="printKPIs"></div>
+
+    <!-- Success bar -->
+    <div class="pbar-wrap"><div class="pbar-fill" id="printSuccessBar" style="width:0%"></div></div>
+    <div class="pbar-lbls">
+      <div class="pbar-l">0% — certain ruin</div>
+      <div class="pbar-c" id="successPctLabel">—</div>
+      <div class="pbar-r">100% — certain success</div>
+    </div>
+
+    <!-- AI summary -->
+    <div class="pai" id="printAISummary">
+      <div class="pai-hdr">AI Analysis — Personalised Retirement Assessment</div>
+      <div id="printAISummaryText"></div>
+    </div>
+
+    <!-- Assumptions -->
+    <div class="pasm">
+      <h4>Inputs &amp; Assumptions Used in This Analysis</h4>
+      <div class="pasm-grid" id="printAssumptions"></div>
+    </div>
+  </div>
+
+  <!-- PAGE 3 — FAN CHART -->
+  <div class="ppage pcon" id="printChartPage">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">UK Pension Lifecycle Report</div>
+        <div class="phdr-name" id="hdrName2">—</div>
+      </div>
+    </div>
+    <div class="pt1">Pension Pot Projection</div>
+    <div class="psub">Fan chart showing p10–p90 range of 5,000 simulated outcomes</div>
+    <!-- Legend -->
+    <div class="pchart-legend" style="margin-bottom:4mm">
+      <div class="pchart-leg-item"><span style="display:inline-block;width:10px;height:10px;background:#F59E0B;border-radius:50%;margin-right:4px"></span>Median (p50)</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:10px;height:10px;background:rgba(34,197,94,0.4);border-radius:50%;margin-right:4px"></span>p25–p75 range</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:10px;height:10px;background:rgba(148,163,184,0.25);border-radius:50%;margin-right:4px"></span>p10–p90 range</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:2px;height:10px;background:#22C55E;margin-right:4px;vertical-align:middle"></span>Retirement age</div>
+      <div class="pchart-leg-item"><span style="display:inline-block;width:2px;height:10px;background:#60A5FA;margin-right:4px;vertical-align:middle"></span>State Pension age</div>
+    </div>
+    <!-- Hidden canvas: chart is redrawn here with white-friendly colours for PDF -->
+    <canvas id="printChartCanvas" width="860" height="480" style="display:none;position:absolute;left:-9999px"></canvas>
+    <img id="printChartImg" src="" class="pchart-img" alt="Pension fan chart" style="border:1pt solid #E2E8F0">
+  </div>
+
+  <!-- PAGE 4 — BRIDGE + INCOME BREAKDOWN -->
+  <div class="ppage pcon" id="printBridgePage">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">UK Pension Lifecycle Report</div>
+        <div class="phdr-name" id="hdrName3">—</div>
+      </div>
+    </div>
+
+    <div class="pt2">Bridge Period Analysis</div>
+    <div class="pbridge" id="printBridgeBox">
+      <div class="pbridge-title">Gap between retirement and State Pension</div>
+      <div class="pbridge-stats">
+        <div class="pbridge-stat">
+          <div class="pbridge-val" id="bridgeDurationPrint">—</div>
+          <div class="pbridge-lbl">Bridge duration (years)</div>
+        </div>
+        <div class="pbridge-stat">
+          <div class="pbridge-val" id="bridgeCostPrint">—</div>
+          <div class="pbridge-lbl">Total cost (median)</div>
+        </div>
+      </div>
+      <div class="pbridge-note" id="bridgeNotePrint">—</div>
+    </div>
+
+    <div class="pt2">Annual Income Breakdown at Retirement</div>
+    <table class="pinc" id="printIncomeTable">
+      <tr><td>Target retirement income</td><td id="pi-target" style="text-align:right">—</td></tr>
+      <tr><td>State Pension income</td><td id="pi-sp" style="text-align:right">—</td></tr>
+      <tr><td>Gap drawn from pension pot</td><td id="pi-gap" style="text-align:right">—</td></tr>
+      <tr><td><b>Required withdrawal rate</b></td><td id="pi-wrate" style="text-align:right;font-weight:700">—</td></tr>
+    </table>
+  </div>
+
+  <!-- PAGE 5 — SENSITIVITY ANALYSIS -->
+  <div class="ppage pcon" id="printSensPage">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">UK Pension Lifecycle Report</div>
+        <div class="phdr-name" id="hdrName4">—</div>
+      </div>
+    </div>
+    <div class="pt1">Sensitivity Analysis</div>
+    <div class="psub">How small changes affect your probability of success</div>
+    <table class="psens" id="printSensTable">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Change</th>
+          <th style="text-align:right">Success Rate</th>
+          <th style="text-align:right">vs Base</th>
+        </tr>
+      </thead>
+      <tbody id="printSensTbody"></tbody>
+    </table>
+    <div class="pbridge-note" style="margin-top:5mm;font-size:7pt">Each scenario re-runs 1,000 simulations with one variable changed. All other inputs held constant at the values you entered.</div>
+  </div>
+
+  <!-- PAGE 6 — FINTIQ PROMO + DISCLAIMER -->
+  <div class="ppage pcon" id="printPromo">
+    <div class="phdr">
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
+      <div class="phdr-right">
+        <div class="phdr-title">UK Pension Lifecycle Report</div>
+        <div class="phdr-name" id="hdrName5">—</div>
+      </div>
+    </div>
+    <div class="pt1" style="margin-bottom:5mm">Explore More with Fintiq</div>
+    <div class="ppromo-box">
+      <h3>Free Professional Investing Tools</h3>
+      <p>Fintiq gives retail investors access to the same analytical tools used by institutional fund managers — completely free. No commission, no hidden fees, no financial advice dressed up as editorial.</p>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">Multi-factor FTSE 100 stock screener</div><div class="ppromo-feat">Monte Carlo simulation for stocks</div></div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">Portfolio optimiser (Efficient Frontier)</div><div class="ppromo-feat">Statistical pairs trading (Z-score)</div></div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">DCF valuation model</div><div class="ppromo-feat">Technical analysis — RSI, MACD, Bollinger Bands</div></div>
+      <div class="ppromo-url">fintiq.uk &nbsp;·&nbsp; Free, no card required</div>
+    </div>
+
+    <div class="pt2">Methodology</div>
+    <div class="pdisc">
+      This report uses Monte Carlo simulation to model 5,000 independent retirement scenarios. Each simulation draws annual investment returns from a log-normal distribution parameterised by your chosen expected return and volatility. The model runs three phases: (1) <b>Accumulation</b> — contributions and investment growth build the pot until retirement; (2) <b>Bridge</b> — the period between retirement and State Pension start age where full income is drawn with no State Pension supplement; (3) <b>Decumulation</b> — withdrawals reduce the pot, partially offset by State Pension income, until life expectancy. A simulation "fails" if the pot reaches zero before life expectancy. Success rate = % of 5,000 simulations where the pot survives.
+      <h4>Important Limitations</h4>
+      This model does not account for: income tax on pension withdrawals, means-tested benefits, long-term care costs, defined benefit pension income, future changes to State Pension age or amount, or currency risk.
+      <h4>Disclaimer</h4>
+      This report is generated by Fintiq (fintiq.uk) for illustrative and educational purposes only. It does not constitute financial advice, investment advice, tax advice, or a personal recommendation. Fintiq is not authorised or regulated by the Financial Conduct Authority (FCA). Always consult a qualified independent financial adviser (IFA) before making pension or investment decisions. &copy; 2026 Fintiq. All rights reserved.
+    </div>
+  </div>
+
+</div><!-- end #printPages -->
+
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Professional investing tools for retail investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk">App</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+
+<!-- ═══════════════════════════════════════════
+     SCRIPTS
+═══════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── Utilities ─────────────────────────────────────────
+function randNorm(){
+  let u=0,v=0;
+  while(u===0)u=Math.random();
+  while(v===0)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+function fmt(n){
+  if(n>=1e6) return '£'+( n/1e6).toFixed(2)+'m';
+  if(n>=1e3) return '£'+(n/1e3).toFixed(0)+'k';
+  return '£'+n.toFixed(0);
+}
+function fmtFull(n){ return '£'+Math.round(n).toLocaleString('en-GB'); }
+function pct(n){ return Math.round(n)+'%'; }
+function percentile(arr,p){ const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length*p)]; }
+
+let fanChartInst = null;
+let printChartInst = null;
+let lastChartData = null; // stores {percs, cAge, lExp, rAge, spAge} for PDF export
+
+// ── Core Monte Carlo ───────────────────────────────────
+function simulate(inputs, N=5000){
+  const {currentAge,retirementAge,lifeExpectancy,totalPot,
+         annualContrib,annualIncomeTgt,annualSP,statePensionAge,
+         mu,sigma,inflation} = inputs;
+  const years = lifeExpectancy - currentAge;
+  const retYr  = retirementAge - currentAge;
+  const spYr   = statePensionAge - currentAge;
+  const infl   = inflation/100;
+
+  // Store pot values: potsByYear[year][sim]
+  const potsByYear = Array.from({length:years+1},()=>[]);
+  let ruins = 0;
+
+  for(let s=0;s<N;s++){
+    let pot = totalPot;
+    let failed = false;
+    potsByYear[0].push(pot);
+    for(let y=1;y<=years;y++){
+      const age = currentAge+y;
+      const ret = Math.exp((mu-sigma*sigma/2)+sigma*randNorm())-1;
+      if(age<=retirementAge){
+        // Accumulation
+        pot = pot*(1+ret)+annualContrib;
+      } else {
+        // Decumulation — real terms withdrawal
+        const inflAdj = Math.pow(1+infl, age-retirementAge);
+        const realTarget = annualIncomeTgt * inflAdj;
+        const realSP = age>statePensionAge ? annualSP*inflAdj : 0;
+        const withdrawal = Math.max(0, realTarget - realSP);
+        pot = pot*(1+ret)-withdrawal;
+        if(pot<=0){ pot=0; if(!failed){ruins++;failed=true;} }
+      }
+      potsByYear[y].push(pot);
+    }
+  }
+
+  const percs = potsByYear.map(arr=>({
+    p10: percentile(arr,0.10),
+    p25: percentile(arr,0.25),
+    p50: percentile(arr,0.50),
+    p75: percentile(arr,0.75),
+    p90: percentile(arr,0.90),
+  }));
+
+  return {
+    successRate: (N-ruins)/N*100,
+    percs,
+    potAtRetire: percs[retYr],
+    N
+  };
+}
+
+// ── Main calculation ──────────────────────────────────
+function runMonteCarlo(){
+  const btn = document.getElementById('calcBtn');
+  btn.textContent='⏳ Running 5,000 simulations…';
+  btn.classList.add('running');
+
+  setTimeout(()=>{
+    try{ _run(); }
+    catch(e){ console.error(e); alert('Error: '+e.message); }
+    btn.textContent='🔄 Recalculate';
+    btn.classList.remove('running');
+  },50);
+}
+
+function _run(){
+  // ── Read inputs ──
+  const cAge = +document.getElementById('currentAge').value;
+  const rAge = +document.getElementById('retirementAge').value;
+  const lExp = +document.getElementById('lifeExpectancy').value;
+  const curP = +document.getElementById('currentPension').value;
+  const curI = +document.getElementById('currentISA').value;
+  const myCon= +document.getElementById('monthlyContrib').value;
+  const empPct=+document.getElementById('employerPct').value;
+  const salary=+document.getElementById('annualSalary').value;
+  const tgtIn = +document.getElementById('targetIncome').value;
+  const sp    = +document.getElementById('statePension').value;
+  const spAge = +document.getElementById('statePensionAge').value;
+  const ret   = +document.getElementById('annualReturn').value;
+  const infl  = +document.getElementById('inflation').value;
+  const vol   = +document.getElementById('volatility').value;
+  const name  = document.getElementById('userName').value||'';
+
+  if(rAge>=lExp||cAge>=rAge){ alert('Please check your ages — retirement must be before life expectancy.'); return; }
+
+  const totalPot = curP+curI;
+  // Self-employed: HMRC adds 20% basic rate relief automatically (net × 1.25 = gross)
+  const taxReliefMultiplier = empType==='self-employed' ? 1.25 : 1;
+  const grossMonthly = myCon * taxReliefMultiplier;
+  const empAnnual = empType==='self-employed' ? 0 : (salary*(empPct/100));
+  const annualContrib = grossMonthly*12 + empAnnual;
+  const annualIncomeTgt = tgtIn*12;
+  const annualSP = sp;
+  const mu = ret/100;
+  const sigma = vol/100;
+  const bridgeYrs = Math.max(0, spAge-rAge);
+
+  const inp = {currentAge:cAge,retirementAge:rAge,lifeExpectancy:lExp,
+    totalPot,annualContrib,annualIncomeTgt,annualSP,statePensionAge:spAge,
+    mu,sigma,inflation:infl};
+
+  // Main simulation
+  const res = simulate(inp);
+  const successRate = res.successRate;
+  const potMedian = res.potAtRetire.p50;
+
+  // ── Bridge cost calculation ──
+  // Re-run with retirement = spAge (no bridge) to find comparable pot needed
+  const noBridgeInp = {...inp, retirementAge:spAge,
+    annualContrib: annualContrib * (spAge>rAge?1:1)}; // same contributions but longer
+  const noBridgeRes = simulate(noBridgeInp,1000);
+  const bridgeCostEst = Math.max(0, bridgeYrs * (annualIncomeTgt - annualSP/2));
+
+  // ── Sensitivity runs (1000 sims each) ──
+  const sensScenarios = [
+    { label:'Save £200/month more',  change:'+£200/mo savings', mod:{annualContrib:annualContrib+2400} },
+    { label:'Save £200/month less',  change:'−£200/mo savings', mod:{annualContrib:Math.max(0,annualContrib-2400)} },
+    { label:'Retire 2 years later',  change:'+2 years working',  mod:{retirementAge:rAge+2,lifeExpectancy:lExp} },
+    { label:'Retire 2 years earlier',change:'−2 years working',  mod:{retirementAge:Math.max(cAge+1,rAge-2)} },
+    { label:'Target income −£300/mo',change:'−£300/mo income',   mod:{annualIncomeTgt:Math.max(0,annualIncomeTgt-3600)} },
+    { label:'Target income +£300/mo',change:'+£300/mo income',   mod:{annualIncomeTgt:annualIncomeTgt+3600} },
+    { label:'1% lower returns',      change:'Return −1%',        mod:{mu:(ret-1)/100} },
+    { label:'1% higher returns',     change:'Return +1%',        mod:{mu:(ret+1)/100} },
+  ];
+
+  const sensResults = sensScenarios.map(s=>{
+    const si = {...inp,...s.mod};
+    const r = simulate(si,1000);
+    return {...s, rate:r.successRate};
+  });
+
+  // ── Find monthly savings gap to reach 90% ──
+  let gapAmt = 0;
+  if(successRate<90){
+    let testContrib = annualContrib;
+    for(let add=0;add<=24000;add+=1200){
+      const t = simulate({...inp,annualContrib:annualContrib+add},500);
+      if(t.successRate>=90){ gapAmt=add/12; break; }
+    }
+  }
+
+  // ── Update UI ──
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('results').style.display='block';
+
+  // Success card
+  const card = document.getElementById('successCard');
+  card.className = 'success-card' + (successRate>=80?'':successRate>=60?' warning':' danger');
+  document.getElementById('successPct').textContent = Math.round(successRate)+'%';
+  document.getElementById('successSub').textContent =
+    Math.round(successRate)+'% of 5,000 simulated retirements ended with money remaining at age '+lExp;
+  document.getElementById('successVerdict').textContent =
+    successRate>=85?'✅ Strong — on track for a secure retirement':
+    successRate>=70?'⚠️ Moderate — consider adjustments':
+    '❌ At risk — action recommended';
+
+  // Metrics
+  document.getElementById('potAtRetire').textContent = fmt(potMedian);
+  document.getElementById('bridgeYears').textContent = bridgeYrs > 0 ? bridgeYrs+'yr' : 'None';
+  document.getElementById('savingsGap').textContent = successRate>=90 ? '✅ On track' :
+    gapAmt>0 ? '+'+fmt(gapAmt)+'/mo' : 'Recalc';
+
+  // Bridge box
+  document.getElementById('bridgeYearsBox').textContent = bridgeYrs > 0 ? bridgeYrs+' years' : 'No gap';
+  document.getElementById('bridgeCost').textContent = bridgeYrs > 0 ? fmt(bridgeCostEst) : '£0';
+  const bridgeNote = document.getElementById('bridgeNote');
+  if(bridgeYrs>0){
+    bridgeNote.textContent = `You plan to retire at ${rAge} but your State Pension doesn't start until age ${spAge}. During this ${bridgeYrs}-year bridge period, your pension pot must cover your full £${(tgtIn).toLocaleString('en-GB')}/month income with no State Pension supplement. This is the highest-pressure period of your retirement — the pot is fully exposed. Estimated extra pot required vs retiring at State Pension age: ${fmt(bridgeCostEst)}.`;
+  } else {
+    bridgeNote.textContent = `You are retiring at or after State Pension age, so there is no bridge period. Your State Pension kicks in from day one of retirement, immediately reducing the pressure on your pot.`;
+  }
+
+  // Income breakdown
+  const monthSP = sp/12;
+  const monthFromPot = Math.max(0, tgtIn - monthSP);
+  const annualFromPot = monthFromPot*12;
+  const wRate = potMedian>0 ? (annualFromPot/potMedian*100) : 0;
+  document.getElementById('incBreakTarget').textContent = fmtFull(tgtIn)+'/mo';
+  document.getElementById('incBreakSP').textContent = '−'+fmtFull(monthSP)+'/mo';
+  document.getElementById('incBreakPot').textContent = fmtFull(monthFromPot)+'/mo';
+  document.getElementById('incBreakAnnual').textContent = fmtFull(annualFromPot)+'/yr';
+  document.getElementById('incBreakRate').textContent = wRate.toFixed(1)+'% ('+
+    (wRate<=3.5?'✅ Conservative':wRate<=4.5?'⚠️ Moderate':'❌ High — review income target')+')';
+
+  // Sensitivity table
+  const tbody = document.getElementById('sensBody');
+  tbody.innerHTML = '';
+  // Add base row
+  const baseRow = document.createElement('tr');
+  baseRow.style.background='rgba(245,158,11,0.06)';
+  baseRow.innerHTML = `<td><strong>Your current plan</strong></td><td style="color:#F59E0B">Base</td><td><span class="sens-pct sens-base">${Math.round(successRate)}%</span></td><td>—</td>`;
+  tbody.appendChild(baseRow);
+  sensResults.forEach(s=>{
+    const diff = s.rate - successRate;
+    const cls = diff>3?'sens-good':diff<-3?'sens-bad':'sens-mid';
+    const arrow = diff>3?'↑':diff<-3?'↓':'→';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${s.label}</td><td style="color:#64748B;font-size:0.75rem">${s.change}</td><td><span class="sens-pct ${cls}">${Math.round(s.rate)}%</span></td><td style="font-size:0.75rem;color:${diff>3?'#22C55E':diff<-3?'#EF4444':'#64748B'}">${arrow} ${Math.abs(diff).toFixed(0)}pp</td>`;
+    tbody.appendChild(tr);
+  });
+
+  // ── AI Summary ──
+  const summaryInputs = {cAge,rAge,lExp,spAge,tgtIn,sp,ret,infl,vol,annualContrib};
+  const aiHTML = generateAISummary(summaryInputs, successRate, potMedian, bridgeYrs, wRate, sensResults, empType);
+  document.getElementById('aiSummaryText').innerHTML = aiHTML;
+  document.getElementById('printAISummaryText').innerHTML = aiHTML;
+
+  // Build fan chart
+  buildFanChart(res.percs, cAge, lExp, rAge, spAge);
+  lastChartData = {percs: res.percs, cAge, lExp, rAge, spAge};
+
+  // ── Populate print sections ──
+  const displayName = name||'Fintiq User';
+  const displayDate = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('coverName').textContent = displayName;
+  document.getElementById('coverDate').textContent = displayDate;
+  ['hdrName','hdrName2','hdrName3','hdrName4','hdrName5'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.textContent=displayName+' · '+displayDate;
+  });
+
+  // Success bar & label
+  const sp2 = document.getElementById('successPctLabel'); if(sp2) sp2.textContent = Math.round(successRate)+'% success rate';
+  const psb = document.getElementById('printSuccessBar'); if(psb) psb.style.width = Math.round(successRate)+'%';
+
+  // Print KPIs
+  document.getElementById('printKPIs').innerHTML = `
+    <div class="pkpi-cell"><div class="pkpi-val">${Math.round(successRate)}%</div><div class="pkpi-lbl">Success Rate</div></div>
+    <div class="pkpi-cell"><div class="pkpi-val">${fmt(potMedian)}</div><div class="pkpi-lbl">Pot at Retirement (Median)</div></div>
+    <div class="pkpi-cell"><div class="pkpi-val">${bridgeYrs>0?bridgeYrs+' yrs':'None'}</div><div class="pkpi-lbl">Bridge Period</div></div>
+    <div class="pkpi-cell"><div class="pkpi-val">${wRate.toFixed(1)}%</div><div class="pkpi-lbl">Withdrawal Rate</div></div>
+  `;
+
+  // Assumptions
+  const asmRows = [
+    ['Current Age',cAge],['Retirement Age',rAge],['Life Expectancy',lExp],
+    ['Current Pot',fmtFull(totalPot)],['Monthly Contributions',fmtFull(annualContrib/12)+'/mo'],
+    ['Target Income',fmtFull(tgtIn)+'/mo'],['State Pension',fmtFull(sp)+'/yr from '+spAge],
+    ['Expected Return',ret+'%'],['Inflation',infl+'%'],['Volatility',vol+'%'],
+    ['Bridge Period',bridgeYrs>0?bridgeYrs+' years':'None'],
+    ['Employment',empType==='self-employed'?'Self-Employed (25% relief)':'Employed']
+  ];
+  document.getElementById('printAssumptions').innerHTML = `
+    <div class="pasm-row">${asmRows.slice(0,4).map(([k,v])=>`<div class="pasm-cell"><b>${k}</b>${v}</div>`).join('')}</div>
+    <div class="pasm-row">${asmRows.slice(4,8).map(([k,v])=>`<div class="pasm-cell"><b>${k}</b>${v}</div>`).join('')}</div>
+    <div class="pasm-row">${asmRows.slice(8).map(([k,v])=>`<div class="pasm-cell"><b>${k}</b>${v}</div>`).join('')}</div>
+  `;
+
+  // Bridge page
+  const elBridgeDur = document.getElementById('bridgeDurationPrint');
+  const elBridgeCost = document.getElementById('bridgeCostPrint');
+  const elBridgeNote = document.getElementById('bridgeNotePrint');
+  if(elBridgeDur) elBridgeDur.textContent = bridgeYrs>0 ? bridgeYrs+' yrs' : 'None';
+  if(elBridgeCost) elBridgeCost.textContent = bridgeYrs>0 ? fmt(bridgeCostEst) : '£0';
+  if(elBridgeNote) elBridgeNote.textContent = bridgeYrs>0
+    ? `You retire at ${rAge} but State Pension starts at ${spAge}. During this ${bridgeYrs}-year gap your pot covers the full £${tgtIn.toLocaleString('en-GB')}/mo alone — the highest-pressure phase. Estimated additional pot required: ${fmt(bridgeCostEst)}.`
+    : `You retire at or after State Pension age — no bridge period. State Pension supplements your pot from day one of retirement.`;
+
+  // Income breakdown for print
+  const elPiTarget = document.getElementById('pi-target');
+  const elPiSP = document.getElementById('pi-sp');
+  const elPiGap = document.getElementById('pi-gap');
+  const elPiWrate = document.getElementById('pi-wrate');
+  if(elPiTarget) elPiTarget.textContent = fmtFull(tgtIn)+'/mo';
+  if(elPiSP) elPiSP.textContent = fmtFull(sp/12)+'/mo';
+  if(elPiGap) elPiGap.textContent = fmtFull(monthFromPot)+'/mo';
+  if(elPiWrate) elPiWrate.textContent = wRate.toFixed(1)+'% '+(wRate<=3.5?'(Conservative)':wRate<=4.5?'(Moderate)':'(High — review income target)');
+
+  // Sensitivity table for print
+  const pstbody = document.getElementById('printSensTbody');
+  if(pstbody){
+    pstbody.innerHTML = `<tr class="base-row">
+      <td><b>Your current plan</b></td><td>—</td>
+      <td style="text-align:right"><span class="sbase">${Math.round(successRate)}%</span></td>
+      <td style="text-align:right">Base</td>
+    </tr>`+sensResults.map(s=>{
+      const diff=s.rate-successRate;
+      const cls=diff>3?'sg':diff<-3?'sb':'sm';
+      const arrow=diff>3?'↑':diff<-3?'↓':'→';
+      return `<tr>
+        <td>${s.label}</td><td style="color:#64748B;font-size:7pt">${s.change}</td>
+        <td style="text-align:right"><span class="${cls}">${Math.round(s.rate)}%</span></td>
+        <td style="text-align:right;font-size:7pt;color:${diff>3?'#15803D':diff<-3?'#B91C1C':'#64748B'}">${arrow} ${Math.abs(diff).toFixed(0)}pp</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+// ── Fan Chart ─────────────────────────────────────────
+function buildFanChart(percs, cAge, lExp, rAge, spAge){
+  const ages = percs.map((_,i)=>cAge+i);
+  const toK = arr=>arr.map(v=>v/1000);
+
+  const p10 = toK(percs.map(p=>p.p10));
+  const p25 = toK(percs.map(p=>p.p25));
+  const p50 = toK(percs.map(p=>p.p50));
+  const p75 = toK(percs.map(p=>p.p75));
+  const p90 = toK(percs.map(p=>p.p90));
+
+  // Phase lines plugin
+  const phasePlugin = {
+    id:'phases',
+    beforeDraw(chart){
+      const {ctx,chartArea,scales}=chart;
+      if(!chartArea) return;
+      [[rAge,'#22C55E','Retire'],[spAge,'#7DD3FC','State Pension']].forEach(([age,col,lbl])=>{
+        if(age<cAge||age>lExp) return;
+        const x=scales.x.getPixelForValue(age);
+        ctx.save();
+        ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);
+        ctx.strokeStyle=col;ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.stroke();
+        ctx.font='bold 10px Inter';ctx.fillStyle=col;ctx.textAlign='left';
+        ctx.fillText(lbl,x+4,chartArea.top+14);
+        ctx.restore();
+      });
+    }
+  };
+
+  if(fanChartInst) fanChartInst.destroy();
+  fanChartInst = new Chart(document.getElementById('fanChart'),{
+    type:'line',
+    data:{
+      labels:ages,
+      datasets:[
+        // Outer band p10→p90
+        {label:'10th%ile',data:p10,borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+        {label:'90th%ile',data:p90,borderColor:'rgba(245,158,11,0.15)',borderWidth:1,pointRadius:0,
+          backgroundColor:'rgba(245,158,11,0.08)',fill:'-1',tension:0.4},
+        // Inner band p25→p75
+        {label:'25th%ile',data:p25,borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+        {label:'75th%ile',data:p75,borderColor:'rgba(245,158,11,0.25)',borderWidth:1,pointRadius:0,
+          backgroundColor:'rgba(245,158,11,0.18)',fill:'-1',tension:0.4},
+        // Median
+        {label:'Median',data:p50,borderColor:'#F59E0B',borderWidth:2.5,pointRadius:0,fill:false,tension:0.4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          mode:'index',intersect:false,
+          backgroundColor:'#0A1628',titleColor:'#F1F5F9',bodyColor:'#94A3B8',
+          borderColor:'rgba(245,158,11,0.3)',borderWidth:1,
+          callbacks:{
+            title:items=>'Age '+items[0].label,
+            label:item=>{
+              const lblMap={'Median':'Median','90th%ile':'Best case (90th)','10th%ile':'Worst case (10th)',
+                            '75th%ile':'Upper range (75th)','25th%ile':'Lower range (25th)'};
+              return (lblMap[item.dataset.label]||item.dataset.label)+': £'+(item.raw).toFixed(0)+'k';
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:'rgba(100,116,139,0.12)'},
+          ticks:{color:'#64748B',font:{size:11},
+            callback:v=>v%5===0?v:''},
+          title:{display:true,text:'Age',color:'#64748B',font:{size:11}}
+        },
+        y:{
+          grid:{color:'rgba(100,116,139,0.12)'},
+          ticks:{color:'#64748B',font:{size:11},callback:v=>v>=1000?'£'+(v/1000).toFixed(0)+'m':'£'+v+'k'},
+          title:{display:true,text:'Pot Value (£)',color:'#64748B',font:{size:11}},
+          min:0
+        }
+      }
+    },
+    plugins:[phasePlugin]
+  });
+}
+
+// ── PDF generation ────────────────────────────────────
+function generatePDF(){
+  if(!lastChartData){ window.print(); return; }
+
+  // Destroy previous print chart if any
+  if(printChartInst){ try{ printChartInst.destroy(); }catch(e){} printChartInst = null; }
+
+  const {percs, cAge, lExp, rAge, spAge} = lastChartData;
+  const ages = percs.map((_,i) => cAge+i);
+  const toK = arr => arr.map(v => v/1000);
+
+  // Phase-line plugin for print chart
+  const printPhasePlugin = {
+    id:'printPhases',
+    beforeDraw(chart){
+      const {ctx,chartArea,scales}=chart;
+      if(!chartArea) return;
+      [[rAge,'#16A34A','Retire'],[spAge,'#1D4ED8','State Pension']].forEach(([age,col,lbl])=>{
+        if(age<cAge||age>lExp) return;
+        const x=scales.x.getPixelForValue(age);
+        ctx.save();
+        ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);
+        ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();
+        ctx.font='bold 11px Inter,Arial,sans-serif';ctx.fillStyle=col;ctx.textAlign='left';
+        ctx.fillText(lbl,x+4,chartArea.top+14);
+        ctx.restore();
+      });
+    }
+  };
+
+  const pc = document.getElementById('printChartCanvas');
+  if(pc){
+    // Make visible temporarily so Chart.js can render
+    pc.style.position = 'absolute';
+    pc.style.left = '-9999px';
+    pc.style.top = '0';
+    pc.style.display = 'block';
+    document.body.appendChild(pc);
+
+    printChartInst = new Chart(pc, {
+      type: 'line',
+      data: {
+        labels: ages,
+        datasets: [
+          // Outer band
+          {label:'p10',data:toK(percs.map(p=>p.p10)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+          {label:'p90',data:toK(percs.map(p=>p.p90)),borderColor:'rgba(180,120,0,0.35)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.10)',fill:'-1',tension:0.4},
+          // Inner band
+          {label:'p25',data:toK(percs.map(p=>p.p25)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+          {label:'p75',data:toK(percs.map(p=>p.p75)),borderColor:'rgba(180,120,0,0.55)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.22)',fill:'-1',tension:0.4},
+          // Median — solid amber
+          {label:'Median',data:toK(percs.map(p=>p.p50)),borderColor:'#D97706',borderWidth:2.5,pointRadius:0,fill:false,tension:0.4}
+        ]
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend:{display:false}, tooltip:{enabled:false} },
+        scales: {
+          x: {
+            grid: {color:'rgba(0,0,0,0.07)'},
+            ticks: {color:'#475569',font:{size:11},callback:v=>v%5===0?v:''},
+            title: {display:true,text:'Age',color:'#475569',font:{size:11}}
+          },
+          y: {
+            grid: {color:'rgba(0,0,0,0.07)'},
+            ticks: {color:'#475569',font:{size:11},callback:v=>v>=1000?'£'+(v/1000).toFixed(0)+'m':'£'+v+'k'},
+            title: {display:true,text:'Pot Value (£)',color:'#475569',font:{size:11}},
+            min: 0
+          }
+        }
+      },
+      plugins: [printPhasePlugin]
+    });
+
+    // Fill white background + draw chart → export as PNG
+    const offscreen = document.createElement('canvas');
+    offscreen.width = pc.width;
+    offscreen.height = pc.height;
+    const ctx2 = offscreen.getContext('2d');
+    ctx2.fillStyle = '#ffffff';
+    ctx2.fillRect(0,0,offscreen.width,offscreen.height);
+    ctx2.drawImage(pc,0,0);
+
+    const img = document.getElementById('printChartImg');
+    img.src = offscreen.toDataURL('image/png');
+
+    // Hide the print canvas again
+    pc.style.display = 'none';
+  }
+
+  // Small delay so img.src has time to load before print dialog opens
+  setTimeout(()=>window.print(), 250);
+}
+
+// ── Employment type toggle ────────────────────────────
+let empType = 'employed';
+function setEmpType(type){
+  empType = type;
+  const isself = type==='self-employed';
+  document.getElementById('empBtn').classList.toggle('active',!isself);
+  document.getElementById('selfBtn').classList.toggle('active',isself);
+  document.getElementById('selfNote').style.display = isself?'block':'none';
+  document.getElementById('employerPctRow').style.display = isself?'none':'block';
+  document.getElementById('annualSalaryRow').style.display = isself?'none':'block';
+  document.getElementById('pensionPotLabel').textContent = isself
+    ? 'Current Personal Pension / SIPP Value'
+    : 'Current Pension Pot (SIPP / Workplace)';
+  document.getElementById('monthlyContribLabel').textContent = isself
+    ? 'Your Monthly Net Contribution (you pay)'
+    : 'Your Monthly Contribution';
+}
+
+// ── AI Summary generator ──────────────────────────────
+function generateAISummary(inputs, successRate, potMedian, bridgeYrs, wRate, sensResults, empType){
+  const {cAge,rAge,lExp,spAge,tgtIn,sp,ret,infl,vol,annualContrib} = inputs;
+  const yr = new Date().getFullYear();
+
+  // Verdict
+  const strong = successRate>=85, moderate = successRate>=70&&successRate<85;
+  const verdictWord = strong?'strong':moderate?'moderate':'needs attention';
+  const yearsToRetire = rAge-cAge;
+  const monthlyContribK = (annualContrib/12/1000).toFixed(1);
+
+  // Find best sensitivity action
+  const sorted = [...sensResults].sort((a,b)=>(b.rate-successRate)-(a.rate-successRate));
+  const bestAction = sorted[0];
+  const worstAction = [...sensResults].sort((a,b)=>(a.rate-successRate)-(b.rate-successRate))[0];
+
+  // Withdrawal rate comment
+  const wRateComment = wRate<=3.5
+    ? 'conservative and highly sustainable'
+    : wRate<=4.5
+    ? 'within the generally accepted safe range'
+    : 'above the safe withdrawal threshold — your income target may need revisiting';
+
+  // Self-employed note
+  const selfNote = empType==='self-employed'
+    ? ` As a self-employed individual, consistent SIPP contributions are especially important since you have no employer matching your savings. Even small monthly increases compound significantly over ${yearsToRetire} years.`
+    : '';
+
+  // Bridge comment
+  const bridgeComment = bridgeYrs>0
+    ? `One of the most significant risks in your plan is the <strong>${bridgeYrs}-year bridge period</strong> between your retirement at age ${rAge} and your State Pension starting at age ${spAge}. During these years your pot must cover your full income target of £${tgtIn.toLocaleString('en-GB')}/month with no State Pension supplement — this is the highest-pressure phase of your retirement.`
+    : `You are retiring at or after State Pension age, which means there is no bridge period — your State Pension income reduces the pressure on your pot from day one of retirement. This significantly improves your long-term sustainability.`;
+
+  const p1 = `Based on 5,000 Monte Carlo simulations, your retirement plan is in <strong>${verdictWord}</strong> shape, with a <strong>${Math.round(successRate)}% probability</strong> of your pension pot lasting to age ${lExp}. You have ${yearsToRetire} years until your target retirement age of ${rAge}, during which your combined contributions of approximately £${monthlyContribK}k/month will continue building your pot.${selfNote}`;
+
+  const p2 = bridgeComment;
+
+  const p3 = `In retirement, your effective withdrawal rate from the pot is <strong>${wRate.toFixed(1)}%</strong> — ${wRateComment}. Your State Pension of £${Math.round(sp/12).toLocaleString('en-GB')}/month (starting age ${spAge}) covers ${Math.round(sp/12/tgtIn*100)}% of your target income, meaning your pot only needs to fund the remaining ${Math.round((1-sp/12/tgtIn)*100)}%. The model assumes a ${ret}% annual return, ${infl}% inflation, and ${vol}% portfolio volatility.`;
+
+  const actionDiff = Math.round(bestAction.rate - successRate);
+  const actionText = actionDiff>0
+    ? `<strong>Highest-impact action:</strong> ${bestAction.label} would improve your success probability by approximately <strong>${actionDiff} percentage points</strong> to ${Math.round(bestAction.rate)}%. ${worstAction.rate<successRate?`Conversely, ${worstAction.label.toLowerCase()} would reduce it by ${Math.round(successRate-worstAction.rate)}pp to ${Math.round(worstAction.rate)}%.`:''}`
+    : `Your plan is already highly optimised. Continuing your current contribution level and maintaining a diversified portfolio is the primary recommendation.`;
+
+  return `<p>${p1}</p><p>${p2}</p><p>${p3}</p><div class="ai-action">${actionText}</div>`;
+}
+
+// ── Country toggle ────────────────────────────────────
+function setCountry(c){
+  if(c==='us'){
+    document.getElementById('usModal').classList.add('open');
+    document.getElementById('ukBtn').classList.add('active');
+    document.getElementById('usBtn').classList.remove('active');
+  } else {
+    document.getElementById('ukBtn').classList.add('active');
+    document.getElementById('usBtn').classList.remove('active');
+  }
+}
+function closeUSModal(){
+  document.getElementById('usModal').classList.remove('open');
+}
+// Close modal on overlay click
+document.getElementById('usModal').addEventListener('click',function(e){
+  if(e.target===this) closeUSModal();
+});
+
+// ── Waitlist ──────────────────────────────────────────
+function joinWaitlist(){
+  const email = document.getElementById('waitlistEmail').value.trim();
+  if(!email||!email.includes('@')){ alert('Please enter a valid email address.'); return; }
+  // TODO: POST to email capture endpoint / Mailchimp / Brevo
+  // For now, show success message
+  document.querySelector('.waitlist-form').style.display='none';
+  document.getElementById('waitlistSuccess').style.display='block';
+  // GA event
+  if(typeof gtag!=='undefined') gtag('event','waitlist_signup',{country:'US',email});
+}
+
+// ── Paywall unlock ────────────────────────────────────
+let _unlocked = false;
+function unlockAnalysis(){
+  // TODO: Redirect to Stripe payment link at app.fintiq.uk/pension-report-pay
+  // On successful payment, Stripe redirects back with ?unlocked=true
+  // For now: check URL param or simulate
+  const params = new URLSearchParams(window.location.search);
+  if(params.get('unlocked')==='true'||_unlocked){
+    doUnlock();
+  } else {
+    // Redirect to Stripe — replace URL below with real Stripe payment link
+    window.location.href = 'https://app.fintiq.uk/pension-report-pay?return_url='+encodeURIComponent(window.location.href+'?unlocked=true');
+  }
+}
+function doUnlock(){
+  _unlocked = true;
+  document.getElementById('paywallOverlay').style.display='none';
+  document.getElementById('paywallBlur').style.filter='none';
+  document.getElementById('paywallBlur').style.opacity='1';
+  document.getElementById('paywallBlur').style.pointerEvents='auto';
+  document.getElementById('pdfSection').style.display='block';
+  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:4.99});
+}
+// Auto-unlock if returning from Stripe with ?unlocked=true
+window.addEventListener('load',function(){
+  if(new URLSearchParams(window.location.search).get('unlocked')==='true') doUnlock();
+});
+</script>
+
+</body>
+</html>
