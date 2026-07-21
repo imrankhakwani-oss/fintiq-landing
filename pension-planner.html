@@ -228,143 +228,142 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 .print-only{display:none!important}
 
 @media print{
-  /* Force colour printing */
   *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
-
-  /* Zero-margin pages — padding handled per-page */
   @page{size:A4;margin:0}
 
-  /* ── Hide EVERYTHING on screen — only print-pages show ── */
-  body > nav,
-  body > .hero,
-  body > .country-toggle-wrap,
-  body > .us-modal-overlay,
-  body > .tool-wrap,
-  body > footer{display:none!important}
+  /* Hide all web UI */
+  body > nav,body > .hero,body > .country-toggle-wrap,
+  body > .us-modal-overlay,body > .tool-wrap,body > footer{display:none!important}
+  body{background:#fff!important;margin:0;padding:0;font-family:'Inter',Arial,sans-serif;font-size:8pt;color:#1E293B}
 
-  body{background:#fff!important;margin:0;padding:0;font-family:'Inter',Arial,sans-serif}
-
-  /* Show print container */
+  /* Show print wrapper */
   .print-only{display:block!important}
 
-  /* ── Print pages ── */
+  /* Each page — natural height, forced page break */
   .ppage{
-    width:210mm;min-height:297mm;
+    width:210mm;
     page-break-after:always;break-after:page;
-    overflow:hidden;position:relative
+    padding:0
   }
   .ppage:last-child{page-break-after:auto;break-after:auto}
 
-  /* ══════════════════════════════════
-     PAGE 1 — COVER
-  ══════════════════════════════════ */
-  /* ── Cover (full bleed navy) ── */
-  .pcov{background:#0A1628!important;width:210mm;min-height:297mm;padding:14mm 18mm;display:block}
-  .pcov-top{border-bottom:2px solid #F59E0B!important;padding-bottom:10mm;margin-bottom:0}
-  .pcov-logo{font-size:22pt;font-weight:900;color:#F59E0B!important;letter-spacing:-0.5pt}
-  .pcov-sub{font-size:7pt;color:#475569!important;margin-top:2mm}
-  .pcov-body{padding:24mm 0 10mm}
-  .pcov-eyebrow{font-size:7pt;font-weight:700;color:#F59E0B!important;text-transform:uppercase;letter-spacing:3pt;margin-bottom:6mm;display:block}
-  .pcov-title{font-size:32pt;font-weight:900;color:#F1F5F9!important;line-height:1.1;margin:0 0 5mm}
+  /* Content pages get consistent padding */
+  .pcon{padding:12mm 16mm 14mm}
+
+  /* ══ COVER (all-white, gold accent bar at top) ══ */
+  .pcov{background:#fff!important;padding:0}
+  /* Gold top bar full-width */
+  .pcov-bar{background:#F59E0B!important;height:7mm;width:210mm;display:block;margin-bottom:0}
+  .pcov-inner{padding:10mm 16mm 12mm}
+  .pcov-top{padding:0 0 8mm;border-bottom:none;display:table;width:100%}
+  .pcov-logo{font-size:20pt;font-weight:900;color:#0A1628!important;letter-spacing:-0.5pt;display:table-cell;vertical-align:middle}
+  .pcov-logo span{color:#F59E0B!important}
+  .pcov-sub{font-size:6.5pt;color:#64748B!important;margin-top:2mm;display:block}
+  .pcov-body{padding:16mm 0 10mm}
+  .pcov-eyebrow{font-size:6.5pt;font-weight:700;color:#F59E0B!important;text-transform:uppercase;letter-spacing:3pt;margin-bottom:5mm;display:block}
+  .pcov-title{font-size:34pt;font-weight:900;color:#0A1628!important;line-height:1.05;margin:0 0 5mm}
   .pcov-title span{color:#F59E0B!important}
-  .pcov-stitle{font-size:10pt;color:#94A3B8!important;line-height:1.6;max-width:120mm;margin-bottom:10mm}
-  .pcov-rule{border:none;border-top:2pt solid #F59E0B!important;width:20mm;margin:0 0 8mm}
-  .pcov-meta{border:1pt solid rgba(255,255,255,0.12)!important;border-radius:3mm}
+  .pcov-stitle{font-size:10pt;color:#475569!important;line-height:1.6;max-width:130mm;margin-bottom:8mm}
+  .pcov-rule{border:none;border-top:3pt solid #F59E0B!important;width:24mm;margin:0 0 8mm}
+  /* Meta boxes */
+  .pcov-meta{border:1pt solid #E2E8F0!important;border-radius:3mm;overflow:hidden}
   .pcov-meta-row{display:table;width:100%}
-  .pcov-meta-cell{display:table-cell;padding:5mm 7mm;border-right:1pt solid rgba(255,255,255,0.12)!important;width:33.3%}
+  .pcov-meta-cell{display:table-cell;padding:5mm 7mm;border-right:1pt solid #E2E8F0!important;width:33.3%;vertical-align:top}
   .pcov-meta-cell:last-child{border-right:none!important}
-  .pcov-meta-cell label{font-size:6pt;color:#64748B!important;text-transform:uppercase;letter-spacing:1pt;display:block;margin-bottom:2mm}
-  .pcov-meta-cell span{font-size:9pt;font-weight:700;color:#F1F5F9!important}
-  .pcov-foot{position:absolute;bottom:12mm;left:18mm;right:18mm;border-top:1pt solid rgba(255,255,255,0.1)!important;padding-top:4mm;font-size:6pt;color:#334155!important;line-height:1.6}
+  .pcov-meta-cell label{font-size:6pt;color:#94A3B8!important;text-transform:uppercase;letter-spacing:1pt;display:block;margin-bottom:2mm}
+  .pcov-meta-cell span{font-size:10pt;font-weight:700;color:#0A1628!important}
+  .pcov-foot{margin-top:60mm;border-top:1pt solid #E2E8F0!important;padding-top:4mm;font-size:6pt;color:#94A3B8!important;line-height:1.6}
 
-  /* ── Content pages (white) ── */
-  .pcon{background:#fff!important;width:210mm;min-height:297mm;padding:12mm 18mm;display:block;position:relative}
-
-  /* ── Page header (all content pages) ── */
-  .phdr{border-bottom:1.5pt solid #F59E0B!important;padding-bottom:4mm;margin-bottom:7mm;display:table;width:100%}
+  /* ══ PAGE HEADER (all content pages) ══ */
+  .phdr{border-bottom:1.5pt solid #F59E0B!important;padding-bottom:3mm;margin-bottom:6mm;display:table;width:100%}
   .phdr-left{display:table-cell;vertical-align:middle}
-  .phdr-logo{font-size:12pt;font-weight:900;color:#F59E0B!important}
+  .phdr-logo{font-size:11pt;font-weight:900;color:#0A1628!important}
+  .phdr-logo span{color:#F59E0B!important}
+  /* Cover logo styling */
+  .pcov-logo span{color:#F59E0B!important}
   .phdr-right{display:table-cell;vertical-align:middle;text-align:right}
-  .phdr-title{font-size:6.5pt;color:#64748B!important;font-weight:600;text-transform:uppercase;letter-spacing:0.8pt}
+  .phdr-title{font-size:6pt;color:#64748B!important;font-weight:600;text-transform:uppercase;letter-spacing:0.8pt}
   .phdr-name{font-size:6pt;color:#94A3B8!important;margin-top:1mm}
 
-  /* ── Typography ── */
-  .pt1{font-size:15pt;font-weight:800;color:#0A1628!important;margin:0 0 2mm;font-family:'Inter',Arial,sans-serif}
-  .pt2{font-size:10pt;font-weight:700;color:#0A1628!important;margin:6mm 0 3mm;border-left:2.5pt solid #F59E0B!important;padding-left:3mm}
-  .psub{font-size:7.5pt;color:#64748B!important;margin-bottom:6mm}
+  /* ══ TYPOGRAPHY ══ */
+  .pt1{font-size:14pt;font-weight:800;color:#0A1628!important;margin:0 0 1.5mm}
+  .pt2{font-size:9.5pt;font-weight:700;color:#0A1628!important;margin:5mm 0 2.5mm;border-left:2.5pt solid #F59E0B!important;padding-left:3mm}
+  .psub{font-size:7pt;color:#64748B!important;margin-bottom:5mm}
 
-  /* ── KPI grid ── */
-  .pkpi{display:table;width:100%;border-spacing:3mm;margin-bottom:5mm}
-  .pkpi-cell{display:table-cell;background:#F8FAFC!important;border:1pt solid #E2E8F0!important;border-radius:2mm;padding:4mm;text-align:center;width:25%}
-  .pkpi-val{font-size:20pt;font-weight:900;color:#0A1628!important;line-height:1}
-  .pkpi-lbl{font-size:6pt;color:#64748B!important;text-transform:uppercase;letter-spacing:0.5pt;margin-top:2mm}
+  /* ══ KPI GRID ══ */
+  .pkpi{display:table;width:100%;border-spacing:2.5mm;margin-bottom:4mm}
+  .pkpi-cell{display:table-cell;background:#F8FAFC!important;border:1pt solid #E2E8F0!important;border-top:2.5pt solid #F59E0B!important;border-radius:2mm;padding:4mm 3mm;text-align:center;width:25%}
+  .pkpi-val{font-size:18pt;font-weight:900;color:#0A1628!important;line-height:1}
+  .pkpi-lbl{font-size:5.5pt;color:#64748B!important;text-transform:uppercase;letter-spacing:0.4pt;margin-top:2mm}
 
-  /* ── Success bar ── */
-  .pbar-wrap{background:#E2E8F0!important;height:6pt;border-radius:3pt;margin-bottom:2mm}
-  .pbar-fill{background:#F59E0B!important;height:6pt;border-radius:3pt}
-  .pbar-lbls{display:table;width:100%;font-size:6pt;color:#94A3B8!important;margin-bottom:5mm}
+  /* ══ SUCCESS BAR ══ */
+  .pbar-wrap{background:#E2E8F0!important;height:5pt;border-radius:3pt;margin-bottom:2mm}
+  .pbar-fill{background:#F59E0B!important;height:5pt;border-radius:3pt}
+  .pbar-lbls{display:table;width:100%;font-size:5.5pt;color:#94A3B8!important;margin-bottom:5mm}
   .pbar-l{display:table-cell;text-align:left}
   .pbar-c{display:table-cell;text-align:center;color:#F59E0B!important;font-weight:700}
   .pbar-r{display:table-cell;text-align:right}
 
-  /* ── AI box ── */
-  .pai{background:#FFFBEB!important;border:1pt solid #FDE68A!important;border-radius:2mm;padding:4mm 5mm;margin-bottom:5mm}
-  .pai-hdr{font-size:6pt;font-weight:700;color:#92400E!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:3mm;background:#FEF3C7!important;display:inline-block;padding:1mm 3mm;border-radius:1mm}
-  .pai p{font-size:7.5pt;color:#374151!important;line-height:1.65;margin-bottom:3mm}
+  /* ══ AI SUMMARY BOX ══ */
+  .pai{background:#FFFBEB!important;border:1pt solid #FDE68A!important;border-radius:2mm;padding:4mm 5mm;margin-bottom:4mm}
+  .pai-hdr{font-size:5.5pt;font-weight:700;color:#92400E!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm;background:#FEF3C7!important;display:inline-block;padding:1mm 3mm;border-radius:1mm}
+  .pai p{font-size:7pt;color:#374151!important;line-height:1.6;margin-bottom:2.5mm}
   .pai p:last-child{margin:0}
-  .pai-action{background:#F0FDF4!important;border-left:2pt solid #22C55E!important;padding:3mm 4mm;font-size:7pt;color:#374151!important;margin-top:3mm}
+  .pai-action{background:#F0FDF4!important;border-left:2pt solid #22C55E!important;padding:2.5mm 4mm;font-size:7pt;color:#374151!important;margin-top:2.5mm;line-height:1.5}
   .pai-action b{color:#15803D!important}
 
-  /* ── Assumptions grid ── */
-  .pasm{background:#F8FAFC!important;border-left:2.5pt solid #F59E0B!important;padding:4mm 5mm;margin-top:5mm}
-  .pasm h4{font-size:6.5pt;font-weight:700;color:#0A1628!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:3mm}
-  .pasm-grid{display:table;width:100%;border-spacing:2mm}
-  .pasm-row{display:table-row}
-  .pasm-cell{display:table-cell;font-size:7pt;color:#475569!important;padding:1mm 2mm;width:33.3%}
-  .pasm-cell b{display:block;color:#1E293B!important;font-size:7pt}
+  /* ══ ASSUMPTIONS ══ */
+  .pasm{background:#F8FAFC!important;border-left:2.5pt solid #F59E0B!important;padding:3.5mm 5mm;margin-top:4mm}
+  .pasm h4{font-size:6pt;font-weight:700;color:#0A1628!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm}
+  .pasm-grid{width:100%}
+  .pasm-row{display:table;width:100%}
+  .pasm-cell{display:table-cell;font-size:6.5pt;color:#475569!important;padding:1mm 2mm 1mm 0;width:25%}
+  .pasm-cell b{display:block;color:#1E293B!important;font-size:6.5pt;margin-bottom:0.5mm}
 
-  /* ── Chart image ── */
-  .pchart-img{width:100%;max-height:140mm;object-fit:contain;display:block;margin:0 auto}
-  .pchart-legend{display:table;width:100%;margin-bottom:4mm}
-  .pchart-leg-item{display:table-cell;font-size:7pt;color:#475569!important;padding-right:5mm;white-space:nowrap}
+  /* ══ CHART IMAGE ══ */
+  .pchart-img{width:100%;height:120mm;object-fit:contain;display:block}
+  .pchart-legend{display:table;width:100%;margin-bottom:3mm}
+  .pchart-leg-item{display:table-cell;font-size:6.5pt;color:#475569!important;padding-right:4mm;white-space:nowrap}
 
-  /* ── Bridge section ── */
-  .pbridge{border-left:2.5pt solid #7C3AED!important;background:#FAFAFA!important;padding:4mm 5mm;margin-bottom:5mm}
-  .pbridge-title{font-size:6.5pt;font-weight:700;color:#7C3AED!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:3mm}
-  .pbridge-stats{display:table;width:100%;margin-bottom:4mm}
+  /* ══ BRIDGE BOX ══ */
+  .pbridge{border-left:2.5pt solid #7C3AED!important;background:#FAFAFA!important;padding:4mm 5mm;margin-bottom:4mm}
+  .pbridge-title{font-size:6pt;font-weight:700;color:#7C3AED!important;text-transform:uppercase;letter-spacing:0.5pt;margin-bottom:2.5mm}
+  .pbridge-stats{display:table;width:100%;margin-bottom:3mm}
   .pbridge-stat{display:table-cell;text-align:center;width:50%}
-  .pbridge-val{font-size:18pt;font-weight:900;color:#0A1628!important}
-  .pbridge-lbl{font-size:6.5pt;color:#64748B!important;margin-top:1mm}
-  .pbridge-note{background:#F5F3FF!important;font-size:7.5pt;color:#374151!important;padding:3mm 4mm;border-radius:1mm;line-height:1.6}
+  .pbridge-val{font-size:16pt;font-weight:900;color:#0A1628!important}
+  .pbridge-lbl{font-size:6pt;color:#64748B!important;margin-top:1mm}
+  .pbridge-note{background:#F5F3FF!important;font-size:7pt;color:#374151!important;padding:3mm 4mm;border-radius:1mm;line-height:1.55}
 
-  /* ── Income table ── */
-  .pinc{width:100%;border-collapse:collapse;font-size:8pt;margin-top:3mm}
-  .pinc td{padding:3mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
+  /* ══ INCOME TABLE ══ */
+  .pinc{width:100%;border-collapse:collapse;font-size:8pt;margin-top:2.5mm}
+  .pinc td{padding:2.5mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
   .pinc td:first-child{color:#64748B!important}
-  .pinc tr:last-child td{border-bottom:1.5pt solid #F59E0B!important;font-weight:700;color:#0A1628!important}
+  .pinc tr:last-child td{border-bottom:2pt solid #F59E0B!important;font-weight:700;color:#0A1628!important}
 
-  /* ── Sensitivity table ── */
-  .psens{width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:3mm}
-  .psens th{background:#F8FAFC!important;color:#64748B!important;font-size:6.5pt;text-transform:uppercase;letter-spacing:0.5pt;padding:3mm 4mm;border-bottom:1.5pt solid #E2E8F0!important;text-align:left}
-  .psens td{padding:3mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
-  .psens tr.base-row{background:#FFFBEB!important}
-  .sg{background:#DCFCE7!important;color:#15803D!important;padding:1mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
-  .sb{background:#FEE2E2!important;color:#B91C1C!important;padding:1mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
-  .sm{background:#F1F5F9!important;color:#475569!important;padding:1mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
-  .sbase{background:#FEF9C3!important;color:#854D0E!important;padding:1mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt}
+  /* ══ SENSITIVITY TABLE ══ */
+  .psens{width:100%;border-collapse:collapse;font-size:7.5pt}
+  .psens th{background:#F8FAFC!important;color:#64748B!important;font-size:6pt;text-transform:uppercase;letter-spacing:0.4pt;padding:2.5mm 4mm;border-bottom:1.5pt solid #E2E8F0!important;text-align:left}
+  .psens td{padding:2.5mm 4mm;border-bottom:0.5pt solid #F1F5F9!important;color:#1E293B!important}
+  .psens tr.base-row td{background:#FFFBEB!important}
+  .sg{background:#DCFCE7!important;color:#15803D!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+  .sb{background:#FEE2E2!important;color:#B91C1C!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+  .sm{background:#F1F5F9!important;color:#475569!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
+  .sbase{background:#FEF9C3!important;color:#854D0E!important;padding:0.8mm 2.5mm;border-radius:1mm;font-weight:700;font-size:7pt;white-space:nowrap}
 
-  /* ── Promo banner ── */
-  .ppromo{background:#0A1628!important;border-radius:3mm;padding:7mm 8mm;margin-bottom:6mm}
-  .ppromo h3{font-size:12pt;font-weight:900;color:#F1F5F9!important;margin:0 0 3mm}
-  .ppromo p{font-size:7.5pt;color:#94A3B8!important;line-height:1.6;max-width:130mm;margin-bottom:4mm}
-  .ppromo-grid{display:table;width:100%}
-  .ppromo-feat{display:table-cell;font-size:7pt;color:#CBD5E1!important;padding:1mm 0;width:50%}
-  .ppromo-feat::before{content:'✓  ';color:#F59E0B!important;font-weight:700}
-  .ppromo-url{display:block;text-align:center;margin-top:5mm;background:#F59E0B!important;color:#0A1628!important;padding:3mm 5mm;border-radius:2mm;font-weight:800;font-size:9pt;width:fit-content}
+  /* ══ PROMO BANNER (dark navy box, last page only) ══ */
+  .ppromo-box{background:#0A1628!important;border-radius:3mm;padding:7mm 8mm;margin-bottom:5mm}
+  .ppromo-box h3{font-size:11pt;font-weight:900;color:#F1F5F9!important;margin:0 0 2.5mm}
+  .ppromo-box p{font-size:7pt;color:#94A3B8!important;line-height:1.55;margin-bottom:4mm}
+  /* Features as a 2-column block list */
+  .ppromo-feats{width:100%;border-spacing:0}
+  .ppromo-feat-row{display:table;width:100%;margin-bottom:1.5mm}
+  .ppromo-feat{display:table-cell;font-size:7pt;color:#CBD5E1!important;width:50%;padding:0}
+  .ppromo-feat::before{content:'✓ ';color:#F59E0B!important;font-weight:700}
+  .ppromo-url{display:inline-block;margin-top:4mm;background:#F59E0B!important;color:#0A1628!important;padding:2.5mm 7mm;border-radius:2mm;font-weight:800;font-size:8.5pt}
 
-  /* ── Disclaimer ── */
-  .pdisc{font-size:6.5pt;color:#64748B!important;line-height:1.7}
-  .pdisc h4{font-size:7.5pt;font-weight:700;color:#374151!important;margin:5mm 0 2mm}
+  /* ══ DISCLAIMER ══ */
+  .pdisc{font-size:6pt;color:#64748B!important;line-height:1.7}
+  .pdisc h4{font-size:7pt;font-weight:700;color:#374151!important;margin:4mm 0 1.5mm}
 }
 
 </style>
@@ -685,34 +684,38 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 ═══════════════════════════════════════════ -->
 <div class="print-only" id="printPages">
 
-  <!-- PAGE 1 — COVER (navy full-bleed) -->
-  <div class="ppage pcov" id="printCover" style="position:relative">
-    <div class="pcov-top">
-      <div class="pcov-logo">Fintiq</div>
-      <div class="pcov-sub">fintiq.uk &nbsp;·&nbsp; Professional investing tools for retail investors</div>
-    </div>
-    <div class="pcov-body">
-      <span class="pcov-eyebrow">Personalised Monte Carlo Analysis</span>
-      <div class="pcov-title">UK Pension<br><span>Lifecycle Report</span></div>
-      <div class="pcov-stitle">5,000 simulated retirement scenarios — your personal probability of financial security through retirement.</div>
-      <hr class="pcov-rule">
-      <div class="pcov-meta">
-        <div class="pcov-meta-row">
-          <div class="pcov-meta-cell"><label>Prepared for</label><span id="coverName">—</span></div>
-          <div class="pcov-meta-cell"><label>Date generated</label><span id="coverDate">—</span></div>
-          <div class="pcov-meta-cell"><label>Simulations run</label><span>5,000</span></div>
+  <!-- PAGE 1 — COVER (all-white, gold bar at top) -->
+  <div class="ppage pcov" id="printCover">
+    <div class="pcov-bar"></div>
+    <div class="pcov-inner">
+      <div class="pcov-top">
+        <div class="pcov-logo"><span>Fintiq</span>
+          <div class="pcov-sub">fintiq.uk &nbsp;·&nbsp; Professional investing tools for retail investors</div>
         </div>
       </div>
-    </div>
-    <div class="pcov-foot">
-      For illustrative purposes only. Not financial advice. Fintiq is not authorised or regulated by the FCA. Consult a qualified financial adviser before making pension or investment decisions. &copy; 2026 Fintiq &middot; fintiq.uk
+      <div class="pcov-body">
+        <span class="pcov-eyebrow">Personalised Monte Carlo Analysis</span>
+        <div class="pcov-title">UK Pension<br><span>Lifecycle Report</span></div>
+        <div class="pcov-stitle">5,000 simulated retirement scenarios — your personal probability of financial security through retirement.</div>
+        <hr class="pcov-rule">
+        <div class="pcov-meta">
+          <div class="pcov-meta-row">
+            <div class="pcov-meta-cell"><label>Prepared for</label><span id="coverName">—</span></div>
+            <div class="pcov-meta-cell"><label>Date generated</label><span id="coverDate">—</span></div>
+            <div class="pcov-meta-cell"><label>Simulations run</label><span>5,000</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="pcov-foot">
+        For illustrative purposes only. Not financial advice. Fintiq is not authorised or regulated by the FCA. Consult a qualified financial adviser before making pension or investment decisions. &copy; 2026 Fintiq &middot; fintiq.uk
+      </div>
     </div>
   </div>
 
   <!-- PAGE 2 — EXECUTIVE SUMMARY -->
   <div class="ppage pcon" id="printSummary">
     <div class="phdr">
-      <div class="phdr-left"><div class="phdr-logo">Fintiq</div></div>
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
       <div class="phdr-right">
         <div class="phdr-title">UK Pension Lifecycle Report</div>
         <div class="phdr-name" id="hdrName">—</div>
@@ -748,7 +751,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <!-- PAGE 3 — FAN CHART -->
   <div class="ppage pcon" id="printChartPage">
     <div class="phdr">
-      <div class="phdr-left"><div class="phdr-logo">Fintiq</div></div>
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
       <div class="phdr-right">
         <div class="phdr-title">UK Pension Lifecycle Report</div>
         <div class="phdr-name" id="hdrName2">—</div>
@@ -770,7 +773,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <!-- PAGE 4 — BRIDGE + INCOME BREAKDOWN -->
   <div class="ppage pcon" id="printBridgePage">
     <div class="phdr">
-      <div class="phdr-left"><div class="phdr-logo">Fintiq</div></div>
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
       <div class="phdr-right">
         <div class="phdr-title">UK Pension Lifecycle Report</div>
         <div class="phdr-name" id="hdrName3">—</div>
@@ -805,7 +808,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <!-- PAGE 5 — SENSITIVITY ANALYSIS -->
   <div class="ppage pcon" id="printSensPage">
     <div class="phdr">
-      <div class="phdr-left"><div class="phdr-logo">Fintiq</div></div>
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
       <div class="phdr-right">
         <div class="phdr-title">UK Pension Lifecycle Report</div>
         <div class="phdr-name" id="hdrName4">—</div>
@@ -830,24 +833,19 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <!-- PAGE 6 — FINTIQ PROMO + DISCLAIMER -->
   <div class="ppage pcon" id="printPromo">
     <div class="phdr">
-      <div class="phdr-left"><div class="phdr-logo">Fintiq</div></div>
+      <div class="phdr-left"><div class="phdr-logo"><span>Fin</span>tiq</div></div>
       <div class="phdr-right">
         <div class="phdr-title">UK Pension Lifecycle Report</div>
         <div class="phdr-name" id="hdrName5">—</div>
       </div>
     </div>
     <div class="pt1" style="margin-bottom:5mm">Explore More with Fintiq</div>
-    <div class="ppromo">
+    <div class="ppromo-box">
       <h3>Free Professional Investing Tools</h3>
       <p>Fintiq gives retail investors access to the same analytical tools used by institutional fund managers — completely free. No commission, no hidden fees, no financial advice dressed up as editorial.</p>
-      <div class="ppromo-grid">
-        <div class="ppromo-feat">Multi-factor FTSE 100 stock screener</div>
-        <div class="ppromo-feat">Monte Carlo simulation for stocks</div>
-        <div class="ppromo-feat">Portfolio optimiser (Efficient Frontier)</div>
-        <div class="ppromo-feat">Statistical pairs trading (Z-score)</div>
-        <div class="ppromo-feat">DCF valuation model</div>
-        <div class="ppromo-feat">Technical analysis — RSI, MACD, BB</div>
-      </div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">Multi-factor FTSE 100 stock screener</div><div class="ppromo-feat">Monte Carlo simulation for stocks</div></div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">Portfolio optimiser (Efficient Frontier)</div><div class="ppromo-feat">Statistical pairs trading (Z-score)</div></div>
+      <div class="ppromo-feat-row"><div class="ppromo-feat">DCF valuation model</div><div class="ppromo-feat">Technical analysis — RSI, MACD, Bollinger Bands</div></div>
       <div class="ppromo-url">fintiq.uk &nbsp;·&nbsp; Free, no card required</div>
     </div>
 
@@ -1254,13 +1252,13 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
       },
       scales:{
         x:{
-          grid:{color:'rgba(255,255,255,0.04)'},
+          grid:{color:'rgba(100,116,139,0.12)'},
           ticks:{color:'#64748B',font:{size:11},
             callback:v=>v%5===0?v:''},
           title:{display:true,text:'Age',color:'#64748B',font:{size:11}}
         },
         y:{
-          grid:{color:'rgba(255,255,255,0.04)'},
+          grid:{color:'rgba(100,116,139,0.12)'},
           ticks:{color:'#64748B',font:{size:11},callback:v=>v>=1000?'£'+(v/1000).toFixed(0)+'m':'£'+v+'k'},
           title:{display:true,text:'Pot Value (£)',color:'#64748B',font:{size:11}},
           min:0
@@ -1273,11 +1271,20 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
 
 // ── PDF generation ────────────────────────────────────
 function generatePDF(){
-  // Export canvas to image so it prints properly
+  // Export canvas → img with white background (canvas is transparent by default)
   const canvas = document.getElementById('fanChart');
   if(canvas){
-    try{ document.getElementById('printChartImg').src = canvas.toDataURL('image/png'); }
-    catch(e){}
+    try{
+      // Create an off-screen canvas with white background
+      const offscreen = document.createElement('canvas');
+      offscreen.width = canvas.width;
+      offscreen.height = canvas.height;
+      const ctx = offscreen.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0,0,offscreen.width,offscreen.height);
+      ctx.drawImage(canvas,0,0);
+      document.getElementById('printChartImg').src = offscreen.toDataURL('image/png');
+    }catch(e){ console.warn('Chart export failed',e); }
   }
   window.print();
 }
