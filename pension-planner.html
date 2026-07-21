@@ -247,14 +247,19 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   }
   .ppage:last-child{page-break-after:auto;break-after:auto}
 
-  /* Content pages get consistent padding */
+  /* Content pages */
   .pcon{padding:12mm 16mm 14mm}
+
+  /* Cover: full-page height so footer pins to bottom */
+  .pcov-inner{padding:10mm 16mm 12mm;min-height:289mm;display:flex;flex-direction:column}
+  .pcov-body{flex:1}
+  .pcov-foot{margin-top:auto;border-top:1pt solid #E2E8F0!important;padding-top:4mm;font-size:6pt;color:#94A3B8!important;line-height:1.6}
 
   /* ══ COVER (all-white, gold accent bar at top) ══ */
   .pcov{background:#fff!important;padding:0}
   /* Gold top bar full-width */
   .pcov-bar{background:#F59E0B!important;height:7mm;width:210mm;display:block;margin-bottom:0}
-  .pcov-inner{padding:10mm 16mm 12mm}
+
   .pcov-top{padding:0 0 8mm;border-bottom:none;display:table;width:100%}
   .pcov-logo{font-size:20pt;font-weight:900;color:#0A1628!important;letter-spacing:-0.5pt;display:table-cell;vertical-align:middle}
   .pcov-logo span{color:#F59E0B!important}
@@ -272,7 +277,6 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   .pcov-meta-cell:last-child{border-right:none!important}
   .pcov-meta-cell label{font-size:6pt;color:#94A3B8!important;text-transform:uppercase;letter-spacing:1pt;display:block;margin-bottom:2mm}
   .pcov-meta-cell span{font-size:10pt;font-weight:700;color:#0A1628!important}
-  .pcov-foot{margin-top:60mm;border-top:1pt solid #E2E8F0!important;padding-top:4mm;font-size:6pt;color:#94A3B8!important;line-height:1.6}
 
   /* ══ PAGE HEADER (all content pages) ══ */
   .phdr{border-bottom:1.5pt solid #F59E0B!important;padding-bottom:3mm;margin-bottom:6mm;display:table;width:100%}
@@ -767,7 +771,9 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
       <div class="pchart-leg-item"><span style="display:inline-block;width:2px;height:10px;background:#22C55E;margin-right:4px;vertical-align:middle"></span>Retirement age</div>
       <div class="pchart-leg-item"><span style="display:inline-block;width:2px;height:10px;background:#60A5FA;margin-right:4px;vertical-align:middle"></span>State Pension age</div>
     </div>
-    <img id="printChartImg" src="" class="pchart-img" alt="Pension fan chart">
+    <!-- Hidden canvas: chart is redrawn here with white-friendly colours for PDF -->
+    <canvas id="printChartCanvas" width="860" height="480" style="display:none;position:absolute;left:-9999px"></canvas>
+    <img id="printChartImg" src="" class="pchart-img" alt="Pension fan chart" style="border:1pt solid #E2E8F0">
   </div>
 
   <!-- PAGE 4 — BRIDGE + INCOME BREAKDOWN -->
@@ -895,6 +901,8 @@ function pct(n){ return Math.round(n)+'%'; }
 function percentile(arr,p){ const s=[...arr].sort((a,b)=>a-b); return s[Math.floor(s.length*p)]; }
 
 let fanChartInst = null;
+let printChartInst = null;
+let lastChartData = null; // stores {percs, cAge, lExp, rAge, spAge} for PDF export
 
 // ── Core Monte Carlo ───────────────────────────────────
 function simulate(inputs, N=5000){
@@ -1107,6 +1115,7 @@ function _run(){
 
   // Build fan chart
   buildFanChart(res.percs, cAge, lExp, rAge, spAge);
+  lastChartData = {percs: res.percs, cAge, lExp, rAge, spAge};
 
   // ── Populate print sections ──
   const displayName = name||'Fintiq User';
@@ -1271,22 +1280,97 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
 
 // ── PDF generation ────────────────────────────────────
 function generatePDF(){
-  // Export canvas → img with white background (canvas is transparent by default)
-  const canvas = document.getElementById('fanChart');
-  if(canvas){
-    try{
-      // Create an off-screen canvas with white background
-      const offscreen = document.createElement('canvas');
-      offscreen.width = canvas.width;
-      offscreen.height = canvas.height;
-      const ctx = offscreen.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0,0,offscreen.width,offscreen.height);
-      ctx.drawImage(canvas,0,0);
-      document.getElementById('printChartImg').src = offscreen.toDataURL('image/png');
-    }catch(e){ console.warn('Chart export failed',e); }
+  if(!lastChartData){ window.print(); return; }
+
+  // Destroy previous print chart if any
+  if(printChartInst){ try{ printChartInst.destroy(); }catch(e){} printChartInst = null; }
+
+  const {percs, cAge, lExp, rAge, spAge} = lastChartData;
+  const ages = percs.map((_,i) => cAge+i);
+  const toK = arr => arr.map(v => v/1000);
+
+  // Phase-line plugin for print chart
+  const printPhasePlugin = {
+    id:'printPhases',
+    beforeDraw(chart){
+      const {ctx,chartArea,scales}=chart;
+      if(!chartArea) return;
+      [[rAge,'#16A34A','Retire'],[spAge,'#1D4ED8','State Pension']].forEach(([age,col,lbl])=>{
+        if(age<cAge||age>lExp) return;
+        const x=scales.x.getPixelForValue(age);
+        ctx.save();
+        ctx.beginPath();ctx.moveTo(x,chartArea.top);ctx.lineTo(x,chartArea.bottom);
+        ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.stroke();
+        ctx.font='bold 11px Inter,Arial,sans-serif';ctx.fillStyle=col;ctx.textAlign='left';
+        ctx.fillText(lbl,x+4,chartArea.top+14);
+        ctx.restore();
+      });
+    }
+  };
+
+  const pc = document.getElementById('printChartCanvas');
+  if(pc){
+    // Make visible temporarily so Chart.js can render
+    pc.style.position = 'absolute';
+    pc.style.left = '-9999px';
+    pc.style.top = '0';
+    pc.style.display = 'block';
+    document.body.appendChild(pc);
+
+    printChartInst = new Chart(pc, {
+      type: 'line',
+      data: {
+        labels: ages,
+        datasets: [
+          // Outer band
+          {label:'p10',data:toK(percs.map(p=>p.p10)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+          {label:'p90',data:toK(percs.map(p=>p.p90)),borderColor:'rgba(180,120,0,0.35)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.10)',fill:'-1',tension:0.4},
+          // Inner band
+          {label:'p25',data:toK(percs.map(p=>p.p25)),borderColor:'transparent',pointRadius:0,fill:false,tension:0.4},
+          {label:'p75',data:toK(percs.map(p=>p.p75)),borderColor:'rgba(180,120,0,0.55)',borderWidth:1,pointRadius:0,backgroundColor:'rgba(245,158,11,0.22)',fill:'-1',tension:0.4},
+          // Median — solid amber
+          {label:'Median',data:toK(percs.map(p=>p.p50)),borderColor:'#D97706',borderWidth:2.5,pointRadius:0,fill:false,tension:0.4}
+        ]
+      },
+      options: {
+        responsive: false,
+        animation: false,
+        plugins: { legend:{display:false}, tooltip:{enabled:false} },
+        scales: {
+          x: {
+            grid: {color:'rgba(0,0,0,0.07)'},
+            ticks: {color:'#475569',font:{size:11},callback:v=>v%5===0?v:''},
+            title: {display:true,text:'Age',color:'#475569',font:{size:11}}
+          },
+          y: {
+            grid: {color:'rgba(0,0,0,0.07)'},
+            ticks: {color:'#475569',font:{size:11},callback:v=>v>=1000?'£'+(v/1000).toFixed(0)+'m':'£'+v+'k'},
+            title: {display:true,text:'Pot Value (£)',color:'#475569',font:{size:11}},
+            min: 0
+          }
+        }
+      },
+      plugins: [printPhasePlugin]
+    });
+
+    // Fill white background + draw chart → export as PNG
+    const offscreen = document.createElement('canvas');
+    offscreen.width = pc.width;
+    offscreen.height = pc.height;
+    const ctx2 = offscreen.getContext('2d');
+    ctx2.fillStyle = '#ffffff';
+    ctx2.fillRect(0,0,offscreen.width,offscreen.height);
+    ctx2.drawImage(pc,0,0);
+
+    const img = document.getElementById('printChartImg');
+    img.src = offscreen.toDataURL('image/png');
+
+    // Hide the print canvas again
+    pc.style.display = 'none';
   }
-  window.print();
+
+  // Small delay so img.src has time to load before print dialog opens
+  setTimeout(()=>window.print(), 250);
 }
 
 // ── Employment type toggle ────────────────────────────
