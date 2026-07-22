@@ -297,6 +297,10 @@ footer{background:#060F1A;border-top:1px solid rgba(255,255,255,0.06);padding:40
 </head>
 <body>
 
+<div id="unlockBanner" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:999;background:#16a34a;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:0.95rem;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+  ✅ Payment successful — re-run your simulation below to get your full report
+</div>
+
 <nav>
   <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
   <div class="nav-links">
@@ -1237,23 +1241,38 @@ function populatePrint(d){
 // ─────────────────────────────────────────────
 // UNLOCK PAYWALL
 // ─────────────────────────────────────────────
+let _unlockedUS = false;
+function isValidSessionUS(s){ return s && s.length > 20; }
+function doUnlockUS(){
+  _unlockedUS = true;
+  document.getElementById('paywallBlur').style.filter='none';
+  document.getElementById('paywallBlur').style.pointerEvents='auto';
+  document.getElementById('paywallBlur').style.opacity='1';
+  document.getElementById('paywallOverlay').style.display='none';
+  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:2.99,currency:'USD'});
+  const banner = document.getElementById('unlockBanner');
+  if(banner){ banner.style.display='block'; setTimeout(()=>banner.style.display='none',6000); }
+  document.querySelector('.inputs-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 function unlockAnalysis(){
   const params = new URLSearchParams(window.location.search);
-  if(params.get('unlocked')==='true' || window._unlocked){
-    document.getElementById('paywallBlur').style.filter='none';
-    document.getElementById('paywallBlur').style.pointerEvents='auto';
-    document.getElementById('paywallBlur').style.opacity='1';
-    document.getElementById('paywallOverlay').style.display='none';
-    return;
+  if(isValidSessionUS(params.get('session')) || _unlockedUS){
+    doUnlockUS(); return;
   }
-  const returnUrl = encodeURIComponent(window.location.href + (window.location.search?'&':'?')+'unlocked=true');
   window.location.href = 'https://buy.stripe.com/dRm00jft096m9sc4QYaZi08';
 }
+// Auto-unlock if returning from Stripe with ?session=
+window.addEventListener('load', function(){
+  if(isValidSessionUS(new URLSearchParams(window.location.search).get('session'))) doUnlockUS();
+});
 
 // ─────────────────────────────────────────────
 // PDF GENERATION
 // ─────────────────────────────────────────────
 function generatePDF(){
+  if(!_unlockedUS && !isValidSessionUS(new URLSearchParams(window.location.search).get('session'))){
+    window.location.href='https://buy.stripe.com/dRm00jft096m9sc4QYaZi08'; return;
+  }
   if(!lastChartData){ window.print(); return; }
   if(printChartInst){ try{ printChartInst.destroy(); }catch(e){} printChartInst=null; }
 

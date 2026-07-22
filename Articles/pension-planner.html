@@ -374,6 +374,10 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 </head>
 <body>
 
+<div id="unlockBanner" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:999;background:#16a34a;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:0.95rem;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
+  ✅ Payment successful — re-run your simulation below to get your full report
+</div>
+
 <nav>
   <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
   <div class="nav-links">
@@ -1280,7 +1284,7 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
 
 // ── PDF generation ────────────────────────────────────
 function generatePDF(){
-  if(!_unlocked && new URLSearchParams(window.location.search).get('unlocked')!=='true'){
+  if(!_unlocked && !isValidSession(new URLSearchParams(window.location.search).get('session'))){
     window.location.href='https://buy.stripe.com/6oU4gza8G1DU47S5V2aZi07'; return;
   }
   if(!lastChartData){ window.print(); return; }
@@ -1474,15 +1478,12 @@ function joinWaitlist(){
 
 // ── Paywall unlock ────────────────────────────────────
 let _unlocked = false;
+function isValidSession(s){ return s && s.length > 20; }
 function unlockAnalysis(){
-  // TODO: Redirect to Stripe payment link at app.fintiq.uk/pension-report-pay
-  // On successful payment, Stripe redirects back with ?unlocked=true
-  // For now: check URL param or simulate
   const params = new URLSearchParams(window.location.search);
-  if(params.get('unlocked')==='true'||_unlocked){
+  if(isValidSession(params.get('session')) || _unlocked){
     doUnlock();
   } else {
-    // Redirect to Stripe — replace URL below with real Stripe payment link
     window.location.href = 'https://buy.stripe.com/6oU4gza8G1DU47S5V2aZi07';
   }
 }
@@ -1493,11 +1494,15 @@ function doUnlock(){
   document.getElementById('paywallBlur').style.opacity='1';
   document.getElementById('paywallBlur').style.pointerEvents='auto';
   document.getElementById('pdfSection').style.display='block';
-  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:1.99});
+  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:1.99,currency:'GBP'});
+  // Show success message and scroll to form
+  const banner = document.getElementById('unlockBanner');
+  if(banner){ banner.style.display='block'; setTimeout(()=>banner.style.display='none',6000); }
+  document.querySelector('.inputs-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
-// Auto-unlock if returning from Stripe with ?unlocked=true
+// Auto-unlock if returning from Stripe with ?session=
 window.addEventListener('load',function(){
-  if(new URLSearchParams(window.location.search).get('unlocked')==='true') doUnlock();
+  if(isValidSession(new URLSearchParams(window.location.search).get('session'))) doUnlock();
 });
 </script>
 
