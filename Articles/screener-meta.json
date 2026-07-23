@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-07-23T15:15:44Z",
+  "generated_date": "23 Jul 2026",
+  "lookback_years": 2,
+  "lookback_days": 504,
+  "universe": "US Equities (S&P 500 + NASDAQ 100 + Dow 30)",
+  "universe_count": 503,
+  "green_count": 12,
+  "amber_count": 225,
+  "red_count": 266,
+  "median_alpha": -1.77,
+  "factor_model": "Fama-French 4-Factor (Mkt · SMB · HML · MOM)",
+  "data_source": "Kenneth French Data Library + Yahoo Finance",
+  "alpha_hurdle": "p < 0.05 (95% confidence) for green; p < 0.15 for amber"
+}

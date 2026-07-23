@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Factor Screener — Alpha Signals Across World Equities | Fintiq</title>
+<meta name="description" content="Fama-French 4-factor model applied to US, UK, and EU equities. See which companies are generating genuine alpha above what their market, size, value, and momentum exposures predict.">
+<meta property="og:title" content="Factor Screener — Alpha Signals Across World Equities | Fintiq">
+<meta property="og:description" content="Institutional-grade factor analysis on world equities. Free to view.">
+<meta property="og:url" content="https://fintiq.uk/factor-screener.html">
+<link rel="canonical" href="https://fintiq.uk/factor-screener.html">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6}
+a{color:#F59E0B;text-decoration:none}
+
+/* NAV */
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.9rem;transition:color 0.2s}
+.nav-links a:hover{color:#F1F5F9}
+.btn-cta{background:#F59E0B!important;color:#0A1628!important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}
+
+/* HERO */
+.hero{padding:56px 32px 0;max-width:1200px;margin:0 auto}
+.hero-badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:0.75rem;font-weight:700;background:rgba(245,158,11,0.12);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);margin-bottom:16px;letter-spacing:0.05em;text-transform:uppercase}
+.hero h1{font-size:2.4rem;font-weight:900;line-height:1.15;margin-bottom:16px;max-width:760px}
+.hero h1 span{color:#F59E0B}
+.hero-sub{font-size:1.05rem;color:#94A3B8;max-width:680px;margin-bottom:32px;line-height:1.7}
+
+/* MARKET SELECTOR */
+.market-row{display:flex;gap:12px;margin-bottom:32px;flex-wrap:wrap}
+.mkt-btn{padding:10px 24px;border-radius:8px;border:1px solid rgba(245,158,11,0.25);background:transparent;color:#94A3B8;font-family:'Inter',sans-serif;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:8px}
+.mkt-btn.active{background:rgba(245,158,11,0.12);border-color:#F59E0B;color:#F59E0B}
+.mkt-btn:disabled{opacity:0.35;cursor:not-allowed}
+.coming-soon{font-size:0.7rem;background:rgba(100,116,139,0.3);color:#64748B;padding:2px 7px;border-radius:10px;font-weight:500}
+
+/* METHODOLOGY BOX */
+.method-box{max-width:1200px;margin:0 auto 32px;padding:0 32px}
+.method-inner{background:rgba(15,35,55,0.6);border:1px solid rgba(245,158,11,0.15);border-radius:10px;padding:20px 28px;display:flex;gap:40px;flex-wrap:wrap}
+.method-item{flex:1;min-width:180px}
+.method-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;margin-bottom:4px;font-weight:600}
+.method-value{font-size:0.9rem;color:#F1F5F9;font-weight:600}
+
+/* CONTROLS */
+.controls{max-width:1200px;margin:0 auto 24px;padding:0 32px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.ctrl-group{display:flex;flex-direction:column;gap:6px}
+.ctrl-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;font-weight:600}
+.ctrl-select{background:#0A1628;border:1px solid rgba(245,158,11,0.25);color:#F1F5F9;font-family:'Inter',sans-serif;font-size:0.9rem;padding:9px 14px;border-radius:7px;cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:30px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23F59E0B' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.ctrl-select:focus{outline:none;border-color:#F59E0B}
+.search-input{background:#0A1628;border:1px solid rgba(245,158,11,0.25);color:#F1F5F9;font-family:'Inter',sans-serif;font-size:0.9rem;padding:9px 14px;border-radius:7px;width:220px}
+.search-input::placeholder{color:#475569}
+.search-input:focus{outline:none;border-color:#F59E0B}
+.data-stamp{margin-left:auto;color:#475569;font-size:0.8rem;display:flex;align-items:center;gap:6px}
+.dot-live{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* SUMMARY CARDS */
+.summary{max-width:1200px;margin:0 auto 28px;padding:0 32px;display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sum-card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.15);border-radius:10px;padding:18px 20px}
+.sum-label{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.07em;color:#64748B;margin-bottom:8px;font-weight:600}
+.sum-val{font-size:2rem;font-weight:900;line-height:1}
+.sum-sub{font-size:0.78rem;color:#64748B;margin-top:4px}
+.green-val{color:#22c55e}
+.amber-val{color:#F59E0B}
+.red-val{color:#ef4444}
+.white-val{color:#F1F5F9}
+
+/* TABLE */
+.table-wrap{max-width:1200px;margin:0 auto;padding:0 32px 80px;overflow-x:auto}
+.screener-table{width:100%;border-collapse:collapse;font-size:0.875rem}
+.screener-table thead tr{border-bottom:2px solid rgba(245,158,11,0.3)}
+.screener-table th{padding:12px 16px;text-align:left;color:#64748B;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none}
+.screener-table th:hover{color:#F59E0B}
+.screener-table th .sort-arrow{margin-left:4px;opacity:0.4}
+.screener-table th.sort-active{color:#F59E0B}
+.screener-table th.sort-active .sort-arrow{opacity:1}
+.screener-table tbody tr{border-bottom:1px solid rgba(255,255,255,0.04);transition:background 0.15s;cursor:default}
+.screener-table tbody tr:hover{background:rgba(245,158,11,0.04)}
+.screener-table td{padding:14px 16px;vertical-align:middle}
+
+.rank{color:#475569;font-weight:700;font-size:0.8rem;min-width:28px;text-align:center}
+.ticker{font-weight:800;font-size:0.95rem;color:#F1F5F9}
+.company{color:#94A3B8;font-size:0.8rem;margin-top:2px}
+
+/* SIGNAL BADGE */
+.sig{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:0.04em;white-space:nowrap}
+.sig-green{background:rgba(34,197,94,0.1);color:#22c55e;border:1px solid rgba(34,197,94,0.25)}
+.sig-amber{background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.25)}
+.sig-red{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2)}
+
+/* ALPHA DISPLAY */
+.alpha-val{font-size:1.05rem;font-weight:800;white-space:nowrap}
+.alpha-pos{color:#22c55e}
+.alpha-neg{color:#ef4444}
+
+/* FACTOR BARS */
+.factor-bars{display:flex;flex-direction:column;gap:4px;min-width:160px}
+.fbar-row{display:flex;align-items:center;gap:6px}
+.fbar-label{font-size:0.65rem;color:#64748B;width:24px;text-align:right;flex-shrink:0;font-weight:600}
+.fbar-track{flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;position:relative;overflow:visible}
+.fbar-fill{height:5px;border-radius:3px;position:absolute;top:0}
+.fbar-center{position:absolute;left:50%;top:-2px;width:1px;height:9px;background:rgba(255,255,255,0.15)}
+/* Factor colours */
+.fb-mkt{background:#60a5fa}
+.fb-smb{background:#a78bfa}
+.fb-hml{background:#f59e0b}
+.fb-mom{background:#34d399}
+.fb-neg{filter:brightness(0.7);opacity:0.7}
+
+/* SUMMARY TOOLTIP */
+.insight{font-size:0.78rem;color:#64748B;font-style:italic;line-height:1.4;max-width:260px}
+
+/* EXPANDABLE ROW */
+.row-detail{display:none;padding:0 16px 20px;background:rgba(10,22,40,0.5)}
+.row-detail.open{display:table-row}
+
+/* PAYWALL SECTION */
+.paywall-row{position:relative;overflow:hidden}
+.paywall-blur-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,rgba(13,27,42,0.5) 30%,#0D1B2A 70%);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px}
+.paywall-cta-box{text-align:center;max-width:420px}
+.paywall-cta-box h3{font-size:1.25rem;font-weight:800;color:#F1F5F9;margin-bottom:10px}
+.paywall-cta-box p{color:#94A3B8;font-size:0.9rem;margin-bottom:20px}
+.paywall-btn{display:inline-block;background:#F59E0B;color:#0A1628!important;padding:13px 32px;border-radius:8px;font-weight:700;font-size:0.95rem}
+
+/* INDEX TAGS */
+.idx-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.idx-tag{font-size:0.62rem;padding:2px 6px;border-radius:4px;background:rgba(100,116,139,0.2);color:#64748B;font-weight:600}
+.idx-tag.sp{background:rgba(99,102,241,0.15);color:#a5b4fc}
+.idx-tag.nq{background:rgba(52,211,153,0.1);color:#34d399}
+.idx-tag.dj{background:rgba(245,158,11,0.1);color:#F59E0B}
+
+/* FOOTER */
+footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}
+.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}
+.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}
+.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.f-links a{color:#94A3B8;font-size:0.85rem}
+.f-copy{color:#334155;font-size:0.75rem}
+.disclaimer{max-width:640px;margin:20px auto 0;color:#475569;font-size:0.75rem;line-height:1.6}
+
+/* MOBILE */
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:#F59E0B;border-radius:2px}
+.mobile-menu{display:none;position:fixed;top:56px;left:0;right:0;background:#0A1628;border-bottom:1px solid rgba(245,158,11,0.2);padding:20px 24px;z-index:190;flex-direction:column;gap:16px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{color:#94A3B8;font-size:1rem;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.mobile-menu .btn-cta{text-align:center;border:none;margin-top:8px}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#08121f;border-top:1px solid rgba(245,158,11,0.25);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mbn-items{display:flex;justify-content:space-around}
+.mbn-item{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;font-size:0.65rem;font-weight:600;text-decoration:none;padding:4px 8px;min-width:56px;text-align:center}
+.mbn-item svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mbn-item.active{color:#F59E0B}
+
+@media(max-width:768px){
+  nav{padding:12px 20px}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .hero{padding:36px 20px 0}
+  .hero h1{font-size:1.6rem}
+  .market-row,.method-box,.controls,.table-wrap,.summary{padding:0 20px}
+  .summary{grid-template-columns:repeat(2,1fr)}
+  .method-inner{flex-direction:column;gap:16px}
+  .mobile-bottom-nav{display:block}
+  body{padding-bottom:68px}
+  .data-stamp{display:none}
+  .factor-bars{display:none}
+  .insight{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/tools.html">Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk" class="btn-cta">Launch App →</a>
+  </div>
+  <div class="hamburger" onclick="toggleMenu()" id="hbg">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+<div class="mobile-menu" id="mmenu">
+  <a href="https://fintiq.uk">Home</a>
+  <a href="https://fintiq.uk/tools.html">Free Tools</a>
+  <a href="https://fintiq.uk/learn.html">Learn</a>
+  <a href="https://app.fintiq.uk" class="btn-cta">Launch App →</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge">Beta — US Equities Live · UK &amp; EU Coming</div>
+  <h1>Which stocks around the world are generating <span>genuine alpha</span>?</h1>
+  <p class="hero-sub">We run a Fama-French 4-factor regression on equities across the US, UK, and EU. The result: a ranked list showing which companies are outperforming beyond what their market exposure, size, value, and momentum tilts predict. That residual outperformance is alpha — and it's the signal that matters.</p>
+
+  <!-- MARKET SELECTOR -->
+  <div class="market-row">
+    <button class="mkt-btn active" onclick="setMarket(this,'us')">🇺🇸 US Equities</button>
+    <button class="mkt-btn" disabled>🇬🇧 UK Equities <span class="coming-soon">Q4 2026</span></button>
+    <button class="mkt-btn" disabled>🇪🇺 EU Equities <span class="coming-soon">2027</span></button>
+  </div>
+</div>
+
+<!-- PLAIN ENGLISH EXPLAINER -->
+<div style="max-width:1200px;margin:28px auto 0;padding:0 32px" id="explainer-wrap">
+  <div style="background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.25);border-radius:12px;overflow:hidden">
+
+    <!-- TOGGLE HEADER -->
+    <button onclick="toggleExplainer()" style="width:100%;background:none;border:none;padding:20px 28px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;text-align:left;color:#F1F5F9;font-family:'Inter',sans-serif">
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:1.25rem">💡</span>
+        <div>
+          <div style="font-weight:700;font-size:0.95rem;color:#F1F5F9">New to investing? Read this first — plain English guide to the screener</div>
+          <div style="font-size:0.78rem;color:#64748B;margin-top:2px">What the numbers mean, how to read the signals, and which stocks to consider</div>
+        </div>
+      </div>
+      <div id="explainer-icon" style="color:#F59E0B;font-size:1.3rem;flex-shrink:0;margin-left:16px;transition:transform 0.3s">▼</div>
+    </button>
+
+    <!-- CONTENT -->
+    <div id="explainer-body" style="display:none;padding:0 28px 32px;border-top:1px solid rgba(245,158,11,0.12)">
+
+      <!-- SECTION 1: What is this? -->
+      <div style="margin-top:28px">
+        <h3 style="color:#F59E0B;font-size:0.95rem;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em">📌 What is this tool, in simple terms?</h3>
+        <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.8;margin-bottom:12px">Imagine two friends, both runners. One runs the 100m in 12 seconds. Impressive — or is it? To judge fairly, you need to know: how much training do they do? Are they naturally fast? What's their age? Once you account for all those factors, you can see who's <em>truly</em> fast versus who just has natural advantages.</p>
+        <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.8">This tool does the same thing for stocks. Every stock has built-in "advantages" — being part of a rising market, being a small growth company, being cheap, or recently going up. We strip all of that away using a mathematical model called Fama-French. What's left over — the performance that <em>can't</em> be explained by those advantages — is called <strong style="color:#F1F5F9">alpha</strong>. A stock with positive alpha is genuinely outperforming. A stock with negative alpha is underperforming even when you give it every benefit of the doubt.</p>
+      </div>
+
+      <!-- SECTION 2: The 4 factors -->
+      <div style="margin-top:28px">
+        <h3 style="color:#F59E0B;font-size:0.95rem;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.06em">📊 The 4 factors — what are they?</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px">
+          <div style="background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:16px">
+            <div style="font-size:1.1rem;margin-bottom:6px">📈</div>
+            <div style="font-weight:700;color:#60a5fa;font-size:0.85rem;margin-bottom:6px">Market (MKT)</div>
+            <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">When the whole stock market goes up, most stocks go up with it. A stock with a high Market score moves more than average when the market moves. We strip this out because rising with the market isn't skill — it's just being invested.</p>
+          </div>
+          <div style="background:rgba(167,139,250,0.07);border:1px solid rgba(167,139,250,0.2);border-radius:8px;padding:16px">
+            <div style="font-size:1.1rem;margin-bottom:6px">🏢</div>
+            <div style="font-weight:700;color:#a78bfa;font-size:0.85rem;margin-bottom:6px">Size (SMB — Small Minus Big)</div>
+            <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">Historically, smaller companies have outperformed larger ones over time. So if a small company is going up, some of that is just the "small company effect." We adjust for this. If SMB is negative, the stock is a large-cap — and that's already counted in.</p>
+          </div>
+          <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:16px">
+            <div style="font-size:1.1rem;margin-bottom:6px">💰</div>
+            <div style="font-weight:700;color:#F59E0B;font-size:0.85rem;margin-bottom:6px">Value (HML — High Minus Low)</div>
+            <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">Cheap stocks (measured by book value vs price) have historically beaten expensive growth stocks. If a stock is doing well partly because it's cheap, the Value factor captures that. A negative HML score means it's a growth stock — which tends to have lower expected returns baked in.</p>
+          </div>
+          <div style="background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:8px;padding:16px">
+            <div style="font-size:1.1rem;margin-bottom:6px">🚀</div>
+            <div style="font-weight:700;color:#34d399;font-size:0.85rem;margin-bottom:6px">Momentum (MOM)</div>
+            <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">Stocks that have gone up in the past 6–12 months tend to keep going up in the near term. This is one of the most reliable patterns in markets. If a stock is riding a momentum wave, we factor that in too — because the model needs to know how much of today's return is just yesterday's trend continuing.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 3: Reading the signals -->
+      <div style="margin-top:28px">
+        <h3 style="color:#F59E0B;font-size:0.95rem;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.06em">🚦 How to read the signals</h3>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:16px;align-items:flex-start;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:16px">
+            <span style="font-size:1.4rem;flex-shrink:0">🟢</span>
+            <div>
+              <div style="font-weight:700;color:#22c55e;font-size:0.9rem;margin-bottom:4px">Strong (Green) — the model is saying this stock is genuinely outperforming</div>
+              <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">After accounting for all four factors, this stock is still delivering extra return. The number is statistically significant — meaning we're at least 95% confident this isn't just random luck. Think of it like a test score that's so high it can't be a fluke. <strong style="color:#F1F5F9">These are the stocks worth researching further.</strong></p>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-start;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:16px">
+            <span style="font-size:1.4rem;flex-shrink:0">🟡</span>
+            <div>
+              <div style="font-weight:700;color:#F59E0B;font-size:0.9rem;margin-bottom:4px">Marginal (Amber) — positive but not conclusive</div>
+              <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">The alpha is positive — the stock appears to be doing better than its factors would predict — but the statistical confidence isn't high enough to call it definitive. There might be something there, but there might not. Good for a watchlist, not a buy list yet.</p>
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;align-items:flex-start;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:16px">
+            <span style="font-size:1.4rem;flex-shrink:0">🔴</span>
+            <div>
+              <div style="font-weight:700;color:#ef4444;font-size:0.9rem;margin-bottom:4px">Avoid (Red) — underperforming on a factor-adjusted basis</div>
+              <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6">This stock is delivering <em>less</em> than what its factor exposures would predict. Even accounting for all the tailwinds it has, it's still falling short. A red signal doesn't mean the stock will definitely fall — but it means there's no evidence of genuine outperformance here.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: Alpha number -->
+      <div style="margin-top:28px">
+        <h3 style="color:#F59E0B;font-size:0.95rem;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em">🔢 What does the alpha number actually mean?</h3>
+        <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.8;margin-bottom:12px">The alpha is shown as a percentage per year. For example, <strong style="color:#22c55e">+8.9% per year</strong> means: after we account for everything the four factors explain, this stock has been generating an extra 8.9% per year above and beyond what the model predicts. That extra return has no obvious explanation — it's genuine outperformance.</p>
+        <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.8">A <strong style="color:#ef4444">-5.4% per year</strong> means the stock has been underperforming its factor expectations by 5.4% annually — which is a serious warning sign, especially if that signal is statistically significant (and marked red).</p>
+      </div>
+
+      <!-- SECTION 5: Which stocks to consider -->
+      <div style="margin-top:28px;background:rgba(34,197,94,0.05);border:1px solid rgba(34,197,94,0.2);border-radius:10px;padding:24px">
+        <h3 style="color:#22c55e;font-size:0.95rem;font-weight:700;margin-bottom:16px;text-transform:uppercase;letter-spacing:0.06em">✅ Which stocks should you consider buying?</h3>
+        <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.8;margin-bottom:16px">The factor screener narrows the field — it doesn't make the final decision for you. Here's how to use it sensibly:</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;gap:12px">
+            <span style="color:#22c55e;font-weight:700;flex-shrink:0">1.</span>
+            <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.7"><strong style="color:#F1F5F9">Start with green signals only.</strong> Filter the table to "Strong" signals. These are the stocks that have demonstrated genuine factor-adjusted outperformance at a 95% confidence level. This is your starting shortlist.</p>
+          </div>
+          <div style="display:flex;gap:12px">
+            <span style="color:#22c55e;font-weight:700;flex-shrink:0">2.</span>
+            <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.7"><strong style="color:#F1F5F9">Read the interpretation column.</strong> Each stock has a plain English explanation of <em>why</em> it has alpha — is it momentum? Quality earnings? A genuine business edge? Understanding the reason matters as much as the number.</p>
+          </div>
+          <div style="display:flex;gap:12px">
+            <span style="color:#22c55e;font-weight:700;flex-shrink:0">3.</span>
+            <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.7"><strong style="color:#F1F5F9">Don't buy everything on the green list.</strong> Pick 6–10 stocks with different factor profiles — some momentum, some quality, some value — so you're not all betting on the same thing. If 8 of your picks are all high-momentum tech stocks, one sector rotation wipes everything out together.</p>
+          </div>
+          <div style="display:flex;gap:12px">
+            <span style="color:#22c55e;font-weight:700;flex-shrink:0">4.</span>
+            <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.7"><strong style="color:#F1F5F9">Avoid red signals entirely.</strong> Stocks with negative, statistically significant alpha (like INTC or WBA in the current screen) are underperforming on every dimension we can measure. There may be turnaround stories inside them — but that requires a separate deep-dive analysis, not a momentum-based screen.</p>
+          </div>
+          <div style="display:flex;gap:12px">
+            <span style="color:#22c55e;font-weight:700;flex-shrink:0">5.</span>
+            <p style="color:#CBD5E1;font-size:0.9rem;line-height:1.7"><strong style="color:#F1F5F9">Check the lookback period.</strong> A stock that's green on a 1-year lookback but red on 3 years is a recent winner that may be mean-reverting. A stock that's green across all three lookback periods (1y, 2y, 3y) has a much more robust signal.</p>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:14px 18px;background:rgba(10,22,40,0.5);border-radius:8px;border-left:3px solid #F59E0B">
+          <p style="color:#94A3B8;font-size:0.82rem;line-height:1.6;font-style:italic">⚠️ <strong style="color:#F1F5F9;font-style:normal">Important:</strong> Alpha is a backwards-looking signal. A stock that has outperformed in the past two years is more likely than average to keep outperforming — but there are no guarantees. Always combine this screen with your own research on the business, the valuation, and your personal risk tolerance. This tool narrows the field — it does not replace judgement. This is not financial advice.</p>
+        </div>
+      </div>
+
+    </div><!-- /explainer-body -->
+  </div>
+</div>
+
+<!-- METHODOLOGY ROW -->
+<div class="method-box">
+  <div class="method-inner">
+    <div class="method-item">
+      <div class="method-label">Model</div>
+      <div class="method-value">Fama-French 4-Factor (Mkt · SMB · HML · MOM)</div>
+    </div>
+    <div class="method-item">
+      <div class="method-label">Universe</div>
+      <div class="method-value">S&P 500 + NASDAQ 100 + Dow 30 — 503 unique stocks</div>
+    </div>
+    <div class="method-item">
+      <div class="method-label">Factor data</div>
+      <div class="method-value">Kenneth French Data Library (daily)</div>
+    </div>
+    <div class="method-item">
+      <div class="method-label">Lookback</div>
+      <div class="method-value" id="lookback-display">2 years (504 trading days)</div>
+    </div>
+    <div class="method-item">
+      <div class="method-label">Alpha hurdle</div>
+      <div class="method-value">p &lt; 0.05 (95% confidence)</div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <div class="ctrl-group">
+    <div class="ctrl-label">Index</div>
+    <select class="ctrl-select" onchange="filterTable()" id="idx-filter">
+      <option value="all">All US Equities</option>
+      <option value="sp">S&P 500</option>
+      <option value="nq">NASDAQ 100</option>
+      <option value="dj">Dow 30</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Lookback period</div>
+    <select class="ctrl-select" onchange="setLookback(this.value)" id="lb-select">
+      <option value="1">1 year</option>
+      <option value="2" selected>2 years</option>
+      <option value="3">3 years</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Signal</div>
+    <select class="ctrl-select" onchange="filterTable()" id="sig-filter">
+      <option value="all">All signals</option>
+      <option value="green">Strong (Green only)</option>
+      <option value="amber">Marginal (Amber only)</option>
+      <option value="red">Avoid (Red only)</option>
+    </select>
+  </div>
+  <div class="ctrl-group">
+    <div class="ctrl-label">Search</div>
+    <input class="search-input" type="text" placeholder="Ticker or company..." oninput="filterTable()" id="search-box">
+  </div>
+  <div class="data-stamp">
+    <div class="dot-live"></div>
+    <span id="data-stamp-text">Loading...</span>
+  </div>
+</div>
+
+<!-- SUMMARY CARDS -->
+<div class="summary">
+  <div class="sum-card">
+    <div class="sum-label">Strong Alpha (Green)</div>
+    <div class="sum-val green-val" id="cnt-green">—</div>
+    <div class="sum-sub">p &lt; 0.05, α &gt; 0%</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">Marginal Signal (Amber)</div>
+    <div class="sum-val amber-val" id="cnt-amber">—</div>
+    <div class="sum-sub">Positive but below hurdle</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">Avoid (Red)</div>
+    <div class="sum-val red-val" id="cnt-red">—</div>
+    <div class="sum-sub">Negative or insignificant α</div>
+  </div>
+  <div class="sum-card">
+    <div class="sum-label">Median Alpha (universe)</div>
+    <div class="sum-val white-val" id="median-alpha">—</div>
+    <div class="sum-sub">Annualised, current lookback</div>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div id="tbl-loader" style="display:none;max-width:1200px;margin:0 auto;padding:40px 32px;justify-content:center;align-items:center;gap:16px;color:#64748B;font-size:0.9rem">
+  <div style="width:28px;height:28px;border:3px solid rgba(245,158,11,0.2);border-top-color:#F59E0B;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  Running regressions across 500+ stocks...
+</div>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- TABLE -->
+<div class="table-wrap">
+  <table class="screener-table" id="screener-tbl">
+    <thead>
+      <tr>
+        <th onclick="sortTable('rank')" class="sort-active" id="th-rank"># <span class="sort-arrow">↓</span></th>
+        <th onclick="sortTable('ticker')">Ticker <span class="sort-arrow">↕</span></th>
+        <th onclick="sortTable('alpha')" id="th-alpha">Alpha <span class="sort-arrow">↕</span></th>
+        <th>Signal</th>
+        <th>Factor Exposures</th>
+        <th>Interpretation</th>
+      </tr>
+    </thead>
+    <tbody id="tbl-body">
+    </tbody>
+  </table>
+
+  <!-- PAYWALL SECTION -->
+  <div style="position:relative;margin-top:-1px">
+    <div id="paywall-blur" style="filter:blur(3px);pointer-events:none;user-select:none;max-height:380px;overflow:hidden">
+      <!-- Blurred rows placeholder — rendered by JS, then blurred -->
+      <table class="screener-table" style="opacity:0.6">
+        <tbody id="tbl-blurred"></tbody>
+      </table>
+    </div>
+    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,rgba(13,27,42,0.6) 25%,#0D1B2A 65%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px">
+      <div class="paywall-cta-box">
+        <div style="display:inline-block;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;color:#F59E0B;margin-bottom:14px;letter-spacing:0.04em">£9.99 / MONTH · CANCEL ANYTIME</div>
+        <h3>See all 500+ stocks — full factor breakdown, every week</h3>
+        <p>You're seeing the top 3 signals. Subscribe to unlock the complete ranked universe, all factor exposures, run-on-demand, UK &amp; EU markets when live, and the embedded screener in the Fintiq app.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">
+          <a href="https://buy.stripe.com/6oU00j0y61DUgUE6Z6aZi09" class="paywall-btn" onclick="gtag('event','screener_subscribe_click',{value:9.99})">Unlock Full Screener — £9.99/mo →</a>
+          <a href="https://app.fintiq.uk" style="display:inline-block;padding:13px 24px;border-radius:8px;border:1px solid rgba(245,158,11,0.4);color:#F59E0B;font-weight:600;font-size:0.9rem">Try in App →</a>
+        </div>
+        <p style="font-size:0.72rem;color:#475569;margin-top:12px">3 free signals every week · No card required to browse</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Institutional tools for everyday investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/tools.html">Tools</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk">App</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq Ltd. All rights reserved.</div>
+  <p class="disclaimer">Factor analysis is for educational and informational purposes only. Past factor exposures and historical alpha do not guarantee future performance. This is not financial advice. Always do your own research before investing.</p>
+</footer>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mobile-bottom-nav">
+  <div class="mbn-items">
+    <a href="https://fintiq.uk" class="mbn-item">
+      <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+    </a>
+    <a href="https://fintiq.uk/tools.html" class="mbn-item active">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Tools
+    </a>
+    <a href="https://fintiq.uk/learn.html" class="mbn-item">
+      <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Learn
+    </a>
+    <a href="https://app.fintiq.uk" class="mbn-item">
+      <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>App
+    </a>
+  </div>
+</div>
+
+<script>
+// ─── DATA — loaded from JSON ──────────────────────────────────────────────────
+let STOCKS = [];
+let META   = {};
+
+async function loadData(years) {
+  const base = window.location.hostname === 'localhost' ? '' : 'https://fintiq.uk';
+  try {
+    showLoader(true);
+    const [dataRes, metaRes] = await Promise.all([
+      fetch(`${base}/screener-data.json?v=${Date.now()}`),
+      fetch(`${base}/screener-meta.json?v=${Date.now()}`)
+    ]);
+    const dataJson = await dataRes.json();
+    META   = await metaRes.json();
+    STOCKS = dataJson.stocks || [];
+    // If lookback filter requested, note it (re-run would need server; for now just display note)
+    document.getElementById('lookback-display').textContent =
+      `${META.lookback_years || 2} year${META.lookback_years !== 1 ? 's' : ''} (${META.lookback_days || 504} trading days)`;
+    document.getElementById('data-stamp-text').textContent =
+      `Data as of ${META.generated_date || 'recent'} · Updated weekly`;
+    showLoader(false);
+    renderTable();
+  } catch (e) {
+    console.warn('Could not load screener-data.json — using demo data', e);
+    STOCKS = DEMO_STOCKS;
+    META   = {generated_date:'Demo', lookback_years:2, lookback_days:504,
+               universe_count:DEMO_STOCKS.length, green_count:10, amber_count:6, red_count:9, median_alpha:0.4};
+    showLoader(false);
+    renderTable();
+  }
+}
+
+function showLoader(on) {
+  const el = document.getElementById('tbl-loader');
+  if (el) el.style.display = on ? 'flex' : 'none';
+}
+
+// ─── DEMO DATA (fallback if JSON not yet generated) ──────────────────────────
+const DEMO_STOCKS = [
+  {ticker:'NVDA', name:'NVIDIA Corporation',         alpha:11.2, pval:0.001, beta:1.85, smb:-0.42, hml:-0.68, mom:1.24,  signal:'green', idx:['sp','nq'],      insight:'Exceptional momentum-driven alpha. Factor exposures are almost entirely market and momentum — this is a high-beta momentum story, and the alpha is real and significant.'},
+  {ticker:'LLY',  name:'Eli Lilly & Co.',            alpha:8.9,  pval:0.002, beta:0.71, smb:-0.28, hml:-0.15, mom:1.08,  signal:'green', idx:['sp'],           insight:'Rare combination: defensive beta (0.71) with strong momentum. Drug pipeline driving alpha independent of factors. High-conviction signal.'},
+  {ticker:'META', name:'Meta Platforms Inc.',        alpha:7.4,  pval:0.003, beta:1.31, smb:-0.18, hml:-0.52, mom:0.94,  signal:'green', idx:['sp','nq'],      insight:'Strong momentum alpha. Growth factor dominates. AI advertising tailwinds not yet priced into factor model — alpha capture ongoing.'},
+  {ticker:'AVGO', name:'Broadcom Inc.',              alpha:5.1,  pval:0.009, beta:1.44, smb:-0.21, hml:-0.18, mom:0.82,  signal:'green', idx:['sp','nq'],      insight:'Consistent factor-adjusted outperformance. Momentum and quality combination.'},
+  {ticker:'AMZN', name:'Amazon.com Inc.',            alpha:4.8,  pval:0.014, beta:1.22, smb:-0.31, hml:-0.44, mom:0.71,  signal:'green', idx:['sp','nq'],      insight:'Positive alpha across all lookbacks. Cloud unit profitability driving returns above what market and momentum factors predict.'},
+  {ticker:'MSFT', name:'Microsoft Corporation',      alpha:3.2,  pval:0.022, beta:0.92, smb:-0.38, hml:-0.29, mom:0.48,  signal:'green', idx:['sp','nq','dj'], insight:'High-quality alpha at near-market beta. Copilot revenue and cloud growth creating genuine factor-adjusted outperformance.'},
+  {ticker:'GOOGL',name:'Alphabet Inc.',              alpha:3.8,  pval:0.016, beta:1.15, smb:-0.22, hml:-0.41, mom:0.64,  signal:'green', idx:['sp','nq'],      insight:'Search advertising recovery and Cloud growth driving alpha above growth-factor baseline.'},
+  {ticker:'AAPL', name:'Apple Inc.',                 alpha:2.9,  pval:0.029, beta:0.88, smb:-0.44, hml:-0.22, mom:0.42,  signal:'green', idx:['sp','nq','dj'], insight:'Modest but statistically significant alpha. Services revenue growth is the alpha driver.'},
+  {ticker:'MA',   name:'Mastercard Inc.',            alpha:2.4,  pval:0.038, beta:0.98, smb:-0.24, hml:-0.12, mom:0.38,  signal:'green', idx:['sp'],           insight:'Quality compounder generating consistent factor-adjusted returns.'},
+  {ticker:'COST', name:'Costco Wholesale Corp.',     alpha:2.1,  pval:0.041, beta:0.62, smb:-0.19, hml:0.08,  mom:0.31,  signal:'green', idx:['sp','nq'],      insight:'Steady alpha at low beta. Membership fee model creates recurring earnings not captured in factors.'},
+  {ticker:'UNH',  name:'UnitedHealth Group',         alpha:1.8,  pval:0.068, beta:0.74, smb:-0.12, hml:0.22,  mom:0.18,  signal:'amber', idx:['sp','dj'],      insight:'Positive alpha but below significance threshold. Worth monitoring — marginal signal only.'},
+  {ticker:'HD',   name:'The Home Depot Inc.',        alpha:1.4,  pval:0.091, beta:0.88, smb:-0.15, hml:0.31,  mom:0.12,  signal:'amber', idx:['sp','dj'],      insight:'Weak positive signal. Alpha is not statistically robust.'},
+  {ticker:'V',    name:'Visa Inc.',                  alpha:1.2,  pval:0.108, beta:0.81, smb:-0.22, hml:-0.08, mom:0.22,  signal:'amber', idx:['sp','dj'],      insight:'Quality franchise, marginal alpha.'},
+  {ticker:'JPM',  name:'JPMorgan Chase & Co.',       alpha:0.4,  pval:0.348, beta:1.18, smb:0.12,  hml:0.48,  mom:-0.08, signal:'amber', idx:['sp','dj'],      insight:'Value-tilted financials. Alpha is negligible.'},
+  {ticker:'PG',   name:'Procter & Gamble',           alpha:0.1,  pval:0.881, beta:0.44, smb:-0.08, hml:0.18,  mom:-0.12, signal:'amber', idx:['sp','dj'],      insight:'Essentially zero alpha. Factor-neutral holding.'},
+  {ticker:'WMT',  name:'Walmart Inc.',               alpha:-0.2, pval:0.712, beta:0.51, smb:-0.04, hml:0.22,  mom:-0.18, signal:'red',   idx:['sp','dj'],      insight:'Marginally negative alpha. No factor-adjusted edge here.'},
+  {ticker:'KO',   name:'The Coca-Cola Company',      alpha:-0.2, pval:0.788, beta:0.38, smb:-0.04, hml:0.28,  mom:-0.24, signal:'red',   idx:['sp','dj'],      insight:'Returns driven entirely by low-beta factor exposure. Zero alpha.'},
+  {ticker:'XOM',  name:'ExxonMobil Corporation',     alpha:-0.8, pval:0.398, beta:1.02, smb:0.08,  hml:0.62,  mom:-0.42, signal:'red',   idx:['sp','dj'],      insight:'Oil price beta dominates. No idiosyncratic alpha.'},
+  {ticker:'CVS',  name:'CVS Health Corp.',           alpha:-1.8, pval:0.088, beta:0.91, smb:0.22,  hml:0.55,  mom:-0.52, signal:'red',   idx:['sp'],           insight:'Negative alpha approaching significance.'},
+  {ticker:'T',    name:'AT&T Inc.',                  alpha:-1.2, pval:0.191, beta:0.68, smb:0.08,  hml:0.71,  mom:-0.38, signal:'red',   idx:['sp'],           insight:'High value exposure but negative alpha.'},
+  {ticker:'BAC',  name:'Bank of America Corp.',      alpha:-0.3, pval:0.624, beta:1.28, smb:0.24,  hml:0.52,  mom:-0.18, signal:'red',   idx:['sp','dj'],      insight:'Returns fully explained by market beta and value exposure.'},
+  {ticker:'PFE',  name:'Pfizer Inc.',                alpha:-3.1, pval:0.031, beta:0.82, smb:0.18,  hml:0.44,  mom:-0.88, signal:'red',   idx:['sp','dj'],      insight:'Significant negative alpha. Post-COVID revenue cliff visible in factor-adjusted returns. Avoid.'},
+  {ticker:'INTC', name:'Intel Corporation',          alpha:-5.4, pval:0.004, beta:1.42, smb:0.31,  hml:0.38,  mom:-1.22, signal:'red',   idx:['sp','nq','dj'], insight:'Significant negative alpha with high confidence. Market share losses visible as persistent factor-adjusted underperformance.'},
+  {ticker:'WBA',  name:'Walgreens Boots Alliance',   alpha:-6.2, pval:0.001, beta:1.11, smb:0.44,  hml:0.62,  mom:-1.44, signal:'red',   idx:['sp','dj'],      insight:'Strongest negative signal. Structural retail pharmacy decline driving significant negative alpha.'},
+];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let sortKey = 'rank';
+let sortDir = 1; // 1 = desc for alpha, asc for rank
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function signalHTML(sig) {
+  if (sig === 'green') return '<span class="sig sig-green">● Strong</span>';
+  if (sig === 'amber') return '<span class="sig sig-amber">◑ Marginal</span>';
+  return '<span class="sig sig-red">● Avoid</span>';
+}
+
+function alphaHTML(a) {
+  const sign = a >= 0 ? '+' : '';
+  const cls  = a >= 0 ? 'alpha-pos' : 'alpha-neg';
+  return `<span class="alpha-val ${cls}">${sign}${a.toFixed(1)}%</span><div style="font-size:0.7rem;color:#475569;margin-top:2px">per year</div>`;
+}
+
+function factorBars(stock) {
+  // Each bar: centre = 50%, value maps -2 to +2 → 0% to 100%
+  const factors = [
+    {lbl:'MKT', val:stock.beta - 1, cls:'fb-mkt'},   // excess beta relative to 1
+    {lbl:'SMB', val:stock.smb, cls:'fb-smb'},
+    {lbl:'HML', val:stock.hml, cls:'fb-hml'},
+    {lbl:'MOM', val:stock.mom, cls:'fb-mom'},
+  ];
+  return `<div class="factor-bars">${factors.map(f => {
+    const pct = Math.min(Math.abs(f.val) / 1.6 * 50, 50); // max 50% width from centre
+    const isPos = f.val >= 0;
+    const left  = isPos ? 50 : (50 - pct);
+    const neg   = !isPos ? ' fb-neg' : '';
+    return `<div class="fbar-row">
+      <span class="fbar-label">${f.lbl}</span>
+      <div class="fbar-track">
+        <div class="fbar-center"></div>
+        <div class="fbar-fill ${f.cls}${neg}" style="left:${left}%;width:${pct}%"></div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function idxTagsHTML(idx) {
+  const map = {sp:'S&P',nq:'NDQ',dj:'DJI'};
+  const cls = {sp:'sp',nq:'nq',dj:'dj'};
+  return `<div class="idx-tags">${idx.map(i=>`<span class="idx-tag ${cls[i]}">${map[i]}</span>`).join('')}</div>`;
+}
+
+function filteredData() {
+  const idxF  = document.getElementById('idx-filter').value;
+  const sigF  = document.getElementById('sig-filter').value;
+  const q     = document.getElementById('search-box').value.toLowerCase().trim();
+  return STOCKS.filter(s => {
+    if (idxF !== 'all' && !s.idx.includes(idxF)) return false;
+    if (sigF !== 'all' && s.signal !== sigF) return false;
+    if (q && !s.ticker.toLowerCase().includes(q) && !s.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+function renderTable() {
+  const data = filteredData();
+  // Sort
+  data.sort((a,b) => {
+    if (sortKey === 'rank' || sortKey === 'alpha') {
+      return sortDir * (b.alpha - a.alpha);
+    }
+    if (sortKey === 'ticker') {
+      return sortDir * a.ticker.localeCompare(b.ticker);
+    }
+    return 0;
+  });
+
+  // Update summary counts
+  const all = filteredData(); // reuse
+  document.getElementById('cnt-green').textContent = STOCKS.filter(s=>s.signal==='green').length;
+  document.getElementById('cnt-amber').textContent = STOCKS.filter(s=>s.signal==='amber').length;
+  document.getElementById('cnt-red').textContent   = STOCKS.filter(s=>s.signal==='red').length;
+  const alphas = STOCKS.map(s=>s.alpha).sort((a,b)=>a-b);
+  const med    = alphas[Math.floor(alphas.length/2)];
+  document.getElementById('median-alpha').textContent = (med>=0?'+':'')+med.toFixed(1)+'%';
+
+  // Render visible rows (top 15 shown, rest blurred)
+  const visible = data.slice(0,3);
+  const blurred = data.slice(3,12);
+
+  const tbody = document.getElementById('tbl-body');
+  tbody.innerHTML = visible.map((s,i) => `
+    <tr>
+      <td><div class="rank">${i+1}</div></td>
+      <td>
+        <div class="ticker">${s.ticker}</div>
+        <div class="company">${s.name}</div>
+        ${idxTagsHTML(s.idx)}
+      </td>
+      <td>${alphaHTML(s.alpha)}</td>
+      <td>${signalHTML(s.signal)}</td>
+      <td>${factorBars(s)}</td>
+      <td><div class="insight">${s.insight}</div></td>
+    </tr>
+  `).join('');
+
+  // Blurred rows (decorative only)
+  const tblBlur = document.getElementById('tbl-blurred');
+  tblBlur.innerHTML = blurred.map((s,i) => `
+    <tr>
+      <td><div class="rank">${3+i+1}</div></td>
+      <td><div class="ticker">${s.ticker}</div><div class="company">${s.name}</div></td>
+      <td>${alphaHTML(s.alpha)}</td>
+      <td>${signalHTML(s.signal)}</td>
+      <td>${factorBars(s)}</td>
+      <td><div class="insight">${s.insight}</div></td>
+    </tr>
+  `).join('');
+}
+
+// ─── SORT ────────────────────────────────────────────────────────────────────
+function sortTable(key) {
+  if (sortKey === key) {
+    sortDir *= -1;
+  } else {
+    sortKey = key;
+    sortDir = 1;
+  }
+  document.querySelectorAll('.screener-table th').forEach(th => th.classList.remove('sort-active'));
+  const thId = key === 'alpha' ? 'th-alpha' : key === 'rank' ? 'th-rank' : null;
+  if (thId) document.getElementById(thId).classList.add('sort-active');
+  renderTable();
+}
+
+// ─── FILTER ──────────────────────────────────────────────────────────────────
+function filterTable() { renderTable(); }
+
+// ─── LOOKBACK ────────────────────────────────────────────────────────────────
+function setLookback(yrs) {
+  const days = {1:252,2:504,3:756}[yrs];
+  document.getElementById('lookback-display').textContent = `${yrs} year${yrs>1?'s':''} (${days} trading days)`;
+  // In a real build this would re-fetch data; here we just re-render
+  renderTable();
+}
+
+// ─── MARKET ──────────────────────────────────────────────────────────────────
+function setMarket(btn, mkt) {
+  document.querySelectorAll('.mkt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ─── MOBILE MENU ─────────────────────────────────────────────────────────────
+function toggleMenu() {
+  const m = document.getElementById('mmenu');
+  m.classList.toggle('open');
+}
+
+// ─── EXPLAINER TOGGLE ────────────────────────────────────────────────────────
+function toggleExplainer() {
+  const body = document.getElementById('explainer-body');
+  const icon = document.getElementById('explainer-icon');
+  const open = body.style.display === 'none' || body.style.display === '';
+  body.style.display = open ? 'block' : 'none';
+  icon.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>

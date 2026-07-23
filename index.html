@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary SEO -->
+  <title>Fintiq – Free Stock Screener, Monte Carlo Simulation & Portfolio Optimisation for UK Investors</title>
+  <meta name="description" content="Fintiq is a free stock screener and investment analysis platform for retail investors. Screen FTSE 100, LSE, NASDAQ and global stocks using fundamental analysis, run Monte Carlo simulations, optimise your portfolio with Modern Portfolio Theory, and discover pairs trading opportunities. No finance degree needed." />
+  <meta name="keywords" content="stock screener UK, free stock screener, FTSE 100 screener, LSE stock screener, fundamental analysis tool, Monte Carlo simulation investing, portfolio optimisation tool, Modern Portfolio Theory, pairs trading tool, retail investor platform, value investing UK, stock analysis tool, NASDAQ screener, best stock screener UK, investment analysis platform, portfolio risk analysis, stock market tools UK" />
+  <meta name="author" content="Fintiq" />
+  <link rel="canonical" href="https://fintiq.uk/" />
+
+  <!-- Open Graph (social sharing) -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fintiq.uk/" />
+  <meta property="og:title" content="Fintiq – Professional Stock Analysis for Everyday Investors" />
+  <meta property="og:description" content="Screen thousands of stocks, simulate portfolio outcomes, and discover pairs trading opportunities. Built for beginners and serious retail investors worldwide." />
+  <meta property="og:image" content="https://fintiq.uk/og-image.png" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Fintiq – Stock Screener & Portfolio Analysis" />
+  <meta name="twitter:description" content="Professional-grade investment tools for retail investors. Free to start." />
+  <meta name="twitter:image" content="https://fintiq.uk/og-image.png" />
+
+  <!-- Structured Data: SoftwareApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Fintiq",
+    "url": "https://fintiq.uk",
+    "description": "Stock screener and portfolio analysis platform for retail investors. Features Monte Carlo simulation, portfolio optimisation, fundamental screening, and pairs trading.",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Web",
+    "offers": [
+      {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "GBP",
+        "name": "Free Plan",
+        "description": "5 searches per month"
+      },
+      {
+        "@type": "Offer",
+        "price": "10",
+        "priceCurrency": "GBP",
+        "name": "Pro Monthly",
+        "description": "Unlimited searches and full access"
+      }
+    ]
+  }
+  </script>
+
+  <!-- Structured Data: FAQPage -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Is Fintiq free to use?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Yes. Fintiq offers a free plan with 5 searches per month. Pro users get unlimited searches, full access to all tools, and priority data for £10/month."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What markets does Fintiq cover?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Fintiq covers global markets including the London Stock Exchange (LSE), NASDAQ, NYSE, S&P 500 constituents, and more."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "What is Monte Carlo simulation in investing?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Monte Carlo simulation runs thousands of possible market scenarios to show you the range of possible outcomes for your portfolio — helping you understand risk before you invest."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <style>
+    :root {
+      --navy: #081220;
+      --navy-mid: #0D1F35;
+      --navy-light: #0F2640;
+      --gold: #F59E0B;
+      --gold-light: #FCD34D;
+      --text: #F1F5F9;
+      --text-muted: #94A3B8;
+      --border: rgba(245,158,11,0.2);
+      --card-bg: rgba(13,31,53,0.8);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: var(--navy);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 5%; height: 64px;
+      background: rgba(8,18,32,0.95);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .nav-logo {
+      font-size: 1.5rem; font-weight: 900; color: var(--gold);
+      text-decoration: none; letter-spacing: -0.5px;
+    }
+    .nav-logo span { color: var(--text); }
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a {
+      color: var(--text-muted); text-decoration: none;
+      font-size: 0.9rem; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--gold); }
+    .nav-cta {
+      background: var(--gold); color: var(--navy) !important;
+      padding: 8px 20px; border-radius: 20px;
+      font-weight: 700 !important; font-size: 0.85rem !important;
+    }
+    .nav-cta:hover { background: var(--gold-light) !important; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center;
+      padding: 100px 5% 60px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(245,158,11,0.08) 0%, transparent 60%),
+                  linear-gradient(180deg, #081220 0%, #0D1F35 100%);
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='720' height='400'%3E%3Cline x1='40' y1='310' x2='40' y2='340' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='40' y1='255' x2='40' y2='275' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='90' y1='318' x2='90' y2='345' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='90' y1='263' x2='90' y2='282' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='140' y1='285' x2='140' y2='315' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='140' y1='230' x2='140' y2='250' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='190' y1='295' x2='190' y2='322' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='190' y1='240' x2='190' y2='260' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='240' y1='255' x2='240' y2='285' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='240' y1='198' x2='240' y2='220' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='290' y1='262' x2='290' y2='290' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='290' y1='207' x2='290' y2='227' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='340' y1='225' x2='340' y2='255' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='340' y1='168' x2='340' y2='190' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='390' y1='230' x2='390' y2='258' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='390' y1='176' x2='390' y2='196' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='440' y1='192' x2='440' y2='222' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='440' y1='138' x2='440' y2='158' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='490' y1='198' x2='490' y2='225' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='490' y1='145' x2='490' y2='164' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='540' y1='160' x2='540' y2='190' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='540' y1='108' x2='540' y2='128' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='590' y1='165' x2='590' y2='192' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='590' y1='112' x2='590' y2='132' stroke='%23ef4444' stroke-width='1.2' opacity='0.14'/%3E%3Cline x1='640' y1='128' x2='640' y2='158' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Cline x1='640' y1='78' x2='640' y2='98' stroke='%2322c55e' stroke-width='1.2' opacity='0.18'/%3E%3Crect x='22' y='275' width='36' height='35' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Crect x='72' y='282' width='36' height='36' rx='2' fill='%23ef4444' opacity='0.08'/%3E%3Crect x='122' y='250' width='36' height='35' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Crect x='172' y='260' width='36' height='35' rx='2' fill='%23ef4444' opacity='0.08'/%3E%3Crect x='222' y='220' width='36' height='35' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Crect x='272' y='227' width='36' height='35' rx='2' fill='%23ef4444' opacity='0.08'/%3E%3Crect x='322' y='190' width='36' height='35' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Crect x='372' y='196' width='36' height='34' rx='2' fill='%23ef4444' opacity='0.08'/%3E%3Crect x='422' y='158' width='36' height='34' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Crect x='472' y='164' width='36' height='34' rx='2' fill='%23ef4444' opacity='0.08'/%3E%3Crect x='522' y='128' width='36' height='32' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Crect x='572' y='132' width='36' height='33' rx='2' fill='%23ef4444' opacity='0.08'/%3E%3Crect x='622' y='98' width='36' height='30' rx='2' fill='%2322c55e' opacity='0.10'/%3E%3Cpolyline points='40,292 90,300 140,267 190,278 240,237 290,244 340,207 390,213 440,175 490,181 540,144 590,149 640,113' stroke='%2322c55e' stroke-width='1.5' fill='none' opacity='0.18' stroke-dasharray='6,4'/%3E%3C/svg%3E");
+      background-repeat: repeat-x;
+      background-position: center bottom;
+      background-size: 720px 400px;
+    }
+    .hero-content { position: relative; max-width: 800px; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.3);
+      color: var(--gold); font-size: 0.8rem; font-weight: 600;
+      padding: 5px 16px; border-radius: 20px; margin-bottom: 24px;
+      letter-spacing: 0.5px;
+    }
+    h1 {
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 900; line-height: 1.1;
+      margin-bottom: 20px; letter-spacing: -1px;
+    }
+    h1 .gold { color: var(--gold); }
+    .hero-sub {
+      font-size: clamp(1rem, 2vw, 1.2rem);
+      color: var(--text-muted); max-width: 600px;
+      margin: 0 auto 36px;
+    }
+    .hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--gold); color: var(--navy);
+      padding: 14px 32px; border-radius: 8px;
+      font-weight: 700; font-size: 1rem;
+      text-decoration: none; transition: all 0.2s;
+      border: none; cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent; color: var(--text);
+      padding: 14px 32px; border-radius: 8px;
+      font-weight: 600; font-size: 1rem;
+      text-decoration: none; transition: all 0.2s;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-secondary:hover { border-color: var(--gold); color: var(--gold); }
+    .hero-stats {
+      display: flex; gap: 40px; justify-content: center;
+      margin-top: 56px; flex-wrap: wrap;
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 900; color: var(--gold); }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    /* ── TICKER TAPE ── */
+    .ticker-wrap {
+      overflow: hidden; background: rgba(245,158,11,0.06);
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      padding: 10px 0;
+    }
+    .ticker-track {
+      display: flex; gap: 60px; width: max-content;
+      animation: ticker 25s linear infinite;
+    }
+    .ticker-item { white-space: nowrap; font-size: 0.82rem; color: var(--text-muted); }
+    .ticker-item span { color: var(--gold); font-weight: 600; margin-right: 6px; }
+    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* ── SECTIONS ── */
+    section { padding: 80px 5%; }
+    .section-label {
+      text-align: center; color: var(--gold);
+      font-size: 0.8rem; font-weight: 700;
+      letter-spacing: 2px; text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    h2 {
+      text-align: center; font-size: clamp(1.8rem, 3vw, 2.6rem);
+      font-weight: 800; margin-bottom: 16px; letter-spacing: -0.5px;
+    }
+    .section-sub {
+      text-align: center; color: var(--text-muted);
+      max-width: 560px; margin: 0 auto 56px; font-size: 1rem;
+    }
+
+    /* ── FEATURES GRID ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px; max-width: 1100px; margin: 0 auto;
+    }
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px; padding: 32px;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .feature-card:hover { transform: translateY(-4px); border-color: rgba(245,158,11,0.5); }
+    .feature-icon { font-size: 2.2rem; margin-bottom: 16px; }
+    .feature-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+    .feature-card p { color: var(--text-muted); font-size: 0.93rem; line-height: 1.7; }
+    .feature-tag {
+      display: inline-block; margin-top: 16px;
+      background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+      color: var(--gold); font-size: 0.72rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 12px;
+    }
+
+    /* ── HOW IT WORKS ── */
+    .how-bg { background: linear-gradient(180deg, var(--navy) 0%, var(--navy-mid) 100%); }
+    .steps { display: flex; gap: 0; max-width: 900px; margin: 0 auto; position: relative; }
+    .steps::before {
+      content: ''; position: absolute;
+      top: 28px; left: 10%; right: 10%; height: 2px;
+      background: linear-gradient(90deg, var(--gold), rgba(245,158,11,0.1));
+    }
+    .step { flex: 1; text-align: center; padding: 0 16px; position: relative; }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--navy-mid); border: 2px solid var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; font-weight: 900; color: var(--gold);
+      margin: 0 auto 20px;
+    }
+    .step h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .step p { font-size: 0.88rem; color: var(--text-muted); }
+
+    /* ── AUDIENCE ── */
+    .audience-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 20px; max-width: 900px; margin: 0 auto;
+    }
+    .audience-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; text-align: center;
+    }
+    .audience-card .icon { font-size: 2rem; margin-bottom: 12px; }
+    .audience-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .audience-card p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* ── PRICING ── */
+    .pricing-bg { background: var(--navy-mid); }
+    .pricing-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px; max-width: 700px; margin: 0 auto;
+    }
+    .plan {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: 16px; padding: 36px 32px; text-align: center;
+      position: relative;
+    }
+    .plan.featured {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, rgba(245,158,11,0.08), var(--card-bg));
+    }
+    .plan-badge {
+      position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+      background: var(--gold); color: var(--navy);
+      font-size: 0.72rem; font-weight: 800;
+      padding: 4px 16px; border-radius: 12px; white-space: nowrap;
+    }
+    .plan-name { font-size: 1rem; font-weight: 700; color: var(--text-muted); margin-bottom: 12px; }
+    .plan-price { font-size: 2.8rem; font-weight: 900; color: var(--text); }
+    .plan-price sup { font-size: 1.2rem; vertical-align: top; margin-top: 8px; color: var(--gold); }
+    .plan-period { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 28px; }
+    .plan-features { list-style: none; text-align: left; margin-bottom: 28px; }
+    .plan-features li {
+      padding: 7px 0; font-size: 0.9rem; color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .plan-features li::before { content: '✓'; color: var(--gold); font-weight: 700; }
+    .plan-btn {
+      display: block; width: 100%;
+      padding: 12px; border-radius: 8px;
+      font-weight: 700; font-size: 0.95rem;
+      text-decoration: none; text-align: center; transition: all 0.2s;
+    }
+    .plan-btn.primary { background: var(--gold); color: var(--navy); }
+    .plan-btn.primary:hover { background: var(--gold-light); }
+    .plan-btn.secondary {
+      background: transparent; color: var(--text);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .plan-btn.secondary:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── FAQ ── */
+    .faq-list { max-width: 720px; margin: 0 auto; }
+    .faq-item {
+      border: 1px solid var(--border); border-radius: 12px;
+      margin-bottom: 12px; overflow: hidden;
+    }
+    .faq-q {
+      padding: 20px 24px; font-weight: 600; cursor: pointer;
+      display: flex; justify-content: space-between; align-items: center;
+      transition: background 0.2s;
+    }
+    .faq-q:hover { background: rgba(245,158,11,0.05); }
+    .faq-q::after { content: '+'; color: var(--gold); font-size: 1.4rem; }
+    .faq-a {
+      padding: 0 24px 20px;
+      color: var(--text-muted); font-size: 0.93rem; line-height: 1.7;
+      display: none;
+    }
+    .faq-item.open .faq-q::after { content: '−'; }
+    .faq-item.open .faq-a { display: block; }
+
+    /* ── CTA BANNER ── */
+    .cta-banner {
+      background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+      border: 1px solid var(--border); border-radius: 20px;
+      padding: 60px 40px; text-align: center;
+      max-width: 800px; margin: 0 auto;
+    }
+    .cta-banner h2 { font-size: clamp(1.8rem, 3vw, 2.4rem); margin-bottom: 12px; }
+    .cta-banner p { color: var(--text-muted); margin-bottom: 32px; font-size: 1rem; }
+
+    /* ── FOOTER ── */
+    footer {
+      background: #050d18;
+      border-top: 1px solid var(--border);
+      padding: 40px 5% 24px;
+    }
+    .footer-top {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      flex-wrap: wrap; gap: 32px; margin-bottom: 32px;
+    }
+    .footer-brand .logo { font-size: 1.4rem; font-weight: 900; color: var(--gold); }
+    .footer-brand p { color: var(--text-muted); font-size: 0.85rem; margin-top: 8px; max-width: 260px; }
+    .footer-links h4 { font-size: 0.85rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+    .footer-links a {
+      display: block; color: var(--text-muted); text-decoration: none;
+      font-size: 0.85rem; margin-bottom: 8px; transition: color 0.2s;
+    }
+    .footer-links a:hover { color: var(--gold); }
+    .footer-bottom {
+      border-top: 1px solid var(--border); padding-top: 20px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom p { color: var(--text-muted); font-size: 0.8rem; }
+    .footer-disclaimer {
+      color: var(--text-muted); font-size: 0.75rem;
+      max-width: 600px; line-height: 1.5;
+    }
+
+    /* ── MOBILE ── */
+    @media (max-width: 640px) {
+      .nav-links { display: none; }
+      .steps { flex-direction: column; gap: 32px; }
+      .steps::before { display: none; }
+      .hero-stats { gap: 24px; }
+      .cta-banner { padding: 40px 24px; }
+      .footer-top { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:6px">
+      <!-- candle 1 - small green -->
+      <line x1="5" y1="19" x2="5" y2="22" stroke="#22c55e" stroke-width="1.2"/>
+      <rect x="3.5" y="19" width="3" height="3" rx="0.5" fill="#22c55e"/>
+      <line x1="5" y1="16" x2="5" y2="19" stroke="#22c55e" stroke-width="1.2"/>
+      <!-- candle 2 - medium green -->
+      <line x1="12" y1="11" x2="12" y2="13" stroke="#22c55e" stroke-width="1.2"/>
+      <rect x="10.5" y="13" width="3" height="5" rx="0.5" fill="#22c55e"/>
+      <line x1="12" y1="18" x2="12" y2="21" stroke="#22c55e" stroke-width="1.2"/>
+      <!-- candle 3 - tall green (rising) -->
+      <line x1="19" y1="4" x2="19" y2="7" stroke="#22c55e" stroke-width="1.2"/>
+      <rect x="17.5" y="7" width="3" height="9" rx="0.5" fill="#22c55e"/>
+      <line x1="19" y1="16" x2="19" y2="19" stroke="#22c55e" stroke-width="1.2"/>
+      <!-- trend line -->
+      <polyline points="5,18 12,13 19,7" stroke="#22c55e" stroke-width="1.2" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+    </svg>Fintiq</a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#faq">FAQ</a>
+    <a href="https://app.fintiq.uk" class="nav-cta">Launch App →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🌍 Global Markets · UK · US · Europe · Asia</div>
+    <h1>Stop Speculating.<br>Start <span class="gold">Investing.</span></h1>
+    <p class="hero-sub">
+      Fintiq gives retail investors the same analytical tools used by hedge funds and professional fund managers —
+      fundamental stock screening, Monte Carlo simulation, portfolio optimisation using Modern Portfolio Theory,
+      and statistical pairs trading. Screen FTSE 100, LSE, NASDAQ, NYSE and global markets.
+      No finance degree required. Free to start.
+    </p>
+    <div class="hero-buttons">
+      <a href="https://app.fintiq.uk" class="btn-primary">Start Free — No Card Needed</a>
+      <a href="#features" class="btn-secondary">See What's Inside</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">10,000+</div><div class="stat-label">Stocks Screened</div></div>
+      <div class="stat"><div class="stat-num">6</div><div class="stat-label">Global Exchanges</div></div>
+      <div class="stat"><div class="stat-num">5</div><div class="stat-label">Pro Tools in One App</div></div>
+      <div class="stat"><div class="stat-num">Free</div><div class="stat-label">To Get Started</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker-track">
+    <div class="ticker-item"><span>S&amp;P 500</span>5,487.03 ▲0.6%</div>
+    <div class="ticker-item"><span>FTSE 100</span>8,214.50 ▲0.3%</div>
+    <div class="ticker-item"><span>DOW JONES</span>39,118.86 ▼0.2%</div>
+    <div class="ticker-item"><span>NASDAQ</span>17,732.60 ▲1.1%</div>
+    <div class="ticker-item"><span>DAX</span>18,403.22 ▲0.4%</div>
+    <div class="ticker-item"><span>NIKKEI 225</span>38,946.93 ▼0.5%</div>
+    <div class="ticker-item"><span>BTC/USD</span>$67,204 ▲2.3%</div>
+    <div class="ticker-item"><span>ETH/USD</span>$3,512 ▲1.7%</div>
+    <div class="ticker-item"><span>XRP/USD</span>$0.582 ▼0.9%</div>
+    <div class="ticker-item"><span>SOL/USD</span>$178.40 ▲3.1%</div>
+    <div class="ticker-item"><span>GOLD</span>$2,338/oz ▲0.4%</div>
+    <div class="ticker-item"><span>SILVER</span>$30.12/oz ▲0.7%</div>
+    <div class="ticker-item"><span>CRUDE OIL</span>$82.15/bbl ▼1.2%</div>
+    <div class="ticker-item"><span>COPPER</span>$4.58/lb ▲0.5%</div>
+    <div class="ticker-item"><span>PLATINUM</span>$1,042/oz ▼0.3%</div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span>S&amp;P 500</span>5,487.03 ▲0.6%</div>
+    <div class="ticker-item"><span>FTSE 100</span>8,214.50 ▲0.3%</div>
+    <div class="ticker-item"><span>DOW JONES</span>39,118.86 ▼0.2%</div>
+    <div class="ticker-item"><span>NASDAQ</span>17,732.60 ▲1.1%</div>
+    <div class="ticker-item"><span>DAX</span>18,403.22 ▲0.4%</div>
+    <div class="ticker-item"><span>NIKKEI 225</span>38,946.93 ▼0.5%</div>
+    <div class="ticker-item"><span>BTC/USD</span>$67,204 ▲2.3%</div>
+    <div class="ticker-item"><span>ETH/USD</span>$3,512 ▲1.7%</div>
+    <div class="ticker-item"><span>XRP/USD</span>$0.582 ▼0.9%</div>
+    <div class="ticker-item"><span>SOL/USD</span>$178.40 ▲3.1%</div>
+    <div class="ticker-item"><span>GOLD</span>$2,338/oz ▲0.4%</div>
+    <div class="ticker-item"><span>SILVER</span>$30.12/oz ▲0.7%</div>
+    <div class="ticker-item"><span>CRUDE OIL</span>$82.15/bbl ▼1.2%</div>
+    <div class="ticker-item"><span>COPPER</span>$4.58/lb ▲0.5%</div>
+    <div class="ticker-item"><span>PLATINUM</span>$1,042/oz ▼0.3%</div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="section-label">What You Get</div>
+  <h2>Every Tool a Serious Investor Needs — All in One Platform</h2>
+  <p class="section-sub">Professional-grade stock analysis tools built for UK and global retail investors who want to invest with data and confidence, not tips and guesswork. From free fundamental screening to advanced Monte Carlo risk modelling.</p>
+  <div class="features-grid">
+
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <h3>Fundamental Stock Screener</h3>
+      <p>Screen over 10,000 stocks across LSE, FTSE 100, FTSE 250, NASDAQ, NYSE, and European exchanges using proven fundamental quality metrics — Price-to-Earnings (P/E) ratio, Return on Equity (ROE), debt-to-equity, earnings per share growth, dividend yield, and composite quality scores. Filter by sector, market cap, exchange, and country. Find undervalued, high-quality stocks in minutes instead of hours.</p>
+      <span class="feature-tag">Free · 5 searches/month</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <h3>Catalyst Alerts</h3>
+      <p>Identify stocks with near-term price catalysts before the market reacts. Track upcoming earnings announcements, analyst rating upgrades and downgrades, insider buying activity, and technical breakout signals. Stay ahead of your watchlist and never miss a market-moving event that could affect your positions.</p>
+      <span class="feature-tag">Pro</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📐</div>
+      <h3>Technical Analysis</h3>
+      <p>Full technical analysis suite automatically calculated for any stock — Simple and Exponential Moving Averages (SMA/EMA), Relative Strength Index (RSI), MACD, Bollinger Bands, Average True Range (ATR), and volume analysis. Identify buy and sell signals, support and resistance levels, and trend direction without spending hours manually building charts.</p>
+      <span class="feature-tag">Free</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🎲</div>
+      <h3>Monte Carlo Simulation</h3>
+      <p>Run 1,000+ randomly generated market scenarios on any stock or portfolio to understand the full probability distribution of possible outcomes. Rather than a single price target that is almost always wrong, Monte Carlo simulation shows you the realistic range of best-case, worst-case, and most likely returns over your chosen time horizon. This is how professional risk managers and quantitative analysts assess portfolio risk — now available to every retail investor.</p>
+      <span class="feature-tag">Pro — Unique Feature</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">⚖️</div>
+      <h3>Portfolio Optimiser (MPT)</h3>
+      <p>Powered by Nobel Prize-winning Modern Portfolio Theory (MPT), developed by Harry Markowitz. Enter your chosen stocks and Fintiq calculates the mathematically optimal weighting to maximise expected return for your chosen level of risk. Visualise the Efficient Frontier — the set of portfolios that offer the best possible risk-adjusted returns. Stop guessing how to allocate capital; let the mathematics decide.</p>
+      <span class="feature-tag">Pro — Unique Feature</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🔗</div>
+      <h3>Statistical Pairs Trading</h3>
+      <p>Pairs trading is a market-neutral quantitative strategy used by hedge funds and proprietary trading desks. Fintiq identifies statistically correlated stock pairs using cointegration analysis — for example, two banks, two oil majors, or two mining companies that historically move together. When the pair diverges beyond a statistical threshold, it signals a high-probability mean-reversion trade. Profit in rising or falling markets.</p>
+      <span class="feature-tag">Pro — Unique Feature</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">📓</div>
+      <h3>Trading Journal & P&L Tracker</h3>
+      <p>Studies show that retail investors who keep a detailed trading journal significantly outperform those who don't. Record every trade with entry price, exit price, position size, and your reasoning at the time. Fintiq automatically calculates your realised and unrealised profit and loss (P&L), win rate, average gain vs average loss, and risk-reward ratio. Learn from your mistakes and compound your winners.</p>
+      <span class="feature-tag">Free</span>
+    </div>
+
+    <div class="feature-card">
+      <div class="feature-icon">🌅</div>
+      <h3>Daily Morning Brief</h3>
+      <p>Start every trading day fully informed. Fintiq's personalised morning brief covers overnight market moves across US, Asian, and European markets, key macroeconomic events and central bank announcements, earnings releases for the day ahead, and any significant developments affecting your watchlist stocks. Never open your broker account without knowing exactly what the market is doing and why.</p>
+      <span class="feature-tag">Free</span>
+    </div>
+
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how" class="how-bg">
+  <div class="section-label">Simple Process</div>
+  <h2>From Sign-Up to Your First Data-Driven Investment Decision in Minutes</h2>
+  <p class="section-sub">No Bloomberg terminal. No spreadsheets. No finance degree. Fintiq gives you institutional-grade investment analysis in a clean, simple interface that any investor can use from day one.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Create a Free Account</h3>
+      <p>Sign up in under 30 seconds — just your email and a password. No credit card required. You get 5 free stock screens every month plus full access to the Trading Journal, Technical Analysis, and Morning Brief tools immediately.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Screen the Market</h3>
+      <p>Select your exchange — LSE, FTSE 100, NASDAQ, NYSE, or European markets. Choose your sector and quality criteria. Fintiq screens thousands of stocks in seconds and returns a ranked list of the highest-quality companies that match your investment criteria.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Analyse, Simulate & Optimise</h3>
+      <p>Deep-dive into any stock with full fundamental and technical analysis. Run Monte Carlo simulation to stress-test your thesis across 1,000+ market scenarios. Add your picks to the Portfolio Optimiser to find the mathematically optimal allocation using Modern Portfolio Theory.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <h3>Invest with Conviction</h3>
+      <p>Execute your trades through your own broker with complete confidence — you've done the analysis, modelled the risk, and optimised the allocation. Log every trade in your journal, track your P&L, and continuously improve your investment process over time.</p>
+    </div>
+  </div>
+</section>
+
+<!-- WHO IT'S FOR -->
+<section id="audience">
+  <div class="section-label">Who It's For</div>
+  <h2>Built for Every Stage of Your Investing Journey</h2>
+  <p class="section-sub">Whether you've just opened your first Stocks & Shares ISA or you're actively managing a serious self-directed portfolio — Fintiq has the tools you need at the price you can afford.</p>
+  <div class="audience-grid">
+    <div class="audience-card">
+      <div class="icon">🌱</div>
+      <h3>Complete Beginners</h3>
+      <p>Never bought a stock before? Fintiq explains every metric in plain English — what P/E ratio means, why ROE matters, and how to interpret a Monte Carlo simulation result. Learn to invest properly from day one, not after years of expensive mistakes.</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">📈</div>
+      <h3>Self-Directed Investors</h3>
+      <p>Already investing through Hargreaves Lansdown, AJ Bell, Trading 212, or Freetrade? Replace gut feeling and social media tips with a systematic, repeatable, data-driven investment process that consistently identifies quality companies at reasonable valuations.</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">🇬🇧</div>
+      <h3>UK ISA & SIPP Investors</h3>
+      <p>Full coverage of the London Stock Exchange (LSE), AIM market, FTSE 100, and FTSE 250. Screen UK-listed companies on fundamental quality criteria specifically relevant to British investors — including dividend history, UK-listed peers, and GBP-denominated metrics. Find quality UK companies before institutional money moves in.</p>
+    </div>
+    <div class="audience-card">
+      <div class="icon">🌍</div>
+      <h3>Global Market Traders</h3>
+      <p>Don't limit yourself to domestic stocks. Screen NASDAQ, NYSE, S&P 500 constituents, European exchanges including DAX and CAC 40, and Asian markets — all from a single platform with a consistent analytical framework. Diversify intelligently across geographies and sectors.</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="pricing-bg">
+  <div class="section-label">Simple Pricing</div>
+  <h2>Start Free. Upgrade When Ready.</h2>
+  <p class="section-sub">No hidden fees. Cancel anytime. Your card is never stored by Fintiq.</p>
+  <div class="pricing-grid">
+
+    <div class="plan">
+      <div class="plan-name">Free</div>
+      <div class="plan-price"><sup>£</sup>0</div>
+      <div class="plan-period">forever</div>
+      <ul class="plan-features">
+        <li>5 searches per month</li>
+        <li>Fundamental Screen</li>
+        <li>Technical Analysis</li>
+        <li>Morning Brief</li>
+        <li>Trading Journal</li>
+        <li>Watchlist (up to 10 stocks)</li>
+      </ul>
+      <a href="https://app.fintiq.uk" class="plan-btn secondary">Get Started Free</a>
+    </div>
+
+    <div class="plan featured">
+      <div class="plan-badge">MOST POPULAR</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price"><sup>£</sup>10</div>
+      <div class="plan-period">per month · cancel anytime</div>
+      <ul class="plan-features">
+        <li>Unlimited searches</li>
+        <li>Everything in Free</li>
+        <li>Monte Carlo Simulation</li>
+        <li>Portfolio Optimiser (MPT)</li>
+        <li>Pairs Trading</li>
+        <li>Catalyst Alerts</li>
+        <li>All global markets</li>
+        <li>Priority data</li>
+      </ul>
+      <a href="https://app.fintiq.uk" class="plan-btn primary">Start Pro — £10/mo</a>
+    </div>
+
+  </div>
+  <p style="text-align:center;color:var(--text-muted);font-size:0.82rem;margin-top:24px">
+    Annual plan available at £100/year — save 2 months
+  </p>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="section-label">Questions</div>
+  <h2>Frequently Asked Questions</h2>
+  <p class="section-sub">Everything you need to know before you start.</p>
+  <div class="faq-list">
+
+    <div class="faq-item">
+      <div class="faq-q">Is Fintiq really free to start?</div>
+      <div class="faq-a">Yes — completely free, no credit card required. The free plan gives you 5 stock screening searches every month, plus unlimited access to Technical Analysis, the Trading Journal, and the Daily Morning Brief. You can use Fintiq for months before deciding whether to upgrade. The Pro plan at £10/month unlocks unlimited searches, Monte Carlo simulation, Portfolio Optimisation, Pairs Trading, and Catalyst Alerts.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What stock markets and exchanges does Fintiq cover?</div>
+      <div class="faq-a">Fintiq covers major global exchanges including the London Stock Exchange (LSE), AIM market, FTSE 100, FTSE 250, NASDAQ, NYSE, S&P 500 constituents, DAX (Germany), CAC 40 (France), and a growing number of Asian markets. Whether you're looking for UK small-cap growth stocks, American mega-cap technology companies, or European dividend payers, Fintiq screens them all with the same consistent analytical framework.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What is Monte Carlo simulation and why does it matter for investors?</div>
+      <div class="faq-a">Monte Carlo simulation is a computational technique that runs thousands of randomly generated market scenarios — based on historical volatility and return data — to show you the full probability distribution of possible outcomes for a stock or portfolio. Rather than a single price forecast that is almost always wrong, you see a range: the 10th percentile (bad scenario), the 50th percentile (median outcome), and the 90th percentile (optimistic scenario). This is how professional risk managers at banks and hedge funds evaluate investments. Fintiq makes this technique available to every retail investor in seconds.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What is Portfolio Optimisation and how does Fintiq use Modern Portfolio Theory?</div>
+      <div class="faq-a">Portfolio optimisation is the process of selecting the best possible combination of assets to achieve the highest expected return for a given level of risk. Fintiq uses Modern Portfolio Theory (MPT), the framework developed by Nobel Prize-winning economist Harry Markowitz in 1952. By analysing the historical returns, volatility, and correlation between your chosen stocks, Fintiq calculates the mathematically optimal allocation — the point on the Efficient Frontier where return is maximised and risk is minimised. Instead of guessing how much of your portfolio to put in each stock, let the mathematics decide.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">What is Pairs Trading and how does Fintiq identify trading pairs?</div>
+      <div class="faq-a">Pairs trading is a market-neutral quantitative strategy where you simultaneously buy one stock and short-sell a correlated stock when they diverge from their historical relationship, profiting when they converge again. Fintiq uses statistical cointegration analysis — the same methodology used by quantitative hedge funds — to identify pairs of stocks that move together over time. When the price spread between a pair exceeds a statistically significant threshold (measured in standard deviations), Fintiq signals a potential mean-reversion trade. Because you're long one stock and short another, pairs trading can generate returns regardless of whether the broader market is rising or falling.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Do I need a finance background or investment experience to use Fintiq?</div>
+      <div class="faq-a">No finance background is required. Fintiq is specifically designed for retail investors at every experience level — from someone who has never bought a share to an experienced self-directed investor who wants to add quantitative rigour to their process. Every tool includes plain-English explanations of what the metrics mean, why they matter, and how to interpret the results. Complex concepts like the Efficient Frontier, cointegration, and Monte Carlo are explained clearly within the app so you learn as you invest.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">How does Fintiq compare to other stock screeners like Simply Wall St, Stockopedia, or Finviz?</div>
+      <div class="faq-a">Most stock screeners stop at fundamental screening — they show you financial metrics and leave the analysis to you. Fintiq goes significantly further by combining screening with active quantitative tools: Monte Carlo simulation for risk modelling, Modern Portfolio Theory for optimal allocation, and statistical pairs trading for market-neutral opportunities. These are tools that institutional investors use daily but that have historically been unavailable to retail investors without expensive Bloomberg terminals or coding skills. Fintiq brings all of this into one affordable platform starting at £0.</div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q">Is Fintiq financial advice?</div>
+      <div class="faq-a">No. Fintiq provides data, quantitative analysis tools, and educational resources to help you make your own informed investment decisions. It is not regulated financial advice under FCA rules. The analytical output from Fintiq's tools — including screening results, Monte Carlo simulations, and portfolio optimisations — should be used as one input in your own decision-making process, not as a recommendation to buy or sell any specific security. Always conduct your own research and consider speaking to a qualified, FCA-regulated financial adviser before making significant investment decisions.</div>
+    </div>
+
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<section>
+  <div class="cta-banner">
+    <h2>Ready to Invest with Confidence?</h2>
+    <p>Join thousands of retail investors across the UK and worldwide who use Fintiq's data-driven tools — not tips, not guesswork — to make better investment decisions. Free to start. No credit card. No jargon.</p>
+    <div class="hero-buttons">
+      <a href="https://app.fintiq.uk" class="btn-primary">Create Free Account →</a>
+      <a href="#features" class="btn-secondary">Learn More</a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="logo">
+        <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:6px">
+          <line x1="5" y1="19" x2="5" y2="22" stroke="#22c55e" stroke-width="1.2"/>
+          <rect x="3.5" y="19" width="3" height="3" rx="0.5" fill="#22c55e"/>
+          <line x1="5" y1="16" x2="5" y2="19" stroke="#22c55e" stroke-width="1.2"/>
+          <line x1="12" y1="10" x2="12" y2="13" stroke="#22c55e" stroke-width="1.2"/>
+          <rect x="10.5" y="13" width="3" height="6" rx="0.5" fill="#22c55e"/>
+          <line x1="12" y1="19" x2="12" y2="22" stroke="#22c55e" stroke-width="1.2"/>
+          <line x1="19" y1="4" x2="19" y2="7" stroke="#22c55e" stroke-width="1.2"/>
+          <rect x="17.5" y="7" width="3" height="9" rx="0.5" fill="#22c55e"/>
+          <line x1="19" y1="16" x2="19" y2="19" stroke="#22c55e" stroke-width="1.2"/>
+          <polyline points="4,22 11,17 18,10 24,5" stroke="#22c55e" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+        </svg>Fintiq
+      </div>
+      <p>From speculation to strategy. Professional-grade stock screening, Monte Carlo simulation, portfolio optimisation, and pairs trading for retail investors in the UK and worldwide.</p>
+    </div>
+    <div class="footer-links">
+      <h4>Product</h4>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="https://app.fintiq.uk">Launch App</a>
+    </div>
+    <div class="footer-links">
+      <h4>Tools</h4>
+      <a href="https://app.fintiq.uk">Stock Screener</a>
+      <a href="https://app.fintiq.uk">Monte Carlo</a>
+      <a href="https://app.fintiq.uk">Portfolio Optimiser</a>
+      <a href="https://app.fintiq.uk">Pairs Trading</a>
+    </div>
+    <div class="footer-links">
+      <h4>Markets</h4>
+      <a href="https://app.fintiq.uk">LSE / London</a>
+      <a href="https://app.fintiq.uk">NASDAQ</a>
+      <a href="https://app.fintiq.uk">NYSE / S&amp;P 500</a>
+      <a href="https://app.fintiq.uk">European Markets</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>© 2026 Fintiq. All rights reserved.</p>
+    <p class="footer-disclaimer">
+      Fintiq provides information and analytical tools for educational purposes only.
+      This is not financial advice. Investing involves risk. Past performance is not indicative of future results.
+      Always do your own research.
+    </p>
+  </div>
+</footer>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.parentElement;
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // Smooth nav hide on scroll
+  let lastY = 0;
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    nav.style.transform = y > lastY && y > 100 ? 'translateY(-100%)' : 'translateY(0)';
+    nav.style.transition = 'transform 0.3s ease';
+    lastY = y;
+  });
+</script>
+
+</body>
+</html>

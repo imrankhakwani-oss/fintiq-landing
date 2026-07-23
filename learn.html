@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fintiq Learn — Free Investing Guides for UK Investors</title>
+  <meta name="description" content="Free investing guides for UK investors. Learn stock screening, portfolio theory, Monte Carlo simulation, DCF valuation and more with Fintiq Learn." />
+  <meta name="keywords" content="investing guides UK, stock screener tutorial, portfolio theory, FTSE 100, ISA SIPP, Monte Carlo simulation, DCF valuation" />
+  <link rel="canonical" href="https://fintiq.uk/learn.html" />
+  <meta property="og:title" content="Fintiq Learn — Free Investing Guides for UK Investors" />
+  <meta property="og:description" content="Free investing guides for UK investors. Learn stock screening, portfolio theory, Monte Carlo simulation, DCF valuation and more." />
+  <meta property="og:url" content="https://fintiq.uk/learn.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://fintiq.uk/og-learn.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0D1B2A; color: #F1F5F9; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
+
+    /* NAV */
+    nav { background: #0D1B2A; border-bottom: 1px solid #1E3A5F; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 64px; position: sticky; top: 0; z-index: 100; }
+    .nav-logo { font-size: 1.5rem; font-weight: 800; color: #F59E0B; letter-spacing: -0.5px; }
+    .nav-logo span { color: #F1F5F9; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
+    .nav-links a { color: #94A3B8; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+    .nav-links a:hover { color: #F1F5F9; }
+    .btn-primary { background: #F59E0B; color: #0D1B2A; padding: 8px 20px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; transition: background 0.2s; }
+    .btn-primary:hover { background: #FBBF24; color: #0D1B2A; }
+
+    /* HERO */
+    .hero { padding: 80px 24px 60px; text-align: center; max-width: 800px; margin: 0 auto; }
+    .hero-badge { display: inline-block; background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); padding: 6px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
+    .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.15; margin-bottom: 20px; }
+    .hero h1 span { color: #F59E0B; }
+    .hero p { font-size: 1.1rem; color: #94A3B8; max-width: 600px; margin: 0 auto 32px; }
+    .hero-stats { display: flex; justify-content: center; gap: 48px; flex-wrap: wrap; }
+    .stat { text-align: center; }
+    .stat-num { font-size: 1.8rem; font-weight: 800; color: #F59E0B; display: block; }
+    .stat-label { font-size: 0.8rem; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* SECTIONS */
+    .section { max-width: 1200px; margin: 0 auto; padding: 60px 24px; }
+    .section-header { margin-bottom: 40px; }
+    .section-tag { display: inline-block; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .tag-free { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.3); }
+    .tag-pro { background: rgba(245,158,11,0.15); color: #F59E0B; border: 1px solid rgba(245,158,11,0.3); }
+    .section-title { font-size: 1.8rem; font-weight: 800; margin-bottom: 8px; }
+    .section-sub { color: #94A3B8; font-size: 0.95rem; }
+
+    /* CARD GRID */
+    .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .card { background: #112236; border: 1px solid #1E3A5F; border-radius: 12px; padding: 28px; transition: border-color 0.2s, transform 0.2s; display: flex; flex-direction: column; }
+    .card:hover { border-color: #F59E0B; transform: translateY(-2px); }
+    .card-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .card-num { width: 28px; height: 28px; border-radius: 6px; background: rgba(245,158,11,0.15); color: #F59E0B; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+    .card-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 4px; }
+    .badge-free { background: rgba(34,197,94,0.15); color: #22c55e; }
+    .badge-pro { background: rgba(245,158,11,0.15); color: #F59E0B; }
+    .card h3 { font-size: 1rem; font-weight: 700; line-height: 1.4; margin-bottom: 10px; color: #F1F5F9; }
+    .card p { font-size: 0.875rem; color: #94A3B8; line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .card-link { display: inline-flex; align-items: center; gap: 6px; color: #F59E0B; font-size: 0.85rem; font-weight: 600; transition: gap 0.2s; }
+    .card-link:hover { gap: 10px; }
+    .card-link svg { width: 14px; height: 14px; }
+    .card.pro-card { border-color: rgba(245,158,11,0.2); }
+    .card.pro-card:hover { border-color: #F59E0B; }
+
+    /* CTA BANNER */
+    .cta-banner { background: linear-gradient(135deg, #112236 0%, #1a3050 100%); border: 1px solid #1E3A5F; border-radius: 16px; padding: 60px 40px; text-align: center; max-width: 1200px; margin: 0 auto 80px; }
+    .cta-banner h2 { font-size: 2rem; font-weight: 800; margin-bottom: 12px; }
+    .cta-banner h2 span { color: #F59E0B; }
+    .cta-banner p { color: #94A3B8; margin-bottom: 28px; font-size: 1rem; }
+    .btn-cta { display: inline-block; background: #F59E0B; color: #0D1B2A; padding: 14px 36px; border-radius: 10px; font-weight: 800; font-size: 1rem; transition: background 0.2s; }
+    .btn-cta:hover { background: #FBBF24; }
+
+    /* FOOTER */
+    footer { border-top: 1px solid #1E3A5F; padding: 40px 24px; text-align: center; color: #94A3B8; font-size: 0.85rem; }
+    footer a { color: #94A3B8; }
+    footer a:hover { color: #F59E0B; }
+    .footer-logo { font-size: 1.2rem; font-weight: 800; color: #F59E0B; margin-bottom: 16px; display: block; }
+    .footer-links { display: flex; justify-content: center; gap: 24px; flex-wrap: wrap; margin-bottom: 20px; }
+    .divider { border: none; border-top: 1px solid #1E3A5F; margin: 60px 0 0; }
+
+    @media (max-width: 640px) {
+      .nav-links a { display: none; }
+      .hero-stats { gap: 24px; }
+      .cta-banner { padding: 40px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="nav-logo">Fintiq<span>.uk</span></a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk">Screener</a>
+    <a href="https://app.fintiq.uk" class="btn-primary">Try the App</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-badge">Free Investing Education</div>
+  <h1>Fintiq Learn —<br /><span>Invest With Confidence</span></h1>
+  <p>Free, in-depth guides written for UK investors. From stock screening basics to advanced portfolio theory — everything you need to invest smarter.</p>
+  <div class="hero-stats">
+    <div class="stat"><span class="stat-num">20</span><span class="stat-label">In-Depth Guides</span></div>
+    <div class="stat"><span class="stat-num">14</span><span class="stat-label">Free Articles</span></div>
+    <div class="stat"><span class="stat-num">6</span><span class="stat-label">Pro Deep-Dives</span></div>
+  </div>
+</section>
+
+<!-- FOUNDATION -->
+<section class="section">
+  <div class="section-header">
+    <span class="section-tag tag-free">Foundation — Free</span>
+    <h2 class="section-title">Start Here: Core Concepts Every Investor Needs</h2>
+    <p class="section-sub">Master the building blocks of investing — completely free, no sign-up required.</p>
+  </div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-meta"><span class="card-num">01</span><span class="card-badge badge-free">Free</span></div>
+      <h3>What is a Stock Screener and Why Every Investor Needs One</h3>
+      <p>Learn how screeners filter thousands of stocks by P/E ratio, ROE, revenue growth and debt — and how Fintiq makes it easy for UK investors.</p>
+      <a href="learn/what-is-a-stock-screener.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">02</span><span class="card-badge badge-free">Free</span></div>
+      <h3>P/E Ratio, ROE, and the 5 Key Metrics Every Investor Must Know</h3>
+      <p>Understand the five financial metrics that separate great investments from mediocre ones — with UK examples and Fintiq's screener walkthrough.</p>
+      <a href="learn/key-financial-metrics.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">03</span><span class="card-badge badge-free">Free</span></div>
+      <h3>What is Monte Carlo Simulation? A Simple Guide for Investors</h3>
+      <p>Discover how running thousands of random scenarios gives you a probability distribution of outcomes — far better than a single-point forecast.</p>
+      <a href="learn/what-is-monte-carlo-simulation.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">04</span><span class="card-badge badge-free">Free</span></div>
+      <h3>How to Read RSI and MACD: Technical Analysis for Beginners</h3>
+      <p>Two of the most widely used technical indicators explained clearly — what they measure, how to interpret signals, and common pitfalls to avoid.</p>
+      <a href="learn/how-to-read-rsi-macd.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">05</span><span class="card-badge badge-free">Free</span></div>
+      <h3>FTSE 100 vs NASDAQ: Which Market Should UK Investors Focus On?</h3>
+      <p>A balanced comparison covering composition, currency risk, historical returns, ISA implications and the case for investing in both.</p>
+      <a href="learn/ftse-100-vs-nasdaq.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">06</span><span class="card-badge badge-free">Free</span></div>
+      <h3>What is Portfolio Diversification and How Do You Actually Do It?</h3>
+      <p>From correlation theory to Modern Portfolio Theory — the science of spreading risk, with a practical guide to using Fintiq's Portfolio Optimiser.</p>
+      <a href="learn/what-is-portfolio-diversification.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">07</span><span class="card-badge badge-free">Free</span></div>
+      <h3>ISA vs SIPP: Where Should Your Investments Live?</h3>
+      <p>A clear comparison of the UK's two most important tax wrappers — allowances, tax treatment, access rules, and which suits each life stage.</p>
+      <a href="learn/isa-vs-sipp.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- INTERMEDIATE -->
+<section class="section" style="padding-top:0;">
+  <div class="section-header">
+    <span class="section-tag tag-free">Intermediate — Free</span>
+    <h2 class="section-title">Go Deeper: Tools, Models and Strategy</h2>
+    <p class="section-sub">Apply professional-grade techniques using Fintiq's built-in tools — all free to read.</p>
+  </div>
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-meta"><span class="card-num">08</span><span class="card-badge badge-free">Free</span></div>
+      <h3>How to Screen FTSE 100 Stocks Like a Hedge Fund Manager</h3>
+      <p>Factor investing — value, growth, quality, momentum — explained and applied to a real multi-factor FTSE 100 screen inside Fintiq.</p>
+      <a href="learn/screen-stocks-like-hedge-fund.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">09</span><span class="card-badge badge-free">Free</span></div>
+      <h3>Using Monte Carlo Simulation to Plan Your Retirement</h3>
+      <p>Sequence of returns risk, the 4% rule, UK State Pension integration — and a step-by-step guide to running your retirement simulation in Fintiq.</p>
+      <a href="learn/monte-carlo-retirement-planning.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">10</span><span class="card-badge badge-free">Free</span></div>
+      <h3>What is the Efficient Frontier? Modern Portfolio Theory Explained</h3>
+      <p>Harry Markowitz's 1952 breakthrough still shapes how professionals build portfolios. Understand risk-return trade-offs and the Sharpe Ratio.</p>
+      <a href="learn/efficient-frontier-mpt.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">11</span><span class="card-badge badge-free">Free</span></div>
+      <h3>How to Build a Balanced Portfolio Using the Sharpe Ratio</h3>
+      <p>The definitive measure of risk-adjusted return — what a good Sharpe ratio looks like, how it differs from Sortino, and how to use it in construction.</p>
+      <a href="learn/sharpe-ratio-portfolio.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">12</span><span class="card-badge badge-free">Free</span></div>
+      <h3>Cointegration Explained: The Strategy Institutional Traders Use</h3>
+      <p>Why correlation isn't enough — cointegration, mean reversion and pairs trading (think BP vs Shell) explained with real UK market examples.</p>
+      <a href="learn/cointegration-explained.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">13</span><span class="card-badge badge-free">Free</span></div>
+      <h3>Hargreaves Lansdown vs AJ Bell vs Trading 212 vs Freetrade: Which is Best?</h3>
+      <p>An honest, data-driven comparison of the UK's most popular brokers — fees, account types, investment universe and who each platform suits.</p>
+      <a href="learn/broker-comparison-uk.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card">
+      <div class="card-meta"><span class="card-num">14</span><span class="card-badge badge-free">Free</span></div>
+      <h3>How to Use the DCF Financial Model in Fintiq to Value Any Company</h3>
+      <p>The gold standard of fundamental valuation — every assumption explained, the 3-stage DCF formula, Graham Number, sensitivity analysis and a Fintiq walkthrough.</p>
+      <a href="learn/dcf-model-fintiq.html" class="card-link">Read guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- ADVANCED / PRO -->
+<section class="section" style="padding-top:0;">
+  <div class="section-header">
+    <span class="section-tag tag-pro">Advanced — Pro</span>
+    <h2 class="section-title">Pro Masterclasses: Institutional-Grade Techniques</h2>
+    <p class="section-sub">Deep-dive guides used by professional fund managers and quant traders — unlock for £4.99 each.</p>
+  </div>
+  <div class="card-grid">
+    <div class="card pro-card">
+      <div class="card-meta"><span class="card-num">15</span><span class="card-badge badge-pro">Pro</span></div>
+      <h3>Complete FTSE 100 Stock Screening Masterclass</h3>
+      <p>Build a professional-grade multi-factor screen from scratch — combining value, quality, momentum and growth factors to find the top 10 FTSE 100 stocks.</p>
+      <a href="learn/ftse-100-screening-masterclass.html" class="card-link" style="color:#F59E0B;">Unlock guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card pro-card">
+      <div class="card-meta"><span class="card-num">16</span><span class="card-badge badge-pro">Pro</span></div>
+      <h3>Building Your Optimal Portfolio with the Efficient Frontier — Step by Step</h3>
+      <p>A practical implementation guide — how to construct a truly optimal portfolio using mean-variance optimisation and Fintiq's Portfolio tool.</p>
+      <a href="learn/efficient-frontier-step-by-step.html" class="card-link" style="color:#F59E0B;">Unlock guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card pro-card">
+      <div class="card-meta"><span class="card-num">17</span><span class="card-badge badge-pro">Pro</span></div>
+      <h3>Monte Carlo Simulation for FIRE and Early Retirement Planning</h3>
+      <p>How to model an early retirement with decades of uncertainty — withdrawal strategies, safe rates, part-time income and UK-specific FIRE considerations.</p>
+      <a href="learn/monte-carlo-fire-strategy.html" class="card-link" style="color:#F59E0B;">Unlock guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card pro-card">
+      <div class="card-meta"><span class="card-num">18</span><span class="card-badge badge-pro">Pro</span></div>
+      <h3>Pairs Trading with Cointegration: A Practical Guide</h3>
+      <p>From ADF tests to z-score entry signals — how to build, backtest and trade a cointegration pairs strategy on UK equities using Fintiq's Pairs tab.</p>
+      <a href="learn/pairs-trading-cointegration-guide.html" class="card-link" style="color:#F59E0B;">Unlock guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card pro-card">
+      <div class="card-meta"><span class="card-num">19</span><span class="card-badge badge-pro">Pro</span></div>
+      <h3>Advanced Technical Analysis: Combining RSI, MACD and Momentum</h3>
+      <p>How professional traders layer technical indicators — entry and exit systems, filtering false signals, and building a rules-based momentum strategy.</p>
+      <a href="learn/advanced-technical-analysis.html" class="card-link" style="color:#F59E0B;">Unlock guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+    <div class="card pro-card">
+      <div class="card-meta"><span class="card-num">20</span><span class="card-badge badge-pro">Pro</span></div>
+      <h3>How Professional Fund Managers Construct Portfolios — and How to Copy Them</h3>
+      <p>The inside story of institutional portfolio construction — risk budgeting, factor tilts, rebalancing rules and how to replicate the process as a retail investor.</p>
+      <a href="learn/fund-manager-portfolio-construction.html" class="card-link" style="color:#F59E0B;">Unlock guide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<div style="padding:0 24px;">
+  <div class="cta-banner">
+    <h2>Ready to put the theory into <span>practice?</span></h2>
+    <p>Fintiq gives you a free UK stock screener, Monte Carlo simulator, DCF model, portfolio optimiser and more — no subscription required.</p>
+    <a href="https://app.fintiq.uk" class="btn-cta">Launch Fintiq Free →</a>
+  </div>
+</div>
+
+<footer>
+  <span class="footer-logo">Fintiq.uk</span>
+  <div class="footer-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://app.fintiq.uk">App</a>
+    <a href="https://fintiq.uk/privacy">Privacy</a>
+    <a href="https://fintiq.uk/terms">Terms</a>
+  </div>
+  <p>© 2025 Fintiq. Free UK stock screener and investing tools. Not financial advice.</p>
+</footer>
+
+</body>
+</html>

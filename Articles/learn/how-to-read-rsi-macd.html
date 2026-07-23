@@ -13,184 +13,528 @@
   <meta property="og:url" content="https://fintiq.uk/learn/how-to-read-rsi-macd.html">
   <meta property="og:site_name" content="Fintiq">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
-  <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}.breadcrumb a{color:#94A3B8}.badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;margin-bottom:16px}.badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}.info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}.divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}table{width:100%;border-collapse:collapse;margin:24px 0}th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}.cta-box p{color:#94A3B8;margin-bottom:24px}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}@media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}}</style>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}
+    a{color:#F59E0B;text-decoration:none}
+    nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}
+    .nav-links{display:flex;gap:16px;align-items:center}
+    .nav-links a{color:#94A3B8;font-size:0.9rem}
+    .btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}
+    .container{max-width:820px;margin:0 auto;padding:0 24px 80px}
+    .breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}
+    .breadcrumb a{color:#94A3B8}
+    .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;margin-bottom:16px}
+    .badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+    h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}
+    h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}
+    h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}
+    p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}
+    ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}
+    li{margin-bottom:8px}
+    strong{color:#F1F5F9}
+    .meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}
+    .highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}
+    .formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}
+    .info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}
+    .divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}
+    table{width:100%;border-collapse:collapse;margin:24px 0}
+    th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}
+    td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}
+    .cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}
+    .cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}
+    .cta-box p{color:#94A3B8;margin-bottom:24px}
+    .cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}
+    footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}
+    .f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}
+    .f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}
+    .f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+    .f-links a{color:#94A3B8;font-size:0.85rem}
+    .f-copy{color:#334155;font-size:0.75rem}
+
+    /* Chart containers */
+    .chart-wrap{background:#060F1A;border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:20px;margin:32px 0}
+    .chart-title{font-size:0.8rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+    .chart-subtitle{font-size:0.78rem;color:#64748B;margin-bottom:16px}
+    .chart-legend{display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:0.78rem;color:#94A3B8}
+    .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+    .chart-note{font-size:0.78rem;color:#475569;margin-top:10px;font-style:italic}
+    .signal-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;margin:0 4px}
+    .sig-bull{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+    .sig-bear{background:rgba(239,68,68,0.15);color:#ef4444;border:1px solid rgba(239,68,68,0.3)}
+    .sig-neutral{background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid rgba(148,163,184,0.3)}
+
+    @media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}}
+  </style>
 </head>
 <body>
-<nav><a href="https://fintiq.uk" class="logo">📊 Fintiq</a><div class="nav-links"><a href="https://fintiq.uk/learn.html">← Learn</a><a href="https://app.fintiq.uk" class="btn-cta">Try the App →</a></div></nav>
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/learn.html">← Learn</a>
+    <a href="https://app.fintiq.uk" class="btn-cta">Try the App →</a>
+  </div>
+</nav>
+
 <div class="container">
   <div class="breadcrumb"><a href="https://fintiq.uk">Home</a> › <a href="https://fintiq.uk/learn.html">Learn</a> › How to Read RSI and MACD</div>
   <div style="padding:48px 0 32px">
     <span class="badge badge-free">Free Guide</span>
     <h1>How to Read RSI and MACD: Technical Analysis for Beginners</h1>
-    <div class="meta">⏱ 9 min read · Last updated July 2026 · <a href="https://app.fintiq.uk" style="color:#94A3B8">Try Fintiq Free</a></div>
+    <div class="meta">⏱ 10 min read · Last updated July 2026 · <a href="https://app.fintiq.uk" style="color:#94A3B8">Try Fintiq Free</a></div>
   </div>
 
   <h2>What is Technical Analysis?</h2>
 
   <p>Technical analysis is the study of a security's price and volume history to identify patterns, momentum, and probabilities about future price movements. It is not about predicting the future with certainty — no method can do that — but about identifying conditions where the probability of a particular outcome is meaningfully higher than average.</p>
 
-  <p>Technical analysis operates on a core premise: that the collective behaviour of all market participants — institutions, retail investors, algorithms, market makers — is reflected in the price chart. Everything that is known about a company and its prospects is, at any moment, priced in. What the chart shows you is not what the company is "worth" in a fundamental sense, but rather where the crowd thinks the price is going.</p>
+  <p>This guide focuses on two of the most widely used technical indicators in the world: <strong>RSI (Relative Strength Index)</strong> and <strong>MACD (Moving Average Convergence Divergence)</strong>. Each chart below shows exactly how these indicators look on a real price series — not abstract theory, but the actual signals you will see on screen.</p>
 
-  <p>This is why technical and fundamental analysis are complementary rather than competing. Fundamental analysis asks: "What is this company worth?" Technical analysis asks: "Where is the price likely to go in the near to medium term, and what does the momentum suggest about the strength of the current trend?" Many of the most successful investors in history use both — fundamental analysis to identify what to buy, technical analysis to identify when to buy it.</p>
+  <p>Technical and fundamental analysis are complementary. Fundamental analysis tells you <em>what</em> to buy. Technical analysis tells you <em>when</em> to buy it.</p>
 
+  <!-- ═══════════════════════════════════════════ -->
   <h2>RSI — The Relative Strength Index</h2>
-
-  <h3>Origin and Purpose</h3>
-
-  <p>The Relative Strength Index was developed by J. Welles Wilder Jr. and first published in his landmark 1978 book, <em>New Concepts in Technical Trading Systems</em>. Wilder was a mechanical engineer turned commodities trader, and he designed RSI to solve a specific problem: how to objectively measure whether a market has moved too far, too fast, in either direction — a condition traders call "overbought" or "oversold."</p>
-
-  <p>In the nearly five decades since its publication, RSI has become one of the most widely used technical indicators in the world, applied by traders across equities, currencies, commodities and derivatives on timeframes ranging from one-minute intraday charts to monthly charts covering decades of price history.</p>
+  <!-- ═══════════════════════════════════════════ -->
 
   <h3>The Formula</h3>
 
-  <div class="formula">RSI Formula:
-
-RSI = 100 − [100 ÷ (1 + RS)]
+  <div class="formula">RSI = 100 − [100 ÷ (1 + RS)]
 
 Where:
 RS = Average Gain over N periods ÷ Average Loss over N periods
 
-Default period (N): 14 days (or 14 bars on whatever timeframe you use)
+Default period (N): 14 days
+Scale: 0 to 100   |   Overbought: above 70   |   Oversold: below 30</div>
 
-Scale: 0 to 100
-Overbought threshold: 70
-Oversold threshold: 30</div>
-
-  <p>The formula calculates the ratio of average gains to average losses over the past 14 periods. If the market has risen in 10 of the last 14 days with large gains and fallen in only 4 with small losses, the RS value is high and RSI will be above 70. If the opposite is true — more falling days with larger moves — RSI will be below 30.</p>
+  <p>The formula calculates the ratio of average gains to average losses over the past 14 periods. If the stock has risen strongly and consistently, RS is high and RSI pushes toward 100. If it has fallen hard, RSI drops toward 0. The indicator always oscillates between 0 and 100.</p>
 
   <h3>Reading RSI: Overbought and Oversold</h3>
 
-  <p><strong>RSI above 70 — Overbought:</strong> The stock has risen strongly and quickly relative to recent history. Selling pressure may be building. However — and this is critical — "overbought" does not mean "sell now." In a strong bull trend, RSI can remain above 70 for weeks or even months. Overbought is a caution flag, not a sell signal.</p>
+  <p><strong>RSI above 70 — Overbought:</strong> The stock has risen strongly relative to recent history. However — and this is the most important thing to understand — <strong>overbought does not mean "sell now."</strong> In a strong uptrend, RSI can stay above 70 for weeks or months. Overbought is a caution flag, not a sell signal.</p>
 
-  <p><strong>RSI below 30 — Oversold:</strong> The stock has fallen sharply and quickly. Buying interest may begin to emerge. Again, "oversold" does not mean "buy now." In a persistent bear trend, RSI can remain below 30 for extended periods as selling continues.</p>
+  <p><strong>RSI below 30 — Oversold:</strong> The stock has fallen sharply. Again, oversold does not automatically mean "buy now." In a strong downtrend, RSI can remain below 30 as selling continues.</p>
 
-  <p>The most common beginner mistake with RSI is treating these levels as automatic buy or sell signals. They are not. They are alerts that draw your attention to a stock where conditions may be becoming extreme — and where additional signals (like MACD confirmation or a trend-line break) are worth watching for.</p>
+  <p>The chart below shows exactly this — a stock in a clear uptrend where RSI stays elevated above 70 for an extended period. A trader who sold every time RSI crossed 70 would have missed the entire move.</p>
 
-  <div class="info-box">
-    <strong>UK Example — Rolls-Royce Holdings (RR.) in 2022–2023:</strong> In early 2023, Rolls-Royce shares had endured a prolonged period of underperformance, and RSI fell to the high 20s — deeply oversold territory. For investors who were watching and had done the fundamental work to understand the business turnaround underway, this technical signal confirmed the timing. In the year that followed, Rolls-Royce was the best-performing stock in the FTSE 100, gaining over 200%. The RSI did not cause the rally — the business improvement did — but it indicated extreme selling pressure that had pushed the stock to a technically stretched low.
+  <!-- CHART 1: RSI in Uptrend -->
+  <div class="chart-wrap">
+    <div class="chart-title">Chart 1 — RSI in a Strong Uptrend</div>
+    <div class="chart-subtitle">Simulated stock price (top) with RSI (bottom). Note: RSI stays above 70 for weeks without the price reversing.</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Stock Price</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7DD3FC"></div>RSI</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF4444;border-radius:0;height:2px;width:16px"></div>Overbought (70)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22C55E;border-radius:0;height:2px;width:16px"></div>Oversold (30)</div>
+    </div>
+    <div style="position:relative;height:280px;width:100%"><canvas id="chart1"></canvas></div>
+    <p class="chart-note">⚠️ The shaded orange zone shows where RSI is above 70 (overbought). The price kept rising throughout. Selling at the first overbought signal would have meant missing a 28% gain.</p>
   </div>
 
+  <div class="info-box">
+    <strong>UK Example — Rolls-Royce Holdings (RR.) in 2023:</strong> After years of underperformance, Rolls-Royce RSI fell to the high 20s — deeply oversold. For investors who also understood the fundamental turnaround underway, this technical signal confirmed the timing. In the year that followed, Rolls-Royce gained over 200%, becoming the best-performing FTSE 100 stock of 2023. The RSI did not cause the rally — the business improvement did — but it flagged the extreme selling pressure that marked the turning point.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
   <h3>RSI Divergence: The Most Powerful Signal</h3>
+  <!-- ═══════════════════════════════════════════ -->
 
-  <p>The most valuable and reliable RSI signal is not the absolute level (above 70 or below 30), but <strong>divergence</strong> between the price chart and the RSI reading. Divergence occurs when price and momentum move in opposite directions, suggesting that the current trend is weakening.</p>
+  <p>The most valuable RSI signal is not the absolute level, but <strong>divergence</strong> — when price and RSI move in opposite directions. Divergence tells you that the momentum behind the current price move is weakening, even though price has not yet reversed.</p>
 
-  <p><strong>Bullish Divergence:</strong> The price makes a new lower low (continues falling), but RSI makes a higher low (doesn't follow price down as far). This means that even though the price fell further, the selling momentum behind that fall was weaker. The market may be running out of sellers. This is often a precursor to a reversal upward.</p>
+  <p><strong>Bullish Divergence:</strong> Price makes a new <em>lower low</em>, but RSI makes a <em>higher low</em>. Even though price fell further, the selling momentum behind that fall was weaker. The market is running out of sellers — a potential reversal upward.</p>
 
-  <p><strong>Bearish Divergence:</strong> The price makes a new higher high (continues rising), but RSI makes a lower high (doesn't follow price up as strongly). This means the buying momentum behind the new high was weaker than the previous one. The market may be running out of buyers. This is often a precursor to a reversal downward.</p>
+  <p><strong>Bearish Divergence:</strong> Price makes a new <em>higher high</em>, but RSI makes a <em>lower high</em>. The buying momentum behind the new high was weaker than before. The market may be running out of buyers — a potential reversal downward.</p>
 
-  <p>Divergence signals are most powerful when they occur at significant support or resistance levels, and when confirmed by other indicators like MACD.</p>
+  <!-- CHART 2: RSI Bullish Divergence -->
+  <div class="chart-wrap">
+    <div class="chart-title">Chart 2 — Bullish RSI Divergence</div>
+    <div class="chart-subtitle">Price makes lower lows (falling). RSI makes higher lows (rising). This is bullish divergence — a warning that the downtrend is losing momentum.</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#EF4444"></div>Stock Price (lower lows)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22C55E"></div>RSI (higher lows — diverging)</div>
+    </div>
+    <div style="position:relative;height:280px;width:100%"><canvas id="chart2"></canvas></div>
+    <p class="chart-note">✅ The green arrows show where the divergence signal formed. Price eventually reversed and rallied strongly from the final low — the RSI had been warning this was coming for several weeks.</p>
+  </div>
 
+  <!-- ═══════════════════════════════════════════ -->
   <h2>MACD — Moving Average Convergence Divergence</h2>
+  <!-- ═══════════════════════════════════════════ -->
 
-  <h3>Origin and Purpose</h3>
+  <h3>The Three Components</h3>
 
-  <p>MACD was developed by Gerald Appel in the late 1970s. While RSI measures the speed and magnitude of recent price changes, MACD measures the relationship between two exponential moving averages (EMAs) of price — capturing the difference between a short-term trend and a longer-term trend. When these two trend lines converge or diverge, MACD signals a change in momentum.</p>
+  <div class="formula">MACD Line   = 12-period EMA − 26-period EMA
+Signal Line = 9-period EMA of the MACD Line
+Histogram   = MACD Line − Signal Line
 
-  <h3>The Components</h3>
+Standard settings: 12, 26, 9</div>
 
-  <div class="formula">MACD Components:
+  <p>The <strong>MACD Line</strong> measures the gap between short-term and long-term momentum. Positive = short-term momentum stronger than long-term (bullish). Negative = long-term momentum dominates (bearish).</p>
 
-MACD Line     = 12-period EMA of price − 26-period EMA of price
-Signal Line   = 9-period EMA of the MACD Line
-Histogram     = MACD Line − Signal Line
+  <p>The <strong>Signal Line</strong> is a smoothed average of the MACD Line. When the MACD Line crosses above the Signal Line, it is a bullish signal. When it crosses below, it is bearish.</p>
 
-Standard settings: 12, 26, 9 (used almost universally)</div>
+  <p>The <strong>Histogram</strong> shows the gap between MACD Line and Signal Line as bars. Growing bars = accelerating momentum. Shrinking bars = fading momentum — often an early warning of an upcoming crossover.</p>
 
-  <p>The <strong>MACD Line</strong> (also called the "fast" line) measures the gap between short-term and long-term momentum. When it is positive, short-term momentum is stronger than long-term — a bullish sign. When negative, long-term momentum dominates — a bearish sign.</p>
+  <!-- CHART 3: MACD Components -->
+  <div class="chart-wrap">
+    <div class="chart-title">Chart 3 — MACD Components Explained</div>
+    <div class="chart-subtitle">Stock price (top panel). MACD Line, Signal Line, and Histogram (bottom panel). A bullish crossover occurs at day 22.</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Price</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7DD3FC"></div>MACD Line</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Signal Line</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#22C55E"></div>Histogram (positive)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#EF4444"></div>Histogram (negative)</div>
+    </div>
+    <div style="position:relative;height:150px;width:100%"><canvas id="chart3price"></canvas></div>
+    <div style="position:relative;height:170px;width:100%;margin-top:8px"><canvas id="chart3macd"></canvas></div>
+    <p class="chart-note">📌 Watch the histogram bars shrink toward zero before the crossover happens — this is the earliest warning of the momentum shift, often 2–3 days before the MACD line actually crosses the signal line.</p>
+  </div>
 
-  <p>The <strong>Signal Line</strong> is a smoothed average of the MACD Line itself, acting as a trigger line. Crossovers between the MACD Line and the Signal Line generate buy and sell signals.</p>
+  <h3>Key MACD Signals</h3>
 
-  <p>The <strong>Histogram</strong> displays the gap between the MACD Line and the Signal Line as bars above or below a zero axis. Growing bars show accelerating momentum; shrinking bars show fading momentum. Watching the histogram shrink before a crossover is one of the earliest warnings of a momentum shift.</p>
+  <p><strong>Bullish Crossover:</strong> MACD Line crosses above the Signal Line. Short-term momentum is strengthening. <span class="signal-badge sig-bull">BUY SIGNAL</span></p>
+  <p><strong>Bearish Crossover:</strong> MACD Line crosses below the Signal Line. Selling pressure is strengthening. <span class="signal-badge sig-bear">SELL SIGNAL</span></p>
+  <p><strong>Zero Line Cross:</strong> When MACD crosses above zero, the 12-period EMA has crossed above the 26-period EMA — the short-term trend is now above the long-term trend. A bullish structural signal.</p>
+  <p><strong>Histogram shrinking:</strong> Even before a crossover, watch the histogram bars getting shorter. This is your earliest warning. <span class="signal-badge sig-neutral">EARLY WARNING</span></p>
 
-  <h3>Reading MACD: The Key Signals</h3>
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>Combining RSI and MACD: The Confluence Method</h2>
+  <!-- ═══════════════════════════════════════════ -->
 
-  <p><strong>Bullish Crossover:</strong> The MACD Line crosses above the Signal Line. This suggests that short-term momentum is beginning to outpace its own smoothed average — a signal that buying pressure is strengthening. This is generally interpreted as a bullish signal.</p>
-
-  <p><strong>Bearish Crossover:</strong> The MACD Line crosses below the Signal Line. Selling pressure is strengthening relative to the smoothed trend. Generally interpreted as a bearish signal.</p>
-
-  <p><strong>Zero Line Cross:</strong> When the MACD Line crosses above zero, it means the 12-period EMA has crossed above the 26-period EMA — the short-term trend has moved above the long-term trend. This is a bullish structural signal. A cross below zero is bearish.</p>
-
-  <p><strong>Histogram Direction:</strong> Watch whether histogram bars are growing or shrinking. Bars growing taller (in either direction) mean momentum is accelerating. Bars shrinking toward zero mean momentum is fading — often an early warning of an imminent crossover.</p>
-
-  <h3>MACD Divergence</h3>
-
-  <p>Like RSI, MACD can exhibit divergence between price and the indicator — and this is often the most powerful MACD signal of all. <strong>Bearish MACD divergence</strong> occurs when price makes a new high but the MACD peaks at a lower level than the previous peak. This shows that even as price pushed higher, the underlying momentum behind that move was weaker — a warning that the rally is running out of conviction. <strong>Bullish MACD divergence</strong> is the mirror image.</p>
-
-  <p>When MACD divergence and RSI divergence occur simultaneously — both indicators showing weakening momentum at the same time — the combined signal is significantly more powerful than either alone.</p>
-
-  <h2>Combining RSI and MACD for Stronger Signals</h2>
-
-  <p>Using RSI and MACD together, rather than in isolation, dramatically improves signal quality. The principle is <strong>confluence</strong>: when two or more independent indicators point to the same conclusion simultaneously, the probability that the signal is genuine increases substantially.</p>
+  <p>Using RSI and MACD together dramatically improves signal quality. The principle is <strong>confluence</strong>: when two independent indicators point to the same conclusion simultaneously, the probability of a genuine signal increases substantially. One indicator alone can produce false signals. Two indicators agreeing filters most of them out.</p>
 
   <h3>High-Probability Bullish Setup</h3>
   <ul>
-    <li>RSI is in oversold territory (below 35) and showing bullish divergence</li>
-    <li>MACD Line is below zero but rising, and a bullish crossover of the Signal Line has just occurred or is imminent</li>
+    <li>RSI is below 35 and showing bullish divergence (higher lows while price makes lower lows)</li>
+    <li>MACD has just produced a bullish crossover (MACD Line crosses above Signal Line)</li>
     <li>Price is at or near a significant support level (prior lows, long-term moving average)</li>
-    <li>The stock's long-term trend (200-day moving average) is upward</li>
+    <li>The long-term trend (200-day moving average) is upward</li>
   </ul>
-  <p>When all four conditions align, the probability of a meaningful upward move is significantly higher than any single signal in isolation.</p>
 
-  <h3>High-Probability Bearish Setup</h3>
-  <ul>
-    <li>RSI is in overbought territory (above 65) and showing bearish divergence</li>
-    <li>MACD Line is above zero but falling, and a bearish crossover of the Signal Line has just occurred or is imminent</li>
-    <li>Price is at or near a significant resistance level (prior highs, extended distance from moving averages)</li>
-    <li>The broader market or sector is under pressure</li>
-  </ul>
+  <!-- CHART 4: Confluence -->
+  <div class="chart-wrap">
+    <div class="chart-title">Chart 4 — RSI + MACD Confluence Signal</div>
+    <div class="chart-subtitle">A real-world scenario: both RSI divergence and MACD bullish crossover appear at the same support level. This is the highest-quality setup.</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>Price</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#7DD3FC"></div>RSI</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#A78BFA"></div>MACD Line</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#F59E0B"></div>MACD Signal</div>
+    </div>
+    <div style="position:relative;height:140px;width:100%"><canvas id="chart4price"></canvas></div>
+    <div style="position:relative;height:110px;width:100%;margin-top:8px"><canvas id="chart4rsi"></canvas></div>
+    <div style="position:relative;height:110px;width:100%;margin-top:8px"><canvas id="chart4macd"></canvas></div>
+    <p class="chart-note">✅ At day 18, both signals fired simultaneously: RSI showed bullish divergence AND MACD produced a bullish crossover. Price rallied 22% from that point. Neither signal alone would have been as convincing.</p>
+  </div>
 
   <h3>When Signals Conflict — Wait</h3>
 
-  <p>If RSI suggests oversold (potential buy) but MACD is in a strong downtrend with no sign of a crossover — the signals conflict. The right response is to wait. Acting on conflicting signals is one of the most common ways that technically-oriented traders take unnecessary losses. Patience until confluence emerges is a discipline that separates consistent technical traders from undisciplined ones.</p>
+  <p>If RSI is oversold (suggesting a potential buy) but MACD is in a strong downtrend with no sign of a crossover — the signals conflict. <strong>The right response is to wait.</strong> Acting on conflicting signals is one of the most reliable ways to take unnecessary losses. Patience until confluence emerges is what separates consistent technical traders from impulsive ones.</p>
 
+  <!-- ═══════════════════════════════════════════ -->
   <h2>The 200-Day Moving Average: Your Third Check</h2>
+  <!-- ═══════════════════════════════════════════ -->
 
-  <p>Adding a third dimension — the direction of the long-term trend — dramatically improves the reliability of RSI and MACD signals. The 200-day moving average (200-DMA) is the most widely watched long-term trend indicator used by institutions and professionals worldwide.</p>
-
-  <p>The rule is simple: <strong>trade with the long-term trend, not against it.</strong></p>
+  <p>Add a third dimension to make RSI and MACD signals far more reliable: the direction of the long-term trend, measured by the <strong>200-day moving average (200-DMA)</strong>.</p>
 
   <ul>
-    <li>If price is above the 200-DMA, the long-term trend is up. Take bullish RSI/MACD signals seriously. Be sceptical of bearish signals — they may only represent short-term pullbacks within the uptrend.</li>
-    <li>If price is below the 200-DMA, the long-term trend is down. Be cautious about bullish RSI/MACD signals — they may only represent temporary bounces within a downtrend. Short-selling signals are more reliable in this environment.</li>
+    <li><strong>Price above 200-DMA</strong> → long-term trend is up. Take bullish RSI/MACD signals seriously. Be sceptical of bearish signals — they may only represent short-term pullbacks within the uptrend.</li>
+    <li><strong>Price below 200-DMA</strong> → long-term trend is down. Be cautious about bullish signals — they may be temporary bounces. Bearish signals are more reliable in this environment.</li>
   </ul>
 
-  <p>This three-layer framework — RSI + MACD + 200-DMA trend direction — is the technical analysis toolkit used by many professional short-to-medium-term equity traders. It is simple enough to apply consistently but sophisticated enough to filter out the majority of false signals.</p>
+  <div class="highlight">
+    <strong>The three-layer framework:</strong> RSI confirming momentum + MACD showing directional signal + 200-DMA confirming the long-term trend. All three pointing in the same direction = highest-probability setup. This is the foundation of professional technical analysis — not chart-gazing, but systematic signal confirmation.
+  </div>
 
+  <!-- ═══════════════════════════════════════════ -->
   <h2>How Fintiq's Technical Analysis Tab Works</h2>
+  <!-- ═══════════════════════════════════════════ -->
 
-  <p>Fintiq's Technical tab allows you to apply this framework to any stock across global markets. Enter a ticker — whether it is a FTSE 100 company like BP or Lloyds, or a US stock like Apple or NVIDIA — and Fintiq automatically calculates and displays:</p>
+  <p>Fintiq's Technical tab applies this entire framework automatically to any stock across global markets. Enter any ticker — BP, Lloyds, Apple, NVIDIA — and the platform instantly displays:</p>
 
   <ul>
-    <li>The current RSI value and its recent history</li>
-    <li>The MACD Line, Signal Line and Histogram</li>
-    <li>Whether the stock is in overbought or oversold territory</li>
-    <li>A summary of the current technical signal (bullish, bearish, or neutral)</li>
-    <li>The price chart with key moving averages overlaid</li>
+    <li>The current RSI value and chart, with overbought/oversold zones marked</li>
+    <li>The MACD Line, Signal Line and Histogram with crossovers highlighted</li>
+    <li>Whether the stock is above or below its 200-day moving average</li>
+    <li>A plain-English summary signal (bullish, bearish, or neutral)</li>
+    <li>Price chart with key moving averages overlaid</li>
   </ul>
 
-  <p>You do not need to calculate any of these indicators manually. The platform does the computation instantly, allowing you to focus on interpreting the signals rather than the arithmetic.</p>
+  <p>You do not calculate any of this manually. The platform does the computation instantly, so you focus on interpreting signals rather than arithmetic.</p>
 
-  <h2>Common Mistakes Beginners Make with RSI and MACD</h2>
+  <!-- ═══════════════════════════════════════════ -->
+  <h2>Common Mistakes to Avoid</h2>
+  <!-- ═══════════════════════════════════════════ -->
 
   <ol>
-    <li><strong>Treating RSI above 70 as an automatic sell signal.</strong> In a strong uptrend, RSI can stay overbought for weeks. Selling every time RSI hits 70 in a bull market is a reliable way to miss large gains.</li>
-    <li><strong>Ignoring the trend direction.</strong> Taking bullish RSI signals when the stock is in a clear downtrend is fighting the dominant force in the market. Always establish trend direction first.</li>
-    <li><strong>Acting on MACD crossovers in choppy, sideways markets.</strong> MACD performs best in trending markets. In sideways conditions, it generates frequent crossovers in both directions — the classic "whipsaw" that produces many small losses.</li>
-    <li><strong>Using default settings without understanding them.</strong> The standard 14-period RSI and 12/26/9 MACD settings are reasonable starting points. But different timeframes and markets may respond better to adjusted settings. Understand what the numbers mean before changing them.</li>
-    <li><strong>Using technical analysis in isolation from fundamentals.</strong> A technically perfect bullish setup in a company that is genuinely deteriorating fundamentally will often fail. Technical signals work best when they align with a fundamentally sound business.</li>
-    <li><strong>Treating indicators as certainties rather than probabilities.</strong> No indicator is right 100% of the time. The goal is to identify setups where the probability of a particular outcome is above average — not to find a mechanical rule that always works.</li>
+    <li><strong>Treating RSI above 70 as an automatic sell signal.</strong> As Chart 1 shows, RSI can stay overbought for weeks in a strong uptrend. Selling every time RSI hits 70 is a reliable way to miss large gains.</li>
+    <li><strong>Ignoring the trend direction.</strong> Taking bullish RSI signals when the stock is in a clear downtrend (below its 200-DMA) is fighting the dominant force in the market. Always establish trend direction first.</li>
+    <li><strong>Acting on MACD crossovers in sideways markets.</strong> MACD performs best in trending markets. In sideways conditions, it generates frequent crossovers in both directions — producing many small losses (the "whipsaw" problem).</li>
+    <li><strong>Acting on a single signal in isolation.</strong> One indicator saying "buy" is a hint. Two independent indicators both saying "buy" at the same time is a signal. Wait for confluence.</li>
+    <li><strong>Using technical analysis in isolation from fundamentals.</strong> A technically perfect bullish setup in a company with deteriorating fundamentals will often fail. Technical signals work best when the underlying business is sound.</li>
+    <li><strong>Treating indicators as certainties.</strong> No indicator is right 100% of the time. The goal is to find setups where the probability of success is above average — not to find a rule that always works.</li>
   </ol>
 
+  <!-- ═══════════════════════════════════════════ -->
   <h2>What to Do Now</h2>
+  <!-- ═══════════════════════════════════════════ -->
 
-  <p>The best way to develop skill with RSI and MACD is to practice reading them on real charts without the pressure of live trades. Open Fintiq, navigate to the Technical Analysis tab, and spend time looking at the RSI and MACD readings for stocks you already know — companies you follow in the news or own in your portfolio.</p>
+  <p>Open Fintiq and navigate to the Technical Analysis tab. Pick three or four stocks you already know — companies in the news or in your portfolio. For each one, ask yourself: Is RSI confirming or diverging from the price trend? Is the MACD histogram growing or shrinking? Is the stock above or below its 200-day moving average?</p>
 
-  <p>Ask yourself: is the RSI confirming or diverging from the price trend? Is the MACD histogram growing or shrinking? Is the stock above or below its 200-day moving average? Build the habit of checking these three dimensions before making any trading decision.</p>
+  <p>You do not need to trade based on this — just practice reading the charts. After two weeks of daily observation, the patterns in Charts 1–4 above will start jumping out at you on real data. That's when technical analysis becomes genuinely useful as a timing tool on top of your fundamental research.</p>
 
-  <p>With consistent practice, reading these indicators becomes second nature — and they become a genuinely powerful layer of analysis to complement the fundamental research process.</p>
-
-  <div class="cta-box"><h3>Ready to put this into practice?</h3><p>Use Fintiq's free tools to screen stocks, run Monte Carlo simulations, and optimise your portfolio.</p><a href="https://app.fintiq.uk" class="cta-btn">Launch Fintiq Free →</a></div>
+  <div class="cta-box">
+    <h3>Apply this on real stocks now</h3>
+    <p>Fintiq's Technical Analysis tab calculates RSI, MACD, Bollinger Bands and Moving Averages automatically for any global stock. Free to use.</p>
+    <a href="https://app.fintiq.uk" class="cta-btn">Launch Fintiq Free →</a>
+  </div>
 </div>
-<footer><div class="f-logo">📊 Fintiq</div><div class="f-sub">Free stock screener &amp; investing tools for UK investors</div><div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div><div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div></footer>
+
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Free stock screener &amp; investing tools for UK investors</div>
+  <div class="f-links"><a href="https://fintiq.uk">Home</a><a href="https://fintiq.uk/learn.html">Learn</a><a href="https://app.fintiq.uk">App</a></div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+window.addEventListener('load', function() {
+const GOLD = '#F59E0B';
+const BLUE = '#7DD3FC';
+const GREEN = '#22C55E';
+const RED = '#EF4444';
+const PURPLE = '#A78BFA';
+const GRID = 'rgba(255,255,255,0.05)';
+const FONT = '#64748B';
+
+const baseOpts = {
+  responsive: true,
+  animation: false,
+  plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false,
+    backgroundColor: '#0A1628', titleColor: '#F1F5F9', bodyColor: '#94A3B8',
+    borderColor: 'rgba(245,158,11,0.3)', borderWidth: 1 }},
+  scales: {
+    x: { grid: { color: GRID }, ticks: { color: FONT, maxTicksLimit: 8 } },
+    y: { grid: { color: GRID }, ticks: { color: FONT } }
+  }
+};
+
+// ─── Generate labels ──────────────────────────────────────────────
+function days(n) { return Array.from({length:n},(_,i)=>'Day '+(i+1)); }
+
+// ═══════════════════════════════════════════════════════
+// CHART 1 — RSI in Uptrend
+// ═══════════════════════════════════════════════════════
+(function(){
+  const price = [200,203,206,204,209,214,212,218,222,226,223,229,234,237,241,
+                 238,243,248,251,256,253,259,263,268,272,270,275,280,284,288];
+  const rsi   = [54,57,61,59,64,70,68,72,75,74,71,75,78,76,80,
+                 75,77,81,79,83,80,77,74,78,80,77,73,75,73,71];
+
+  const labels = days(price.length);
+
+  // Shade overbought zone
+  const overboughtPlugin = {
+    id:'overbought',
+    beforeDraw(chart) {
+      const {ctx, chartArea, scales} = chart;
+      if (!chartArea) return;
+      const y70 = scales.yRSI.getPixelForValue(70);
+      const y100 = scales.yRSI.getPixelForValue(100);
+      ctx.save();
+      ctx.fillStyle = 'rgba(245,158,11,0.07)';
+      ctx.fillRect(chartArea.left, y100, chartArea.right - chartArea.left, y70 - y100);
+      ctx.restore();
+    }
+  };
+
+  new Chart(document.getElementById('chart1'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Stock Price', data: price, borderColor: GOLD, borderWidth: 2,
+          pointRadius: 0, tension: 0.4, yAxisID: 'yPrice' },
+        { label: 'RSI', data: rsi, borderColor: BLUE, borderWidth: 2,
+          pointRadius: 0, tension: 0.4, yAxisID: 'yRSI' }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      plugins: {
+        ...baseOpts.plugins,
+        annotation: {}
+      },
+      scales: {
+        x: baseOpts.scales.x,
+        yPrice: { position:'left', grid:{color:GRID}, ticks:{color:FONT},
+                  title:{display:true,text:'Price (p)',color:FONT,font:{size:10}} },
+        yRSI: { position:'right', min:0, max:100, grid:{display:false},
+                ticks:{color:FONT, stepSize:10},
+                title:{display:true,text:'RSI',color:FONT,font:{size:10}} }
+      }
+    },
+    plugins: [overboughtPlugin]
+  });
+})();
+
+// ═══════════════════════════════════════════════════════
+// CHART 2 — RSI Bullish Divergence
+// ═══════════════════════════════════════════════════════
+(function(){
+  // Price makes lower lows — RSI makes higher lows
+  const price = [160,155,158,150,153,145,148,140,143,136,139,132,129,131,135,
+                 141,148,156,165,175];
+  const rsi   = [50, 40, 43, 32, 36, 30, 33, 31, 34, 33, 36, 35, 38, 40, 45,
+                 52, 60, 68, 75, 80];
+
+  const labels = days(price.length);
+
+  new Chart(document.getElementById('chart2'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Price (lower lows)', data: price, borderColor: RED, borderWidth: 2,
+          pointRadius: 3, pointBackgroundColor: RED, tension: 0.4, yAxisID: 'yPrice' },
+        { label: 'RSI (higher lows)', data: rsi, borderColor: GREEN, borderWidth: 2,
+          pointRadius: 3, pointBackgroundColor: GREEN, tension: 0.4, yAxisID: 'yRSI' }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: baseOpts.scales.x,
+        yPrice: { position:'left', grid:{color:GRID}, ticks:{color:FONT},
+                  title:{display:true,text:'Price',color:FONT,font:{size:10}} },
+        yRSI: { position:'right', min:0, max:100, grid:{display:false},
+                ticks:{color:FONT},
+                title:{display:true,text:'RSI',color:FONT,font:{size:10}} }
+      }
+    }
+  });
+})();
+
+// ═══════════════════════════════════════════════════════
+// CHART 3 — MACD Components (price top, MACD bottom)
+// ═══════════════════════════════════════════════════════
+(function(){
+  const labels = days(35);
+
+  // Price: dip then recovery
+  const price = [250,248,245,242,240,237,235,232,230,228,227,226,225,226,228,
+                 231,234,238,242,246,250,255,260,265,270,274,278,282,285,288,290,292,293,294,295];
+
+  // MACD: negative then crosses above signal
+  const macdLine = [-3.5,-3.8,-4.1,-4.3,-4.5,-4.4,-4.2,-3.9,-3.5,-3.0,-2.5,-2.0,-1.5,-1.1,-0.7,
+                    -0.3, 0.2, 0.8, 1.4, 2.0, 2.6, 3.1, 3.5, 3.8, 4.0, 4.1, 4.0, 3.8, 3.5, 3.2,2.9,2.6,2.3,2.0,1.8];
+  const sigLine  = [-2.8,-3.0,-3.3,-3.6,-3.9,-4.0,-4.0,-3.9,-3.7,-3.4,-3.1,-2.7,-2.3,-2.0,-1.6,
+                    -1.3,-1.0,-0.6,-0.1, 0.5, 1.1, 1.7, 2.2, 2.6, 2.9, 3.1, 3.2, 3.2, 3.1, 3.0,2.9,2.7,2.6,2.4,2.2];
+  const histogram = macdLine.map((v,i) => v - sigLine[i]);
+  const histColors = histogram.map(v => v >= 0 ? 'rgba(34,197,94,0.7)' : 'rgba(239,68,68,0.7)');
+  const histBorder = histogram.map(v => v >= 0 ? GREEN : RED);
+
+  // Price chart
+  new Chart(document.getElementById('chart3price'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{ label: 'Price', data: price, borderColor: GOLD, borderWidth: 2,
+                   pointRadius: 0, tension: 0.4,
+                   backgroundColor: 'rgba(245,158,11,0.05)', fill: true }]
+    },
+    options: { ...baseOpts, scales: { x: { ...baseOpts.scales.x, ticks: { display: false } },
+      y: { ...baseOpts.scales.y, title:{display:true,text:'Price',color:FONT,font:{size:10}} }}}
+  });
+
+  // MACD chart
+  new Chart(document.getElementById('chart3macd'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: 'Histogram', data: histogram,
+          backgroundColor: histColors, borderColor: histBorder, borderWidth: 1 },
+        { type: 'line', label: 'MACD Line', data: macdLine,
+          borderColor: BLUE, borderWidth: 2, pointRadius: 0, tension: 0.4 },
+        { type: 'line', label: 'Signal Line', data: sigLine,
+          borderColor: GOLD, borderWidth: 2, pointRadius: 0, tension: 0.4,
+          borderDash: [4,3] }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: baseOpts.scales.x,
+        y: { ...baseOpts.scales.y, title:{display:true,text:'MACD',color:FONT,font:{size:10}} }
+      }
+    }
+  });
+})();
+
+// ═══════════════════════════════════════════════════════
+// CHART 4 — Confluence (Price + RSI + MACD)
+// ═══════════════════════════════════════════════════════
+(function(){
+  const labels = days(30);
+
+  // Price: falls then bounces at support, rallies
+  const price = [180,177,174,171,168,165,162,160,158,156,155,154,153,154,156,
+                 160,165,171,178,186,194,202,209,215,220,225,229,233,236,238];
+
+  // RSI: oversold, bullish divergence, then rises
+  const rsi = [55,50,46,42,38,35,32,30,29,30,31,32,34,36,40,
+               46,53,60,67,73,78,76,74,75,76,74,72,70,68,66];
+
+  // MACD: below zero, crossover at day 14-15
+  const macdLine = [-2.5,-2.8,-3.1,-3.3,-3.5,-3.4,-3.2,-3.0,-2.7,-2.4,-2.0,-1.6,-1.1,-0.6,-0.1,
+                     0.5, 1.2, 1.9, 2.6, 3.2, 3.7, 4.0, 4.1, 4.0, 3.8, 3.6, 3.3, 3.0,2.7,2.4];
+  const sigLine  = [-2.0,-2.2,-2.5,-2.7,-3.0,-3.1,-3.2,-3.1,-3.0,-2.8,-2.6,-2.3,-2.0,-1.7,-1.4,
+                    -1.0,-0.5, 0.2, 0.9, 1.6, 2.2, 2.8, 3.2, 3.5, 3.6, 3.6, 3.5, 3.4,3.2,3.0];
+  const hist = macdLine.map((v,i)=>v-sigLine[i]);
+  const hc = hist.map(v=>v>=0?'rgba(34,197,94,0.7)':'rgba(239,68,68,0.7)');
+  const hb = hist.map(v=>v>=0?GREEN:RED);
+
+  new Chart(document.getElementById('chart4price'), {
+    type:'line', data:{ labels, datasets:[
+      { label:'Price', data:price, borderColor:GOLD, borderWidth:2,
+        pointRadius:0, tension:0.4, backgroundColor:'rgba(245,158,11,0.05)', fill:true }
+    ]},
+    options:{...baseOpts, scales:{
+      x:{...baseOpts.scales.x, ticks:{display:false}},
+      y:{...baseOpts.scales.y, title:{display:true,text:'Price',color:FONT,font:{size:10}}}
+    }}
+  });
+
+  new Chart(document.getElementById('chart4rsi'), {
+    type:'line', data:{ labels, datasets:[
+      { label:'RSI', data:rsi, borderColor:GREEN, borderWidth:2,
+        pointRadius:0, tension:0.4, backgroundColor:'rgba(34,197,94,0.05)', fill:true }
+    ]},
+    options:{...baseOpts, scales:{
+      x:{...baseOpts.scales.x, ticks:{display:false}},
+      y:{...baseOpts.scales.y, min:0, max:100,
+         title:{display:true,text:'RSI',color:FONT,font:{size:10}}}
+    }}
+  });
+
+  new Chart(document.getElementById('chart4macd'), {
+    type:'bar', data:{ labels, datasets:[
+      { type:'bar', label:'Hist', data:hist, backgroundColor:hc, borderColor:hb, borderWidth:1 },
+      { type:'line', label:'MACD', data:macdLine, borderColor:PURPLE, borderWidth:2, pointRadius:0, tension:0.4 },
+      { type:'line', label:'Signal', data:sigLine, borderColor:GOLD, borderWidth:2, pointRadius:0, tension:0.4, borderDash:[4,3] }
+    ]},
+    options:{...baseOpts, scales:{
+      x:baseOpts.scales.x,
+      y:{...baseOpts.scales.y, title:{display:true,text:'MACD',color:FONT,font:{size:10}}}
+    }}
+  });
+})();
+}); // end window.addEventListener load
+</script>
+
 </body>
 </html>
