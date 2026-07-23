@@ -509,7 +509,7 @@ let STOCKS = [];
 let META   = {};
 
 async function loadData(years) {
-  const base = window.location.hostname === 'localhost' ? '' : 'https://fintiq.uk';
+  const base = window.location.hostname === 'localhost' ? '' : window.location.origin;
   try {
     showLoader(true);
     // 8-second timeout — fall back to demo data if JSON not yet deployed
