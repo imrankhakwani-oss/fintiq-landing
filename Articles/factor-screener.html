@@ -514,7 +514,7 @@ async function loadData(years) {
     showLoader(true);
     // 8-second timeout — fall back to demo data if JSON not yet deployed
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000);
+    const timer = setTimeout(() => controller.abort(), 20000);
     const [dataRes, metaRes] = await Promise.all([
       fetch(`${base}/screener-data.json?v=${Date.now()}`, {signal: controller.signal}),
       fetch(`${base}/screener-meta.json?v=${Date.now()}`, {signal: controller.signal})
