@@ -405,6 +405,9 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
     <div class="dot-live"></div>
     <span id="data-stamp-text">Loading...</span>
   </div>
+  <button id="download-btn" onclick="downloadCSV()" style="display:none;align-items:center;gap:6px;background:#F59E0B;color:#0A1628;border:none;padding:8px 18px;border-radius:6px;font-weight:700;font-size:0.85rem;cursor:pointer">
+    ⬇ Download CSV
+  </button>
 </div>
 
 <!-- SUMMARY CARDS -->
@@ -465,14 +468,19 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
     </div>
     <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,rgba(13,27,42,0.6) 25%,#0D1B2A 65%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px">
       <div class="paywall-cta-box">
-        <div style="display:inline-block;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;color:#F59E0B;margin-bottom:14px;letter-spacing:0.04em">£4.99 / MONTH · CANCEL ANYTIME</div>
         <h3>See all 500+ stocks — full factor breakdown, updated every Sunday</h3>
-        <p>You're seeing the top 3 signals. Subscribe to unlock the complete ranked universe, all factor exposures, UK &amp; EU markets when live, and the embedded screener inside the Fintiq app. The full screener re-runs every Sunday morning so you always have a fresh week's signals waiting on Monday.</p>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">
-          <a href="https://buy.stripe.com/6oU00j0y61DUgUE6Z6aZi09" class="paywall-btn" onclick="gtag('event','screener_subscribe_click',{value:4.99})">Unlock Full Screener — £4.99/mo →</a>
-          <a href="https://app.fintiq.uk" style="display:inline-block;padding:13px 24px;border-radius:8px;border:1px solid rgba(245,158,11,0.4);color:#F59E0B;font-weight:600;font-size:0.9rem">Try in App →</a>
+        <p>You're seeing the top 3 signals. Unlock the complete ranked universe with all factor exposures and the alpha decomposition breakdown.</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+          <div style="text-align:center">
+            <a href="https://buy.stripe.com/3cI14na8G96m8o8bfmaZi0a" class="paywall-btn" style="background:#F59E0B;display:block;margin-bottom:6px" onclick="gtag('event','screener_oneoff_click',{value:0.99})">One-Off Access + Download — £0.99 →</a>
+            <div style="font-size:0.7rem;color:#64748B">View all · Download CSV/Excel · One time</div>
+          </div>
+          <div style="text-align:center">
+            <a href="https://buy.stripe.com/bJe14n6WufuK33O5V2aZi0b" class="paywall-btn" style="background:transparent;border:2px solid #F59E0B;color:#F59E0B;display:block;margin-bottom:6px" onclick="gtag('event','screener_subscribe_click',{value:3.99})">Monthly Access — £3.99/mo →</a>
+            <div style="font-size:0.7rem;color:#64748B">Unlimited access · Updated every Sunday · Cancel anytime</div>
+          </div>
         </div>
-        <p style="font-size:0.72rem;color:#475569;margin-top:12px">3 free signals every week · Updated every Sunday · No card required to browse</p>
+        <p style="font-size:0.72rem;color:#475569;margin-top:14px">3 free signals every week · No card required to browse</p>
       </div>
     </div>
   </div>
@@ -716,8 +724,8 @@ function renderTable() {
   document.getElementById('median-alpha').textContent = (med>=0?'+':'')+med.toFixed(1)+'%';
 
   // Render visible rows (top 15 shown, rest blurred)
-  const visible = IS_OWNER ? data : data.slice(0,3);
-  const blurred = IS_OWNER ? [] : data.slice(3,12);
+  const visible = IS_FULL ? data : data.slice(0,3);
+  const blurred = IS_FULL ? [] : data.slice(3,12);
 
   const tbody = document.getElementById('tbl-body');
   tbody.innerHTML = visible.map((s,i) => `
@@ -792,14 +800,44 @@ function toggleExplainer() {
   icon.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
-// ─── OWNER BYPASS ────────────────────────────────────────────────────────────
-const IS_OWNER = new URLSearchParams(window.location.search).get('owner') === 'fintiq2026';
-if (IS_OWNER) {
-  // Hide paywall blur section entirely
+// ─── ACCESS CONTROL ──────────────────────────────────────────────────────────
+const _params   = new URLSearchParams(window.location.search);
+const IS_OWNER   = _params.get('owner') === 'fintiq2026';
+const IS_ONEOFF  = _params.get('access') === 'oneoff';
+const IS_MONTHLY = _params.get('access') === 'monthly';
+const IS_FULL    = IS_OWNER || IS_ONEOFF || IS_MONTHLY;
+
+if (IS_FULL) {
   document.addEventListener('DOMContentLoaded', () => {
     const blur = document.getElementById('paywall-blur');
     if (blur) blur.parentElement.style.display = 'none';
+    // Show download button for one-off users only
+    if (IS_ONEOFF) {
+      const dlBtn = document.getElementById('download-btn');
+      if (dlBtn) dlBtn.style.display = 'inline-flex';
+    }
   });
+}
+
+function downloadCSV() {
+  if (!STOCKS.length) return;
+  const headers = ['Rank','Ticker','Company','Alpha %/yr','Signal','P-Value','Beta','SMB','HML','MOM','R²','Stock Return %','Predicted Return %','MKT Contrib %','SMB Contrib %','HML Contrib %','MOM Contrib %','Indices'];
+  const rows = STOCKS.map(s => [
+    s.rank, s.ticker, `"${s.name}"`, s.alpha, s.signal, s.pval,
+    s.beta, s.smb, s.hml, s.mom, s.r_squared,
+    s.stock_return ?? '', s.predicted_return ?? '',
+    s.mkt_contrib ?? '', s.smb_contrib ?? '', s.hml_contrib ?? '', s.mom_contrib ?? '',
+    `"${(s.idx||[]).join(',')}"`
+  ]);
+  const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `fintiq-factor-screener-${CURRENT_YEARS}y-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  gtag('event', 'screener_download', {lookback: CURRENT_YEARS});
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
