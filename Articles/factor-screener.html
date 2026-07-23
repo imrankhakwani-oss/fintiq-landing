@@ -114,6 +114,14 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 
 /* SUMMARY TOOLTIP */
 .insight{font-size:0.78rem;color:#64748B;font-style:italic;line-height:1.4;max-width:260px}
+.decomp{margin-top:10px;background:rgba(15,35,55,0.6);border:1px solid rgba(245,158,11,0.12);border-radius:8px;padding:10px 12px;max-width:260px}
+.decomp-title{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:#475569;font-weight:600;margin-bottom:6px}
+.decomp-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:2px 0}
+.decomp-sub{border-top:1px solid rgba(255,255,255,0.06);margin-top:4px;padding-top:4px}
+.decomp-indent{padding-left:8px}
+.decomp-alpha{border-top:1px solid rgba(255,255,255,0.1);margin-top:4px;padding-top:4px}
+.decomp-lbl{font-size:0.7rem;color:#64748B}
+.decomp-val{font-size:0.72rem;font-weight:600;white-space:nowrap}
 
 /* EXPANDABLE ROW */
 .row-detail{display:none;padding:0 16px 20px;background:rgba(10,22,40,0.5)}
@@ -507,25 +515,37 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
 // ─── DATA — loaded from JSON ──────────────────────────────────────────────────
 let STOCKS = [];
 let META   = {};
+let CURRENT_YEARS = 2;
 
 async function loadData(years) {
+  years = years || CURRENT_YEARS;
+  CURRENT_YEARS = years;
   const base = window.location.hostname === 'localhost' ? '' : window.location.origin;
+  // Try versioned file first (e.g. screener-data-2y.json), fall back to legacy unversioned
+  const dataUrl = `${base}/screener-data-${years}y.json`;
+  const metaUrl = `${base}/screener-meta-${years}y.json`;
+  const dataUrlFallback = `${base}/screener-data.json`;
+  const metaUrlFallback = `${base}/screener-meta.json`;
   try {
     showLoader(true);
-    // 8-second timeout — fall back to demo data if JSON not yet deployed
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
-    const [dataRes, metaRes] = await Promise.all([
-      fetch(`${base}/screener-data.json`, {signal: controller.signal, cache: 'no-cache'}),
-      fetch(`${base}/screener-meta.json`, {signal: controller.signal, cache: 'no-cache'})
-    ]);
+    let dataRes = await fetch(dataUrl, {signal: controller.signal, cache: 'no-cache'});
+    let metaRes;
+    if (!dataRes.ok && years === 2) {
+      // Fall back to legacy unversioned file for 2y
+      dataRes = await fetch(dataUrlFallback, {cache: 'no-cache'});
+      metaRes = await fetch(metaUrlFallback, {cache: 'no-cache'});
+    } else {
+      metaRes = await fetch(metaUrl, {signal: controller.signal, cache: 'no-cache'});
+    }
     clearTimeout(timer);
     if (!dataRes.ok) throw new Error(`HTTP ${dataRes.status}`);
     const dataJson = await dataRes.json();
     META   = await metaRes.json();
     STOCKS = dataJson.stocks || [];
     document.getElementById('lookback-display').textContent =
-      `${META.lookback_years || 2} year${META.lookback_years !== 1 ? 's' : ''} (${META.lookback_days || 504} trading days)`;
+      `${META.lookback_years || years} year${(META.lookback_years||years) !== 1 ? 's' : ''} (${META.lookback_days || years*252} trading days)`;
     document.getElementById('data-stamp-text').textContent =
       `Data as of ${META.generated_date || 'recent'} · Updated every Sunday`;
     showLoader(false);
@@ -533,7 +553,7 @@ async function loadData(years) {
   } catch (e) {
     console.warn('Live data unavailable — showing demo data:', e.message);
     STOCKS = DEMO_STOCKS;
-    META   = {generated_date:'Demo preview', lookback_years:2, lookback_days:504,
+    META   = {generated_date:'Demo preview', lookback_years:years, lookback_days:years*252,
                universe_count:503, green_count:10, amber_count:6, red_count:9, median_alpha:0.4};
     document.getElementById('data-stamp-text').textContent = 'Demo preview · Live data deploys Sunday';
     showLoader(false);
@@ -614,6 +634,47 @@ function factorBars(stock) {
   }).join('')}</div>`;
 }
 
+// ─── DECOMPOSITION ───────────────────────────────────────────────────────────
+function decompHTML(s) {
+  // If live data has decomposition fields, show the numerical breakdown
+  if (s.stock_return !== undefined && s.predicted_return !== undefined) {
+    const yr  = CURRENT_YEARS;
+    const yLbl = yr === 1 ? '1 year' : `${yr} years`;
+    const fmt = v => (v >= 0 ? '+' : '') + v.toFixed(1) + '%';
+    const contribs = [
+      {lbl:'Market', val:s.mkt_contrib},
+      {lbl:'Size (SMB)', val:s.smb_contrib},
+      {lbl:'Value (HML)', val:s.hml_contrib},
+      {lbl:'Momentum', val:s.mom_contrib},
+    ];
+    return `
+      <div class="insight">${s.insight}</div>
+      <div class="decomp">
+        <div class="decomp-title">How we calculated the alpha</div>
+        <div class="decomp-row">
+          <span class="decomp-lbl">Actual return (${yLbl} avg/yr)</span>
+          <span class="decomp-val" style="color:#F1F5F9">${fmt(s.stock_return)}</span>
+        </div>
+        <div class="decomp-row decomp-sub">
+          <span class="decomp-lbl">Model predicted</span>
+          <span class="decomp-val">${fmt(s.predicted_return)}</span>
+        </div>
+        ${contribs.map(c => `
+        <div class="decomp-row decomp-indent">
+          <span class="decomp-lbl">↳ ${c.lbl}</span>
+          <span class="decomp-val" style="color:${c.val>=0?'#22c55e':'#ef4444'}">${fmt(c.val)}</span>
+        </div>`).join('')}
+        <div class="decomp-row decomp-alpha">
+          <span class="decomp-lbl">= Alpha (unexplained)</span>
+          <span class="decomp-val" style="color:${s.alpha>=0?'#22c55e':'#ef4444'};font-weight:700">${fmt(s.alpha)}/yr</span>
+        </div>
+        <div style="font-size:0.65rem;color:#475569;margin-top:4px">p = ${s.pval.toFixed(3)} · n = ${s.n_obs || '—'} days</div>
+      </div>`;
+  }
+  // Demo data — just show the insight text
+  return `<div class="insight">${s.insight}</div>`;
+}
+
 function idxTagsHTML(idx) {
   const map = {sp:'S&P',nq:'NDQ',dj:'DJI'};
   const cls = {sp:'sp',nq:'nq',dj:'dj'};
@@ -670,7 +731,7 @@ function renderTable() {
       <td>${alphaHTML(s.alpha)}</td>
       <td>${signalHTML(s.signal)}</td>
       <td>${factorBars(s)}</td>
-      <td><div class="insight">${s.insight}</div></td>
+      <td>${decompHTML(s)}</td>
     </tr>
   `).join('');
 
@@ -683,7 +744,7 @@ function renderTable() {
       <td>${alphaHTML(s.alpha)}</td>
       <td>${signalHTML(s.signal)}</td>
       <td>${factorBars(s)}</td>
-      <td><div class="insight">${s.insight}</div></td>
+      <td>${decompHTML(s)}</td>
     </tr>
   `).join('');
 }
@@ -707,10 +768,7 @@ function filterTable() { renderTable(); }
 
 // ─── LOOKBACK ────────────────────────────────────────────────────────────────
 function setLookback(yrs) {
-  const days = {1:252,2:504,3:756}[yrs];
-  document.getElementById('lookback-display').textContent = `${yrs} year${yrs>1?'s':''} (${days} trading days)`;
-  // In a real build this would re-fetch data; here we just re-render
-  renderTable();
+  loadData(parseInt(yrs));
 }
 
 // ─── MARKET ──────────────────────────────────────────────────────────────────

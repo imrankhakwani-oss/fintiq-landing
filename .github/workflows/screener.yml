@@ -5,17 +5,12 @@ on:
     # Every Sunday at 06:00 UTC (early morning, markets closed)
     - cron: '0 6 * * 0'
   workflow_dispatch:
-    # Also allows manual trigger from GitHub Actions UI
-    inputs:
-      years:
-        description: 'Lookback period in years'
-        required: false
-        default: '2'
+    # Manual trigger from GitHub Actions UI
 
 jobs:
   run-screener:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     steps:
       - name: Checkout repository
@@ -32,15 +27,14 @@ jobs:
         run: |
           pip install -r screener/requirements.txt
 
-      - name: Run factor screener
+      - name: Run factor screener (all 3 lookbacks)
         run: |
-          YEARS="${{ github.event.inputs.years || '2' }}"
-          python screener/run_screener.py --years $YEARS
+          python screener/run_screener.py
 
       - name: Commit updated JSON files
         run: |
           git config user.name  "Fintiq Screener Bot"
           git config user.email "bot@fintiq.uk"
-          git add Articles/screener-data.json Articles/screener-meta.json
+          git add Articles/screener-data*.json Articles/screener-meta*.json
           git diff --cached --quiet || git commit -m "chore: weekly screener update $(date -u '+%Y-%m-%d')"
           git push
