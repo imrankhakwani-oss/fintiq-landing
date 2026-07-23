@@ -354,6 +354,10 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
       <div class="method-label">Alpha hurdle</div>
       <div class="method-value">p &lt; 0.05 (95% confidence)</div>
     </div>
+    <div class="method-item">
+      <div class="method-label">Updates</div>
+      <div class="method-value">Every Sunday · Results ready Monday morning</div>
+    </div>
   </div>
 </div>
 
@@ -454,13 +458,13 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
     <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,rgba(13,27,42,0.6) 25%,#0D1B2A 65%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px">
       <div class="paywall-cta-box">
         <div style="display:inline-block;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;color:#F59E0B;margin-bottom:14px;letter-spacing:0.04em">£4.99 / MONTH · CANCEL ANYTIME</div>
-        <h3>See all 500+ stocks — full factor breakdown, every week</h3>
-        <p>You're seeing the top 3 signals. Subscribe to unlock the complete ranked universe, all factor exposures, run-on-demand, UK &amp; EU markets when live, and the embedded screener in the Fintiq app.</p>
+        <h3>See all 500+ stocks — full factor breakdown, updated every Sunday</h3>
+        <p>You're seeing the top 3 signals. Subscribe to unlock the complete ranked universe, all factor exposures, UK &amp; EU markets when live, and the embedded screener inside the Fintiq app. The full screener re-runs every Sunday morning so you always have a fresh week's signals waiting on Monday.</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:4px">
-          <a href="https://buy.stripe.com/6oU00j0y61DUgUE6Z6aZi09" class="paywall-btn" onclick="gtag('event','screener_subscribe_click',{value:9.99})">Unlock Full Screener — £4.99/mo →</a>
+          <a href="https://buy.stripe.com/6oU00j0y61DUgUE6Z6aZi09" class="paywall-btn" onclick="gtag('event','screener_subscribe_click',{value:4.99})">Unlock Full Screener — £4.99/mo →</a>
           <a href="https://app.fintiq.uk" style="display:inline-block;padding:13px 24px;border-radius:8px;border:1px solid rgba(245,158,11,0.4);color:#F59E0B;font-weight:600;font-size:0.9rem">Try in App →</a>
         </div>
-        <p style="font-size:0.72rem;color:#475569;margin-top:12px">3 free signals every week · No card required to browse</p>
+        <p style="font-size:0.72rem;color:#475569;margin-top:12px">3 free signals every week · Updated every Sunday · No card required to browse</p>
       </div>
     </div>
   </div>
@@ -508,25 +512,30 @@ async function loadData(years) {
   const base = window.location.hostname === 'localhost' ? '' : 'https://fintiq.uk';
   try {
     showLoader(true);
+    // 8-second timeout — fall back to demo data if JSON not yet deployed
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
     const [dataRes, metaRes] = await Promise.all([
-      fetch(`${base}/screener-data.json?v=${Date.now()}`),
-      fetch(`${base}/screener-meta.json?v=${Date.now()}`)
+      fetch(`${base}/screener-data.json?v=${Date.now()}`, {signal: controller.signal}),
+      fetch(`${base}/screener-meta.json?v=${Date.now()}`, {signal: controller.signal})
     ]);
+    clearTimeout(timer);
+    if (!dataRes.ok) throw new Error(`HTTP ${dataRes.status}`);
     const dataJson = await dataRes.json();
     META   = await metaRes.json();
     STOCKS = dataJson.stocks || [];
-    // If lookback filter requested, note it (re-run would need server; for now just display note)
     document.getElementById('lookback-display').textContent =
       `${META.lookback_years || 2} year${META.lookback_years !== 1 ? 's' : ''} (${META.lookback_days || 504} trading days)`;
     document.getElementById('data-stamp-text').textContent =
-      `Data as of ${META.generated_date || 'recent'} · Updated weekly`;
+      `Data as of ${META.generated_date || 'recent'} · Updated every Sunday`;
     showLoader(false);
     renderTable();
   } catch (e) {
-    console.warn('Could not load screener-data.json — using demo data', e);
+    console.warn('Live data unavailable — showing demo data:', e.message);
     STOCKS = DEMO_STOCKS;
-    META   = {generated_date:'Demo', lookback_years:2, lookback_days:504,
-               universe_count:DEMO_STOCKS.length, green_count:10, amber_count:6, red_count:9, median_alpha:0.4};
+    META   = {generated_date:'Demo preview', lookback_years:2, lookback_days:504,
+               universe_count:503, green_count:10, amber_count:6, red_count:9, median_alpha:0.4};
+    document.getElementById('data-stamp-text').textContent = 'Demo preview · Live data deploys Sunday';
     showLoader(false);
     renderTable();
   }
