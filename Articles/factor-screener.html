@@ -646,8 +646,8 @@ function renderTable() {
   document.getElementById('median-alpha').textContent = (med>=0?'+':'')+med.toFixed(1)+'%';
 
   // Render visible rows (top 15 shown, rest blurred)
-  const visible = data.slice(0,3);
-  const blurred = data.slice(3,12);
+  const visible = IS_OWNER ? data : data.slice(0,3);
+  const blurred = IS_OWNER ? [] : data.slice(3,12);
 
   const tbody = document.getElementById('tbl-body');
   tbody.innerHTML = visible.map((s,i) => `
@@ -723,6 +723,16 @@ function toggleExplainer() {
   const open = body.style.display === 'none' || body.style.display === '';
   body.style.display = open ? 'block' : 'none';
   icon.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
+}
+
+// ─── OWNER BYPASS ────────────────────────────────────────────────────────────
+const IS_OWNER = new URLSearchParams(window.location.search).get('owner') === 'fintiq2026';
+if (IS_OWNER) {
+  // Hide paywall blur section entirely
+  document.addEventListener('DOMContentLoaded', () => {
+    const blur = document.getElementById('paywall-blur');
+    if (blur) blur.parentElement.style.display = 'none';
+  });
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
