@@ -516,8 +516,8 @@ async function loadData(years) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 20000);
     const [dataRes, metaRes] = await Promise.all([
-      fetch(`${base}/screener-data.json?v=${Date.now()}`, {signal: controller.signal}),
-      fetch(`${base}/screener-meta.json?v=${Date.now()}`, {signal: controller.signal})
+      fetch(`${base}/screener-data.json`, {signal: controller.signal, cache: 'no-cache'}),
+      fetch(`${base}/screener-meta.json`, {signal: controller.signal, cache: 'no-cache'})
     ]);
     clearTimeout(timer);
     if (!dataRes.ok) throw new Error(`HTTP ${dataRes.status}`);
