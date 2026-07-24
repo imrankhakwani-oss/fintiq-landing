@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+  <title>Fama-French Factor Screener: How Retail Investors Can Now Screen Stocks Like a Hedge Fund | Fintiq</title>
+  <meta name="description" content="The Fama-French 4-factor model explained: origins, what alpha means, and how Fintiq's Factor Screener gives retail investors institutional-grade equity analysis for free.">
+  <meta name="keywords" content="fama french factor model, alpha investing, factor screener, hedge fund stock screening, fama french 4 factor, alpha signals, retail investor tools, fintiq factor screener">
+  <link rel="canonical" href="https://fintiq.uk/learn/fama-french-factor-screener.html">
+  <meta property="og:title" content="Fama-French Factor Screener: Hedge Fund Grade Alpha Signals for Retail Investors">
+  <meta property="og:description" content="The origins of factor investing, what alpha really means, and how Fintiq's Factor Screener puts institutional analysis in your hands.">
+  <meta property="og:url" content="https://fintiq.uk/learn/fama-french-factor-screener.html">
+  <meta property="og:site_name" content="Fintiq">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}
+    a{color:#F59E0B;text-decoration:none}
+    nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+    .logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}
+    .nav-links{display:flex;gap:16px;align-items:center}
+    .nav-links a{color:#94A3B8;font-size:0.9rem}
+    .btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}
+    .container{max-width:820px;margin:0 auto;padding:0 24px 80px}
+    .breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}
+    .breadcrumb a{color:#94A3B8}
+    .badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;margin-bottom:16px}
+    .badge-free{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+    h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}
+    h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}
+    h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}
+    p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}
+    ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}
+    li{margin-bottom:8px}
+    strong{color:#F1F5F9}
+    .meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}
+    .highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}
+    .formula{background:#060F1A;border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:20px;margin:20px 0;font-family:monospace;font-size:0.95rem;color:#4ADE80;white-space:pre-wrap}
+    .info-box{background:rgba(30,58,95,0.25);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:20px 24px;margin:24px 0}
+    .divider{border:none;border-top:1px solid rgba(255,255,255,0.07);margin:44px 0}
+    table{width:100%;border-collapse:collapse;margin:24px 0}
+    th{background:#0A1628;color:#F59E0B;padding:12px 16px;text-align:left;font-size:0.85rem;border-bottom:2px solid #F59E0B}
+    td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);color:#CBD5E1;font-size:0.9rem}
+    .signal-green{color:#22c55e;font-weight:700}
+    .signal-amber{color:#F59E0B;font-weight:700}
+    .signal-red{color:#ef4444;font-weight:700}
+    .cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}
+    .cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}
+    .cta-box p{color:#94A3B8;margin-bottom:24px}
+    .cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block;margin:6px}
+    .cta-btn-outline{background:transparent;border:2px solid #F59E0B;color:#F59E0B !important;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:0.95rem;display:inline-block;margin:6px}
+    .factor-card{background:rgba(15,35,55,0.6);border:1px solid rgba(245,158,11,0.15);border-radius:10px;padding:20px 24px;margin:16px 0}
+    .factor-card-title{font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:#64748B;font-weight:700;margin-bottom:6px}
+    .factor-card-name{font-size:1.1rem;font-weight:800;color:#F59E0B;margin-bottom:8px}
+    .person-card{display:flex;gap:20px;background:rgba(15,35,55,0.5);border:1px solid rgba(245,158,11,0.12);border-radius:10px;padding:20px 24px;margin:20px 0;align-items:flex-start}
+    .person-icon{font-size:2.5rem;flex-shrink:0}
+    .timeline{border-left:2px solid rgba(245,158,11,0.3);padding-left:24px;margin:24px 0}
+    .timeline-item{position:relative;margin-bottom:24px}
+    .timeline-item::before{content:'';position:absolute;left:-29px;top:6px;width:10px;height:10px;background:#F59E0B;border-radius:50%}
+    .timeline-year{font-size:0.75rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+    .timeline-text{color:#CBD5E1;font-size:0.95rem}
+    footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}
+    .f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}
+    .f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}
+    .f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+    .f-links a{color:#94A3B8;font-size:0.85rem}
+    .f-copy{color:#334155;font-size:0.75rem}
+    @media(max-width:600px){h1{font-size:1.7rem}nav{padding:10px 16px}.logo{font-size:1.3rem}.person-card{flex-direction:column}}
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <div class="nav-links">
+    <a href="https://fintiq.uk/learn.html">← Learn</a>
+    <a href="https://fintiq.uk/factor-screener.html">Factor Screener</a>
+    <a href="https://app.fintiq.uk" class="btn-cta">Try the App →</a>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="breadcrumb"><a href="https://fintiq.uk">Home</a> › <a href="https://fintiq.uk/learn.html">Learn</a> › Fama-French Factor Screener</div>
+
+  <div style="padding:48px 0 32px">
+    <span class="badge badge-free">Free Guide</span>
+    <h1>Fama-French Factor Screener: How Retail Investors Can Now Screen Stocks Like a Hedge Fund</h1>
+    <div class="meta">⏱ 15 min read · July 2026 · <a href="https://fintiq.uk/factor-screener.html" style="color:#94A3B8">Try the Factor Screener Free →</a></div>
+  </div>
+
+  <p>For most of financial history, a specific category of question has been reserved exclusively for the quantitative research teams at the world's elite asset managers: <em>"After accounting for everything we know about how markets work — the market cycle, company size, valuation, and momentum — is this stock generating genuine, unexplained outperformance?"</em></p>
+
+  <p>That question has a precise answer. It is called <strong>alpha</strong>. And until very recently, computing it systematically across hundreds of stocks simultaneously required Bloomberg terminals, academic data subscriptions costing tens of thousands of pounds per year, and a team of quantitative analysts with PhDs.</p>
+
+  <p>Fintiq's Factor Screener changes that. It applies the same statistical framework used by institutional fund managers — the Fama-French 4-Factor Model — to 500+ US equities every Sunday, ranks them by alpha, and puts the results in front of retail investors for free.</p>
+
+  <p>This article explains where that framework came from, what it means, and why it matters for how you make investment decisions.</p>
+
+  <hr class="divider">
+
+  <h2>Part I: The Origins — A Revolution in How We Think About Investment Returns</h2>
+
+  <h3>The Problem with Traditional Stock Picking</h3>
+
+  <p>Before the 1960s, most investment theory was intuitive rather than mathematical. A stock was a good investment if a skilled analyst decided it was — based on reading annual reports, meeting management, and forming qualitative judgements about competitive position and growth prospects.</p>
+
+  <p>This approach had an uncomfortable problem: it was nearly impossible to tell whether a skilled investor was genuinely skilled, or simply lucky. If a fund manager beats the market for three consecutive years, is that evidence of ability? Or is it what you'd expect from random chance across a large enough sample of fund managers?</p>
+
+  <p>The academic finance community decided to answer this question rigorously — and what they found over the following decades fundamentally transformed how the investment industry operates.</p>
+
+  <h3>1964: The Capital Asset Pricing Model — The First Framework</h3>
+
+  <p>William Sharpe (later a Nobel laureate) published the Capital Asset Pricing Model (CAPM) in 1964. It proposed a deceptively simple idea: the return you should expect from any stock is entirely determined by one thing — how sensitive that stock is to the overall market.</p>
+
+  <div class="formula">Expected Return = Risk-Free Rate + Beta × (Market Return - Risk-Free Rate)
+
+Where Beta measures how much the stock moves when the market moves.
+Beta = 1.0 → moves exactly with the market
+Beta = 1.5 → moves 50% more than the market
+Beta = 0.5 → moves half as much as the market</div>
+
+  <p>CAPM was elegant and mathematically tractable. But it had a problem: it didn't fit the data. Researchers kept finding stocks that earned more — or less — than CAPM predicted, even after adjusting for beta. Something was missing.</p>
+
+  <h3>1992: Fama and French Rewrite the Rules</h3>
+
+  <div class="person-card">
+    <div class="person-icon">🎓</div>
+    <div>
+      <strong>Eugene F. Fama</strong> — University of Chicago. Often called "the father of modern finance." His work on efficient markets and asset pricing earned him the Nobel Prize in Economics in 2013. Known for his empirical rigour: let the data speak, regardless of what theory predicts.
+    </div>
+  </div>
+
+  <div class="person-card">
+    <div class="person-icon">📊</div>
+    <div>
+      <strong>Kenneth R. French</strong> — Dartmouth College (Tuck School of Business). Fama's long-term research partner. Maintains the <strong>Kenneth French Data Library</strong> — a free, publicly available dataset of daily factor returns used by academics and quants worldwide. This is the exact data source Fintiq uses every Sunday.
+    </div>
+  </div>
+
+  <p>In their landmark 1992 paper <em>"The Cross-Section of Expected Stock Returns"</em>, Fama and French demonstrated empirically that CAPM's single factor — beta — left too much unexplained. Two additional characteristics explained a significant portion of the differences in returns between stocks:</p>
+
+  <div class="factor-card">
+    <div class="factor-card-title">Factor 2</div>
+    <div class="factor-card-name">SMB — Small Minus Big (Size Premium)</div>
+    <p style="margin-bottom:0">Small-cap stocks have historically outperformed large-cap stocks over long periods, even after adjusting for market risk. Fama and French captured this by looking at the return difference between a portfolio of small companies and a portfolio of large companies. A positive SMB loading means the stock behaves like a small-cap stock (and earns the size premium). A negative SMB loading means it behaves like a large-cap growth stock.</p>
+  </div>
+
+  <div class="factor-card">
+    <div class="factor-card-title">Factor 3</div>
+    <div class="factor-card-name">HML — High Minus Low (Value Premium)</div>
+    <p style="margin-bottom:0">Value stocks — those with high book value relative to market price (high book-to-market ratio) — have historically outperformed growth stocks over long periods. HML captures the return difference between a portfolio of value stocks and a portfolio of growth stocks. A positive HML loading means the stock has value characteristics. A negative HML loading means it is a growth stock.</p>
+  </div>
+
+  <p>The Fama-French 3-Factor Model incorporated market beta, size, and value — and explained far more of the variation in stock returns than CAPM alone. It became the new standard for measuring whether a fund manager or a stock was generating genuine outperformance.</p>
+
+  <h3>1997: Mark Carhart Adds the Fourth Factor</h3>
+
+  <div class="person-card">
+    <div class="person-icon">📈</div>
+    <div>
+      <strong>Mark Carhart</strong> — then at the University of Southern California. In his 1997 paper <em>"On Persistence in Mutual Fund Performance"</em>, Carhart extended the Fama-French model by adding a fourth factor that the data clearly demanded.
+    </div>
+  </div>
+
+  <div class="factor-card">
+    <div class="factor-card-title">Factor 4</div>
+    <div class="factor-card-name">MOM — Momentum</div>
+    <p style="margin-bottom:0">Stocks that have performed well over the past 6–12 months tend to continue performing well over the next 3–12 months. This is one of the most robust and puzzling findings in all of finance — it persists across markets, time periods, and asset classes, yet has no entirely satisfying theoretical explanation. A positive MOM loading means the stock is riding a momentum tailwind. A negative MOM loading means it is a recent loser.</p>
+  </div>
+
+  <p>The 4-Factor Model — market beta, size, value, and momentum — became the gold standard for performance attribution. Every serious asset manager uses it (or a more sophisticated descendant of it) to evaluate whether their returns are genuine alpha or simply factor exposure they could have captured more cheaply with an index fund.</p>
+
+  <div class="timeline">
+    <div class="timeline-item">
+      <div class="timeline-year">1964</div>
+      <div class="timeline-text">Sharpe publishes CAPM — single-factor model, market beta only</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">1992</div>
+      <div class="timeline-text">Fama & French add Size (SMB) and Value (HML) — 3-Factor Model</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">1997</div>
+      <div class="timeline-text">Carhart adds Momentum (MOM) — 4-Factor Model becomes industry standard</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2013</div>
+      <div class="timeline-text">Eugene Fama wins Nobel Prize in Economics for asset pricing research</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2015</div>
+      <div class="timeline-text">Fama & French publish 5-Factor Model adding Profitability and Investment factors</div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-year">2026</div>
+      <div class="timeline-text">Fintiq launches Factor Screener — 4-Factor Model applied to 500+ stocks weekly, free for retail investors</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <h2>Part II: What Alpha Actually Means</h2>
+
+  <p>The word "alpha" is one of the most misused terms in investing. In casual conversation, people use it to mean simply "good returns" or "outperformance." But in the precise, mathematical sense that Fama, French, and Carhart defined it, alpha means something much more specific — and much more valuable.</p>
+
+  <h3>The Mathematical Definition</h3>
+
+  <p>The 4-Factor Model describes the expected daily return of any stock using a regression equation:</p>
+
+  <div class="formula">Stock Return - Risk-Free Rate = α + β₁×(Market-RF) + β₂×SMB + β₃×HML + β₄×MOM + ε
+
+Where:
+  α (alpha)    = the intercept — the daily return NOT explained by the four factors
+  β₁ (beta)    = sensitivity to overall market returns
+  β₂ (SMB)     = sensitivity to the size premium
+  β₃ (HML)     = sensitivity to the value premium
+  β₄ (MOM)     = sensitivity to the momentum premium
+  ε (epsilon)  = random daily noise</div>
+
+  <p>The four betas explain how much of the stock's return comes from riding known risk premia — rewards that any investor could have captured by holding the right mix of index funds. Alpha is what is left over after all of that is stripped away.</p>
+
+  <div class="highlight">
+    <strong>Alpha is not just outperformance. Alpha is outperformance that cannot be explained by any known risk factor.</strong> If a stock returned +25% last year but the market was up 20% and the stock had a beta of 1.25, it did exactly what you would have predicted — no alpha. But if a stock returned +25% in a flat market, with average-size and average-value characteristics and no momentum tailwind, that +25% is genuine alpha — something specific to that company that markets are not fully pricing.
+  </div>
+
+  <h3>Why Alpha Is So Rare — and So Valuable</h3>
+
+  <p>In an efficient market, alpha should not exist. If markets perfectly incorporate all available information, every stock should be priced at fair value, and no systematic strategy should generate returns above what the risk factors predict.</p>
+
+  <p>In practice, alpha does exist — but it is scarce, it tends to be small in magnitude for large liquid stocks, and it disappears quickly once it is discovered and traded. The best quantitative funds in the world — Renaissance Technologies, Two Sigma, AQR — dedicate enormous resources to finding it. Finding a stock with statistically significant positive alpha is not common. Which is precisely why it is valuable when you find it.</p>
+
+  <p>This is why Fintiq's Factor Screener shows only 10–15 strong green signals out of 500+ stocks at any given time. If alpha were easy to find, it would not be alpha.</p>
+
+  <hr class="divider">
+
+  <h2>Part III: How Fintiq's Factor Screener Works</h2>
+
+  <p>Every Sunday morning, Fintiq's Factor Screener runs the following pipeline automatically:</p>
+
+  <h3>Step 1: Build the Universe</h3>
+  <p>The screener starts with every constituent of the S&P 500, NASDAQ 100, and Dow Jones Industrial Average — over 500 unique US equities covering large-cap, mid-cap, and technology-heavy names across all sectors.</p>
+
+  <h3>Step 2: Download Factor Data</h3>
+  <p>Daily factor returns (Mkt-RF, SMB, HML, MOM, and the risk-free rate) are downloaded directly from the <strong>Kenneth French Data Library</strong> at Dartmouth College — the same source used by academic researchers and professional quantitative analysts worldwide. This data is free, public, and updated daily.</p>
+
+  <h3>Step 3: Download Price Data</h3>
+  <p>Adjusted closing prices for all 500+ stocks are downloaded for the selected lookback period (1, 2, or 3 years). Prices are adjusted for dividends and stock splits to ensure clean return calculations.</p>
+
+  <h3>Step 4: Run OLS Regression</h3>
+  <p>For each stock, an <strong>Ordinary Least Squares (OLS) regression</strong> is run — the same statistical technique used in every academic finance paper since CAPM was published. The stock's daily excess returns (return minus risk-free rate) are regressed against the four daily factor returns. This gives us the four factor loadings (betas) and, critically, the intercept — alpha.</p>
+
+  <p>Fintiq uses <strong>HC3 robust standard errors</strong> — a technique that corrects for heteroskedasticity (non-constant variance in returns, which is ubiquitous in financial data) and produces more reliable statistical inferences. This is the same approach used in professional academic research.</p>
+
+  <h3>Step 5: Apply Data Quality Filters</h3>
+  <p>A stock is only included if it has at least <strong>80% of expected trading days</strong> in the lookback period. This filter automatically excludes recently listed companies, delisted stocks, and any ticker where yfinance returns incomplete data — preventing the extreme alpha values that can arise from corrupted or sparse data.</p>
+
+  <h3>Step 6: Classify Signals</h3>
+  <p>Each stock receives a signal based on two criteria — the direction of alpha and the statistical confidence:</p>
+
+  <table>
+    <thead>
+      <tr><th>Signal</th><th>Criteria</th><th>What It Means</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="signal-green">● Strong Alpha</span></td>
+        <td>α &gt; 0% AND p-value &lt; 0.05</td>
+        <td>Statistically significant positive alpha. 95% confidence this is real, not noise.</td>
+      </tr>
+      <tr>
+        <td><span class="signal-amber">◑ Marginal</span></td>
+        <td>α &gt; 0% AND p-value &lt; 0.15</td>
+        <td>Positive alpha with 85% confidence. May be real — monitor closely.</td>
+      </tr>
+      <tr>
+        <td><span class="signal-red">● Avoid</span></td>
+        <td>α ≤ 0% OR p-value ≥ 0.15</td>
+        <td>Negative or insignificant alpha. Returns explained (or underexplained) by factors.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Step 7: Compute the Alpha Decomposition</h3>
+  <p>For every stock, Fintiq shows you exactly how the alpha figure was calculated — not just the number, but the full breakdown:</p>
+
+  <div class="formula">Actual return:      +18.4%/yr  (what the stock actually delivered)
+Model predicted:    +12.1%/yr  (what the 4 factors explain)
+  ↳ Market:         + 8.2%     (beta × average market excess return)
+  ↳ Size (SMB):     - 0.5%     (SMB loading × average SMB return)
+  ↳ Value (HML):    + 0.3%     (HML loading × average HML return)
+  ↳ Momentum:       + 4.1%     (MOM loading × average MOM return)
+────────────────────────────────
+Alpha (unexplained):+ 6.3%/yr  (p = 0.023 · n = 504 trading days)</div>
+
+  <p>This decomposition turns an abstract statistical concept into something any investor can understand and act on.</p>
+
+  <hr class="divider">
+
+  <h2>Part IV: Why This Matters for Retail Investors</h2>
+
+  <h3>The Information Gap That Has Always Existed</h3>
+
+  <p>For decades, the divide between institutional and retail investors was not primarily about capital — it was about information and analytical tools. A pension fund or a hedge fund could run factor regressions across their entire equity universe every day. A retail investor could not.</p>
+
+  <p>This information asymmetry had real consequences. Retail investors, lacking a systematic framework for evaluating whether a stock's returns were genuine or simply factor exposure, tended to:</p>
+
+  <ul>
+    <li>Chase recent performance without understanding whether it was alpha or momentum they could have replicated cheaply</li>
+    <li>Overpay for growth stocks without recognising the negative HML loading implied in the price</li>
+    <li>Buy high-beta stocks believing they were skilled stock pickers, when in fact the market was doing the work</li>
+    <li>Hold underperforming stocks without a systematic framework for identifying that the alpha was genuinely negative</li>
+  </ul>
+
+  <p>Factor screening does not eliminate these mistakes entirely. But it gives retail investors the same analytical lens that institutional investors use — and that changes the quality of investment decision-making fundamentally.</p>
+
+  <h3>How to Use the Screener in Practice</h3>
+
+  <div class="info-box">
+    <strong style="color:#93C5FD">A Strong Alpha signal is not a buy recommendation.</strong> It is the starting point for further research. A green signal tells you that this stock has delivered returns that the 4-factor model cannot explain — historically a positive indicator. It does not tell you whether that alpha will persist, whether the company faces near-term headwinds, or whether it suits your personal investment horizon and risk tolerance. Use it to build your research shortlist, not to make the final decision.
+  </div>
+
+  <p><strong>Suggested workflow:</strong></p>
+  <ol>
+    <li>Filter by signal: start with green (Strong Alpha) stocks</li>
+    <li>Check factor loadings: understand <em>why</em> the alpha is there — momentum-driven vs defensive vs growth</li>
+    <li>Compare lookbacks: a stock that is green on 1yr, 2yr, and 3yr has a much more robust signal than one that is only green on 1yr</li>
+    <li>Read the decomposition: is the actual return plausibly explained? Does the alpha magnitude seem realistic?</li>
+    <li>Do your own fundamental research on the shortlisted names</li>
+  </ol>
+
+  <h3>What the Screener Does Not Tell You</h3>
+
+  <p>It is equally important to understand the limitations:</p>
+  <ul>
+    <li><strong>Past alpha does not guarantee future alpha.</strong> Factor regressions are backward-looking. A stock with strong historical alpha may face changing competitive dynamics that will erode it.</li>
+    <li><strong>The model uses four factors.</strong> Other factors — profitability, investment, low volatility — are not included. A stock might appear to have alpha simply because it loads on a factor not in the model.</li>
+    <li><strong>2-year lookback is the default for a reason.</strong> 1-year lookbacks are noisier; 3-year lookbacks may reflect conditions that no longer apply. The 2-year window balances recency and statistical reliability.</li>
+    <li><strong>Small-cap stocks may have alpha simply due to illiquidity.</strong> The S&P 500 + NASDAQ 100 + Dow 30 universe focuses on large and mid-cap names where alpha is more likely to be genuine rather than a liquidity premium.</li>
+  </ul>
+
+  <hr class="divider">
+
+  <h2>Part V: Fintiq — Institutional Tools for Retail Investors</h2>
+
+  <p>The Factor Screener is one component of a broader investment platform built on a single founding principle: retail investors lose money not because markets are against them, but because they never had a method. They speculate instead of invest.</p>
+
+  <p>Fintiq was built to give retail investors the same analytical framework used by professional fund managers — without requiring a Bloomberg terminal, a finance degree, or a quantitative team.</p>
+
+  <h3>The Factor Screener (fintiq.uk)</h3>
+  <p>Free to browse top 3 signals every week. Full access from £0.99 one-off or £3.99/month. Covers 500+ US equities with Fama-French 4-factor analysis, alpha decomposition, and factor exposure visualisation. Updated every Sunday. Available at <a href="https://fintiq.uk/factor-screener.html">fintiq.uk/factor-screener.html</a>.</p>
+
+  <h3>The Full Investment App (app.fintiq.uk)</h3>
+  <p>The Factor Screener is now also embedded directly inside the Fintiq app — alongside a full suite of institutional-grade investment tools:</p>
+
+  <ul>
+    <li><strong>Multi-Factor Stock Screener</strong> — screens 1,000+ stocks across 10 exchanges (LSE, NYSE, NASDAQ, XETRA, Euronext, TSX, ASX, NSE, HKEX) on quality, value, growth, and momentum signals simultaneously</li>
+    <li><strong>Pairs Trading Engine</strong> — cointegration testing, Z-score calculation, and half-life estimation across 40+ pre-built pairs in UK, US, Europe, and Asia</li>
+    <li><strong>DCF Intrinsic Value Calculator</strong> — full discounted cash flow model with WACC, terminal growth, and margin assumptions</li>
+    <li><strong>Portfolio Optimiser</strong> — Efficient Frontier / Modern Portfolio Theory implementation</li>
+    <li><strong>Technical Analysis</strong> — RSI, MACD, Bollinger Bands, ATR, and EMA across any ticker</li>
+    <li><strong>Trading Journal</strong> — track every trade, strategy, and outcome in a structured database</li>
+    <li><strong>Factor Screener tab</strong> — the same Fama-French 4-factor analysis, integrated natively into the app, with 1yr/2yr/3yr lookback switching</li>
+  </ul>
+
+  <p>Every one of these tools is built on the same philosophy as the Factor Screener: take a technique used by professional investors, implement it rigorously using the same data sources and statistical methods, and put it in front of retail investors in a form they can understand and act on.</p>
+
+  <div class="highlight">
+    <strong>The tools in Fintiq's app are not simplifications of institutional analysis. They are implementations of the same methods</strong> — using the same Kenneth French Data Library, the same OLS regression techniques, the same cointegration tests that academic researchers and quantitative hedge funds use. The difference is the interface: designed to be accessible to any investor who is prepared to think systematically about their investments.
+  </div>
+
+  <div class="cta-box">
+    <h3>🔬 Try the Factor Screener — Free</h3>
+    <p>See this week's top alpha signals across 500+ US equities. Updated every Sunday. Top 3 signals always free — full access from £0.99.</p>
+    <a href="https://fintiq.uk/factor-screener.html" class="cta-btn">View Factor Screener →</a>
+    <a href="https://app.fintiq.uk" class="cta-btn-outline">Launch Full App →</a>
+    <p style="font-size:0.8rem;color:#475569;margin-top:20px;margin-bottom:0">No sign-up required to browse · Updated every Sunday · Fama-French 4-Factor Model</p>
+  </div>
+
+</div>
+
+<footer>
+  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-sub">Professional investment tools for retail investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+    <a href="https://fintiq.uk/tools.html">Tools</a>
+    <a href="https://fintiq.uk/factor-screener.html">Factor Screener</a>
+    <a href="https://app.fintiq.uk">App</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq. For educational purposes only. Not financial advice.</div>
+</footer>
+
+</body>
+</html>
