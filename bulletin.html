@@ -7,6 +7,7 @@
 <meta name="description" content="Fintiq's free daily market bulletin — institutional-grade analysis covering The Call, Risk Radar, Macro Pulse, Equity Flow and Trade Ideas. Updated twice daily at 08:00 and 20:00 GMT.">
 <link rel="canonical" href="https://www.fintiq.uk/bulletin.html">
 <link rel="icon" href="/favicon.ico">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
@@ -268,11 +269,103 @@
   }
   footer a { color: var(--gold); text-decoration: none; }
 
+  /* ── Skeleton loader ── */
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  .skeleton {
+    background: linear-gradient(90deg, rgba(13,31,53,0.8) 25%, rgba(15,38,64,0.9) 50%, rgba(13,31,53,0.8) 75%);
+    background-size: 400px 100%;
+    animation: shimmer 1.4s infinite;
+    border-radius: 10px;
+  }
+
+  /* ── Macro Indicators ── */
+  .macro-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 24px; }
+  .macro-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; min-height: 80px;
+  }
+  .macro-card .mc-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 4px; }
+  .macro-card .mc-value { font-size: 1.25rem; font-weight: 700; color: var(--text); line-height: 1.2; }
+  .macro-card .mc-sub   { font-size: 0.7rem; color: var(--muted); margin-top: 4px; }
+  .mc-border-blue  { border-left: 3px solid #3B82F6; }
+  .mc-border-gold  { border-left: 3px solid var(--gold); }
+  .mc-border-red   { border-left: 3px solid #EF4444; }
+  .mc-border-green { border-left: 3px solid #10B981; }
+  .mc-border-muted { border-left: 3px solid var(--muted); }
+  .mc-red   { color: #EF4444 !important; }
+  .mc-green { color: #10B981 !important; }
+
+  /* ── Major Markets ── */
+  .markets-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 24px; }
+  .market-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px 16px; cursor: pointer; transition: border-color 0.2s; min-height: 110px;
+  }
+  .market-card:hover { border-color: var(--gold); }
+  .market-card .mk-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+  .market-card .mk-label  { font-size: 0.75rem; color: var(--muted); }
+  .market-card .mk-flag   { font-size: 0.8rem; }
+  .market-card .mk-price  { font-size: 1.05rem; font-weight: 700; margin-bottom: 2px; }
+  .market-card .mk-chg    { font-size: 0.75rem; font-weight: 600; }
+  .market-card .mk-chart  { margin-top: 8px; }
+  .mk-up   { color: #10B981; }
+  .mk-down { color: #EF4444; }
+
+  /* ── Chart Modal ── */
+  .chart-modal {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .chart-modal-inner {
+    background: var(--navy); border: 1px solid var(--border); border-radius: 14px;
+    padding: 24px; width: 100%; max-width: 680px;
+  }
+  .chart-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 700; font-size: 1rem; }
+
+  /* ── EPS Tracker ── */
+  .eps-container { margin-bottom: 24px; }
+  .eps-tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+  .eps-tab {
+    background: var(--card); border: 1px solid var(--border); color: var(--muted);
+    padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+  }
+  .eps-tab.active, .eps-tab:hover { border-color: var(--gold); color: var(--gold); }
+  .eps-meta { font-size: 0.72rem; color: var(--muted); margin-bottom: 12px; }
+  .beat-dot { font-size: 0.72rem; margin-right: 8px; }
+  .beat-dot.beat   { color: #10B981; }
+  .beat-dot.miss   { color: #EF4444; }
+  .beat-dot.inline { color: var(--muted); }
+  .eps-loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.85rem; padding: 16px 0; }
+  .eps-table-wrap { overflow-x: auto; }
+  .eps-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .eps-table th { text-align: center; padding: 8px 10px; color: var(--muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .eps-table th:first-child { text-align: left; }
+  .eps-table td { padding: 6px 10px; border-bottom: 1px solid rgba(245,158,11,0.06); vertical-align: middle; }
+  .eps-table tr:hover td { background: rgba(245,158,11,0.03); }
+  .eps-ticker { font-weight: 700; font-size: 0.85rem; color: var(--gold); }
+  .eps-cell { text-align: center; }
+  .eps-q { background: var(--card); border-radius: 6px; padding: 5px 8px; margin: 2px; display: inline-block; min-width: 90px; }
+  .eps-q .eq-date  { font-size: 0.62rem; color: var(--muted); }
+  .eps-q .eq-val   { font-size: 0.82rem; font-weight: 700; }
+  .eps-q .eq-beat  { font-size: 0.65rem; margin-top: 1px; }
+  .eps-q.beat-bg   { border-left: 2px solid #10B981; }
+  .eps-q.miss-bg   { border-left: 2px solid #EF4444; }
+  .eps-q.inline-bg { border-left: 2px solid #64748B; }
+  .eps-q.forecast  { border-left: 2px solid #64748B; opacity: 0.7; }
+
+  @media (max-width: 900px) {
+    .macro-grid { grid-template-columns: repeat(2,1fr); }
+    .markets-grid { grid-template-columns: repeat(2,1fr); }
+  }
   @media (max-width: 640px) {
     .risk-radar { grid-template-columns: 1fr; }
     .trade-card { grid-template-columns: 1fr 1fr; }
     .trade-setup { grid-column: 1 / -1; }
     nav .nav-links { display: none; }
+    .macro-grid { grid-template-columns: repeat(2,1fr); }
+    .markets-grid { grid-template-columns: 1fr 1fr; }
+    .eps-tabs { gap: 4px; }
+    .eps-tab { font-size: 0.72rem; padding: 4px 10px; }
   }
 </style>
 </head>
@@ -347,6 +440,48 @@
     <!-- Trade Ideas -->
     <div class="section-label">💡 Trade Ideas</div>
     <div id="trade-ideas" class="trade-ideas"></div>
+
+    <!-- Macro Indicators -->
+    <div class="section-label">📊 Macro Indicators</div>
+    <div id="macro-indicators" class="macro-grid">
+      <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
+      <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
+      <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
+      <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
+      <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
+    </div>
+
+    <!-- Major Markets -->
+    <div class="section-label">📈 Major Markets — 3 Month</div>
+    <div id="major-markets" class="markets-grid">
+      <div class="market-card skeleton"></div><div class="market-card skeleton"></div>
+      <div class="market-card skeleton"></div><div class="market-card skeleton"></div>
+    </div>
+
+    <!-- Chart Modal -->
+    <div id="chart-modal" class="chart-modal" style="display:none" onclick="closeModal(event)">
+      <div class="chart-modal-inner">
+        <div class="chart-modal-header">
+          <span id="modal-title"></span>
+          <button onclick="document.getElementById('chart-modal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:1.4rem;cursor:pointer">✕</button>
+        </div>
+        <canvas id="modal-canvas" height="220"></canvas>
+      </div>
+    </div>
+
+    <!-- EPS Earnings Tracker -->
+    <div class="section-label">📋 EPS Earnings Tracker</div>
+    <div class="eps-container">
+      <div class="eps-tabs">
+        <button class="eps-tab active"  onclick="loadEarnings('sp500',this)">🇺🇸 S&amp;P 500 (50)</button>
+        <button class="eps-tab"         onclick="loadEarnings('nasdaq100',this)">🇺🇸 NASDAQ 100 (40)</button>
+        <button class="eps-tab"         onclick="loadEarnings('ftse100',this)">🇬🇧 FTSE 100 (30)</button>
+        <button class="eps-tab"         onclick="loadEarnings('stoxx50',this)">🇪🇺 Euro Stoxx 50 (30)</button>
+      </div>
+      <div class="eps-meta">Actual vs Estimate · <span class="beat-dot beat">▲ Beat &gt;+2%</span> <span class="beat-dot miss">▼ Miss &lt;-2%</span> <span class="beat-dot inline">≈ In-line</span> · Grey = forecast</div>
+      <div id="eps-loading" class="eps-loading" style="display:none"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div> Loading earnings data…</div>
+      <div id="eps-content" class="eps-table-wrap"></div>
+    </div>
 
     <footer>
       Bulletin generated by <a href="/">Fintiq</a> · Powered by Claude AI · Updated twice daily (08:00 & 20:00 GMT)<br>
@@ -429,6 +564,211 @@
   }
 
   loadBulletin();
+  loadMarketData();
+  loadEarnings('sp500', document.querySelector('.eps-tab.active'));
+
+  // ── Market Data ──────────────────────────────────────────────────────────
+  async function loadMarketData() {
+    try {
+      const r = await fetch(`${API}/market-data`);
+      if (!r.ok) return;
+      const d = await r.json();
+      renderMacroIndicators(d.macro_indicators || {});
+      renderMajorMarkets(d.major_markets || []);
+    } catch(e) { console.warn('Market data unavailable:', e); }
+  }
+
+  function fmtNum(v, dec=2) { return v != null ? Number(v).toLocaleString('en-US',{minimumFractionDigits:dec,maximumFractionDigits:dec}) : '—'; }
+  function fmtK(v) { if (v == null) return '—'; return Math.abs(v) >= 1000 ? (v/1000).toFixed(1)+'K' : String(Math.round(v)); }
+
+  function renderMacroIndicators(m) {
+    const fomc_days = m.fomc_days; const fomc_date = m.fomc_date ? m.fomc_date.slice(0,10) : '';
+    const tnx = m.treasury_10y; const spread = m.yield_curve_spread;
+    const cpi = m.cpi_yoy; const nfp = m.nfp_mom;
+    const vix = m.vix; const dxy = m.dxy; const brent = m.brent; const gold = m.gold;
+
+    const spreadColor = spread == null ? '' : spread < 0 ? 'mc-red' : 'mc-green';
+    const nfpColor = nfp == null ? '' : nfp < 0 ? 'mc-red' : 'mc-green';
+    const vixColor = vix == null ? '' : vix > 30 ? 'mc-red' : vix > 20 ? '' : 'mc-green';
+
+    const cards = [
+      { label:'NEXT FOMC', value: fomc_days != null ? fomc_days+'d' : '—', sub: fomc_date, border:'mc-border-blue' },
+      { label:'10Y TREASURY', value: tnx != null ? fmtNum(tnx)+'%' : '—', sub:'Risk-free / discount rate', border:'mc-border-gold' },
+      { label:'CPI (YOY)', value: cpi != null ? fmtNum(cpi,1)+'%' : '—', sub:'Inflation benchmark', border: cpi>3?'mc-border-red':'mc-border-green', valClass: cpi>3?'mc-red':'mc-green' },
+      { label:'YIELD CURVE', value: spread != null ? (spread>0?'+':'')+fmtNum(spread)+'%' : '—', sub:'10Y−2Y · negative = inversion', border: spread!=null&&spread<0?'mc-border-red':'mc-border-green', valClass: spreadColor },
+      { label:'NFP (MOM)', value: nfp != null ? (nfp>0?'+':'')+fmtK(nfp) : '—', sub:'Jobs · check next release', border:'mc-border-muted', valClass: nfpColor },
+      { label:'VIX', value: vix != null ? fmtNum(vix,1) : '—', sub:'<16 calm · >25 fear · >30 panic', border:'mc-border-muted', valClass: vixColor },
+      { label:'DOLLAR (DXY)', value: dxy != null ? fmtNum(dxy,1) : '—', sub:'USD strength index', border:'mc-border-muted' },
+      { label:'BRENT CRUDE', value: brent != null ? '$'+fmtNum(brent,1) : '—', sub:'$/bbl · global demand signal', border:'mc-border-gold' },
+      { label:'GOLD', value: gold != null ? '$'+fmtNum(gold,0) : '—', sub:'Risk-off / inflation hedge', border:'mc-border-gold' },
+    ];
+
+    const el = document.getElementById('macro-indicators');
+    el.innerHTML = cards.map(c => `
+      <div class="macro-card ${c.border||''}">
+        <div class="mc-label">${c.label}</div>
+        <div class="mc-value ${c.valClass||''}">${c.value}</div>
+        <div class="mc-sub">${c.sub||''}</div>
+      </div>`).join('');
+  }
+
+  // ── Sparkline SVG ────────────────────────────────────────────────────────
+  function sparklineSVG(history, up) {
+    if (!history || history.length < 2) return '';
+    const w=140, h=38, pad=2;
+    const min=Math.min(...history), max=Math.max(...history), range=max-min||1;
+    const pts = history.map((v,i)=>{
+      const x = pad + (i/(history.length-1))*(w-pad*2);
+      const y = (h-pad) - ((v-min)/range)*(h-pad*2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    const color = up ? '#10B981' : '#EF4444';
+    return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:38px;display:block">
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  let _modalChartInstance = null;
+  let _marketData = [];
+
+  function renderMajorMarkets(markets) {
+    _marketData = markets;
+    const el = document.getElementById('major-markets');
+    el.innerHTML = markets.map((m,i) => {
+      const up = m.chg_pct >= 0;
+      const chgClass = up ? 'mk-up' : 'mk-down';
+      const chgStr = m.chg_pct != null ? (up?'+':'')+m.chg_pct.toFixed(2)+'%' : '—';
+      const priceStr = m.price != null ? Number(m.price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
+      return `<div class="market-card" onclick="openMarketModal(${i})">
+        <div class="mk-header">
+          <span class="mk-label">${m.label}</span>
+          <span class="mk-flag">${m.flag}</span>
+        </div>
+        <div class="mk-price">${priceStr}</div>
+        <div class="mk-chg ${chgClass}">${chgStr}</div>
+        <div class="mk-chart">${sparklineSVG(m.history, up)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function openMarketModal(idx) {
+    const m = _marketData[idx];
+    if (!m) return;
+    document.getElementById('modal-title').textContent = m.label + ' — 3 Month';
+    document.getElementById('chart-modal').style.display = 'flex';
+    const canvas = document.getElementById('modal-canvas');
+    if (_modalChartInstance) { _modalChartInstance.destroy(); _modalChartInstance = null; }
+    const history = m.history || [];
+    const up = history.length > 1 && history[history.length-1] >= history[0];
+    const color = up ? '#10B981' : '#EF4444';
+    _modalChartInstance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: history.map((_,i) => i===0?'3mo ago':i===history.length-1?'Today':''),
+        datasets: [{
+          data: history, borderColor: color, borderWidth: 2,
+          pointRadius: 0, tension: 0.3,
+          fill: true,
+          backgroundColor: up ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+        }]
+      },
+      options: {
+        responsive: true, animation: { duration: 400 },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => Number(ctx.raw).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } } },
+        scales: {
+          x: { ticks: { color: '#94A3B8', maxTicksLimit: 4, font:{size:10} }, grid: { display: false } },
+          y: { ticks: { color: '#94A3B8', font:{size:10} }, grid: { color: 'rgba(245,158,11,0.08)' } }
+        }
+      }
+    });
+  }
+
+  function closeModal(e) { if (e.target.id==='chart-modal') document.getElementById('chart-modal').style.display='none'; }
+
+  // ── EPS Earnings Tracker ─────────────────────────────────────────────────
+  const _earningsCache = {};
+  let _activeEarningsIndex = 'sp500';
+
+  async function loadEarnings(index, tabEl) {
+    _activeEarningsIndex = index;
+    document.querySelectorAll('.eps-tab').forEach(t => t.classList.remove('active'));
+    if (tabEl) tabEl.classList.add('active');
+
+    if (_earningsCache[index]) { renderEarnings(_earningsCache[index]); return; }
+
+    document.getElementById('eps-loading').style.display = 'flex';
+    document.getElementById('eps-content').innerHTML = '';
+    try {
+      const r = await fetch(`${API}/earnings?index=${index}`);
+      if (!r.ok) throw new Error('API error');
+      const d = await r.json();
+      _earningsCache[index] = d.data || [];
+      renderEarnings(_earningsCache[index]);
+    } catch(e) {
+      document.getElementById('eps-content').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">Unable to load earnings data</div>';
+    } finally {
+      document.getElementById('eps-loading').style.display = 'none';
+    }
+  }
+
+  function qLabel(dateStr) {
+    if (!dateStr) return '—';
+    const [y, m] = dateStr.split('-').map(Number);
+    const q = Math.ceil(m/3);
+    return `Q${q} '${String(y).slice(2)}`;
+  }
+
+  function beatClass(pct) {
+    if (pct == null) return 'inline-bg';
+    if (pct > 2)  return 'beat-bg';
+    if (pct < -2) return 'miss-bg';
+    return 'inline-bg';
+  }
+  function beatLabel(pct) {
+    if (pct == null) return '';
+    if (pct > 2)  return `<span style="color:#10B981">▲ Beat ${pct>0?'+':''}${pct.toFixed(1)}%</span>`;
+    if (pct < -2) return `<span style="color:#EF4444">▼ Miss ${pct.toFixed(1)}%</span>`;
+    return `<span style="color:#94A3B8">≈ In-line ${pct>0?'+':''}${pct.toFixed(1)}%</span>`;
+  }
+
+  function renderEarnings(data) {
+    if (!data || !data.length) {
+      document.getElementById('eps-content').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No data available</div>';
+      return;
+    }
+    // Build header from first row quarters
+    const sample = data[0];
+    const qDates = (sample.quarters||[]).map(q=>q.date);
+    const estDates = (sample.estimates||[]).map(e=>e.date);
+
+    let thead = '<tr><th>Ticker</th>';
+    qDates.forEach(d => thead += `<th>${qLabel(d)}</th>`);
+    estDates.forEach(d => thead += `<th style="opacity:0.6">${qLabel(d)} est</th>`);
+    thead += '</tr>';
+
+    const rows = data.map(row => {
+      let cells = `<td><span class="eps-ticker">${row.symbol}</span></td>`;
+      (row.quarters||[]).forEach(q => {
+        const bc = beatClass(q.beat_pct);
+        cells += `<td class="eps-cell"><div class="eps-q ${bc}">
+          <div class="eq-date">${qLabel(q.date)}</div>
+          <div class="eq-val">${q.actual!=null ? q.actual.toFixed(2) : '—'}</div>
+          <div class="eq-beat">${beatLabel(q.beat_pct)}</div>
+        </div></td>`;
+      });
+      (row.estimates||[]).forEach(e => {
+        cells += `<td class="eps-cell"><div class="eps-q forecast">
+          <div class="eq-date">${qLabel(e.date)}</div>
+          <div class="eq-val" style="color:var(--muted)">${e.eps_est!=null ? e.eps_est.toFixed(2) : '—'}</div>
+          <div class="eq-beat" style="color:var(--muted);font-size:0.6rem">FORECAST</div>
+        </div></td>`;
+      });
+      return `<tr>${cells}</tr>`;
+    }).join('');
+
+    document.getElementById('eps-content').innerHTML = `
+      <table class="eps-table"><thead>${thead}</thead><tbody>${rows}</tbody></table>`;
+  }
 </script>
 </body>
 </html>
