@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Bulletin — Fintiq</title>
+<meta name="description" content="Professional daily market bulletin. The Call, Risk Radar, Macro Pulse, Trade Ideas — updated twice daily.">
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root {
+    --navy-dark: #081220;
+    --navy: #0D1F35;
+    --navy-light: #0F2640;
+    --gold: #F59E0B;
+    --gold-light: #FCD34D;
+    --text: #F1F5F9;
+    --muted: #94A3B8;
+    --border: rgba(245,158,11,0.2);
+    --card: rgba(13,31,53,0.85);
+    --green: #10B981;
+    --red: #EF4444;
+    --font: 'Segoe UI', 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--navy-dark);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    padding-bottom: 60px;
+  }
+
+  /* ── Nav ── */
+  nav {
+    background: rgba(8,18,32,0.95);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
+  }
+  .nav-logo { font-size: 1.25rem; font-weight: 700; color: var(--gold); text-decoration: none; }
+  .nav-links { display: flex; gap: 20px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 0.875rem; transition: color 0.2s; }
+  .nav-links a:hover, .nav-links a.active { color: var(--text); }
+
+  /* ── Header ── */
+  .bulletin-header {
+    background: linear-gradient(135deg, var(--navy) 0%, #0a1628 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 32px 24px 24px;
+    text-align: center;
+  }
+  .bulletin-header h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: 6px; }
+  .bulletin-header h1 span { color: var(--gold); }
+  .bulletin-meta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+  .session-badge {
+    background: rgba(245,158,11,0.15);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .refresh-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* ── Layout ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 28px 20px; }
+
+  /* ── Section headers ── */
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── The Call ── */
+  .the-call {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gold);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+  }
+  .the-call-headline {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.5;
+    margin-bottom: 16px;
+    color: var(--text);
+  }
+  .call-bullets { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .call-bullets li {
+    font-size: 0.875rem;
+    color: var(--muted);
+    padding-left: 16px;
+    position: relative;
+    line-height: 1.5;
+  }
+  .call-bullets li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--gold);
+    font-size: 0.7rem;
+    top: 3px;
+  }
+
+  /* ── Risk Radar ── */
+  .risk-radar {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .risk-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .risk-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .risk-detail { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── Text cards (macro, equity flow, overnight) ── */
+  .text-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 24px;
+    font-size: 0.875rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+
+  /* ── Trade Ideas ── */
+  .trade-ideas { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .trade-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 140px 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: start;
+  }
+  .trade-setup { font-weight: 700; font-size: 0.95rem; color: var(--gold); }
+  .trade-field { font-size: 0.8rem; }
+  .trade-field .label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .trade-field .value { color: var(--text); line-height: 1.4; }
+
+  /* ── Loading / Error ── */
+  .loading-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--muted);
+  }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-state {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    color: #FCA5A5;
+    margin-top: 40px;
+  }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center;
+    padding: 32px 20px 0;
+    font-size: 0.75rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 16px;
+  }
+  footer a { color: var(--gold); text-decoration: none; }
+
+  @media (max-width: 640px) {
+    .risk-radar { grid-template-columns: 1fr; }
+    .trade-card { grid-template-columns: 1fr 1fr; }
+    .trade-setup { grid-column: 1 / -1; }
+    nav .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">Fintiq</a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/bulletin.html" class="active">Bulletin</a>
+    <a href="/tools.html">Tools</a>
+    <a href="https://app.fintiq.uk" target="_blank">AI Analyst</a>
+  </div>
+</nav>
+
+<div class="bulletin-header">
+  <h1>Market <span>Bulletin</span></h1>
+  <div class="bulletin-meta">
+    <span id="session-badge" class="session-badge">Loading…</span>
+    <span id="timestamp">—</span>
+    <button class="refresh-btn" onclick="loadBulletin(true)">↻ Refresh</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- Loading state -->
+  <div id="loading" class="loading-state">
+    <div class="spinner"></div>
+    <div>Fetching live market data…</div>
+  </div>
+
+  <!-- Error state -->
+  <div id="error" class="error-state" style="display:none">
+    <strong>Unable to load bulletin.</strong><br>
+    <span id="error-msg"></span><br><br>
+    <button class="refresh-btn" onclick="loadBulletin(true)" style="margin:auto;display:inline-block">Try again</button>
+  </div>
+
+  <!-- Content -->
+  <div id="content" style="display:none">
+
+    <!-- The Call -->
+    <div class="section-label">📢 The Call</div>
+    <div class="the-call">
+      <div id="call-headline" class="the-call-headline"></div>
+      <ul id="call-bullets" class="call-bullets"></ul>
+    </div>
+
+    <!-- Risk Radar -->
+    <div class="section-label">🚨 Risk Radar</div>
+    <div id="risk-radar" class="risk-radar"></div>
+
+    <!-- Macro Pulse -->
+    <div class="section-label">🌍 Macro Pulse</div>
+    <div id="macro-pulse" class="text-card"></div>
+
+    <!-- Equity Flow -->
+    <div class="section-label">📊 Equity Flow</div>
+    <div id="equity-flow" class="text-card"></div>
+
+    <!-- Overnight Wires -->
+    <div class="section-label">🌙 Overnight Wires</div>
+    <div id="overnight-wires" class="text-card"></div>
+
+    <!-- Trade Ideas -->
+    <div class="section-label">💡 Trade Ideas</div>
+    <div id="trade-ideas" class="trade-ideas"></div>
+
+    <footer>
+      Bulletin generated by <a href="/">Fintiq</a> · Powered by Claude AI · Updated twice daily (08:00 & 20:00 GMT)<br>
+      Not financial advice. For informational purposes only.
+    </footer>
+
+  </div>
+</div>
+
+<script>
+  const API = 'https://api.fintiq.uk';
+
+  async function loadBulletin(force = false) {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('content').style.display = 'none';
+    document.getElementById('error').style.display = 'none';
+
+    try {
+      const url = force ? `${API}/bulletin?_=${Date.now()}` : `${API}/bulletin`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      const d = await res.json();
+      render(d);
+    } catch (e) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error-msg').textContent = e.message;
+    }
+  }
+
+  function render(d) {
+    // Meta
+    const badge = document.getElementById('session-badge');
+    badge.textContent = d.session || 'Bulletin';
+    document.getElementById('timestamp').textContent =
+      d.cached ? `Last updated ${d.timestamp} · ${d.age_minutes}m ago` : `Updated ${d.timestamp}`;
+
+    // The Call
+    const call = d.the_call || {};
+    document.getElementById('call-headline').textContent = call.headline || '';
+    const bl = document.getElementById('call-bullets');
+    bl.innerHTML = '';
+    (call.bullets || []).forEach(b => {
+      const li = document.createElement('li');
+      li.textContent = b;
+      bl.appendChild(li);
+    });
+
+    // Risk Radar
+    const rr = document.getElementById('risk-radar');
+    rr.innerHTML = '';
+    (d.risk_radar || []).forEach(item => {
+      rr.innerHTML += `
+        <div class="risk-card">
+          <div class="risk-title">${item.flag} ${item.title}</div>
+          <div class="risk-detail">${item.detail}</div>
+        </div>`;
+    });
+
+    // Text sections
+    document.getElementById('macro-pulse').textContent = d.macro_pulse || '';
+    document.getElementById('equity-flow').textContent = d.equity_flow || '';
+    document.getElementById('overnight-wires').textContent = d.overnight_wires || '';
+
+    // Trade Ideas
+    const ti = document.getElementById('trade-ideas');
+    ti.innerHTML = '';
+    (d.trade_ideas || []).forEach(t => {
+      ti.innerHTML += `
+        <div class="trade-card">
+          <div class="trade-setup">${t.setup}</div>
+          <div class="trade-field"><div class="label">Thesis</div><div class="value">${t.thesis}</div></div>
+          <div class="trade-field"><div class="label">Entry</div><div class="value">${t.entry}</div></div>
+          <div class="trade-field"><div class="label">Risk</div><div class="value">${t.risk}</div></div>
+        </div>`;
+    });
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+  }
+
+  loadBulletin();
+</script>
+</body>
+</html>
