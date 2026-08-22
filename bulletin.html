@@ -295,6 +295,13 @@
   .mc-red   { color: #EF4444 !important; }
   .mc-green { color: #10B981 !important; }
 
+  /* ── Sector Snapshot ── */
+  .sector-snap-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+  .sector-chip { background:var(--card); border:1px solid var(--border); border-radius:8px; padding:8px 12px; min-width:100px; text-align:center; }
+  .sector-chip .sc-name { font-size:0.7rem; color:var(--muted); margin-bottom:3px; }
+  .sector-chip .sc-pct { font-size:0.95rem; font-weight:700; }
+  .sector-chip .sc-sym { font-size:0.6rem; color:var(--muted); margin-top:2px; }
+
   /* ── Major Markets ── */
   .markets-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 24px; }
   .market-card {
@@ -442,6 +449,18 @@
     <div class="section-label">💡 Trade Ideas</div>
     <div id="trade-ideas" class="trade-ideas"></div>
 
+    <!-- Today's Catalysts -->
+    <details class="expander" id="exp-catalysts">
+      <summary>📅 Today's Catalysts</summary>
+      <div id="catalysts-content" class="expander-body"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:12px auto"></div></div>
+    </details>
+
+    <!-- Market Movers -->
+    <details class="expander" id="exp-movers">
+      <summary>🚀 Market Movers</summary>
+      <div id="movers-content" class="expander-body"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:12px auto"></div></div>
+    </details>
+
     <!-- Macro Indicators -->
     <div class="section-label">📊 Macro Indicators</div>
     <div id="macro-indicators" class="macro-grid">
@@ -451,6 +470,10 @@
       <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
       <div class="macro-card skeleton"></div><div class="macro-card skeleton"></div>
     </div>
+
+    <!-- Sector Snapshot -->
+    <div class="section-label">🏭 Sector Snapshot</div>
+    <div id="sector-snap" class="sector-snap-row"></div>
 
     <!-- Major Markets -->
     <div class="section-label">📈 Major Markets — 3 Month</div>
@@ -563,6 +586,34 @@
         </div>`;
     });
 
+    // Today's Catalysts
+    const catEl = document.getElementById('catalysts-content');
+    const cats = d.catalysts || [];
+    if (cats.length) {
+      catEl.innerHTML = cats.map(c => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
+        <span style="font-size:0.7rem;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);margin-right:8px">${c.type||'event'}</span>
+        <strong>${c.event}</strong>
+        <div style="color:var(--muted);font-size:0.85rem;margin-top:3px">${c.impact}</div>
+      </div>`).join('');
+    } else { catEl.innerHTML = '<span style="color:var(--muted)">No major catalysts today</span>'; }
+
+    // Market Movers
+    const movEl = document.getElementById('movers-content');
+    const movers = d.market_movers || [];
+    if (movers.length) {
+      movEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">` +
+        movers.map(m => {
+          const up = m.move && !m.move.startsWith('-');
+          return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="font-weight:700;font-size:1rem">${m.flag||''} ${m.ticker}</span>
+              <span style="font-weight:700;color:${up?'#10B981':'#EF4444'}">${m.move}</span>
+            </div>
+            <div style="color:var(--muted);font-size:0.82rem">${m.reason}</div>
+          </div>`;
+        }).join('') + '</div>';
+    } else { movEl.innerHTML = '<span style="color:var(--muted)">No major movers data</span>'; }
+
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
   }
@@ -578,6 +629,7 @@
       if (!r.ok) return;
       const d = await r.json();
       renderMacroIndicators(d.macro_indicators || {});
+      renderSectors(d.sectors || []);
       renderMajorMarkets(d.major_markets || []);
     } catch(e) { console.warn('Market data unavailable:', e); }
   }
@@ -630,6 +682,21 @@
     return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:38px;display:block">
       <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
+  }
+
+  function renderSectors(sectors) {
+    const el = document.getElementById('sector-snap');
+    if (!sectors.length) { el.innerHTML = '<span style="color:var(--muted);font-size:0.8rem">Sector data unavailable</span>'; return; }
+    el.innerHTML = sectors.map(s => {
+      const pct = s.chg_pct;
+      const color = pct == null ? 'var(--muted)' : pct >= 0 ? '#10B981' : '#EF4444';
+      const val = pct != null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '—';
+      return `<div class="sector-chip">
+        <div class="sc-name">${s.name}</div>
+        <div class="sc-pct" style="color:${color}">${val}</div>
+        <div class="sc-sym">${s.symbol}</div>
+      </div>`;
+    }).join('');
   }
 
   let _modalChartInstance = null;
