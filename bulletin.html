@@ -249,26 +249,44 @@
   /* Trade card accordion */
   .trade-header {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 13px 16px; cursor: pointer; user-select: none;
-    gap: 12px;
+    padding: 13px 16px; cursor: pointer; user-select: none; gap: 12px;
   }
   .trade-header:hover { background: rgba(245,158,11,0.05); }
   .trade-header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
   .trade-setup { font-weight: 700; font-size: 0.95rem; color: var(--gold); white-space: nowrap; }
-  .trade-type-badge { font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .trade-type-badge { font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
   .trade-thesis-preview { font-size: 0.78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
   .trade-chevron { color: var(--muted); font-size: 0.7rem; transition: transform 0.2s; flex-shrink: 0; }
   .trade-chevron.open { transform: rotate(180deg); }
-  .trade-body {
-    display: none; padding: 0 16px 14px; display: none;
-    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  /* Expanded body */
+  .trade-body { display: none; padding: 0 16px 16px; border-top: 1px solid var(--border); }
+  .trade-body.hidden { display: none; }
+  .trade-body.visible { display: block; }
+  .trade-thesis-full {
+    font-size: 0.82rem; line-height: 1.65; color: var(--text);
+    padding: 14px 0 14px; border-bottom: 1px solid var(--border);
   }
-  .trade-body.hidden { display: none !important; }
-  .trade-body.visible { display: grid !important; }
-  .trade-field { font-size: 0.8rem; }
-  .trade-field.full { grid-column: 1 / -1; }
-  .trade-field .label { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
-  .trade-field .value { color: var(--text); line-height: 1.4; }
+  /* Metrics strip */
+  .trade-metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1px; background: var(--border);
+    border-radius: 8px; overflow: hidden; margin: 14px 0;
+  }
+  .trade-metric {
+    background: var(--navy); padding: 10px 12px; text-align: center;
+  }
+  .trade-metric .tm-label {
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 5px;
+  }
+  .trade-metric .tm-value {
+    font-size: 0.85rem; font-weight: 700; line-height: 1.3;
+  }
+  .trade-risk-row { font-size: 0.8rem; line-height: 1.55; color: var(--muted); }
+  .trade-risk-row .risk-label {
+    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 4px;
+  }
 
   /* ── Loading / Error ── */
   .loading-state {
@@ -404,8 +422,7 @@
   }
   @media (max-width: 640px) {
     .risk-radar { grid-template-columns: 1fr; }
-    .trade-body { grid-template-columns: 1fr; }
-    .trade-field.full { grid-column: 1; }
+    .trade-metrics { grid-template-columns: repeat(2, 1fr); }
     nav .nav-links { display: none; }
     .macro-grid { grid-template-columns: repeat(2,1fr); }
     .markets-grid { grid-template-columns: 1fr 1fr; }
@@ -724,11 +741,29 @@
             <span class="trade-chevron" id="${chevId}">▼</span>
           </div>
           <div class="trade-body hidden" id="${bodyId}">
-            <div class="trade-field full"><div class="label">Thesis</div><div class="value">${t.thesis}</div></div>
-            <div class="trade-field"><div class="label">Entry</div><div class="value">${t.entry || '—'}</div></div>
-            ${t.stop ? `<div class="trade-field"><div class="label">Stop</div><div class="value" style="color:#EF4444">${t.stop}</div></div>` : ''}
-            ${t.target ? `<div class="trade-field"><div class="label">Target</div><div class="value" style="color:#10B981">${t.target}</div></div>` : ''}
-            <div class="trade-field full"><div class="label">Risk / Invalidation</div><div class="value">${t.risk || '—'}</div></div>
+            <div class="trade-thesis-full">${t.thesis}</div>
+            <div class="trade-metrics">
+              <div class="trade-metric">
+                <div class="tm-label">Entry</div>
+                <div class="tm-value" style="color:var(--gold)">${t.entry || '—'}</div>
+              </div>
+              <div class="trade-metric">
+                <div class="tm-label">Stop</div>
+                <div class="tm-value" style="color:#EF4444">${t.stop || '—'}</div>
+              </div>
+              <div class="trade-metric">
+                <div class="tm-label">Target</div>
+                <div class="tm-value" style="color:#10B981">${t.target || '—'}</div>
+              </div>
+              <div class="trade-metric">
+                <div class="tm-label">R : R</div>
+                <div class="tm-value" style="color:var(--text)">${t.risk_reward || '—'}</div>
+              </div>
+            </div>
+            <div class="trade-risk-row">
+              <div class="risk-label">⚠ Risk / Invalidation</div>
+              ${t.risk || '—'}
+            </div>
           </div>
         </div>`;
     });
