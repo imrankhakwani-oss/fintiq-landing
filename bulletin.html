@@ -23,13 +23,16 @@
 <meta name="twitter:description" content="Institutional-grade daily market analysis. Updated twice daily at 08:00 and 20:00 GMT.">
 <meta name="twitter:image" content="https://www.fintiq.uk/og-bulletin.png">
 
-<!-- Structured Data -->
-<script type="application/ld+json">
+<!-- Structured Data (dates injected by JS on load) -->
+<script type="application/ld+json" id="bulletin-jsonld">
 {
   "@context": "https://schema.org",
   "@type": "NewsArticle",
   "headline": "Daily Market Bulletin — Fintiq",
   "description": "Institutional-grade daily market bulletin covering S&P 500, macro analysis, risk radar and trade ideas.",
+  "datePublished": "2026-01-01T08:00:00Z",
+  "dateModified": "2026-01-01T08:00:00Z",
+  "author": {"@type": "Organization", "name": "Fintiq"},
   "publisher": {
     "@type": "Organization",
     "name": "Fintiq",
@@ -39,9 +42,22 @@
       "url": "https://www.fintiq.uk/favicon.ico"
     }
   },
+  "image": "https://www.fintiq.uk/og-bulletin.png",
   "url": "https://www.fintiq.uk/bulletin.html",
   "mainEntityOfPage": "https://www.fintiq.uk/bulletin.html"
 }
+</script>
+<script>
+// Update JSON-LD dates dynamically on load
+(function(){
+  try {
+    var el = document.getElementById('bulletin-jsonld');
+    var d = new Date().toISOString();
+    var obj = JSON.parse(el.textContent);
+    obj.datePublished = d; obj.dateModified = d;
+    el.textContent = JSON.stringify(obj);
+  } catch(e){}
+})();
 </script>
 <style>
   :root {
@@ -221,6 +237,7 @@
   .trade-card {
     background: var(--card);
     border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
     border-radius: 10px;
     padding: 14px 18px;
     display: grid;
@@ -396,6 +413,10 @@
 
 <div class="bulletin-header">
   <h1>Daily Market <span>Bulletin</span></h1>
+  <!-- SSR content stub: visible to crawlers; hidden to users by JS below -->
+  <noscript>
+    <p>Fintiq's Daily Market Bulletin delivers institutional-grade cross-asset analysis updated twice daily at 08:00 and 20:00 GMT. Each edition covers: market regime classification (risk-on / risk-off / transition), S&amp;P 500 and global equity outlook, VIX term structure and credit market signals (HYG/LQD), yield curve analysis, sector rotation, overnight wires from Asia and Europe, today's key earnings and macro catalysts, and three specific trade ideas with entry, stop, target, and risk/reward levels. Powered by live market data and AI analysis.</p>
+  </noscript>
   <p class="bulletin-seo-desc" style="display:none">Institutional-grade daily market analysis covering S&amp;P 500, macro pulse, risk radar and trade ideas — updated twice daily at 08:00 and 20:00 GMT.</p>
   <div class="bulletin-meta">
     <span id="session-badge" class="session-badge">Loading…</span>
@@ -573,11 +594,14 @@
     const ti = document.getElementById('trade-ideas');
     ti.innerHTML = '';
     (d.trade_ideas || []).forEach(t => {
+      const rrBadge = t.risk_reward ? `<span style="background:rgba(245,158,11,0.15);color:var(--gold);padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700">R:R ${t.risk_reward}</span>` : '';
       ti.innerHTML += `
         <div class="trade-card">
-          <div class="trade-setup">${t.setup}</div>
+          <div class="trade-setup">${t.setup} ${rrBadge}</div>
           <div class="trade-field"><div class="label">Thesis</div><div class="value">${t.thesis}</div></div>
           <div class="trade-field"><div class="label">Entry</div><div class="value">${t.entry}</div></div>
+          ${t.stop ? `<div class="trade-field"><div class="label">Stop</div><div class="value" style="color:#EF4444">${t.stop}</div></div>` : ''}
+          ${t.target ? `<div class="trade-field"><div class="label">Target</div><div class="value" style="color:#10B981">${t.target}</div></div>` : ''}
           <div class="trade-field"><div class="label">Risk</div><div class="value">${t.risk}</div></div>
         </div>`;
     });
