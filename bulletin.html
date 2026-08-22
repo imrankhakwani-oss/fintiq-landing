@@ -571,10 +571,12 @@
       const url = `${API}/bulletin${force ? '?_=' + Date.now() : ''}`;
       const res = await fetch(url);
 
-      // 202 = no cache yet, generation started — poll until ready
+      // 202 = bulletin is generating in background — show friendly message and poll
       if (res.status === 202) {
         document.getElementById('loading').style.display = 'block';
         document.getElementById('content').style.display = 'none';
+        const loadingEl = document.querySelector('.loading-state div:last-child');
+        if (loadingEl) loadingEl.textContent = 'Preparing today\'s bulletin — this takes about 30 seconds on first load…';
         setRefreshIndicator(false);
         _schedulePoll(true);
         return;
@@ -628,7 +630,7 @@
 
   function _schedulePoll(showSpinner) {
     if (_pollTimer) return;
-    _pollTimer = setTimeout(() => _pollForFresh(showSpinner), 8000);
+    _pollTimer = setTimeout(() => _pollForFresh(showSpinner), 5000);
   }
 
   function render(d) {
