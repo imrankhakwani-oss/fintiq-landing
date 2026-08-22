@@ -233,21 +233,41 @@
   }
 
   /* ── Trade Ideas ── */
-  .trade-ideas { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+  .trade-ideas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
   .trade-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-left: 3px solid var(--gold);
     border-radius: 10px;
+    overflow: hidden;
     padding: 14px 18px;
     display: grid;
     grid-template-columns: 140px 1fr 1fr 1fr;
     gap: 12px;
     align-items: start;
   }
-  .trade-setup { font-weight: 700; font-size: 0.95rem; color: var(--gold); }
+  /* Trade card accordion */
+  .trade-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 16px; cursor: pointer; user-select: none;
+    gap: 12px;
+  }
+  .trade-header:hover { background: rgba(245,158,11,0.05); }
+  .trade-header-left { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+  .trade-setup { font-weight: 700; font-size: 0.95rem; color: var(--gold); white-space: nowrap; }
+  .trade-type-badge { font-size: 0.65rem; padding: 2px 7px; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+  .trade-thesis-preview { font-size: 0.78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
+  .trade-chevron { color: var(--muted); font-size: 0.7rem; transition: transform 0.2s; flex-shrink: 0; }
+  .trade-chevron.open { transform: rotate(180deg); }
+  .trade-body {
+    display: none; padding: 0 16px 14px; display: none;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .trade-body.hidden { display: none !important; }
+  .trade-body.visible { display: grid !important; }
   .trade-field { font-size: 0.8rem; }
-  .trade-field .label { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+  .trade-field.full { grid-column: 1 / -1; }
+  .trade-field .label { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
   .trade-field .value { color: var(--text); line-height: 1.4; }
 
   /* ── Loading / Error ── */
@@ -384,8 +404,8 @@
   }
   @media (max-width: 640px) {
     .risk-radar { grid-template-columns: 1fr; }
-    .trade-card { grid-template-columns: 1fr 1fr; }
-    .trade-setup { grid-column: 1 / -1; }
+    .trade-body { grid-template-columns: 1fr; }
+    .trade-field.full { grid-column: 1; }
     nav .nav-links { display: none; }
     .macro-grid { grid-template-columns: repeat(2,1fr); }
     .markets-grid { grid-template-columns: 1fr 1fr; }
@@ -544,6 +564,16 @@
 <script>
   const API = 'https://api.fintiq.uk';
 
+  function toggleTrade(bodyId, chevId) {
+    const body = document.getElementById(bodyId);
+    const chev = document.getElementById(chevId);
+    if (!body) return;
+    const isOpen = body.classList.contains('visible');
+    body.classList.toggle('hidden', isOpen);
+    body.classList.toggle('visible', !isOpen);
+    if (chev) chev.classList.toggle('open', !isOpen);
+  }
+
   let _pollTimer = null;
 
   function setRefreshIndicator(visible) {
@@ -667,19 +697,39 @@
     document.getElementById('equity-flow').textContent = d.equity_flow || '';
     document.getElementById('overnight-wires').textContent = d.overnight_wires || '';
 
-    // Trade Ideas
+    // Trade Ideas — accordion
     const ti = document.getElementById('trade-ideas');
     ti.innerHTML = '';
-    (d.trade_ideas || []).forEach(t => {
-      const rrBadge = t.risk_reward ? `<span style="background:rgba(245,158,11,0.15);color:var(--gold);padding:2px 8px;border-radius:4px;font-size:0.7rem;font-weight:700">R:R ${t.risk_reward}</span>` : '';
+    const typeColors = { stock: '#10B981', macro: '#6366F1', sector: '#F59E0B', default: '#94A3B8' };
+    const typeLabels = { stock: '📈 Stock', macro: '🌍 Macro', sector: '🏭 Sector' };
+    (d.trade_ideas || []).forEach((t, idx) => {
+      const typeKey = (t.type || '').toLowerCase().includes('stock') ? 'stock'
+                    : (t.type || '').toLowerCase().includes('macro') ? 'macro'
+                    : (t.type || '').toLowerCase().includes('sector') ? 'sector' : 'default';
+      const typeColor = typeColors[typeKey] || typeColors.default;
+      const typeLabel = typeLabels[typeKey] || t.type || '';
+      const rrBadge = t.risk_reward ? `<span style="background:rgba(245,158,11,0.15);color:var(--gold);padding:2px 7px;border-radius:4px;font-size:0.68rem;font-weight:700">R:R ${t.risk_reward}</span>` : '';
+      const bodyId = `trade-body-${idx}`;
+      const chevId = `trade-chev-${idx}`;
+      const previewText = (t.thesis || '').slice(0, 80) + ((t.thesis || '').length > 80 ? '…' : '');
       ti.innerHTML += `
         <div class="trade-card">
-          <div class="trade-setup">${t.setup} ${rrBadge}</div>
-          <div class="trade-field"><div class="label">Thesis</div><div class="value">${t.thesis}</div></div>
-          <div class="trade-field"><div class="label">Entry</div><div class="value">${t.entry}</div></div>
-          ${t.stop ? `<div class="trade-field"><div class="label">Stop</div><div class="value" style="color:#EF4444">${t.stop}</div></div>` : ''}
-          ${t.target ? `<div class="trade-field"><div class="label">Target</div><div class="value" style="color:#10B981">${t.target}</div></div>` : ''}
-          <div class="trade-field"><div class="label">Risk</div><div class="value">${t.risk}</div></div>
+          <div class="trade-header" onclick="toggleTrade('${bodyId}','${chevId}')">
+            <div class="trade-header-left">
+              <span class="trade-setup">${t.setup}</span>
+              ${typeLabel ? `<span class="trade-type-badge" style="background:${typeColor}22;color:${typeColor}">${typeLabel}</span>` : ''}
+              ${rrBadge}
+              <span class="trade-thesis-preview">${previewText}</span>
+            </div>
+            <span class="trade-chevron" id="${chevId}">▼</span>
+          </div>
+          <div class="trade-body hidden" id="${bodyId}">
+            <div class="trade-field full"><div class="label">Thesis</div><div class="value">${t.thesis}</div></div>
+            <div class="trade-field"><div class="label">Entry</div><div class="value">${t.entry || '—'}</div></div>
+            ${t.stop ? `<div class="trade-field"><div class="label">Stop</div><div class="value" style="color:#EF4444">${t.stop}</div></div>` : ''}
+            ${t.target ? `<div class="trade-field"><div class="label">Target</div><div class="value" style="color:#10B981">${t.target}</div></div>` : ''}
+            <div class="trade-field full"><div class="label">Risk / Invalidation</div><div class="value">${t.risk || '—'}</div></div>
+          </div>
         </div>`;
     });
 
