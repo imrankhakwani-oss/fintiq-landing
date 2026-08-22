@@ -271,20 +271,24 @@
     display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 1px; background: var(--border);
     border-radius: 8px; overflow: hidden; margin: 14px 0;
+    align-items: start;
   }
   .trade-metric {
-    background: var(--navy); padding: 10px 12px; text-align: center;
+    background: var(--navy); padding: 12px 10px; text-align: center;
   }
   .trade-metric .tm-label {
-    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
-    color: var(--muted); margin-bottom: 5px;
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); margin-bottom: 6px;
   }
   .trade-metric .tm-value {
-    font-size: 0.85rem; font-weight: 700; line-height: 1.3;
+    font-size: 0.88rem; font-weight: 700; line-height: 1.25;
+    /* Show just the first part — price level — before any em-dash reason */
+    overflow: hidden; display: -webkit-box;
+    -webkit-line-clamp: 2; -webkit-box-orient: vertical;
   }
-  .trade-risk-row { font-size: 0.8rem; line-height: 1.55; color: var(--muted); }
+  .trade-risk-row { font-size: 0.8rem; line-height: 1.6; color: var(--muted); padding-top: 2px; }
   .trade-risk-row .risk-label {
-    font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em;
+    font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--muted); margin-bottom: 4px;
   }
 
@@ -581,6 +585,15 @@
 <script>
   const API = 'https://api.fintiq.uk';
 
+  // Extract clean price level from entry/stop/target — strip reason after em-dash or comma
+  function shortVal(val) {
+    if (!val) return '—';
+    // Take the part before ' —' or ' –' or '. ' or ' on ' or ' at ' (the reason follows)
+    const clean = val.replace(/\s*[—–]\s*.*/,'').replace(/\s*\.\s+.*/,'').trim();
+    // If still long (>30 chars), cap it
+    return clean.length > 30 ? clean.slice(0,28) + '…' : (clean || val);
+  }
+
   function toggleTrade(bodyId, chevId) {
     const body = document.getElementById(bodyId);
     const chev = document.getElementById(chevId);
@@ -745,15 +758,15 @@
             <div class="trade-metrics">
               <div class="trade-metric">
                 <div class="tm-label">Entry</div>
-                <div class="tm-value" style="color:var(--gold)">${t.entry || '—'}</div>
+                <div class="tm-value" style="color:var(--gold)" title="${t.entry || ''}">${shortVal(t.entry)}</div>
               </div>
               <div class="trade-metric">
                 <div class="tm-label">Stop</div>
-                <div class="tm-value" style="color:#EF4444">${t.stop || '—'}</div>
+                <div class="tm-value" style="color:#EF4444" title="${t.stop || ''}">${shortVal(t.stop)}</div>
               </div>
               <div class="trade-metric">
                 <div class="tm-label">Target</div>
-                <div class="tm-value" style="color:#10B981">${t.target || '—'}</div>
+                <div class="tm-value" style="color:#10B981" title="${t.target || ''}">${shortVal(t.target)}</div>
               </div>
               <div class="trade-metric">
                 <div class="tm-label">R : R</div>
