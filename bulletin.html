@@ -421,6 +421,12 @@
   <div class="bulletin-meta">
     <span id="session-badge" class="session-badge">Loading…</span>
     <span id="timestamp">—</span>
+    <span id="refresh-indicator" style="display:none;align-items:center;gap:6px;font-size:0.7rem;color:var(--muted)">
+      <svg id="refresh-gear" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation:spin 2s linear infinite">
+        <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+      Refreshing…
+    </span>
     <button class="refresh-btn" onclick="loadBulletin(true)">↻ Refresh</button>
   </div>
 </div>
@@ -538,22 +544,91 @@
 <script>
   const API = 'https://api.fintiq.uk';
 
+  let _pollTimer = null;
+
+  function setRefreshIndicator(visible) {
+    const el = document.getElementById('refresh-indicator');
+    if (el) el.style.display = visible ? 'inline-flex' : 'none';
+  }
+
   async function loadBulletin(force = false) {
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('content').style.display = 'none';
-    document.getElementById('error').style.display = 'none';
+    // Force-refresh: show full loading screen, hide old content
+    if (force) {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+    }
+
+    // On initial load with no cache yet — show loading spinner
+    const contentShowing = document.getElementById('content').style.display !== 'none';
+    if (!contentShowing && !force) {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('content').style.display = 'none';
+      document.getElementById('error').style.display = 'none';
+    }
 
     try {
-      const url = force ? `${API}/bulletin?_=${Date.now()}` : `${API}/bulletin`;
+      const url = `${API}/bulletin${force ? '?_=' + Date.now() : ''}`;
       const res = await fetch(url);
+
+      // 202 = no cache yet, generation started — poll until ready
+      if (res.status === 202) {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('content').style.display = 'none';
+        setRefreshIndicator(false);
+        _schedulePoll(true);
+        return;
+      }
+
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const d = await res.json();
       render(d);
+
+      // If API flagged background refresh in progress — show gear, poll silently
+      if (d.refreshing) {
+        setRefreshIndicator(true);
+        _schedulePoll(false);
+      } else {
+        setRefreshIndicator(false);
+        if (_pollTimer) { clearTimeout(_pollTimer); _pollTimer = null; }
+      }
     } catch (e) {
       document.getElementById('loading').style.display = 'none';
-      document.getElementById('error').style.display = 'block';
-      document.getElementById('error-msg').textContent = e.message;
+      // Only show error if we have no content to fall back to
+      if (document.getElementById('content').style.display === 'none') {
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('error-msg').textContent = e.message;
+      }
     }
+  }
+
+  async function _pollForFresh(showSpinner) {
+    _pollTimer = null;
+    try {
+      const res = await fetch(`${API}/bulletin/status`);
+      if (!res.ok) return;
+      const s = await res.json();
+      if (!s.refreshing && s.has_cache) {
+        // Fresh bulletin ready — silently swap in new content
+        setRefreshIndicator(false);
+        const r2 = await fetch(`${API}/bulletin`);
+        if (r2.ok) {
+          const d = await r2.json();
+          render(d);
+          if (showSpinner) {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+          }
+        }
+      } else {
+        _schedulePoll(showSpinner); // still generating
+      }
+    } catch(e) { /* ignore poll errors, retry */ _schedulePoll(showSpinner); }
+  }
+
+  function _schedulePoll(showSpinner) {
+    if (_pollTimer) return;
+    _pollTimer = setTimeout(() => _pollForFresh(showSpinner), 8000);
   }
 
   function render(d) {
