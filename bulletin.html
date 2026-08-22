@@ -445,21 +445,17 @@
     <div class="section-label">🌙 Overnight Wires</div>
     <div id="overnight-wires" class="text-card"></div>
 
+    <!-- Today's Catalysts -->
+    <div class="section-label">📅 Today's Catalysts</div>
+    <div id="catalysts-content" class="text-card"></div>
+
+    <!-- Market Movers (live data) -->
+    <div class="section-label">🚀 Market Movers</div>
+    <div id="movers-content"></div>
+
     <!-- Trade Ideas -->
     <div class="section-label">💡 Trade Ideas</div>
     <div id="trade-ideas" class="trade-ideas"></div>
-
-    <!-- Today's Catalysts -->
-    <details class="expander" id="exp-catalysts">
-      <summary>📅 Today's Catalysts</summary>
-      <div id="catalysts-content" class="expander-body"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:12px auto"></div></div>
-    </details>
-
-    <!-- Market Movers -->
-    <details class="expander" id="exp-movers">
-      <summary>🚀 Market Movers</summary>
-      <div id="movers-content" class="expander-body"><div class="spinner" style="width:18px;height:18px;border-width:2px;margin:12px auto"></div></div>
-    </details>
 
     <!-- Macro Indicators -->
     <div class="section-label">📊 Macro Indicators</div>
@@ -586,33 +582,16 @@
         </div>`;
     });
 
-    // Today's Catalysts
+    // Today's Catalysts — render as formatted text card (not plain text)
     const catEl = document.getElementById('catalysts-content');
     const cats = d.catalysts || [];
     if (cats.length) {
-      catEl.innerHTML = cats.map(c => `<div style="padding:8px 0;border-bottom:1px solid var(--border)">
-        <span style="font-size:0.7rem;background:var(--card);border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--muted);margin-right:8px">${c.type||'event'}</span>
-        <strong>${c.event}</strong>
-        <div style="color:var(--muted);font-size:0.85rem;margin-top:3px">${c.impact}</div>
+      catEl.innerHTML = cats.map((c,i) => `<div${i<cats.length-1?' style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"':''}>
+        <span style="font-size:0.68rem;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:4px;padding:1px 6px;color:#F59E0B;margin-right:8px;text-transform:uppercase">${c.type||'event'}</span>
+        <strong style="color:var(--text)">${c.event}</strong>
+        <div style="color:var(--muted);font-size:0.85rem;margin-top:5px;line-height:1.5">${c.impact}</div>
       </div>`).join('');
-    } else { catEl.innerHTML = '<span style="color:var(--muted)">No major catalysts today</span>'; }
-
-    // Market Movers
-    const movEl = document.getElementById('movers-content');
-    const movers = d.market_movers || [];
-    if (movers.length) {
-      movEl.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">` +
-        movers.map(m => {
-          const up = m.move && !m.move.startsWith('-');
-          return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <span style="font-weight:700;font-size:1rem">${m.flag||''} ${m.ticker}</span>
-              <span style="font-weight:700;color:${up?'#10B981':'#EF4444'}">${m.move}</span>
-            </div>
-            <div style="color:var(--muted);font-size:0.82rem">${m.reason}</div>
-          </div>`;
-        }).join('') + '</div>';
-    } else { movEl.innerHTML = '<span style="color:var(--muted)">No major movers data</span>'; }
+    } else { catEl.textContent = 'No major catalysts identified for today.'; }
 
     document.getElementById('loading').style.display = 'none';
     document.getElementById('content').style.display = 'block';
@@ -631,6 +610,7 @@
       renderMacroIndicators(d.macro_indicators || {});
       renderSectors(d.sectors || []);
       renderMajorMarkets(d.major_markets || []);
+      renderMovers(d.movers || []);
     } catch(e) { console.warn('Market data unavailable:', e); }
   }
 
@@ -648,24 +628,31 @@
     const vixColor = vix == null ? '' : vix > 30 ? 'mc-red' : vix > 20 ? '' : 'mc-green';
 
     const cards = [
-      { label:'NEXT FOMC', value: fomc_days != null ? fomc_days+'d' : '—', sub: fomc_date, border:'mc-border-blue' },
-      { label:'10Y TREASURY', value: tnx != null ? fmtNum(tnx)+'%' : '—', sub:'Risk-free / discount rate', border:'mc-border-gold' },
-      { label:'CPI (YOY)', value: cpi != null ? fmtNum(cpi,1)+'%' : '—', sub:'Inflation benchmark', border: cpi>3?'mc-border-red':'mc-border-green', valClass: cpi>3?'mc-red':'mc-green' },
-      { label:'YIELD CURVE', value: spread != null ? (spread>0?'+':'')+fmtNum(spread)+'%' : '—', sub:'10Y−2Y · negative = inversion', border: spread!=null&&spread<0?'mc-border-red':'mc-border-green', valClass: spreadColor },
-      { label:'NFP (MOM)', value: nfp != null ? (nfp>0?'+':'')+fmtK(nfp) : '—', sub:'Jobs · check next release', border:'mc-border-muted', valClass: nfpColor },
-      { label:'VIX', value: vix != null ? fmtNum(vix,1) : '—', sub:'<16 calm · >25 fear · >30 panic', border:'mc-border-muted', valClass: vixColor },
-      { label:'DOLLAR (DXY)', value: dxy != null ? fmtNum(dxy,1) : '—', sub:'USD strength index', border:'mc-border-muted' },
-      { label:'BRENT CRUDE', value: brent != null ? '$'+fmtNum(brent,1) : '—', sub:'$/bbl · global demand signal', border:'mc-border-gold' },
-      { label:'GOLD', value: gold != null ? '$'+fmtNum(gold,0) : '—', sub:'Risk-off / inflation hedge', border:'mc-border-gold' },
+      { label:'NEXT FOMC', value: fomc_days != null ? fomc_days+'d' : '—', sub: fomc_date, border:'mc-border-blue', hist:null },
+      { label:'10Y TREASURY', value: tnx != null ? fmtNum(tnx)+'%' : '—', sub:'Risk-free / discount rate', border:'mc-border-gold', hist: m.treasury_10y_history },
+      { label:'CPI (YOY)', value: cpi != null ? fmtNum(cpi,1)+'%' : '—', sub:'Inflation benchmark', border: cpi>3?'mc-border-red':'mc-border-green', valClass: cpi>3?'mc-red':'mc-green', hist: m.cpi_history },
+      { label:'YIELD CURVE', value: spread != null ? (spread>0?'+':'')+fmtNum(spread)+'%' : '—', sub:'10Y−2Y · negative = inversion', border: spread!=null&&spread<0?'mc-border-red':'mc-border-green', valClass: spreadColor, hist: m.yield_curve_history },
+      { label:'NFP (MOM)', value: nfp != null ? (nfp>0?'+':'')+fmtK(nfp)+'K' : '—', sub:'Monthly job adds', border:'mc-border-muted', valClass: nfpColor, hist: m.nfp_history },
+      { label:'VIX', value: vix != null ? fmtNum(vix,1) : '—', sub:'<16 calm · >25 fear · >30 panic', border:'mc-border-muted', valClass: vixColor, hist: m.vix_history },
+      { label:'DOLLAR (DXY)', value: dxy != null ? fmtNum(dxy,1) : '—', sub:'USD strength index', border:'mc-border-muted', hist: m.dxy_history },
+      { label:'BRENT CRUDE', value: brent != null ? '$'+fmtNum(brent,1) : '—', sub:'$/bbl · global demand signal', border:'mc-border-gold', hist: m.brent_history },
+      { label:'GOLD', value: gold != null ? '$'+fmtNum(gold,0) : '—', sub:'Risk-off / inflation hedge', border:'mc-border-gold', hist: m.gold_history },
     ];
 
     const el = document.getElementById('macro-indicators');
-    el.innerHTML = cards.map(c => `
-      <div class="macro-card ${c.border||''}">
+    el.innerHTML = cards.map(c => {
+      const hist = c.hist && c.hist.length > 1 ? c.hist : null;
+      const lastVal = hist ? hist[hist.length-1] : null;
+      const firstVal = hist ? hist[0] : null;
+      const up = lastVal != null && firstVal != null ? lastVal >= firstVal : true;
+      const sparkColor = up ? '#10B981' : '#EF4444';
+      return `<div class="macro-card ${c.border||''}">
         <div class="mc-label">${c.label}</div>
         <div class="mc-value ${c.valClass||''}">${c.value}</div>
+        ${hist ? `<div style="margin:4px 0">${sparklineSVG(hist, up)}</div>` : ''}
         <div class="mc-sub">${c.sub||''}</div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   // ── Sparkline SVG ────────────────────────────────────────────────────────
@@ -684,6 +671,38 @@
     </svg>`;
   }
 
+  function miniSparkline(history, color) {
+    if (!history || history.length < 2) return '';
+    const w = 60, h = 20;
+    const mn = Math.min(...history), mx = Math.max(...history);
+    const range = mx - mn || 1;
+    const pts = history.map((v,i) => {
+      const x = (i / (history.length-1)) * w;
+      const y = h - ((v - mn) / range) * h;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }).join(' ');
+    return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="display:block"><polyline points="${pts}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  }
+
+  function renderMovers(movers) {
+    const el = document.getElementById('movers-content');
+    if (!movers.length) { el.innerHTML = '<div class="text-card" style="color:var(--muted)">Loading market movers…</div>'; return; }
+    const gainers = movers.filter(m => !m.move.startsWith('-'));
+    const losers  = movers.filter(m => m.move.startsWith('-'));
+    const renderList = (items, label, col) => `
+      <div>
+        <div style="font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${label}</div>
+        ${items.map(m => `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+          <div><span style="font-size:0.75rem;margin-right:4px">${m.flag||''}</span><strong>${m.ticker.replace('.L','')}</strong></div>
+          <div style="font-weight:700;color:${col}">${m.move}</div>
+        </div>`).join('')}
+      </div>`;
+    el.innerHTML = `<div class="text-card" style="display:grid;grid-template-columns:1fr 1fr;gap:24px">
+      ${renderList(gainers,'▲ Top Gainers','#10B981')}
+      ${renderList(losers,'▼ Top Losers','#EF4444')}
+    </div>`;
+  }
+
   function renderSectors(sectors) {
     const el = document.getElementById('sector-snap');
     if (!sectors.length) { el.innerHTML = '<span style="color:var(--muted);font-size:0.8rem">Sector data unavailable</span>'; return; }
@@ -691,9 +710,11 @@
       const pct = s.chg_pct;
       const color = pct == null ? 'var(--muted)' : pct >= 0 ? '#10B981' : '#EF4444';
       const val = pct != null ? (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%' : '—';
+      const spark = miniSparkline(s.history || [], color);
       return `<div class="sector-chip">
         <div class="sc-name">${s.name}</div>
         <div class="sc-pct" style="color:${color}">${val}</div>
+        ${spark ? `<div style="margin-top:4px">${spark}</div>` : ''}
         <div class="sc-sym">${s.symbol}</div>
       </div>`;
     }).join('');
