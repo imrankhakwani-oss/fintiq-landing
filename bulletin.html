@@ -323,6 +323,7 @@
   .chart-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; font-weight: 700; font-size: 1rem; }
 
   /* ── EPS Tracker ── */
+  .eps-coname { font-size: 0.65rem; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
   .eps-container { margin-bottom: 24px; }
   .eps-tabs { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
   .eps-tab {
@@ -473,12 +474,15 @@
     <div class="section-label">📋 EPS Earnings Tracker</div>
     <div class="eps-container">
       <div class="eps-tabs">
-        <button class="eps-tab active"  onclick="loadEarnings('sp500',this)">🇺🇸 S&amp;P 500 (50)</button>
-        <button class="eps-tab"         onclick="loadEarnings('nasdaq100',this)">🇺🇸 NASDAQ 100 (40)</button>
-        <button class="eps-tab"         onclick="loadEarnings('ftse100',this)">🇬🇧 FTSE 100 (30)</button>
-        <button class="eps-tab"         onclick="loadEarnings('stoxx50',this)">🇪🇺 Euro Stoxx 50 (30)</button>
+        <button class="eps-tab active"  onclick="loadEarnings('sp500',this)">🇺🇸 S&amp;P 500</button>
+        <button class="eps-tab"         onclick="loadEarnings('nasdaq100',this)">🇺🇸 NASDAQ 100</button>
+        <button class="eps-tab"         onclick="loadEarnings('ftse100',this)">🇬🇧 FTSE 100</button>
+        <button class="eps-tab"         onclick="loadEarnings('stoxx50',this)">🇪🇺 Euro Stoxx 50</button>
       </div>
-      <div class="eps-meta">Actual vs Estimate · <span class="beat-dot beat">▲ Beat &gt;+2%</span> <span class="beat-dot miss">▼ Miss &lt;-2%</span> <span class="beat-dot inline">≈ In-line</span> · Grey = forecast</div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+        <div class="eps-meta" style="margin-bottom:0">Actual vs Estimate · <span class="beat-dot beat">▲ Beat &gt;+2%</span> <span class="beat-dot miss">▼ Miss &lt;-2%</span> <span class="beat-dot inline">≈ In-line</span> · Grey = forecast</div>
+        <input id="eps-search" type="text" placeholder="Search ticker or company…" oninput="filterEarnings()" style="margin-left:auto;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;min-width:200px">
+      </div>
       <div id="eps-loading" class="eps-loading" style="display:none"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div> Loading earnings data…</div>
       <div id="eps-content" class="eps-table-wrap"></div>
     </div>
@@ -689,6 +693,107 @@
   const _earningsCache = {};
   let _activeEarningsIndex = 'sp500';
 
+  const _COMPANY_NAMES = {
+    // S&P 500
+    "AAPL":"Apple","MSFT":"Microsoft","NVDA":"NVIDIA","AMZN":"Amazon","META":"Meta","GOOGL":"Alphabet",
+    "BRK-B":"Berkshire Hathaway","LLY":"Eli Lilly","AVGO":"Broadcom","TSLA":"Tesla",
+    "JPM":"JPMorgan Chase","V":"Visa","UNH":"UnitedHealth","XOM":"ExxonMobil","MA":"Mastercard",
+    "COST":"Costco","HD":"Home Depot","JNJ":"Johnson & Johnson","NFLX":"Netflix","PG":"Procter & Gamble",
+    "ABBV":"AbbVie","BAC":"Bank of America","WMT":"Walmart","CRM":"Salesforce","AMD":"AMD",
+    "ORCL":"Oracle","CVX":"Chevron","MRK":"Merck","ACN":"Accenture","LIN":"Linde",
+    "TMO":"Thermo Fisher","PEP":"PepsiCo","ADBE":"Adobe","MCD":"McDonald's","TXN":"Texas Instruments",
+    "DHR":"Danaher","CSCO":"Cisco","ABT":"Abbott","GE":"GE Aerospace","QCOM":"Qualcomm",
+    "WFC":"Wells Fargo","UNP":"Union Pacific","NEE":"NextEra Energy","RTX":"RTX Corp","INTU":"Intuit",
+    "SPGI":"S&P Global","AMGN":"Amgen","MS":"Morgan Stanley","BLK":"BlackRock","SCHW":"Charles Schwab",
+    "AXP":"American Express","IBM":"IBM","CAT":"Caterpillar","NOW":"ServiceNow","ISRG":"Intuitive Surgical",
+    "DE":"Deere & Co","GS":"Goldman Sachs","UBER":"Uber","ELV":"Elevance Health","PLD":"Prologis",
+    "AMAT":"Applied Materials","ADI":"Analog Devices","LRCX":"Lam Research","SYK":"Stryker","GILD":"Gilead",
+    "MDLZ":"Mondelez","REGN":"Regeneron","MMC":"Marsh McLennan","CB":"Chubb","VRTX":"Vertex Pharma",
+    "SO":"Southern Co","MU":"Micron","BMY":"Bristol-Myers Squibb","TJX":"TJX Companies","DUK":"Duke Energy",
+    "PNC":"PNC Financial","USB":"US Bancorp","CI":"Cigna","BSX":"Boston Scientific","ETN":"Eaton",
+    "FI":"Fiserv","APH":"Amphenol","PANW":"Palo Alto Networks","KLAC":"KLA Corp","SNPS":"Synopsys",
+    "CDNS":"Cadence Design","CME":"CME Group","EOG":"EOG Resources","MCO":"Moody's","ITW":"Illinois Tool Works",
+    "WELL":"Welltower","HCA":"HCA Healthcare","AON":"Aon","CTAS":"Cintas","FCX":"Freeport-McMoRan",
+    "SHW":"Sherwin-Williams","NSC":"Norfolk Southern","CSX":"CSX","MMM":"3M","PH":"Parker Hannifin",
+    "EMR":"Emerson Electric","MCHP":"Microchip Tech","WDAY":"Workday","KDP":"Keurig Dr Pepper",
+    "ORLY":"O'Reilly Auto","MNST":"Monster Beverage","PCAR":"PACCAR","PAYX":"Paychex","NXPI":"NXP Semi",
+    "CRWD":"CrowdStrike","EW":"Edwards Lifesciences","ROP":"Roper Technologies","IDXX":"IDEXX Labs",
+    "VRSK":"Verisk","ADP":"ADP","CHTR":"Charter Comms","CMCSA":"Comcast","T":"AT&T","VZ":"Verizon",
+    "DIS":"Disney","EA":"Electronic Arts","CCI":"Crown Castle","AMT":"American Tower","KO":"Coca-Cola",
+    "PM":"Philip Morris","MO":"Altria","CL":"Colgate-Palmolive","CMG":"Chipotle","YUM":"Yum! Brands",
+    "SBUX":"Starbucks","BA":"Boeing","LMT":"Lockheed Martin","NOC":"Northrop Grumman","GD":"General Dynamics",
+    "TDG":"TransDigm","CVS":"CVS Health","MCK":"McKesson","HUM":"Humana","C":"Citigroup","COF":"Capital One",
+    "D":"Dominion Energy","WEC":"WEC Energy","COP":"ConocoPhillips","PSX":"Phillips 66","VLO":"Valero",
+    "MPC":"Marathon Petroleum","SLB":"SLB","OXY":"Occidental","DVN":"Devon Energy","HAL":"Halliburton",
+    "SPG":"Simon Property","EQIX":"Equinix","PSA":"Public Storage","DLR":"Digital Realty","O":"Realty Income",
+    "ZTS":"Zoetis","IQV":"IQVIA","WAT":"Waters Corp","MTD":"Mettler-Toledo","A":"Agilent",
+    "BIIB":"Biogen","ILMN":"Illumina","ZBH":"Zimmer Biomet","MOH":"Molina Healthcare","CNC":"Centene",
+    "BKR":"Baker Hughes","AEP":"American Electric Power","ED":"Con Edison","EXC":"Exelon","SRE":"Sempra",
+    "AVB":"AvalonBay","EQR":"Equity Residential","MAA":"Mid-America Apt","EXR":"Extra Space Storage",
+    "NKE":"Nike","LULU":"Lululemon","TGT":"Target","DLTR":"Dollar Tree","DG":"Dollar General","ROST":"Ross Stores",
+    "BBY":"Best Buy","ENPH":"Enphase Energy","FSLR":"First Solar","AES":"AES Corp","GNRC":"Generac",
+    "PWR":"Quanta Services","CARR":"Carrier Global","OTIS":"Otis Worldwide","TT":"Trane Technologies","JCI":"Johnson Controls",
+    "LYB":"LyondellBasell","MOS":"Mosaic","CF":"CF Industries","NUE":"Nucor","STLD":"Steel Dynamics","ALB":"Albemarle",
+    "RCL":"Royal Caribbean","CCL":"Carnival","DAL":"Delta Air Lines","UAL":"United Airlines","LUV":"Southwest Airlines",
+    "AAL":"American Airlines","HLT":"Hilton","MAR":"Marriott","MGM":"MGM Resorts","LVS":"Las Vegas Sands","WYNN":"Wynn Resorts",
+    "F":"Ford","GM":"General Motors","LOW":"Lowe's","POOL":"Pool Corp","WSM":"Williams-Sonoma",
+    "ETSY":"Etsy","EBAY":"eBay","BKNG":"Booking Holdings","EXPE":"Expedia","GPN":"Global Payments",
+    "FIS":"Fidelity National","FISV":"Fiserv","FTNT":"Fortinet","ZBRA":"Zebra Technologies","CTSH":"Cognizant",
+    "IT":"Gartner","EPAM":"EPAM Systems","GDDY":"GoDaddy","AKAM":"Akamai","NET":"Cloudflare",
+    "ZS":"Zscaler","OKTA":"Okta","MDB":"MongoDB","SNOW":"Snowflake","DDOG":"Datadog","HUBS":"HubSpot","TWLO":"Twilio",
+    "HPQ":"HP Inc","HPE":"Hewlett Packard Enterprise","DELL":"Dell","STX":"Seagate","WDC":"Western Digital","NTAP":"NetApp",
+    "ANET":"Arista Networks","RF":"Regions Financial","HBAN":"Huntington Bancshares","KEY":"KeyCorp",
+    "FITB":"Fifth Third","CFG":"Citizens Financial","MTB":"M&T Bank","STT":"State Street","BK":"BNY Mellon","NDAQ":"Nasdaq Inc",
+    // NASDAQ extras
+    "GOOG":"Alphabet (C)","MELI":"MercadoLibre","ABNB":"Airbnb","CTAS":"Cintas","FAST":"Fastenal",
+    "NXPI":"NXP Semi","ROST":"Ross Stores","ODFL":"Old Dominion Freight","ANSS":"ANSYS",
+    "ON":"ON Semiconductor","KHC":"Kraft Heinz","TTWO":"Take-Two Interactive","DLTR":"Dollar Tree",
+    "CPRT":"Copart","GEHC":"GE HealthCare","ALGN":"Align Technology","CEG":"Constellation Energy",
+    "XEL":"Xcel Energy","CSGP":"CoStar Group","TEAM":"Atlassian","SIRI":"Sirius XM",
+    "PDD":"PDD Holdings","ARM":"Arm Holdings","LOGI":"Logitech","PYPL":"PayPal","ZM":"Zoom",
+    "TCOM":"Trip.com","DASH":"DoorDash","INTC":"Intel","WBA":"Walgreens","NVAX":"Novavax",
+    "MRNA":"Moderna","TTD":"The Trade Desk","ROKU":"Roku","PINS":"Pinterest","SNAP":"Snap",
+    "LYFT":"Lyft","DKNG":"DraftKings","HOOD":"Robinhood","SOFI":"SoFi","RBLX":"Roblox","MSTR":"MicroStrategy","COIN":"Coinbase",
+    // FTSE 100
+    "SHEL.L":"Shell","AZN.L":"AstraZeneca","HSBA.L":"HSBC","ULVR.L":"Unilever","DGE.L":"Diageo",
+    "BP.L":"BP","RIO.L":"Rio Tinto","LLOY.L":"Lloyds Banking","GSK.L":"GSK","BARC.L":"Barclays",
+    "VOD.L":"Vodafone","REL.L":"RELX","EXPN.L":"Experian","WPP.L":"WPP","PRU.L":"Prudential",
+    "LGEN.L":"Legal & General","BA.L":"BAE Systems","AAL.L":"Anglo American","BHP.L":"BHP","IMB.L":"Imperial Brands",
+    "MNG.L":"M&G","ABF.L":"Associated British Foods","CNA.L":"Centrica","SBRY.L":"Sainsbury's","IHG.L":"IHG Hotels",
+    "SGE.L":"Sage Group","RKT.L":"Reckitt","SSE.L":"SSE","NG.L":"National Grid","GLEN.L":"Glencore",
+    "AV.L":"Aviva","STAN.L":"Standard Chartered","NWG.L":"NatWest","BATS.L":"British American Tobacco",
+    "TW.L":"Taylor Wimpey","ITRK.L":"Intertek","AUTO.L":"Auto Trader","SDR.L":"Schroders","FRES.L":"Fresnillo","JD.L":"JD Sports",
+    "MNDI.L":"Mondi","INF.L":"Informa","WTB.L":"Whitbread","CRDA.L":"Croda","PSON.L":"Pearson",
+    "AHT.L":"Ashtead Group","HL.L":"Hargreaves Lansdown","WEIR.L":"Weir Group","RR.L":"Rolls-Royce","IMI.L":"IMI",
+    "BDEV.L":"Barratt Developments","BWY.L":"Bellway","PSN.L":"Persimmon","BLND.L":"British Land","LAND.L":"Land Securities",
+    "SGRO.L":"Segro","SMDS.L":"DS Smith","SMWH.L":"WH Smith","EMG.L":"Man Group","DPLM.L":"Diploma",
+    "FLTR.L":"Flutter Entertainment","HLN.L":"Haleon","HIK.L":"Hikma Pharma","HWDN.L":"Howden Joinery","IAG.L":"IAG",
+    "III.L":"3i Group","KGF.L":"Kingfisher","LSEG.L":"London Stock Exchange","MKS.L":"Marks & Spencer","MRW.L":"Morrisons",
+    "OCDO.L":"Ocado","RS1.L":"RS Group","SVT.L":"Severn Trent","UTG.L":"Unite Group","RTO.L":"Rentokil",
+    "CPG.L":"Compass Group","CRH.L":"CRH","ENT.L":"Entain","SKG.L":"Smurfit Westrock","DCC.L":"DCC",
+    "TSCO.L":"Tesco","BT-A.L":"BT Group","BRBY.L":"Burberry",
+    // Euro Stoxx 50
+    "ASML":"ASML Holding","MC.PA":"LVMH","OR.PA":"L'Oréal","TTE.PA":"TotalEnergies","SIE.DE":"Siemens",
+    "AIR.PA":"Airbus","ALV.DE":"Allianz","BNP.PA":"BNP Paribas","SAN.PA":"Sanofi","SAP":"SAP",
+    "BBVA.MC":"BBVA","ENEL.MI":"Enel","ABI.BR":"AB InBev","KER.PA":"Kering","DSY.PA":"Dassault Systèmes",
+    "BAS.DE":"BASF","BAYN.DE":"Bayer","DTE.DE":"Deutsche Telekom","INGA.AS":"ING Group","STLAM.MI":"Stellantis",
+    "PHIA.AS":"Philips","ADS.DE":"Adidas","ENI.MI":"Eni","ISP.MI":"Intesa Sanpaolo","UCG.MI":"UniCredit",
+    "IBE.MC":"Iberdrola","SU.PA":"Schneider Electric","BN.PA":"Danone","MUV2.DE":"Munich Re","GLE.PA":"Société Générale",
+    "RMS.PA":"Hermès","DBK.DE":"Deutsche Bank","NOKIA.HE":"Nokia","EL.PA":"EssilorLuxottica","VOW3.DE":"Volkswagen",
+    "BMW.DE":"BMW","MBG.DE":"Mercedes-Benz","AMS.MC":"Amadeus IT","DG.PA":"Vinci","RI.PA":"Pernod Ricard",
+    "ORA.PA":"Orange","VIE.PA":"Veolia","ML.PA":"Michelin","ACA.PA":"Crédit Agricole","AI.PA":"Air Liquide",
+    "LR.PA":"Legrand","PUB.PA":"Publicis","STM":"STMicroelectronics","AXA.PA":"AXA","MTS.MC":"ArcelorMittal",
+  };
+
+  function filterEarnings() {
+    const q = (document.getElementById('eps-search')?.value || '').toLowerCase();
+    document.querySelectorAll('#eps-content tbody tr').forEach(row => {
+      const ticker = (row.querySelector('.eps-ticker')?.textContent || '').toLowerCase();
+      const name   = (row.querySelector('.eps-coname')?.textContent  || '').toLowerCase();
+      row.style.display = (!q || ticker.includes(q) || name.includes(q)) ? '' : 'none';
+    });
+  }
+
   async function loadEarnings(index, tabEl) {
     _activeEarningsIndex = index;
     document.querySelectorAll('.eps-tab').forEach(t => t.classList.remove('active'));
@@ -747,7 +852,8 @@
     thead += '</tr>';
 
     const rows = data.map(row => {
-      let cells = `<td><span class="eps-ticker">${row.symbol}</span></td>`;
+      const coName = _COMPANY_NAMES[row.symbol] || row.symbol;
+      let cells = `<td><span class="eps-ticker">${row.symbol}</span><div class="eps-coname">${coName}</div></td>`;
       (row.quarters||[]).forEach(q => {
         const bc = beatClass(q.beat_pct);
         cells += `<td class="eps-cell"><div class="eps-q ${bc}">
