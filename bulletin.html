@@ -1081,26 +1081,67 @@
     });
   }
 
+  let _earningsPollTimer = {};
+
   async function loadEarnings(index, tabEl) {
     _activeEarningsIndex = index;
     document.querySelectorAll('.eps-tab').forEach(t => t.classList.remove('active'));
     if (tabEl) tabEl.classList.add('active');
 
+    // Already have client-side cache — render instantly
     if (_earningsCache[index]) { renderEarnings(_earningsCache[index]); return; }
 
     document.getElementById('eps-loading').style.display = 'flex';
     document.getElementById('eps-content').innerHTML = '';
+
     try {
       const r = await fetch(`${API}/earnings?index=${index}`);
+
+      // 202 = generating — show friendly message and start polling
+      if (r.status === 202) {
+        document.getElementById('eps-loading').style.display = 'none';
+        document.getElementById('eps-content').innerHTML =
+          '<div style="color:var(--muted);padding:24px;text-align:center;line-height:1.8">' +
+          '⏳ <strong style="color:var(--text)">Loading earnings data…</strong><br>' +
+          '<span style="font-size:0.82rem">First load takes ~30s — data is cached for 24 hours after that.</span></div>';
+        _scheduleEarningsPoll(index);
+        return;
+      }
+
       if (!r.ok) throw new Error('API error');
       const d = await r.json();
       _earningsCache[index] = d.data || [];
       renderEarnings(_earningsCache[index]);
+
+      // Backend refreshing in background — poll quietly but keep showing data
+      if (d.refreshing) _scheduleEarningsPoll(index);
+
     } catch(e) {
-      document.getElementById('eps-content').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">Unable to load earnings data</div>';
+      document.getElementById('eps-content').innerHTML =
+        '<div style="color:var(--muted);padding:20px;text-align:center">Unable to load earnings data</div>';
     } finally {
       document.getElementById('eps-loading').style.display = 'none';
     }
+  }
+
+  function _scheduleEarningsPoll(index) {
+    if (_earningsPollTimer[index]) return;
+    _earningsPollTimer[index] = setTimeout(() => _pollEarnings(index), 5000);
+  }
+
+  async function _pollEarnings(index) {
+    _earningsPollTimer[index] = null;
+    // Only continue polling if this index is still active
+    if (_activeEarningsIndex !== index) return;
+    try {
+      const r = await fetch(`${API}/earnings?index=${index}`);
+      if (r.status === 202) { _scheduleEarningsPoll(index); return; }
+      if (!r.ok) return;
+      const d = await r.json();
+      _earningsCache[index] = d.data || [];
+      renderEarnings(_earningsCache[index]);
+      if (d.refreshing) _scheduleEarningsPoll(index);
+    } catch(e) { /* silent — keep showing whatever is rendered */ }
   }
 
   function qLabel(dateStr) {
