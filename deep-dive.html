@@ -562,28 +562,84 @@ function updateSessionBadges() {
   });
 }
 
-// ── Load Fundamentals ──
+// ── Load Fundamentals (background-task + polling) ──
 async function loadFundamentals() {
   if (!_session.ticker) return;
   if (_session.fundamentals.data) { renderFundamentals(_session.fundamentals.data); return; }
 
-  document.getElementById('fund-loading').style.display = 'block';
-  document.getElementById('fund-content').style.display = 'none';
+  const loadingEl = document.getElementById('fund-loading');
+  const contentEl = document.getElementById('fund-content');
+  loadingEl.style.display = 'block';
+  contentEl.style.display = 'none';
 
   try {
+    // Initial request — may return data immediately (cache hit) or {status:"processing"}
     const r = await fetch(`${API}/fundamentals?ticker=${_session.ticker}`);
     if (!r.ok) {
       const err = await r.json().catch(()=>({detail:'Unknown error'}));
       throw new Error(err.detail || `API error ${r.status}`);
     }
+    const first = await r.json();
+
+    if (!first.status || first.status !== 'processing') {
+      // Cache hit — render immediately
+      _session.fundamentals.data = first;
+      renderFundamentals(first);
+      return;
+    }
+
+    // Background job started — poll /fundamentals/status every 2s
+    await _pollFundamentals(0);
+
+  } catch(e) {
+    loadingEl.style.display = 'none';
+    contentEl.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ ${e.message}</div></div>`;
+    contentEl.style.display = 'block';
+  }
+}
+
+async function _pollFundamentals(attempt) {
+  const loadingEl = document.getElementById('fund-loading');
+  const contentEl = document.getElementById('fund-content');
+  const ticker    = _session.ticker;
+
+  if (attempt > 40) {
+    loadingEl.style.display = 'none';
+    contentEl.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Timed out loading data for ${ticker}. Please try again.</div></div>`;
+    contentEl.style.display = 'block';
+    return;
+  }
+
+  // Show progress to user
+  const secs = attempt * 2;
+  const _lbl = loadingEl.querySelector('div[style]');
+  if (_lbl) _lbl.textContent = `Fetching data… ${secs}s`;
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  // Check if user switched ticker while we were waiting
+  if (_session.ticker !== ticker) return;
+
+  try {
+    const r = await fetch(`${API}/fundamentals/status?ticker=${ticker}`);
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({detail:'Unknown error'}));
+      throw new Error(err.detail || `API error ${r.status}`);
+    }
     const d = await r.json();
+
+    if (d.status === 'processing') {
+      return _pollFundamentals(attempt + 1);
+    }
+
+    // Done — render
     _session.fundamentals.data = d;
     renderFundamentals(d);
+
   } catch(e) {
-    document.getElementById('fund-loading').style.display = 'none';
-    document.getElementById('fund-content').innerHTML =
-      `<div class="sec-pad"><div class="error-block">⚠️ ${e.message}</div></div>`;
-    document.getElementById('fund-content').style.display = 'block';
+    loadingEl.style.display = 'none';
+    contentEl.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ ${e.message}</div></div>`;
+    contentEl.style.display = 'block';
   }
 }
 
