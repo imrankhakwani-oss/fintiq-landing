@@ -491,6 +491,13 @@ function startAnalysis() {
     _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
   }
 
+  // Reset company header to placeholders before new fetch
+  document.getElementById('co-name').textContent = '—';
+  document.getElementById('co-meta').textContent = '';
+  document.getElementById('co-price').textContent = '—';
+  document.getElementById('co-badges').innerHTML = '';
+  document.getElementById('analyst-pill-wrap').innerHTML = '';
+
   // Show UI
   document.getElementById('main-content').style.display = 'block';
   document.getElementById('co-header').classList.add('visible');
