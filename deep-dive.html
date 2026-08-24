@@ -591,7 +591,8 @@ function renderFundamentals(d) {
 
   document.getElementById('co-name').textContent = ov.name || d.ticker;
   document.getElementById('co-meta').textContent = `${ov.sector||''} ${ov.country ? '· '+ov.country : ''}`.trim();
-  const currSym = ov.currency === 'USD' ? '$' : ov.currency === 'GBP' ? '£' : ov.currency === 'EUR' ? '€' : (currSym);
+  // Currency symbol (used throughout)
+  const currSym = ov.currency === 'USD' ? '$' : ov.currency === 'GBP' ? '£' : ov.currency === 'EUR' ? '€' : (ov.currency || '$');
   document.getElementById('co-price').textContent = price ? `${currSym}${price.toFixed(2)}` : '—';
 
   // Badges
@@ -625,9 +626,6 @@ function renderFundamentals(d) {
     const col = upside > 0 ? 'var(--green)' : 'var(--red)';
     upsideHtml = `<span class="target-upside" style="color:${col}">${upside > 0 ? '+' : ''}${upside}%</span>`;
   }
-
-  // Currency symbol (used throughout)
-  const currSym = ov.currency === 'USD' ? '$' : ov.currency === 'GBP' ? '£' : ov.currency === 'EUR' ? '€' : (currSym);
 
   // Build content HTML
   let html = `<div class="sec-pad">`;
