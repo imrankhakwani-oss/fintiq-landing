@@ -705,7 +705,7 @@ function renderFundamentals(d) {
         <th style="text-align:left">Metric</th>
         ${gt.map(r=>`<th>${r.year}</th>`).join('')}
       </tr>
-      ${growthRow('Revenue', gt, r=>r.revenue)}
+      ${growthRow('Revenue', gt, r=>r.revenue ? `${currSym}${r.revenue}` : null)}
       ${growthRow('Revenue Growth', gt, r=>r.revenue_growth != null ? pct(r.revenue_growth) : null, true)}
       ${growthRow('NOPAT Growth', gt, r=>r.nopat_growth != null ? pct(r.nopat_growth) : null, true)}
       ${growthRow('EPS', gt, r=>r.eps != null ? `${currSym}${r.eps}` : null)}
@@ -808,7 +808,7 @@ function renderFundamentals(d) {
       <div class="ff4-card"><div class="ff4-label">HML (Value)</div><div class="ff4-val">${ff.hml!=null?ff.hml.toFixed(2):'—'}</div></div>
       <div class="ff4-card"><div class="ff4-label">MOM (Momentum)</div><div class="ff4-val">${ff.mom!=null?ff.mom.toFixed(2):'—'}</div></div>
     </div>
-    ${ff.insight ? `<div style="font-size:0.72rem;color:var(--dim);margin-top:8px;padding:8px 12px;background:var(--card2);border-radius:6px">${ff.insight}</div>` : ''}
+    ${ff.commentary ? `<div style="font-size:0.8rem;color:var(--dim);margin-top:10px;padding:10px 14px;background:var(--card2);border-radius:8px;border-left:3px solid var(--gold);line-height:1.55">${ff.commentary}</div>` : ''}
     <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Data: ${ff.ff_years||2}yr rolling OLS · US universe · p&lt;0.05 = statistically significant alpha</div>`;
   } else {
     html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
