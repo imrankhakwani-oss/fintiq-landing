@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Deep Dive — Fundamental, Valuation & Technical Analysis | Fintiq</title>
+<meta name="description" content="Institutional-grade stock analysis tool. Fundamental data, DCF valuation, technical analysis, catalyst tracking and AI-guided decision analysis for any stock.">
+<link rel="canonical" href="https://www.fintiq.uk/deep-dive.html">
+<link rel="icon" href="/favicon.ico">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+/* ── Reset & Base ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#050f1c;--card:#0d1f35;--card2:#0a1929;--border:#1e3a5f;
+  --gold:#f5a623;--gold2:rgba(245,166,35,0.12);
+  --text:#e2e8f0;--muted:#64748b;--dim:#94a3b8;
+  --green:#10b981;--red:#ef4444;--blue:#38bdf8;--purple:#818cf8;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;min-height:100vh}
+a{color:var(--gold);text-decoration:none}
+
+/* ── Nav ── */
+.nav{background:rgba(5,15,28,0.95);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;gap:20px;position:sticky;top:0;z-index:100;backdrop-filter:blur(8px)}
+.nav-logo{font-weight:800;font-size:1.1rem;color:var(--gold);letter-spacing:-0.02em}
+.nav-links{display:flex;gap:16px;margin-left:auto}
+.nav-links a{color:var(--dim);font-size:0.82rem;transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold)}
+
+/* ── Hero / Search ── */
+.hero{padding:40px 24px 0;max-width:860px;margin:0 auto}
+.hero-title{font-size:1.6rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:6px}
+.hero-title span{color:var(--gold)}
+.hero-sub{color:var(--dim);font-size:0.85rem;margin-bottom:24px}
+
+.search-bar{display:flex;gap:10px;margin-bottom:8px}
+.search-input{flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:12px 16px;font-size:1rem;color:var(--text);font-family:var(--font);outline:none;transition:border .2s;text-transform:uppercase}
+.search-input::placeholder{text-transform:none;color:var(--muted)}
+.search-input:focus{border-color:var(--gold)}
+.search-btn{background:var(--gold);color:#050f1c;border:none;border-radius:10px;padding:12px 24px;font-weight:700;font-size:0.95rem;cursor:pointer;font-family:var(--font);transition:opacity .2s;white-space:nowrap}
+.search-btn:hover{opacity:0.9}
+.search-hint{font-size:0.75rem;color:var(--muted)}
+.search-examples span{cursor:pointer;color:var(--gold);font-size:0.75rem;margin-right:10px}
+.search-examples span:hover{text-decoration:underline}
+
+/* ── Company Header ── */
+.co-header{max-width:860px;margin:20px auto 0;padding:0 24px;display:none}
+.co-header.visible{display:block}
+.co-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.co-name-block{flex:1;min-width:200px}
+.co-name{font-size:1.15rem;font-weight:800}
+.co-meta{font-size:0.75rem;color:var(--muted);margin-top:2px}
+.co-price-block{text-align:right}
+.co-price{font-size:1.5rem;font-weight:800;color:var(--gold)}
+.co-change{font-size:0.8rem;margin-top:2px}
+.co-badges{display:flex;gap:8px;flex-wrap:wrap}
+.badge{font-size:0.65rem;padding:3px 8px;border-radius:4px;font-weight:700;text-transform:uppercase}
+.badge-sector{background:rgba(56,189,248,0.12);color:var(--blue)}
+.badge-country{background:rgba(129,140,248,0.12);color:var(--purple)}
+.badge-exchange{background:rgba(100,116,139,0.15);color:var(--dim)}
+.analyst-pill{display:flex;align-items:center;gap:6px;font-size:0.75rem;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 10px}
+.analyst-buy{color:var(--green);font-weight:700}
+.analyst-hold{color:var(--gold);font-weight:700}
+.analyst-sell{color:var(--red);font-weight:700}
+
+/* ── Session Strip ── */
+.session-strip{max-width:860px;margin:12px auto 0;padding:0 24px;display:none}
+.session-strip.visible{display:block}
+.session-inner{background:rgba(245,166,35,0.05);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.session-label{font-size:0.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+.session-badges{display:flex;gap:6px;flex-wrap:wrap}
+.session-badge{font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600}
+.s-done{background:rgba(16,185,129,0.15);color:var(--green)}
+.s-pending{background:rgba(100,116,139,0.12);color:var(--muted)}
+
+/* ── Main layout ── */
+.main{max-width:860px;margin:20px auto 60px;padding:0 24px}
+
+/* ── Accordion Sections ── */
+.section-accordion{margin-bottom:12px;border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.section-header{display:flex;align-items:center;gap:12px;padding:16px 20px;cursor:pointer;background:var(--card);user-select:none;transition:background .2s}
+.section-header:hover{background:rgba(13,31,53,0.8)}
+.section-icon{font-size:1.1rem;width:28px;text-align:center}
+.section-title{font-weight:700;font-size:0.95rem}
+.section-desc{font-size:0.75rem;color:var(--muted);margin-top:1px}
+.section-status{margin-left:auto;font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
+.ss-pending{background:rgba(100,116,139,0.12);color:var(--muted)}
+.ss-active{background:rgba(245,166,35,0.12);color:var(--gold)}
+.ss-done{background:rgba(16,185,129,0.12);color:var(--green)}
+.section-chevron{color:var(--muted);font-size:0.65rem;transition:transform .25s;flex-shrink:0}
+.section-chevron.open{transform:rotate(180deg)}
+.section-body{display:none;border-top:1px solid var(--border)}
+.section-body.open{display:block}
+.section-locked{padding:32px;text-align:center;color:var(--muted)}
+.section-locked .lock-icon{font-size:1.5rem;margin-bottom:8px}
+
+/* ── Loading ── */
+.loading-block{padding:32px;text-align:center}
+.spinner{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Section inner padding ── */
+.sec-pad{padding:20px}
+
+/* ── Sub-section labels ── */
+.sub-label{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.sub-label:first-child{margin-top:0}
+
+/* ── Overview grid ── */
+.overview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:4px}
+.ov-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ov-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
+.ov-value{font-size:0.9rem;font-weight:700;color:var(--text)}
+.ov-sub{font-size:0.65rem;color:var(--muted);margin-top:2px}
+
+/* ── Data tables ── */
+.data-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.data-table th{text-align:left;padding:6px 10px;color:var(--muted);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);white-space:nowrap}
+.data-table th.r{text-align:right}
+.data-table td{padding:7px 10px;border-bottom:1px solid rgba(30,58,95,0.4);vertical-align:middle}
+.data-table td.r{text-align:right;font-weight:600}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(245,166,35,0.03)}
+.metric-name{color:var(--dim)}
+.metric-val{color:var(--text);font-weight:600}
+.pos{color:var(--green)}
+.neg{color:var(--red)}
+.neu{color:var(--dim)}
+.tbl-wrap{overflow-x:auto}
+
+/* ── Two-col metrics ── */
+.metrics-2col{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.metrics-2col .data-table td:nth-child(3){border-left:1px solid var(--border)}
+
+/* ── Analyst bar ── */
+.analyst-bar-wrap{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.analyst-counts{display:flex;gap:4px;margin-bottom:8px}
+.analyst-seg{height:8px;border-radius:2px;transition:width .4s}
+.analyst-legend{display:flex;gap:12px;flex-wrap:wrap}
+.al-item{display:flex;align-items:center;gap:5px;font-size:0.72rem}
+.al-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.target-row{display:flex;align-items:baseline;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.target-price{font-size:1.1rem;font-weight:800;color:var(--gold)}
+.target-range{font-size:0.72rem;color:var(--muted)}
+.target-upside{font-size:0.78rem;font-weight:700}
+
+/* ── Growth table ── */
+.growth-table-wrap{overflow-x:auto}
+.growth-table{width:100%;border-collapse:collapse;font-size:0.78rem;white-space:nowrap}
+.growth-table th{padding:6px 10px;color:var(--muted);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);text-align:right}
+.growth-table th:first-child{text-align:left}
+.growth-table td{padding:7px 10px;border-bottom:1px solid rgba(30,58,95,0.4);text-align:right;font-weight:600}
+.growth-table td:first-child{text-align:left;color:var(--dim);font-weight:400}
+.growth-table tr:last-child td{border-bottom:none}
+
+/* ── Competitor table ── */
+.comp-table{width:100%;border-collapse:collapse;font-size:0.78rem}
+.comp-table th{padding:6px 10px;color:var(--muted);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);text-align:right}
+.comp-table th:first-child{text-align:left}
+.comp-table td{padding:8px 10px;border-bottom:1px solid rgba(30,58,95,0.4);text-align:right}
+.comp-table td:first-child{text-align:left}
+.comp-table tr:last-child td{border-bottom:none}
+.comp-ticker{font-weight:800;color:var(--gold);font-size:0.82rem}
+.comp-name{font-size:0.68rem;color:var(--muted);margin-top:1px}
+.main-row td{background:rgba(245,166,35,0.04)}
+
+/* ── Options block ── */
+.options-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.opt-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-align:center}
+.opt-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
+.opt-value{font-size:1rem;font-weight:800}
+.opt-note{font-size:0.65rem;color:var(--muted);margin-top:4px;line-height:1.4}
+.pcr-low{color:var(--green)}
+.pcr-high{color:var(--red)}
+.pcr-mid{color:var(--gold)}
+
+/* ── FF4 block ── */
+.ff4-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.ff4-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.ff4-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
+.ff4-val{font-size:0.92rem;font-weight:800}
+.ff4-signal{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;font-size:0.78rem;font-weight:700;margin-bottom:10px}
+.ff4-strong{background:rgba(16,185,129,0.12);color:var(--green)}
+.ff4-marginal{background:rgba(245,166,35,0.12);color:var(--gold)}
+.ff4-avoid{background:rgba(239,68,68,0.12);color:var(--red)}
+.ff4-na{background:rgba(100,116,139,0.12);color:var(--muted)}
+
+/* ── TSR expander ── */
+.tsr-expander{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-top:4px}
+.tsr-exp-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:var(--card2);font-size:0.8rem;font-weight:600;user-select:none}
+.tsr-exp-header:hover{background:rgba(13,31,53,0.9)}
+.tsr-exp-body{display:none;padding:14px;border-top:1px solid var(--border)}
+.tsr-exp-body.open{display:block}
+.tsr-why{background:rgba(251,191,36,0.06);border-left:3px solid #FBBF24;padding:8px 12px;border-radius:0 6px 6px 0;margin-bottom:14px;font-size:0.72rem;color:var(--dim);line-height:1.5}
+.tsr-why strong{color:#FBBF24;display:block;margin-bottom:2px;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em}
+.tsr-section-label{font-size:0.62rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px}
+.tsr-sub-note{font-size:0.62rem;color:#475569;margin-bottom:8px;line-height:1.4}
+
+/* ── TSR tables ── */
+.tsr-tbl-wrap{overflow-x:auto;margin-bottom:16px}
+.tsr-tbl{width:100%;border-collapse:collapse;font-size:0.68rem;white-space:nowrap}
+.tsr-tbl th{text-align:left;padding:4px 6px;color:#64748B;min-width:140px;white-space:normal;border-bottom:1px solid #334155;font-size:0.62rem;text-transform:uppercase;letter-spacing:0.05em}
+.tsr-tbl th.r{text-align:right;min-width:60px;white-space:nowrap}
+.tsr-tbl td{padding:4px 6px}
+.tsr-tbl td.r{text-align:right;font-weight:600}
+.tsr-sep td{padding:1px 0;border-bottom:1px solid #1e293b}
+.tsr-total td{background:rgba(255,255,255,0.025);font-weight:700}
+.tsr-basis td{color:#94A3B8;font-style:italic}
+.tsr-actual td{border-bottom:2px solid #334155;font-weight:700}
+
+/* ── Simple TSR cards ── */
+.tsr-simple{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.tsr-s-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.tsr-s-period{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
+.tsr-s-val{font-size:1rem;font-weight:800}
+.tsr-s-sub{font-size:0.62rem;color:var(--muted);margin-top:3px}
+
+/* ── AI Chat ── */
+.ai-chat-wrap{margin-top:20px;border-top:1px solid var(--border);padding-top:16px}
+.ai-chat-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ai-chat-icon{width:28px;height:28px;background:var(--gold2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem}
+.ai-chat-title{font-weight:700;font-size:0.88rem}
+.ai-chat-sub{font-size:0.7rem;color:var(--muted)}
+.chat-messages{min-height:80px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.chat-msg{padding:10px 13px;border-radius:10px;font-size:0.82rem;line-height:1.65;max-width:92%}
+.chat-msg.user{background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);align-self:flex-end}
+.chat-msg.ai{background:var(--card2);border:1px solid var(--border);align-self:flex-start}
+.chat-msg.ai strong,.chat-msg.ai b{color:var(--gold)}
+.chat-msg.system{background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);align-self:center;text-align:center;font-size:0.75rem;color:var(--blue);width:100%}
+.chat-starter{color:var(--muted);opacity:0.7;font-style:italic}
+.chat-input-row{display:flex;gap:8px}
+.chat-input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:0.83rem;color:var(--text);font-family:var(--font);outline:none;resize:none;transition:border .2s;line-height:1.5}
+.chat-input:focus{border-color:var(--gold)}
+.chat-input::placeholder{color:var(--muted)}
+.chat-send{background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-family:var(--font);font-size:0.82rem;flex-shrink:0;align-self:flex-end}
+.chat-send:hover{opacity:0.9}
+.chat-send:disabled{opacity:0.4;cursor:not-allowed}
+.chat-typing{display:flex;align-items:center;gap:6px;font-size:0.75rem;color:var(--muted);padding:6px 0}
+.dot-pulse{display:flex;gap:4px}
+.dot-pulse span{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:pulse 1.4s infinite}
+.dot-pulse span:nth-child(2){animation-delay:.2s}
+.dot-pulse span:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ── Placeholder sections ── */
+.placeholder-section{padding:28px;text-align:center;color:var(--muted)}
+.placeholder-section .ph-icon{font-size:1.6rem;margin-bottom:8px;opacity:0.5}
+.placeholder-section p{font-size:0.82rem;line-height:1.6}
+
+/* ── Error ── */
+.error-block{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:14px 16px;color:#fca5a5;font-size:0.82rem}
+
+/* ── Responsive ── */
+@media(max-width:640px){
+  .hero-title{font-size:1.25rem}
+  .co-card{gap:12px}
+  .search-bar{flex-direction:column}
+  .overview-grid{grid-template-columns:repeat(2,1fr)}
+  .tsr-simple{grid-template-columns:repeat(3,1fr)}
+  .metrics-2col{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-logo">Fintiq</div>
+  <div class="nav-links">
+    <a href="/index.html">Home</a>
+    <a href="/bulletin.html">Bulletin</a>
+    <a href="/deep-dive.html" class="active">Deep Dive</a>
+    <a href="/tools.html">Tools</a>
+  </div>
+</nav>
+
+<!-- Hero / Search -->
+<div class="hero">
+  <h1 class="hero-title">Stock <span>Deep Dive</span></h1>
+  <p class="hero-sub">Institutional-grade analysis — fundamentals, valuation, technicals, catalysts and decision review, all in one place.</p>
+  <div class="search-bar">
+    <input class="search-input" id="ticker-input" type="text" placeholder="Enter ticker or company name (e.g. AAPL, TSLA, SHEL.L)" maxlength="12" autocomplete="off">
+    <button class="search-btn" onclick="startAnalysis()">Analyse →</button>
+  </div>
+  <div class="search-hint">
+    <div class="search-examples">
+      Try: <span onclick="quickTicker('AAPL')">AAPL</span>
+      <span onclick="quickTicker('MSFT')">MSFT</span>
+      <span onclick="quickTicker('TSLA')">TSLA</span>
+      <span onclick="quickTicker('NVDA')">NVDA</span>
+      <span onclick="quickTicker('SHEL.L')">SHEL.L</span>
+    </div>
+  </div>
+</div>
+
+<!-- Company Header -->
+<div class="co-header" id="co-header">
+  <div class="co-card">
+    <div class="co-name-block">
+      <div class="co-name" id="co-name">—</div>
+      <div class="co-meta" id="co-meta">—</div>
+      <div class="co-badges" id="co-badges" style="margin-top:6px"></div>
+    </div>
+    <div style="flex:1"></div>
+    <div id="analyst-pill-wrap"></div>
+    <div class="co-price-block">
+      <div class="co-price" id="co-price">—</div>
+      <div class="co-change" id="co-change"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Session Strip -->
+<div class="session-strip" id="session-strip">
+  <div class="session-inner">
+    <div class="session-label">Session</div>
+    <div class="session-badges" id="session-badges">
+      <span class="session-badge s-pending" id="sb-fundamentals">Fundamentals</span>
+      <span class="session-badge s-pending" id="sb-valuation">Valuation</span>
+      <span class="session-badge s-pending" id="sb-technical">Technical</span>
+      <span class="session-badge s-pending" id="sb-catalyst">Catalyst</span>
+      <span class="session-badge s-pending" id="sb-decision">Decision</span>
+    </div>
+    <button onclick="resetSession()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 10px;font-size:0.68rem;cursor:pointer">New</button>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main" id="main-content" style="display:none">
+
+  <!-- 1. Fundamentals -->
+  <div class="section-accordion" id="acc-fundamentals">
+    <div class="section-header" onclick="toggleSection('fundamentals')">
+      <div class="section-icon">🔍</div>
+      <div>
+        <div class="section-title">Fundamental Analysis</div>
+        <div class="section-desc">Business quality, growth, valuation multiples, competitors, TSR</div>
+      </div>
+      <span class="section-status ss-pending" id="status-fundamentals">Not started</span>
+      <span class="section-chevron" id="chev-fundamentals">▼</span>
+    </div>
+    <div class="section-body" id="body-fundamentals">
+      <div class="loading-block" id="fund-loading">
+        <div class="spinner"></div>
+        <div style="color:var(--muted);font-size:0.82rem">Loading fundamental data…</div>
+      </div>
+      <div id="fund-content" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 2. Valuation -->
+  <div class="section-accordion" id="acc-valuation">
+    <div class="section-header" onclick="toggleSection('valuation')">
+      <div class="section-icon">💰</div>
+      <div>
+        <div class="section-title">Valuation</div>
+        <div class="section-desc">DCF, Monte Carlo, sensitivity grid, Graham number, sector multiples</div>
+      </div>
+      <span class="section-status ss-pending" id="status-valuation">Coming soon</span>
+      <span class="section-chevron" id="chev-valuation">▼</span>
+    </div>
+    <div class="section-body" id="body-valuation">
+      <div class="placeholder-section">
+        <div class="ph-icon">🚧</div>
+        <p>Valuation section — DCF with reverse-engineered assumptions, Monte Carlo and heat grid — coming next.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Technical -->
+  <div class="section-accordion" id="acc-technical">
+    <div class="section-header" onclick="toggleSection('technical')">
+      <div class="section-icon">📈</div>
+      <div>
+        <div class="section-title">Technical Analysis</div>
+        <div class="section-desc">Price chart, MA, RSI, MACD, support/resistance, trend classification</div>
+      </div>
+      <span class="section-status ss-pending" id="status-technical">Coming soon</span>
+      <span class="section-chevron" id="chev-technical">▼</span>
+    </div>
+    <div class="section-body" id="body-technical">
+      <div class="placeholder-section">
+        <div class="ph-icon">🚧</div>
+        <p>Technical analysis section — interactive price chart with MA, RSI and MACD — coming next.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Catalyst -->
+  <div class="section-accordion" id="acc-catalyst">
+    <div class="section-header" onclick="toggleSection('catalyst')">
+      <div class="section-icon">⚡</div>
+      <div>
+        <div class="section-title">Catalyst Tracker</div>
+        <div class="section-desc">Upcoming earnings, economic events, recent news, options activity</div>
+      </div>
+      <span class="section-status ss-pending" id="status-catalyst">Coming soon</span>
+      <span class="section-chevron" id="chev-catalyst">▼</span>
+    </div>
+    <div class="section-body" id="body-catalyst">
+      <div class="placeholder-section">
+        <div class="ph-icon">🚧</div>
+        <p>Catalyst tracker — earnings dates, macro events and news headlines — coming next.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Decision -->
+  <div class="section-accordion" id="acc-decision">
+    <div class="section-header" onclick="toggleSection('decision')">
+      <div class="section-icon">🎯</div>
+      <div>
+        <div class="section-title">Decision Analysis</div>
+        <div class="section-desc">AI challenges your thesis — buy, short or hold — conviction score</div>
+      </div>
+      <span class="section-status ss-pending" id="status-decision">Coming soon</span>
+      <span class="section-chevron" id="chev-decision">▼</span>
+    </div>
+    <div class="section-body" id="body-decision">
+      <div class="placeholder-section">
+        <div class="ph-icon">🚧</div>
+        <p>Decision Analysis — structured AI challenge of your investment thesis using all section data — coming next.</p>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<script>
+const API = 'https://api.fintiq.uk';
+
+// ── Session state (cross-section memory) ──
+let _session = {
+  ticker: null,
+  fundamentals: { data: null, chat_conclusions: null, completed: false },
+  valuation:    { data: null, chat_conclusions: null, completed: false },
+  technical:    { data: null, chat_conclusions: null, completed: false },
+  catalyst:     { data: null, chat_conclusions: null, completed: false },
+  decision:     { data: null, completed: false },
+};
+
+// Per-section chat message history
+let _chatHistory = { fundamentals: [], valuation: [], technical: [], catalyst: [], decision: [] };
+
+// Which sections have been opened (for lazy loading)
+let _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
+
+// ── URL param on load ──
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get('ticker');
+  if (t) {
+    document.getElementById('ticker-input').value = t.toUpperCase();
+    startAnalysis();
+  }
+});
+
+function quickTicker(t) {
+  document.getElementById('ticker-input').value = t;
+  startAnalysis();
+}
+
+function startAnalysis() {
+  const input = document.getElementById('ticker-input');
+  const ticker = input.value.trim().toUpperCase();
+  if (!ticker) { input.focus(); return; }
+
+  // Update URL without reload
+  const url = new URL(window.location);
+  url.searchParams.set('ticker', ticker);
+  window.history.pushState({}, '', url);
+
+  // Reset session for new ticker
+  if (_session.ticker !== ticker) {
+    _session = {
+      ticker,
+      fundamentals: { data: null, chat_conclusions: null, completed: false },
+      valuation:    { data: null, chat_conclusions: null, completed: false },
+      technical:    { data: null, chat_conclusions: null, completed: false },
+      catalyst:     { data: null, chat_conclusions: null, completed: false },
+      decision:     { data: null, completed: false },
+    };
+    _chatHistory = { fundamentals: [], valuation: [], technical: [], catalyst: [], decision: [] };
+    _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
+  }
+
+  // Show UI
+  document.getElementById('main-content').style.display = 'block';
+  document.getElementById('co-header').classList.add('visible');
+  document.getElementById('session-strip').classList.add('visible');
+  updateSessionBadges();
+
+  // Auto-open fundamentals and load
+  openSection('fundamentals');
+}
+
+function resetSession() {
+  _session.ticker = null;
+  document.getElementById('ticker-input').value = '';
+  document.getElementById('main-content').style.display = 'none';
+  document.getElementById('co-header').classList.remove('visible');
+  document.getElementById('session-strip').classList.remove('visible');
+  // Close all sections
+  ['fundamentals','valuation','technical','catalyst','decision'].forEach(s => {
+    document.getElementById('body-'+s).classList.remove('open');
+    document.getElementById('chev-'+s).classList.remove('open');
+  });
+  window.history.pushState({}, '', '/deep-dive.html');
+}
+
+// ── Section accordion ──
+function toggleSection(name) {
+  const body = document.getElementById('body-'+name);
+  const chev = document.getElementById('chev-'+name);
+  const isOpen = body.classList.contains('open');
+  if (isOpen) {
+    body.classList.remove('open');
+    chev.classList.remove('open');
+  } else {
+    openSection(name);
+  }
+}
+
+function openSection(name) {
+  const body = document.getElementById('body-'+name);
+  const chev = document.getElementById('chev-'+name);
+  body.classList.add('open');
+  chev.classList.add('open');
+  setStatus(name, 'active');
+  if (!_sectionOpened[name]) {
+    _sectionOpened[name] = true;
+    if (name === 'fundamentals') loadFundamentals();
+  }
+}
+
+function setStatus(name, state) {
+  const el = document.getElementById('status-'+name);
+  el.className = 'section-status';
+  if (state === 'active') { el.classList.add('ss-active'); el.textContent = 'In progress'; }
+  else if (state === 'done') { el.classList.add('ss-done'); el.textContent = 'Done'; }
+  else { el.classList.add('ss-pending'); el.textContent = 'Not started'; }
+}
+
+function updateSessionBadges() {
+  ['fundamentals','valuation','technical','catalyst','decision'].forEach(s => {
+    const el = document.getElementById('sb-'+s);
+    el.className = 'session-badge ' + (_session[s].completed ? 's-done' : 's-pending');
+  });
+}
+
+// ── Load Fundamentals ──
+async function loadFundamentals() {
+  if (!_session.ticker) return;
+  if (_session.fundamentals.data) { renderFundamentals(_session.fundamentals.data); return; }
+
+  document.getElementById('fund-loading').style.display = 'block';
+  document.getElementById('fund-content').style.display = 'none';
+
+  try {
+    const r = await fetch(`${API}/fundamentals?ticker=${_session.ticker}`);
+    if (!r.ok) {
+      const err = await r.json().catch(()=>({detail:'Unknown error'}));
+      throw new Error(err.detail || `API error ${r.status}`);
+    }
+    const d = await r.json();
+    _session.fundamentals.data = d;
+    renderFundamentals(d);
+  } catch(e) {
+    document.getElementById('fund-loading').style.display = 'none';
+    document.getElementById('fund-content').innerHTML =
+      `<div class="sec-pad"><div class="error-block">⚠️ ${e.message}</div></div>`;
+    document.getElementById('fund-content').style.display = 'block';
+  }
+}
+
+// ── Render Fundamentals ──
+function renderFundamentals(d) {
+  document.getElementById('fund-loading').style.display = 'none';
+
+  // Update company header
+  const ov = d.overview || {};
+  const an = d.analyst  || {};
+  const price = ov.price;
+
+  document.getElementById('co-name').textContent = ov.name || d.ticker;
+  document.getElementById('co-meta').textContent = `${ov.fy_end ? 'FY end: '+ov.fy_end : ''} ${ov.q_end ? '· Latest Q: '+ov.q_end : ''}`.trim();
+  document.getElementById('co-price').textContent = price ? `${ov.currency || '$'}${price.toFixed(2)}` : '—';
+
+  // Badges
+  const badges = [];
+  if (ov.sector)   badges.push(`<span class="badge badge-sector">${ov.sector}</span>`);
+  if (ov.country)  badges.push(`<span class="badge badge-country">${ov.country}</span>`);
+  if (ov.exchange) badges.push(`<span class="badge badge-exchange">${ov.exchange}</span>`);
+  document.getElementById('co-badges').innerHTML = badges.join('');
+
+  // Analyst pill
+  const totalRecs = (an.strong_buy||0)+(an.buy||0)+(an.hold||0)+(an.sell||0)+(an.strong_sell||0);
+  const buyPct  = totalRecs ? Math.round(((an.strong_buy||0)+(an.buy||0))/totalRecs*100) : null;
+  const holdPct = totalRecs ? Math.round((an.hold||0)/totalRecs*100) : null;
+  const sellPct = totalRecs ? Math.round(((an.sell||0)+(an.strong_sell||0))/totalRecs*100) : null;
+  if (totalRecs) {
+    document.getElementById('analyst-pill-wrap').innerHTML =
+      `<div class="analyst-pill">
+        <span class="analyst-buy">Buy ${buyPct}%</span>
+        <span style="color:var(--border)">|</span>
+        <span class="analyst-hold">Hold ${holdPct}%</span>
+        <span style="color:var(--border)">|</span>
+        <span class="analyst-sell">Sell ${sellPct}%</span>
+        <span style="color:var(--muted);font-size:0.65rem">${totalRecs} analysts</span>
+      </div>`;
+  }
+
+  // Target price upside
+  let upsideHtml = '';
+  if (an.target_price && price) {
+    const upside = ((an.target_price - price)/price*100).toFixed(1);
+    const col = upside > 0 ? 'var(--green)' : 'var(--red)';
+    upsideHtml = `<span class="target-upside" style="color:${col}">${upside > 0 ? '+' : ''}${upside}%</span>`;
+  }
+
+  // Build content HTML
+  let html = `<div class="sec-pad">`;
+
+  // ── Overview ──
+  html += `<div class="sub-label">Company Overview</div>`;
+  if (ov.description) {
+    html += `<div style="font-size:0.78rem;color:var(--dim);line-height:1.7;margin-bottom:14px;padding:10px 14px;background:var(--card2);border-radius:8px;border:1px solid var(--border)">${ov.description}</div>`;
+  }
+  const q = d.quality || {};
+  const mk = d.market || {};
+  html += `<div class="overview-grid">
+    ${ovItem('Market Cap', ov.market_cap)}
+    ${ovItem('Enterprise Value', ov.enterprise_value)}
+    ${ovItem('Revenue (TTM)', q.revenue)}
+    ${ovItem('Employees', ov.employees ? Number(ov.employees).toLocaleString() : null)}
+    ${ovItem('FY Year End', ov.fy_end)}
+    ${ovItem('Latest Quarter', ov.q_end)}
+    ${ovItem('Exchange', ov.exchange)}
+    ${ovItem('Website', ov.website ? `<a href="${ov.website}" target="_blank" style="font-size:0.72rem">${ov.website.replace('https://','').replace('http://','')}</a>` : null, true)}
+  </div>`;
+
+  // ── Analyst Consensus ──
+  if (totalRecs) {
+    const bPct = Math.round(((an.strong_buy||0)+(an.buy||0))/totalRecs*100);
+    const hPct = Math.round((an.hold||0)/totalRecs*100);
+    const sPct = 100-bPct-hPct;
+    html += `<div class="sub-label">Analyst Consensus</div>
+    <div class="analyst-bar-wrap">
+      <div class="analyst-counts">
+        <div class="analyst-seg" style="width:${bPct}%;background:var(--green)"></div>
+        <div class="analyst-seg" style="width:${hPct}%;background:var(--gold)"></div>
+        <div class="analyst-seg" style="width:${sPct}%;background:var(--red)"></div>
+      </div>
+      <div class="analyst-legend">
+        <div class="al-item"><div class="al-dot" style="background:var(--green)"></div><span>Strong Buy (${an.strong_buy||0})</span></div>
+        <div class="al-item"><div class="al-dot" style="background:#4ade80"></div><span>Buy (${an.buy||0})</span></div>
+        <div class="al-item"><div class="al-dot" style="background:var(--gold)"></div><span>Hold (${an.hold||0})</span></div>
+        <div class="al-item"><div class="al-dot" style="background:#f87171"></div><span>Sell (${an.sell||0})</span></div>
+        <div class="al-item"><div class="al-dot" style="background:var(--red)"></div><span>Strong Sell (${an.strong_sell||0})</span></div>
+      </div>
+      <div class="target-row">
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Consensus Target</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span class="target-price">${an.target_price ? (ov.currency||'$')+an.target_price.toFixed(2) : '—'}</span>
+            ${upsideHtml}
+          </div>
+          <div class="target-range">${an.target_low ? `Range: ${ov.currency||'$'}${an.target_low} – ${ov.currency||'$'}${an.target_high}` : ''}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Business Quality ──
+  html += `<div class="sub-label">Business Quality</div>
+  <div class="tbl-wrap">
+  <table class="data-table">
+    <tr><th>Metric</th><th class="r">Value</th><th>Metric</th><th class="r">Value</th></tr>
+    ${qRow('Revenue (TTM)', q.revenue, 'EPS (TTM)', q.eps_ttm != null ? `${ov.currency||'$'}${q.eps_ttm}` : null)}
+    ${qRow('Gross Margin', pct(q.gross_margin), 'DPS', q.dps != null ? `${ov.currency||'$'}${q.dps}` : null)}
+    ${qRow('Operating Margin', pct(q.op_margin), 'FCF', q.fcf)}
+    ${qRow('Net Margin', pct(q.net_margin), 'FCF / Share', q.fcf_per_share != null ? `${ov.currency||'$'}${q.fcf_per_share}` : null)}
+    ${qRow('ROE', pct(q.roe), 'Debt / Equity', q.debt_equity)}
+    ${qRow('ROIC', pct(q.roic), 'Current Ratio', q.current_ratio)}
+    ${qRow('ROA', pct(q.roa), 'Investment Rate', pct(q.inv_rate))}
+  </table>
+  </div>`;
+
+  // ── Growth Table ──
+  const gt = d.growth_table || [];
+  if (gt.length) {
+    html += `<div class="sub-label">Historical Growth (Annual)</div>
+    <div class="growth-table-wrap">
+    <table class="growth-table">
+      <tr>
+        <th style="text-align:left">Metric</th>
+        ${gt.map(r=>`<th>${r.year}</th>`).join('')}
+      </tr>
+      ${growthRow('Revenue', gt, r=>r.revenue)}
+      ${growthRow('Revenue Growth', gt, r=>r.revenue_growth != null ? pct(r.revenue_growth) : null, true)}
+      ${growthRow('NOPAT Growth', gt, r=>r.nopat_growth != null ? pct(r.nopat_growth) : null, true)}
+      ${growthRow('EPS', gt, r=>r.eps != null ? `${ov.currency||'$'}${r.eps}` : null)}
+      ${growthRow('EPS Growth', gt, r=>r.eps_growth != null ? pct(r.eps_growth) : null, true)}
+      ${growthRow('ROIC', gt, r=>r.roic != null ? pct(r.roic) : null, true)}
+      ${growthRow('Operating Margin', gt, r=>r.op_margin != null ? pct(r.op_margin) : null, true)}
+      ${growthRow('Investment Rate', gt, r=>r.inv_rate != null ? pct(r.inv_rate) : null, false)}
+    </table>
+    </div>`;
+  }
+
+  // ── Valuation Multiples ──
+  const mu = d.multiples || {};
+  html += `<div class="sub-label">Valuation Multiples</div>
+  <div class="tbl-wrap"><table class="data-table">
+    <tr><th>Metric</th><th class="r">Value</th><th>Metric</th><th class="r">Value</th></tr>
+    ${qRow('P/E Trailing', mu.pe_trailing != null ? mu.pe_trailing+'x' : null, 'P/E Forward', mu.pe_forward != null ? mu.pe_forward+'x' : null)}
+    ${qRow('EV/EBITDA', mu.ev_ebitda != null ? mu.ev_ebitda+'x' : null, 'Price/Book', mu.price_book != null ? mu.price_book+'x' : null)}
+    ${qRow('Price/Sales', mu.price_sales != null ? mu.price_sales+'x' : null, 'PEG Ratio', mu.peg)}
+    ${qRow('FCF/Share', mu.fcf_per_share != null ? `${ov.currency||'$'}${mu.fcf_per_share}` : null, 'Dividend Yield', mu.div_yield != null ? pct(mu.div_yield) : null)}
+  </table></div>`;
+
+  // ── Market Data ──
+  html += `<div class="sub-label">Market & Price Data</div>
+  <div class="tbl-wrap"><table class="data-table">
+    <tr><th>Metric</th><th class="r">Value</th><th>Metric</th><th class="r">Value</th></tr>
+    ${qRow('Beta', mk.beta, '52w High', mk.price_52w_high != null ? `${ov.currency||'$'}${mk.price_52w_high}` : null)}
+    ${qRow('52w Range Position', mk.range_position_pct != null ? mk.range_position_pct+'%' : null, '52w Low', mk.price_52w_low != null ? `${ov.currency||'$'}${mk.price_52w_low}` : null)}
+    ${qRow('vs 50d MA', mk.vs_ma50_pct != null ? changePct(mk.vs_ma50_pct) : null, 'vs 200d MA', mk.vs_ma200_pct != null ? changePct(mk.vs_ma200_pct) : null, true)}
+    ${qRow('Short Float %', mk.short_float_pct != null ? pct(mk.short_float_pct) : null, 'Days to Cover', mk.short_ratio_days)}
+    ${qRow('Avg Volume', mk.avg_volume ? Number(mk.avg_volume).toLocaleString() : null, 'Avg Vol 10d', mk.avg_volume_10d ? Number(mk.avg_volume_10d).toLocaleString() : null)}
+  </table></div>`;
+
+  // ── Options ──
+  const op = d.options || {};
+  if (!op.error) {
+    const pcr = op.put_call_ratio;
+    const pcrClass = pcr == null ? '' : pcr < 0.7 ? 'pcr-low' : pcr > 1.2 ? 'pcr-high' : 'pcr-mid';
+    const pcrNote = pcr == null ? '' : pcr < 0.7 ? 'Bullish sentiment — more calls than puts' : pcr > 1.2 ? 'Bearish/hedging — elevated put demand' : 'Neutral positioning';
+    html += `<div class="sub-label">Options Market</div>
+    <div class="options-grid">
+      <div class="opt-card"><div class="opt-label">Put/Call Ratio</div><div class="opt-value ${pcrClass}">${pcr != null ? pcr : '—'}</div><div class="opt-note">${pcrNote}</div></div>
+      <div class="opt-card"><div class="opt-label">ATM Implied Vol</div><div class="opt-value">${op.atm_iv != null ? op.atm_iv+'%' : '—'}</div><div class="opt-note">Near-term market expectation of price swing</div></div>
+      <div class="opt-card"><div class="opt-label">Call Open Interest</div><div class="opt-value">${op.call_oi ? Number(op.call_oi).toLocaleString() : '—'}</div><div class="opt-note">Contracts outstanding</div></div>
+      <div class="opt-card"><div class="opt-label">Put Open Interest</div><div class="opt-value">${op.put_oi ? Number(op.put_oi).toLocaleString() : '—'}</div><div class="opt-note">Contracts outstanding</div></div>
+      <div class="opt-card"><div class="opt-label">Expiry Dates</div><div class="opt-value">${op.total_expirations || '—'}</div><div class="opt-note">Available maturities</div></div>
+    </div>
+    <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;padding:8px 10px;background:var(--card2);border-radius:6px;border-left:2px solid var(--border)">
+      <strong style="color:var(--dim)">How to read options:</strong> Put/Call ratio above 1.2 signals hedging or bearish positioning. ATM IV shows how much the market expects the stock to move over the next 30 days — high IV = expensive options, often near events. Data: nearest expiry only.
+    </div>`;
+  }
+
+  // ── Competitors ──
+  const comps = d.competitors || [];
+  if (comps.length) {
+    html += `<div class="sub-label">Peer Comparison</div>
+    <div class="tbl-wrap"><table class="comp-table">
+      <tr>
+        <th style="text-align:left">Company</th>
+        <th>Mkt Cap</th><th>Rev Growth</th><th>Op Margin</th>
+        <th>ROE</th><th>P/E</th><th>EV/EBITDA</th>
+      </tr>
+      <tr class="main-row">
+        <td><div class="comp-ticker">${d.ticker}</div><div class="comp-name">${ov.name||''}</div></td>
+        <td>${ov.market_cap||'—'}</td>
+        <td>${d.growth_table?.[0]?.revenue_growth != null ? pct(d.growth_table[0].revenue_growth) : '—'}</td>
+        <td>${q.op_margin != null ? pct(q.op_margin) : '—'}</td>
+        <td>${q.roe != null ? pct(q.roe) : '—'}</td>
+        <td>${mu.pe_trailing != null ? mu.pe_trailing+'x' : '—'}</td>
+        <td>${mu.ev_ebitda != null ? mu.ev_ebitda+'x' : '—'}</td>
+      </tr>
+      ${comps.map(c=>`<tr>
+        <td><div class="comp-ticker">${c.ticker}</div><div class="comp-name">${c.name}</div></td>
+        <td>${c.market_cap||'—'}</td>
+        <td>${c.revenue_growth != null ? pct(c.revenue_growth) : '—'}</td>
+        <td>${c.op_margin != null ? pct(c.op_margin) : '—'}</td>
+        <td>${c.roe != null ? pct(c.roe) : '—'}</td>
+        <td>${c.pe != null ? c.pe+'x' : '—'}</td>
+        <td>${c.ev_ebitda != null ? c.ev_ebitda+'x' : '—'}</td>
+      </tr>`).join('')}
+    </table></div>
+    <div style="font-size:0.68rem;color:var(--muted);margin-top:6px">WACC, earnings growth and investment rate comparison available via AI discussion below.</div>`;
+  }
+
+  // ── FF4 ──
+  const ff = d.ff4;
+  if (ff && !ff.error) {
+    const alpha = ff.alpha_annualised;
+    const sig   = ff.signal || '';
+    const sigClass = sig.includes('Strong') ? 'ff4-strong' : sig.includes('Marginal') ? 'ff4-marginal' : sig.includes('Avoid') ? 'ff4-avoid' : 'ff4-na';
+    const pval  = ff.p_value;
+    const pColor = pval != null && pval < 0.05 ? 'var(--green)' : pval != null && pval < 0.1 ? 'var(--gold)' : 'var(--red)';
+    html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
+    <div style="margin-bottom:10px"><span class="ff4-signal ${sigClass}">${sig || 'No signal'}</span></div>
+    <div class="ff4-grid">
+      <div class="ff4-card"><div class="ff4-label">Alpha (ann.)</div><div class="ff4-val" style="color:${alpha>=0?'var(--green)':'var(--red)'}">${alpha!=null?alpha.toFixed(1)+'%':'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">p-value</div><div class="ff4-val" style="color:${pColor}">${pval!=null?pval.toFixed(3):'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">Beta (Market)</div><div class="ff4-val">${ff.beta!=null?ff.beta.toFixed(2):'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">SMB (Size)</div><div class="ff4-val">${ff.smb!=null?ff.smb.toFixed(2):'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">HML (Value)</div><div class="ff4-val">${ff.hml!=null?ff.hml.toFixed(2):'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">MOM (Momentum)</div><div class="ff4-val">${ff.mom!=null?ff.mom.toFixed(2):'—'}</div></div>
+    </div>
+    ${ff.insight ? `<div style="font-size:0.72rem;color:var(--dim);margin-top:8px;padding:8px 12px;background:var(--card2);border-radius:6px">${ff.insight}</div>` : ''}
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Data: ${ff.ff_years||2}yr rolling OLS regression · US universe</div>`;
+  } else {
+    html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
+    <div style="font-size:0.78rem;color:var(--muted);padding:10px;background:var(--card2);border-radius:8px">FF4 data not available for this ticker in our screener universe. The AI can provide directional factor analysis from beta, P/B and market cap in the chat below.</div>`;
+  }
+
+  // ── TSR ──
+  html += renderTSR(d.tsr, ov.currency || '$');
+
+  // ── AI Chat ──
+  html += renderChat('fundamentals', d);
+
+  html += `</div>`;// /sec-pad
+
+  document.getElementById('fund-content').innerHTML = html;
+  document.getElementById('fund-content').style.display = 'block';
+  setStatus('fundamentals', 'active');
+}
+
+// ── TSR renderer ──
+function renderTSR(tsr, currency) {
+  if (!tsr || tsr.error) return '';
+  currency = currency || '$';
+
+  let h = `<div class="sub-label">Total Shareholder Return (TSR)</div>
+  <div class="tsr-expander">
+    <div class="tsr-exp-header" onclick="toggleTsrExp(this)">
+      📊 TSR Deep-Dive — Annual &amp; Quarterly
+      <span style="font-size:0.65rem;color:var(--muted)">▼</span>
+    </div>
+    <div class="tsr-exp-body">
+      <div class="tsr-why"><strong>Why Total Shareholder Return?</strong>
+        TSR is the actual return you earned — price change plus dividends. Decomposing it tells you <em>why</em> you earned it: was it genuine business improvement, a valuation re-rating, or just income? Only performance-driven TSR is repeatable. Multiple expansion eventually mean-reverts.
+      </div>`;
+
+  // Simple TSR cards
+  const s = tsr.simple || {};
+  h += `<div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Rolling TSR (price + dividends)</div>
+  <div class="tsr-simple">`;
+  [['1y','1 Year'],['3y','3 Year Ann.'],['5y','5 Year Ann.']].forEach(([k,lbl])=>{
+    const sv = s[k] || {};
+    const v  = sv.tsr;
+    const col = v == null ? 'var(--dim)' : v >= 0 ? 'var(--green)' : 'var(--red)';
+    h += `<div class="tsr-s-card">
+      <div class="tsr-s-period">${lbl}</div>
+      <div class="tsr-s-val" style="color:${col}">${v!=null?(v*100>0?'+':'')+( v*100).toFixed(1)+'%':'—'}</div>
+      <div class="tsr-s-sub">${sv.open_date||''} → ${sv.close_date||''}</div>
+    </div>`;
+  });
+  h += `</div>`;
+
+  // Annual Enhanced
+  const ann = tsr.annual || [];
+  if (ann.length) {
+    const yrHdrs = ann.map(a=>a.year);
+    h += `<div class="tsr-section-label" style="margin-top:16px">Annual Enhanced Decomposition</div>
+    <div class="tsr-sub-note">TSR = actual stock return over the fiscal year (FY start → FY end price). Decomposition below explains <em>why</em> shareholders earned that return.</div>
+    <div class="tsr-tbl-wrap"><table class="tsr-tbl">
+      <tr>
+        <th>Line item</th>
+        ${yrHdrs.map(y=>`<th class="r">${y}</th>`).join('')}
+      </tr>
+      ${tsrRow('Opening price (FY start)', ann, a=>`${currency}${a.fy_start_price?.toFixed(2)||'—'}<br><span style="font-size:0.58rem;color:#334155">${a.fy_start_date||''}</span>`, 'basis')}
+      ${tsrRow('Closing price (FY end)',   ann, a=>`${currency}${a.fy_end_price?.toFixed(2)||'—'}<br><span style="font-size:0.58rem;color:#334155">${a.fy_end_date||''}</span>`, 'basis')}
+      ${tsrRow('Dividends paid in FY',     ann, a=>`${currency}${(a.fy_dividends||0).toFixed(2)}`, 'basis')}
+      ${tsrRow('= Actual TSR (price + div)', ann, a=>pctColor(a.tsr), 'actual')}
+      <tr class="tsr-sep"><td colspan="${1+ann.length}"><div style="padding:6px 6px 2px;color:#475569;font-size:0.62rem;font-style:italic">Decomposition — explains the TSR above:</div></td></tr>
+      ${tsrRow('Sales growth contribution',  ann, a=>pctColor(a.sales_growth_contrib))}
+      ${tsrRow('Reinvestment drag',          ann, a=>pctColor(a.invest_drag))}
+      ${tsrRow('Change in operating margin', ann, a=>pctColor(a.margin_change_contrib))}
+      ${tsrRow('TSR from Performance',       ann, a=>pctColor(a.performance), 'bold')}
+      <tr class="tsr-sep"><td colspan="${1+ann.length}"></td></tr>
+      ${tsrRow('Earnings yield',             ann, a=>`<span style="color:#38BDF8">${a.earnings_yield!=null?(a.earnings_yield*100).toFixed(1)+'%':'—'}</span>`)}
+      ${tsrRow('FCF yield',                  ann, a=>`<span style="color:#38BDF8">${a.fcf_yield!=null?(a.fcf_yield*100).toFixed(1)+'%':'—'}</span>`)}
+      ${tsrRow('TSR from Yield',             ann, a=>`<span style="color:#38BDF8;font-weight:700">${a.yield_bucket!=null?(a.yield_bucket*100>0?'+':'')+(a.yield_bucket*100).toFixed(1)+'%':'—'}</span>`, 'bold')}
+      <tr class="tsr-sep"><td colspan="${1+ann.length}"></td></tr>
+      ${tsrRow('Valuation re-rating (P/E Δ)',ann, a=>`<span style="color:#818CF8;font-weight:700">${a.valuation!=null?(a.valuation*100>0?'+':'')+(a.valuation*100).toFixed(1)+'%':'—'}</span>`, 'bold')}
+      <tr class="tsr-sep"><td colspan="${1+ann.length}"></td></tr>
+      ${tsrRow('TOTAL (decomposed — must = Actual TSR)', ann, a=>pctColor(a.tsr), 'total')}
+      <tr class="tsr-sep"><td colspan="${1+ann.length}"></td></tr>
+      ${tsrRow('  P/E (open → close)',       ann, a=>a.pe_start&&a.pe_end?`<span style="color:#64748B">${a.pe_start.toFixed(1)}x → ${a.pe_end.toFixed(1)}x</span>`:'—')}
+      ${tsrRow('  Op. Margin (open → close)',ann, a=>a.op_margin_start&&a.op_margin_end?`<span style="color:#64748B">${(a.op_margin_start*100).toFixed(1)}% → ${(a.op_margin_end*100).toFixed(1)}%</span>`:'—')}
+    </table></div>`;
+  }
+
+  // Quarterly
+  const qtr = tsr.quarterly || [];
+  if (qtr.length) {
+    const qHdrs = qtr.map(q=>q.period);
+    h += `<div class="tsr-section-label" style="margin-top:16px">Quarterly TSR</div>
+    <div class="tsr-tbl-wrap"><table class="tsr-tbl">
+      <tr>
+        <th>Line item</th>
+        ${qHdrs.map(p=>`<th class="r">${p}</th>`).join('')}
+      </tr>
+      ${tsrRow('Opening price (Q start)', qtr, q=>`${currency}${q.q_start_price?.toFixed(2)||'—'}<br><span style="font-size:0.58rem;color:#334155">${q.q_start_date||''}</span>`, 'basis')}
+      ${tsrRow('Closing price (Q end)',   qtr, q=>`${currency}${q.q_end_price?.toFixed(2)||'—'}<br><span style="font-size:0.58rem;color:#334155">${q.q_end_date||''}</span>`, 'basis')}
+      ${tsrRow('Dividends paid in Q',     qtr, q=>`${currency}${(q.q_dividends||0).toFixed(2)}`, 'basis')}
+      ${tsrRow('= Actual TSR',            qtr, q=>pctColor(q.tsr), 'actual')}
+      <tr class="tsr-sep"><td colspan="${1+qtr.length}"></td></tr>
+      ${tsrRow('Price return',            qtr, q=>pctColor(q.price_return))}
+      ${tsrRow('Dividend yield',          qtr, q=>`<span style="color:#38BDF8">${q.div_yield!=null?(q.div_yield*100).toFixed(2)+'%':'—'}</span>`)}
+      ${tsrRow('EPS growth',              qtr, q=>pctColor(q.eps_growth))}
+      ${tsrRow('P/E change',              qtr, q=>pctColor(q.pe_change))}
+      ${tsrRow('  P/E (open → close)',    qtr, q=>q.pe_start&&q.pe_end?`<span style="color:#64748B">${q.pe_start.toFixed(1)}x → ${q.pe_end.toFixed(1)}x</span>`:'—')}
+    </table></div>`;
+  }
+
+  h += `</div></div>`;// close tsr-exp-body + tsr-expander
+  return h;
+}
+
+function toggleTsrExp(header) {
+  const body = header.nextElementSibling;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  header.querySelector('span').textContent = isOpen ? '▼' : '▲';
+}
+
+// ── AI Chat renderer ──
+function renderChat(section, data) {
+  const starters = {
+    fundamentals: [
+      "What does the ROIC and investment rate tell us about the quality of this business?",
+      "How does the margin profile compare to industry norms, and what's driving it?",
+      "What are the key risks that could derail earnings over the next 12 months?",
+      "What type of revenue does this company have — recurring or transactional — and what are the main business segments?",
+      "What's the moat here — why can't competitors easily replicate the business?",
+    ]
+  };
+  const msgs = starters[section] || [];
+
+  return `<div class="ai-chat-wrap">
+    <div class="ai-chat-header">
+      <div class="ai-chat-icon">🤖</div>
+      <div>
+        <div class="ai-chat-title">AI Fundamentals Analyst</div>
+        <div class="ai-chat-sub">Discusses only what's on this page — data-grounded, no guessing</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-msgs-${section}">
+      ${msgs.map((m,i)=>`<div class="chat-msg ai"><span class="chat-starter" style="cursor:pointer" onclick="useStarter('${section}',${i})">${m}</span></div>`).join('')}
+    </div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chat-in-${section}" rows="2" placeholder="Ask about the fundamentals… (Enter to send, Shift+Enter for new line)"
+        onkeydown="chatKey(event,'${section}')"></textarea>
+      <button class="chat-send" id="chat-btn-${section}" onclick="sendChat('${section}')">Send</button>
+    </div>
+  </div>`;
+}
+
+// Starters are faded — clicking fills the input
+const _starterTexts = {
+  fundamentals: [
+    "What does the ROIC and investment rate tell us about the quality of this business?",
+    "How does the margin profile compare to industry norms, and what's driving it?",
+    "What are the key risks that could derail earnings over the next 12 months?",
+    "What type of revenue does this company have — recurring or transactional — and what are the main business segments?",
+    "What's the moat here — why can't competitors easily replicate the business?",
+  ]
+};
+
+function useStarter(section, idx) {
+  const text = _starterTexts[section]?.[idx];
+  if (!text) return;
+  document.getElementById('chat-in-'+section).value = text;
+  sendChat(section);
+}
+
+function chatKey(e, section) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(section); }
+}
+
+async function sendChat(section) {
+  const input = document.getElementById('chat-in-'+section);
+  const btn   = document.getElementById('chat-btn-'+section);
+  const msgEl = document.getElementById('chat-msgs-'+section);
+  const text  = input.value.trim();
+  if (!text || !_session.ticker) return;
+
+  input.value = '';
+  btn.disabled = true;
+
+  // Add user message
+  _chatHistory[section].push({ role: 'user', content: text });
+  msgEl.innerHTML += `<div class="chat-msg user">${escHtml(text)}</div>`;
+  msgEl.innerHTML += `<div class="chat-msg ai" id="chat-typing-${section}"><div class="chat-typing"><div class="dot-pulse"><span></span><span></span><span></span></div><span style="margin-left:4px">Analysing…</span></div></div>`;
+  msgEl.scrollTop = msgEl.scrollHeight;
+
+  try {
+    const r = await fetch(`${API}/fundamentals/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker: _session.ticker,
+        section_data: _session[section].data || {},
+        messages: _chatHistory[section],
+        session_ctx: buildSessionCtx(),
+      })
+    });
+    if (!r.ok) throw new Error(`API error ${r.status}`);
+    const d = await r.json();
+    const reply = d.reply || '';
+
+    // Remove typing indicator, add reply
+    document.getElementById(`chat-typing-${section}`)?.remove();
+    _chatHistory[section].push({ role: 'assistant', content: reply });
+    msgEl.innerHTML += `<div class="chat-msg ai">${markdownToHtml(reply)}</div>`;
+    msgEl.scrollTop = msgEl.scrollHeight;
+
+    // Auto-save conclusion (last AI msg) into session context
+    _session[section].chat_conclusions = reply.slice(0, 400);
+
+  } catch(e) {
+    document.getElementById(`chat-typing-${section}`)?.remove();
+    msgEl.innerHTML += `<div class="chat-msg system">⚠️ ${e.message} — please try again</div>`;
+  }
+  btn.disabled = false;
+  msgEl.scrollTop = msgEl.scrollHeight;
+}
+
+function buildSessionCtx() {
+  const ctx = {};
+  ['fundamentals','valuation','technical','catalyst'].forEach(s => {
+    if (_session[s].chat_conclusions) {
+      ctx[s+'_summary'] = _session[s].chat_conclusions;
+    }
+  });
+  return ctx;
+}
+
+// ── Helpers ──
+function pct(v) {
+  if (v == null) return null;
+  const c = v >= 0 ? 'pos' : 'neg';
+  return `<span class="${c}">${v >= 0 ? '+' : ''}${v}%</span>`;
+}
+
+function changePct(v) {
+  if (v == null) return null;
+  const c = v >= 0 ? 'pos' : 'neg';
+  return `<span class="${c}">${v >= 0 ? '+' : ''}${v}%</span>`;
+}
+
+function pctColor(v) {
+  if (v == null) return '—';
+  const col = v >= 0 ? '#22c55e' : '#ef4444';
+  return `<span style="color:${col};font-weight:700">${v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%</span>`;
+}
+
+function ovItem(label, value, raw=false) {
+  if (value == null || value === '') return '';
+  return `<div class="ov-item"><div class="ov-label">${label}</div><div class="ov-value">${raw ? value : escHtml(String(value))}</div></div>`;
+}
+
+function qRow(l1, v1, l2, v2, rawVals=false) {
+  const cell = (l, v) => `<td class="metric-name">${l}</td><td class="r metric-val">${v != null ? v : '<span style="color:var(--muted)">—</span>'}</td>`;
+  return `<tr>${cell(l1,v1)}${l2 != null ? cell(l2,v2) : '<td></td><td></td>'}</tr>`;
+}
+
+function growthRow(label, data, fn, isGrowth=false) {
+  return `<tr>
+    <td>${label}</td>
+    ${data.map(r => { const v = fn(r); return `<td>${v != null ? v : '<span style="color:var(--muted)">—</span>'}</td>`; }).join('')}
+  </tr>`;
+}
+
+function tsrRow(label, data, fn, type='') {
+  const isBasis  = type === 'basis';
+  const isActual = type === 'actual';
+  const isTotal  = type === 'total';
+  const isBold   = type === 'bold';
+  const trClass  = isBasis ? 'tsr-basis' : isActual ? 'tsr-actual' : isTotal ? 'tsr-total' : '';
+  const tdStyle  = isBold  ? 'font-weight:700' : '';
+  return `<tr class="${trClass}">
+    <td style="${tdStyle}">${label}</td>
+    ${data.map(r => `<td class="r" style="${tdStyle}">${fn(r) ?? '—'}</td>`).join('')}
+  </tr>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function markdownToHtml(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em>$1</em>')
+    .replace(/\n\n/g,'</p><p>')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+</script>
+
+</body>
+</html>
