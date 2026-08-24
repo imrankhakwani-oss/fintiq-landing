@@ -220,17 +220,21 @@ a{color:var(--gold);text-decoration:none}
 
 /* ── AI Chat ── */
 .ai-chat-wrap{margin-top:20px;border-top:1px solid var(--border);padding-top:16px}
-.ai-chat-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.ai-chat-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
 .ai-chat-icon{width:28px;height:28px;background:var(--gold2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem}
 .ai-chat-title{font-weight:700;font-size:0.88rem}
 .ai-chat-sub{font-size:0.7rem;color:var(--muted)}
-.chat-messages{min-height:80px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+/* Starter chips */
+.chat-starters{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px}
+.chat-chip{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:5px 13px;font-size:0.75rem;color:var(--dim);cursor:pointer;transition:border-color .2s,color .2s;line-height:1.4}
+.chat-chip:hover{border-color:var(--gold);color:var(--text)}
+/* Messages */
+.chat-messages{min-height:0;max-height:380px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
 .chat-msg{padding:10px 13px;border-radius:10px;font-size:0.82rem;line-height:1.65;max-width:92%}
 .chat-msg.user{background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.2);align-self:flex-end}
 .chat-msg.ai{background:var(--card2);border:1px solid var(--border);align-self:flex-start}
 .chat-msg.ai strong,.chat-msg.ai b{color:var(--gold)}
 .chat-msg.system{background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);align-self:center;text-align:center;font-size:0.75rem;color:var(--blue);width:100%}
-.chat-starter{color:var(--muted);opacity:0.7;font-style:italic}
 .chat-input-row{display:flex;gap:8px}
 .chat-input{flex:1;background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;font-size:0.83rem;color:var(--text);font-family:var(--font);outline:none;resize:none;transition:border .2s;line-height:1.5}
 .chat-input:focus{border-color:var(--gold)}
@@ -586,8 +590,9 @@ function renderFundamentals(d) {
   const price = ov.price;
 
   document.getElementById('co-name').textContent = ov.name || d.ticker;
-  document.getElementById('co-meta').textContent = `${ov.fy_end ? 'FY end: '+ov.fy_end : ''} ${ov.q_end ? '· Latest Q: '+ov.q_end : ''}`.trim();
-  document.getElementById('co-price').textContent = price ? `${ov.currency || '$'}${price.toFixed(2)}` : '—';
+  document.getElementById('co-meta').textContent = `${ov.sector||''} ${ov.country ? '· '+ov.country : ''}`.trim();
+  const currSym = ov.currency === 'USD' ? '$' : ov.currency === 'GBP' ? '£' : ov.currency === 'EUR' ? '€' : (currSym);
+  document.getElementById('co-price').textContent = price ? `${currSym}${price.toFixed(2)}` : '—';
 
   // Badges
   const badges = [];
@@ -620,6 +625,9 @@ function renderFundamentals(d) {
     const col = upside > 0 ? 'var(--green)' : 'var(--red)';
     upsideHtml = `<span class="target-upside" style="color:${col}">${upside > 0 ? '+' : ''}${upside}%</span>`;
   }
+
+  // Currency symbol (used throughout)
+  const currSym = ov.currency === 'USD' ? '$' : ov.currency === 'GBP' ? '£' : ov.currency === 'EUR' ? '€' : (currSym);
 
   // Build content HTML
   let html = `<div class="sec-pad">`;
@@ -665,10 +673,10 @@ function renderFundamentals(d) {
         <div>
           <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Consensus Target</div>
           <div style="display:flex;align-items:baseline;gap:8px">
-            <span class="target-price">${an.target_price ? (ov.currency||'$')+an.target_price.toFixed(2) : '—'}</span>
+            <span class="target-price">${an.target_price ? (currSym)+an.target_price.toFixed(2) : '—'}</span>
             ${upsideHtml}
           </div>
-          <div class="target-range">${an.target_low ? `Range: ${ov.currency||'$'}${an.target_low} – ${ov.currency||'$'}${an.target_high}` : ''}</div>
+          <div class="target-range">${an.target_low ? `Range: ${currSym}${an.target_low} – ${currSym}${an.target_high}` : ''}</div>
         </div>
       </div>
     </div>`;
@@ -679,10 +687,10 @@ function renderFundamentals(d) {
   <div class="tbl-wrap">
   <table class="data-table">
     <tr><th>Metric</th><th class="r">Value</th><th>Metric</th><th class="r">Value</th></tr>
-    ${qRow('Revenue (TTM)', q.revenue, 'EPS (TTM)', q.eps_ttm != null ? `${ov.currency||'$'}${q.eps_ttm}` : null)}
-    ${qRow('Gross Margin', pct(q.gross_margin), 'DPS', q.dps != null ? `${ov.currency||'$'}${q.dps}` : null)}
+    ${qRow('Revenue (TTM)', q.revenue, 'EPS (TTM)', q.eps_ttm != null ? `${currSym}${q.eps_ttm}` : null)}
+    ${qRow('Gross Margin', pct(q.gross_margin), 'DPS', q.dps != null ? `${currSym}${q.dps}` : null)}
     ${qRow('Operating Margin', pct(q.op_margin), 'FCF', q.fcf)}
-    ${qRow('Net Margin', pct(q.net_margin), 'FCF / Share', q.fcf_per_share != null ? `${ov.currency||'$'}${q.fcf_per_share}` : null)}
+    ${qRow('Net Margin', pct(q.net_margin), 'FCF / Share', q.fcf_per_share != null ? `${currSym}${q.fcf_per_share}` : null)}
     ${qRow('ROE', pct(q.roe), 'Debt / Equity', q.debt_equity)}
     ${qRow('ROIC', pct(q.roic), 'Current Ratio', q.current_ratio)}
     ${qRow('ROA', pct(q.roa), 'Investment Rate', pct(q.inv_rate))}
@@ -702,7 +710,7 @@ function renderFundamentals(d) {
       ${growthRow('Revenue', gt, r=>r.revenue)}
       ${growthRow('Revenue Growth', gt, r=>r.revenue_growth != null ? pct(r.revenue_growth) : null, true)}
       ${growthRow('NOPAT Growth', gt, r=>r.nopat_growth != null ? pct(r.nopat_growth) : null, true)}
-      ${growthRow('EPS', gt, r=>r.eps != null ? `${ov.currency||'$'}${r.eps}` : null)}
+      ${growthRow('EPS', gt, r=>r.eps != null ? `${currSym}${r.eps}` : null)}
       ${growthRow('EPS Growth', gt, r=>r.eps_growth != null ? pct(r.eps_growth) : null, true)}
       ${growthRow('ROIC', gt, r=>r.roic != null ? pct(r.roic) : null, true)}
       ${growthRow('Operating Margin', gt, r=>r.op_margin != null ? pct(r.op_margin) : null, true)}
@@ -719,15 +727,15 @@ function renderFundamentals(d) {
     ${qRow('P/E Trailing', mu.pe_trailing != null ? mu.pe_trailing+'x' : null, 'P/E Forward', mu.pe_forward != null ? mu.pe_forward+'x' : null)}
     ${qRow('EV/EBITDA', mu.ev_ebitda != null ? mu.ev_ebitda+'x' : null, 'Price/Book', mu.price_book != null ? mu.price_book+'x' : null)}
     ${qRow('Price/Sales', mu.price_sales != null ? mu.price_sales+'x' : null, 'PEG Ratio', mu.peg)}
-    ${qRow('FCF/Share', mu.fcf_per_share != null ? `${ov.currency||'$'}${mu.fcf_per_share}` : null, 'Dividend Yield', mu.div_yield != null ? pct(mu.div_yield) : null)}
+    ${qRow('FCF/Share', mu.fcf_per_share != null ? `${currSym}${mu.fcf_per_share}` : null, 'Dividend Yield', mu.div_yield != null ? pct(mu.div_yield) : null)}
   </table></div>`;
 
   // ── Market Data ──
   html += `<div class="sub-label">Market & Price Data</div>
   <div class="tbl-wrap"><table class="data-table">
     <tr><th>Metric</th><th class="r">Value</th><th>Metric</th><th class="r">Value</th></tr>
-    ${qRow('Beta', mk.beta, '52w High', mk.price_52w_high != null ? `${ov.currency||'$'}${mk.price_52w_high}` : null)}
-    ${qRow('52w Range Position', mk.range_position_pct != null ? mk.range_position_pct+'%' : null, '52w Low', mk.price_52w_low != null ? `${ov.currency||'$'}${mk.price_52w_low}` : null)}
+    ${qRow('Beta', mk.beta, '52w High', mk.price_52w_high != null ? `${currSym}${mk.price_52w_high}` : null)}
+    ${qRow('52w Range Position', mk.range_position_pct != null ? mk.range_position_pct+'%' : null, '52w Low', mk.price_52w_low != null ? `${currSym}${mk.price_52w_low}` : null)}
     ${qRow('vs 50d MA', mk.vs_ma50_pct != null ? changePct(mk.vs_ma50_pct) : null, 'vs 200d MA', mk.vs_ma200_pct != null ? changePct(mk.vs_ma200_pct) : null, true)}
     ${qRow('Short Float %', mk.short_float_pct != null ? pct(mk.short_float_pct) : null, 'Days to Cover', mk.short_ratio_days)}
     ${qRow('Avg Volume', mk.avg_volume ? Number(mk.avg_volume).toLocaleString() : null, 'Avg Vol 10d', mk.avg_volume_10d ? Number(mk.avg_volume_10d).toLocaleString() : null)}
@@ -760,40 +768,40 @@ function renderFundamentals(d) {
       <tr>
         <th style="text-align:left">Company</th>
         <th>Mkt Cap</th><th>Rev Growth</th><th>Op Margin</th>
-        <th>ROE</th><th>P/E</th><th>EV/EBITDA</th>
+        <th>ROIC</th><th>Fwd P/E</th>
       </tr>
       <tr class="main-row">
         <td><div class="comp-ticker">${d.ticker}</div><div class="comp-name">${ov.name||''}</div></td>
         <td>${ov.market_cap||'—'}</td>
         <td>${d.growth_table?.[0]?.revenue_growth != null ? pct(d.growth_table[0].revenue_growth) : '—'}</td>
         <td>${q.op_margin != null ? pct(q.op_margin) : '—'}</td>
-        <td>${q.roe != null ? pct(q.roe) : '—'}</td>
-        <td>${mu.pe_trailing != null ? mu.pe_trailing+'x' : '—'}</td>
-        <td>${mu.ev_ebitda != null ? mu.ev_ebitda+'x' : '—'}</td>
+        <td>${d.subj_roic != null ? pct(d.subj_roic) : '—'}</td>
+        <td>${d.subj_fpe != null ? d.subj_fpe+'x' : '—'}</td>
       </tr>
       ${comps.map(c=>`<tr>
         <td><div class="comp-ticker">${c.ticker}</div><div class="comp-name">${c.name}</div></td>
         <td>${c.market_cap||'—'}</td>
         <td>${c.revenue_growth != null ? pct(c.revenue_growth) : '—'}</td>
         <td>${c.op_margin != null ? pct(c.op_margin) : '—'}</td>
-        <td>${c.roe != null ? pct(c.roe) : '—'}</td>
-        <td>${c.pe != null ? c.pe+'x' : '—'}</td>
-        <td>${c.ev_ebitda != null ? c.ev_ebitda+'x' : '—'}</td>
+        <td>${c.roic != null ? pct(c.roic) : '—'}</td>
+        <td>${c.forward_pe != null ? c.forward_pe+'x' : '—'}</td>
       </tr>`).join('')}
     </table></div>
-    <div style="font-size:0.68rem;color:var(--muted);margin-top:6px">WACC, earnings growth and investment rate comparison available via AI discussion below.</div>`;
+    <div style="font-size:0.68rem;color:var(--muted);margin-top:6px">Earnings growth and WACC comparison available via AI discussion below.</div>`;
   }
 
   // ── FF4 ──
   const ff = d.ff4;
   if (ff && !ff.error) {
-    const alpha = ff.alpha_annualised;
-    const sig   = ff.signal || '';
-    const sigClass = sig.includes('Strong') ? 'ff4-strong' : sig.includes('Marginal') ? 'ff4-marginal' : sig.includes('Avoid') ? 'ff4-avoid' : 'ff4-na';
-    const pval  = ff.p_value;
+    // Field names from screener JSON: signal (green/amber/red), alpha (%pa), pval, beta, smb, hml, mom
+    const alpha = ff.alpha;
+    const rawSig = ff.signal || '';
+    const sigLabel = rawSig === 'green' ? '🟢 Strong Alpha' : rawSig === 'amber' ? '🟡 Marginal' : rawSig === 'red' ? '🔴 Avoid' : rawSig;
+    const sigClass = rawSig === 'green' ? 'ff4-strong' : rawSig === 'amber' ? 'ff4-marginal' : rawSig === 'red' ? 'ff4-avoid' : 'ff4-na';
+    const pval  = ff.pval;
     const pColor = pval != null && pval < 0.05 ? 'var(--green)' : pval != null && pval < 0.1 ? 'var(--gold)' : 'var(--red)';
     html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
-    <div style="margin-bottom:10px"><span class="ff4-signal ${sigClass}">${sig || 'No signal'}</span></div>
+    <div style="margin-bottom:10px"><span class="ff4-signal ${sigClass}">${sigLabel || 'No signal'}</span></div>
     <div class="ff4-grid">
       <div class="ff4-card"><div class="ff4-label">Alpha (ann.)</div><div class="ff4-val" style="color:${alpha>=0?'var(--green)':'var(--red)'}">${alpha!=null?alpha.toFixed(1)+'%':'—'}</div></div>
       <div class="ff4-card"><div class="ff4-label">p-value</div><div class="ff4-val" style="color:${pColor}">${pval!=null?pval.toFixed(3):'—'}</div></div>
@@ -803,14 +811,14 @@ function renderFundamentals(d) {
       <div class="ff4-card"><div class="ff4-label">MOM (Momentum)</div><div class="ff4-val">${ff.mom!=null?ff.mom.toFixed(2):'—'}</div></div>
     </div>
     ${ff.insight ? `<div style="font-size:0.72rem;color:var(--dim);margin-top:8px;padding:8px 12px;background:var(--card2);border-radius:6px">${ff.insight}</div>` : ''}
-    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Data: ${ff.ff_years||2}yr rolling OLS regression · US universe</div>`;
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Data: ${ff.ff_years||2}yr rolling OLS · US universe · p&lt;0.05 = statistically significant alpha</div>`;
   } else {
     html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
     <div style="font-size:0.78rem;color:var(--muted);padding:10px;background:var(--card2);border-radius:8px">FF4 data not available for this ticker in our screener universe. The AI can provide directional factor analysis from beta, P/B and market cap in the chat below.</div>`;
   }
 
   // ── TSR ──
-  html += renderTSR(d.tsr, ov.currency || '$');
+  html += renderTSR(d.tsr, currSym);
 
   // ── AI Chat ──
   html += renderChat('fundamentals', d);
@@ -926,26 +934,27 @@ function toggleTsrExp(header) {
 function renderChat(section, data) {
   const starters = {
     fundamentals: [
-      "What does the ROIC and investment rate tell us about the quality of this business?",
-      "How does the margin profile compare to industry norms, and what's driving it?",
-      "What are the key risks that could derail earnings over the next 12 months?",
-      "What type of revenue does this company have — recurring or transactional — and what are the main business segments?",
-      "What's the moat here — why can't competitors easily replicate the business?",
+      "What does the ROIC tell us about capital efficiency?",
+      "How do the margins compare to industry norms?",
+      "What are the key risks to earnings?",
+      "What are the main business segments and revenue breakdown?",
+      "What is the moat — why can't competitors replicate this?",
     ]
   };
-  const msgs = starters[section] || [];
+  const chips = starters[section] || [];
 
   return `<div class="ai-chat-wrap">
     <div class="ai-chat-header">
       <div class="ai-chat-icon">🤖</div>
       <div>
         <div class="ai-chat-title">AI Fundamentals Analyst</div>
-        <div class="ai-chat-sub">Discusses only what's on this page — data-grounded, no guessing</div>
+        <div class="ai-chat-sub">Data-grounded — references page data, uses knowledge for anything else</div>
       </div>
     </div>
-    <div class="chat-messages" id="chat-msgs-${section}">
-      ${msgs.map((m,i)=>`<div class="chat-msg ai"><span class="chat-starter" style="cursor:pointer" onclick="useStarter('${section}',${i})">${m}</span></div>`).join('')}
+    <div class="chat-starters" id="chat-starters-${section}">
+      ${chips.map((m,i)=>`<span class="chat-chip" onclick="useStarter('${section}',${i},'${m.replace(/'/g,"\\'")}',this)">${m}</span>`).join('')}
     </div>
+    <div class="chat-messages" id="chat-msgs-${section}"></div>
     <div class="chat-input-row">
       <textarea class="chat-input" id="chat-in-${section}" rows="2" placeholder="Ask about the fundamentals… (Enter to send, Shift+Enter for new line)"
         onkeydown="chatKey(event,'${section}')"></textarea>
@@ -954,20 +963,10 @@ function renderChat(section, data) {
   </div>`;
 }
 
-// Starters are faded — clicking fills the input
-const _starterTexts = {
-  fundamentals: [
-    "What does the ROIC and investment rate tell us about the quality of this business?",
-    "How does the margin profile compare to industry norms, and what's driving it?",
-    "What are the key risks that could derail earnings over the next 12 months?",
-    "What type of revenue does this company have — recurring or transactional — and what are the main business segments?",
-    "What's the moat here — why can't competitors easily replicate the business?",
-  ]
-};
-
-function useStarter(section, idx) {
-  const text = _starterTexts[section]?.[idx];
+function useStarter(section, idx, text, chipEl) {
   if (!text) return;
+  // Hide chip so it doesn't clutter after use
+  if (chipEl) chipEl.style.display = 'none';
   document.getElementById('chat-in-'+section).value = text;
   sendChat(section);
 }
