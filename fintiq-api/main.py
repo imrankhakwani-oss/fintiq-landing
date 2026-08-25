@@ -1250,7 +1250,7 @@ def _run_fundamentals(ticker: str):
                     'eps_growth': round(ni_g * 100, 1) if ni_g is not None else None,
                     'roic': round(roic * 100, 1) if roic is not None else None,
                     'op_margin': round(om * 100, 1) if om is not None else None,
-                    'nopat_margin': round(om * 0.75 * 100, 1) if om is not None else None,  # NOPAT margin = EBIT margin × (1-tax)
+                    'nopat_margin': round(nopat / rev * 100, 1) if nopat and rev and rev > 0 else (round(om * 0.75 * 100, 1) if om is not None else None),
                     'inv_rate': round(inv_rate * 100, 1) if inv_rate is not None else None,
                 })
 
