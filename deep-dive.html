@@ -854,28 +854,31 @@ function renderFundamentals(d) {
   // ── FF4 ──
   const ff = d.ff4;
   if (ff && !ff.error) {
-    // Field names from screener JSON: signal (green/amber/red), alpha (%pa), pval, beta, smb, hml, mom
+    const isProxy = !!ff.estimated;
     const alpha = ff.alpha;
     const rawSig = ff.signal || '';
     const sigLabel = rawSig === 'green' ? '🟢 Strong Alpha' : rawSig === 'amber' ? '🟡 Marginal' : rawSig === 'red' ? '🔴 Avoid' : rawSig;
     const sigClass = rawSig === 'green' ? 'ff4-strong' : rawSig === 'amber' ? 'ff4-marginal' : rawSig === 'red' ? 'ff4-avoid' : 'ff4-na';
     const pval  = ff.pval;
     const pColor = pval != null && pval < 0.05 ? 'var(--green)' : pval != null && pval < 0.1 ? 'var(--gold)' : 'var(--red)';
-    html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
+    const headingBadge = isProxy
+      ? `<span style="font-size:0.6rem;padding:2px 7px;border-radius:4px;background:rgba(245,166,35,0.15);color:var(--gold);font-weight:700;margin-left:8px;vertical-align:middle">PROXY ESTIMATE</span>`
+      : '';
+    html += `<div class="sub-label">Fama-French 4-Factor Signal${headingBadge}</div>
     <div style="margin-bottom:10px"><span class="ff4-signal ${sigClass}">${sigLabel || 'No signal'}</span></div>
     <div class="ff4-grid">
-      <div class="ff4-card"><div class="ff4-label">Alpha (ann.)</div><div class="ff4-val" style="color:${alpha>=0?'var(--green)':'var(--red)'}">${alpha!=null?alpha.toFixed(1)+'%':'—'}</div></div>
-      <div class="ff4-card"><div class="ff4-label">p-value</div><div class="ff4-val" style="color:${pColor}">${pval!=null?pval.toFixed(3):'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">Alpha (ann.)</div><div class="ff4-val" style="color:${alpha!=null?(alpha>=0?'var(--green)':'var(--red)'):'var(--muted)'}">${alpha!=null?alpha.toFixed(1)+'%':'N/A'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">p-value</div><div class="ff4-val" style="color:${pval!=null?pColor:'var(--muted)'}">${pval!=null?pval.toFixed(3):'N/A'}</div></div>
       <div class="ff4-card"><div class="ff4-label">Beta (Market)</div><div class="ff4-val">${ff.beta!=null?ff.beta.toFixed(2):'—'}</div></div>
-      <div class="ff4-card"><div class="ff4-label">SMB (Size)</div><div class="ff4-val">${ff.smb!=null?ff.smb.toFixed(2):'—'}</div></div>
-      <div class="ff4-card"><div class="ff4-label">HML (Value)</div><div class="ff4-val">${ff.hml!=null?ff.hml.toFixed(2):'—'}</div></div>
-      <div class="ff4-card"><div class="ff4-label">MOM (Momentum)</div><div class="ff4-val">${ff.mom!=null?ff.mom.toFixed(2):'—'}</div></div>
+      <div class="ff4-card"><div class="ff4-label">SMB (Size)</div><div class="ff4-val">${ff.smb!=null?ff.smb.toFixed(2):'—'}${isProxy?'*':''}</div></div>
+      <div class="ff4-card"><div class="ff4-label">HML (Value)</div><div class="ff4-val">${ff.hml!=null?ff.hml.toFixed(2):'—'}${isProxy?'*':''}</div></div>
+      <div class="ff4-card"><div class="ff4-label">MOM (Momentum)</div><div class="ff4-val">${ff.mom!=null?ff.mom.toFixed(2):'—'}${isProxy?'*':''}</div></div>
     </div>
     ${ff.commentary ? `<div style="font-size:0.8rem;color:var(--dim);margin-top:10px;padding:10px 14px;background:var(--card2);border-radius:8px;border-left:3px solid var(--gold);line-height:1.55">${ff.commentary}</div>` : ''}
-    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Data: ${ff.ff_years||2}yr rolling OLS · US universe · p&lt;0.05 = statistically significant alpha</div>`;
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">${isProxy ? '* Estimated from market cap, P/B &amp; price momentum — not OLS regression. Beta is from yfinance (real).' : `Data: ${ff.ff_years||2}yr rolling OLS · US universe · p&lt;0.05 = statistically significant alpha`}</div>`;
   } else {
     html += `<div class="sub-label">Fama-French 4-Factor Signal</div>
-    <div style="font-size:0.78rem;color:var(--muted);padding:10px;background:var(--card2);border-radius:8px">FF4 data not available for this ticker in our screener universe. The AI can provide directional factor analysis from beta, P/B and market cap in the chat below.</div>`;
+    <div style="font-size:0.78rem;color:var(--muted);padding:10px;background:var(--card2);border-radius:8px">FF4 data not available for this ticker.</div>`;
   }
 
   // ── TSR ──

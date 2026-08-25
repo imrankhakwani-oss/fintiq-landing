@@ -1,8 +1,12 @@
 <!DOCTYPE html>
+<!-- v3 -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Free Investing Tools — Fintiq</title>
 <meta name="description" content="Free professional-grade investment tools for UK and US retail investors. Retirement Monte Carlo simulator, stock screener, portfolio optimiser and more.">
 <link rel="canonical" href="https://fintiq.uk/tools.html" />
@@ -30,17 +34,17 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .nav-links a.active{color:#F59E0B}
 .btn-nav{background:#F59E0B!important;color:#0A1628!important;padding:7px 18px;border-radius:6px;font-weight:700;font-size:0.88rem}
 
-.hero{text-align:center;padding:60px 24px 48px;max-width:680px;margin:0 auto}
-.hero-tag{display:inline-block;background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.75rem;font-weight:700;margin-bottom:16px}
-.hero h1{font-size:2.4rem;font-weight:900;line-height:1.15;margin-bottom:14px}
+.hero{text-align:center;padding:20px 24px 16px;max-width:680px;margin:0 auto}
+.hero-tag{display:inline-block;background:rgba(245,158,11,0.15);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:3px 12px;font-size:0.72rem;font-weight:700;margin-bottom:10px}
+.hero h1{font-size:2.1rem;font-weight:900;line-height:1.15;margin-bottom:8px}
 .hero h1 span{color:#F59E0B}
-.hero p{color:#94A3B8;font-size:1rem}
+.hero p{color:#94A3B8;font-size:0.9rem}
 
 .section{max-width:1100px;margin:0 auto;padding:0 24px 80px}
 .section-title{font-size:0.7rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(245,158,11,0.15)}
 
 /* FEATURED TOOL */
-.tool-featured{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.3);border-radius:16px;padding:36px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:28px;transition:border-color 0.2s}
+.tool-featured{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.3);border-radius:16px;padding:24px 28px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;margin-bottom:20px;transition:border-color 0.2s}
 .tool-featured:hover{border-color:rgba(245,158,11,0.6)}
 .tool-featured-tag{display:inline-block;background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:3px 10px;font-size:0.7rem;font-weight:700;margin-bottom:12px}
 .tool-featured h2{font-size:1.5rem;font-weight:800;color:#F1F5F9;margin-bottom:10px;line-height:1.2}
@@ -84,71 +88,141 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 .f-links a{color:#94A3B8;font-size:0.82rem}
 .f-copy{color:#334155;font-size:0.72rem}
 
-@media(max-width:700px){
-  .tool-featured{grid-template-columns:1fr}
+/* Hamburger */
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#F1F5F9;line-height:1}
+.nav-app-mobile{display:none}
+
+@media(max-width:768px){
+  /* Nav */
+  .nav-links{display:none;position:absolute;top:56px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2)}
+  .nav-links.mobile-open{display:flex}
+  .nav-links a{padding:13px 24px;font-size:0.95rem;border-bottom:1px solid rgba(255,255,255,0.05);color:#94A3B8}
+  .nav-links a:hover{background:rgba(245,158,11,0.06);color:#F59E0B}
+  .btn-nav{margin:10px 24px 14px!important;border-radius:8px!important;text-align:center;display:block;padding:11px 24px!important;font-size:0.9rem!important}
+  .nav-hamburger{display:block}
+  .nav-app-mobile{display:inline-block;background:#F59E0B;color:#0A1628!important;padding:6px 14px;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap}
+  nav{padding:10px 16px;position:sticky}
+
+  /* Tool featured */
+  .tool-featured{grid-template-columns:1fr;padding:24px}
   .tool-icon-big{display:none}
-  .hero h1{font-size:1.8rem}
-  nav{padding:10px 16px}
+
+  /* Hero */
+  .hero h1{font-size:1.9rem}
+  .hero{padding:20px 16px 20px}
+
+  /* Grids */
+  .tools-grid{grid-template-columns:1fr}
+  .coming-grid{grid-template-columns:1fr 1fr}
+
+  /* CTA box */
+  .cta-box{padding:28px 20px}
+
+  /* Section */
+  .section{padding:0 16px 60px}
 }
+
+@media(max-width:480px){
+  .coming-grid{grid-template-columns:1fr}
+  .hero h1{font-size:1.6rem}
+  .tool-btn{display:block;text-align:center;margin-top:8px}
+}
+
+/* Mobile bottom nav */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#08121f;border-top:1px solid rgba(245,158,11,0.25);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
+.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.65rem;font-weight:600;padding:4px 12px;border-radius:8px;transition:color 0.2s;letter-spacing:0.3px;text-transform:uppercase}
+.mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
+.mobile-bottom-nav li a.nav-app-btn{background:#F59E0B;color:#0A1628;padding:6px 16px;border-radius:20px;font-size:0.7rem}
+@media(max-width:768px){.mobile-bottom-nav{display:block}body{padding-bottom:68px}}
 </style>
 </head>
 <body>
 
 <nav>
   <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
-  <div class="nav-links">
+  <div style="display:flex;align-items:center;gap:10px">
+    <a href="https://app.fintiq.uk" class="nav-app-mobile">App →</a>
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+        <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+        <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+      </svg>
+    </button>
+  </div>
+  <div class="nav-links" id="navLinks">
     <a href="https://fintiq.uk/tools.html" class="active">Free Tools</a>
     <a href="https://fintiq.uk/learn.html">Learn</a>
-    <a href="https://app.fintiq.uk" class="btn-nav">Stock Screener →</a>
+    <a href="https://app.fintiq.uk" class="btn-nav">Launch App →</a>
   </div>
 </nav>
+<script>
+(function(){
+  var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks'),i=document.getElementById('hamburgerIcon');
+  if(!h)return;
+  h.addEventListener('click',function(){
+    var o=n.classList.toggle('mobile-open');
+    h.setAttribute('aria-expanded',o);
+    i.innerHTML=o?'<line x1="3" y1="3" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="3" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';
+  });
+  n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('mobile-open');h.setAttribute('aria-expanded','false');i.innerHTML='<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});});
+})();
+</script>
 
 <div class="hero">
   <div class="hero-tag">FREE TOOLS</div>
-  <h1>Professional Tools.<br><span>No Paywall.</span></h1>
-  <p>The same analytical tools used by institutional investors — free for retail investors. No sign-up required.</p>
+  <h1>Hedge Fund Tools. <span>Zero Cost.</span></h1>
+  <p>Professional-grade investing tools — Monte Carlo simulation, retirement planning, stock screening — built for retail investors. No sign-up, no paywall on the essentials.</p>
 </div>
 
 <div class="section">
 
-  <!-- FEATURED -->
-  <div class="section-title">Featured Tools</div>
-
-  <a href="https://fintiq.uk/pension-planner.html" class="tool-featured" style="margin-bottom:16px">
+  <div class="tool-featured" style="margin-bottom:28px">
     <div>
-      <div class="tool-featured-tag" style="background:rgba(124,58,237,0.15);color:#A78BFA;border-color:rgba(124,58,237,0.3)">🆕 NEW · FREE · UK</div>
-      <h2>🏦 UK Pension Lifecycle Planner</h2>
-      <p>Run 5,000 retirement scenarios across all three phases — accumulation, bridge period, and decumulation. Discover your real probability of never running out of money, including State Pension timing, inflation, and the hidden cost of the bridge period.</p>
+      <div class="tool-featured-tag" style="background:rgba(124,58,237,0.15);color:#A78BFA;border-color:rgba(124,58,237,0.3)">🆕 NEW · FREE · UK & US</div>
+      <h2>🏦 Retirement Lifecycle Planner — UK & US</h2>
+      <p>Monte Carlo retirement planning for UK and US investors. Run 5,000 scenarios across accumulation, bridge period, and decumulation — covering State Pension, Social Security timing, 401(k)/ISA/SIPP, inflation, and sequence-of-returns risk. Discover your real probability of never running out of money.</p>
       <div class="tool-features">
-        <span class="tool-feature">5,000 simulations</span>
-        <span class="tool-feature">Bridge period analysis</span>
-        <span class="tool-feature">State Pension included</span>
-        <span class="tool-feature">Sensitivity table</span>
-        <span class="tool-feature">PDF report £4.99</span>
-        <span class="tool-feature">No sign-up needed</span>
+        <span class="tool-feature">5,000 Monte Carlo scenarios</span>
+        <span class="tool-feature">UK & US editions</span>
+        <span class="tool-feature">State Pension / Social Security</span>
+        <span class="tool-feature">Bridge period & Medicare</span>
+        <span class="tool-feature">Sensitivity analysis</span>
+        <span class="tool-feature">PDF report · No sign-up</span>
       </div>
-      <span class="tool-btn">Open Planner →</span>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <a href="https://fintiq.uk/pension-planner.html" class="tool-btn">🇬🇧 Open UK Planner →</a>
+        <a href="https://fintiq.uk/us-pension-planner.html" class="tool-btn" style="background:#1d4ed8;color:#fff">🇺🇸 Open US Planner →</a>
+      </div>
     </div>
     <div class="tool-icon-big">🏦</div>
-  </a>
+  </div>
 
-  <a href="https://fintiq.uk/monte-carlo-retirement.html" class="tool-featured">
+  <!-- FACTOR SCREENER FEATURED -->
+  <div class="tool-featured" style="margin-bottom:28px">
     <div>
-      <div class="tool-featured-tag">FREE · UK & US</div>
-      <h2>🎲 Retirement Monte Carlo Simulator</h2>
-      <p>Run 5,000 retirement scenarios to find your real probability of financial success. Built for UK and US investors — includes State Pension, Social Security, inflation, and sequence-of-returns risk.</p>
+      <div class="tool-featured-tag" style="background:rgba(52,211,153,0.1);color:#34d399;border-color:rgba(52,211,153,0.25)">🆕 NEW · BETA · WORLD EQUITIES</div>
+      <h2>🔬 Factor Screener — Alpha Signals Across World Equities</h2>
+      <p>We run a Fama-French 4-factor regression on every stock in the US market — S&P 500, NASDAQ 100, and Dow 30. The result: a ranked list showing which companies are generating genuine outperformance above and beyond what their market exposure, size, value, and momentum tilts predict. That's alpha — and it's the signal that separates real edge from luck.</p>
       <div class="tool-features">
-        <span class="tool-feature">5,000 simulations</span>
-        <span class="tool-feature">UK State Pension</span>
-        <span class="tool-feature">US Social Security</span>
-        <span class="tool-feature">Inflation-adjusted withdrawals</span>
-        <span class="tool-feature">Fan chart</span>
-        <span class="tool-feature">No sign-up needed</span>
+        <span class="tool-feature">503 US stocks ranked by alpha</span>
+        <span class="tool-feature">4-Factor model (Mkt · SMB · HML · MOM)</span>
+        <span class="tool-feature">Kenneth French data library</span>
+        <span class="tool-feature">Plain English interpretation</span>
+        <span class="tool-feature">Signal strength (Green / Amber / Avoid)</span>
+        <span class="tool-feature">Updated weekly · Free to preview</span>
       </div>
-      <span class="tool-btn">Open Tool →</span>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+        <a href="https://fintiq.uk/factor-screener.html" class="tool-btn" style="background:#34d399;color:#0A1628">🔬 Open Factor Screener →</a>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-size:0.8rem;color:#F1F5F9;font-weight:700">Top 3 signals free · Full access £4.99/mo</span>
+          <span style="font-size:0.72rem;color:#64748B">500+ stocks · All factor breakdowns · Run on demand</span>
+        </div>
+      </div>
     </div>
-    <div class="tool-icon-big">🎲</div>
-  </a>
+    <div class="tool-icon-big">🔬</div>
+  </div>
 
   <!-- APP TOOLS -->
   <div class="section-title">In the Free App</div>
@@ -248,6 +322,15 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   </div>
   <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
 </footer>
+
+<div class="mobile-bottom-nav" role="navigation" aria-label="Mobile navigation">
+  <ul>
+    <li><a href="https://fintiq.uk" data-page="home" aria-label="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a></li>
+    <li><a href="https://fintiq.uk/tools.html" class="active" data-page="tools" aria-label="Free Tools"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Free Tools</a></li>
+    <li><a href="https://fintiq.uk/learn.html" data-page="learn" aria-label="Learn"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learn</a></li>
+    <li><a href="https://app.fintiq.uk" class="nav-app-btn" aria-label="Launch App">Launch App →</a></li>
+  </ul>
+</div>
 
 </body>
 </html>

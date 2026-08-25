@@ -1,5 +1,5 @@
 # FINTIQ MASTER PROJECT DOCUMENT
-*Last updated: 20 July 2026 — paste this into Claude at the start of every new session*
+*Last updated: 24 July 2026 (session 2) — paste this into Claude at the start of every new session*
 
 ---
 
@@ -44,9 +44,14 @@
 **Landing site:** fintiq.uk (static HTML/CSS/JS — no framework)
 - Hosted on: Vercel
 - GitHub repo: https://github.com/imrankhakwani-oss/fintiq-landing
+- Local path: C:\Users\imran\Desktop\Fintiq\ (root, pushes to fintiq-landing)
 - Branch: main (auto-deploys to Vercel on push)
 
-**App:** app.fintiq.uk (separate codebase — not in Articles folder)
+**App:** app.fintiq.uk (SEPARATE repo and codebase)
+- GitHub repo: https://github.com/imrankhakwani-oss/fintiq
+- Local path: C:\Users\imran\Desktop\fintiq-app\ (cloned 24 July 2026)
+- Hosted on: Railway (auto-deploys on push to fintiq repo)
+- ⚠️ IMPORTANT: fintiq_screener.py exists in BOTH repos. Always edit fintiq-app for app changes, fintiq-landing for landing site changes.
 
 **Analytics:** Google Analytics 4 — Tag ID: G-SFD342RVKK
 - GA tag added to ALL pages (index.html, learn.html, tools.html, monte-carlo-retirement.html, all 20 learn/ articles)
@@ -246,7 +251,7 @@ Articles/
 - **Watchlist:** JSON file persistence (fintiq_watchlist.json, fintiq_pairs_watchlist.json)
 
 ### Main File
-- `fintiq_screener.py` — single main app file (2,136 lines, v3.0)
+- `fintiq_screener.py` — single main app file (~9,500 lines after Factor Screener tab added)
 - `_counter.py` — separate counter module + Supabase schema
 - `_opt_tail.py` — Portfolio Optimizer (frontier/blurred preview)
 - `config.toml` — Streamlit config + Stripe subscription gate
@@ -312,6 +317,22 @@ stripe>=10.0.0
    - Plotly charts
 9. **Watchlist**
    - JSON persistence (fintiq_watchlist.json)
+10. **Factor Screener tab** (added 24 July 2026, refined same day)
+    - Fama-French 4-Factor Model (MKT, SMB, HML, MOM) via OLS regression with HC3 robust errors
+    - Fetches pre-computed JSON from fintiq.uk/screener-data-{1,2,3}y.json
+    - 1yr/2yr/3yr lookback switcher
+    - Ranked table: rank, ticker, company name, alpha, signal badge, factor bars, alpha decomposition
+    - Free users: top 3 stocks. Pro users: all 500+
+    - UK & EU equities shown as blurred "Coming Soon" market tabs
+    - Market tabs: 🇺🇸 US Equities LIVE | 🇬🇧 UK Equities Q4 2026 | 🇪🇺 EU Equities 2027
+    - KPI cards: Strong Alpha (green), Weak/Negative alpha (amber/red) counts
+    - Alpha decomposition box: collapsible `<details>/<summary>`, shows insight text above it
+    - Tab label: "🔬 Factor" | Tab variable: tab_factor | Placed BEFORE tab2 (Catalyst) to avoid st.stop() bug
+    - RF (risk-free rate) shown as own line in decomposition
+    - predicted_return = RF + MKT + SMB + HML + MOM (alpha NOT included)
+    - run_screener.py: C:\Users\imran\Desktop\Fintiq\screener\run_screener.py
+    - JSON files regenerated 24 July 2026 with corrected predicted_return field
+    - Stock separator lines: rgba(255,255,255,0.15) — visible white line between stocks
 
 ### Auth Flow
 - New users: sign up with email/password → Supabase creates account
@@ -350,16 +371,34 @@ stripe>=10.0.0
 - ✅ Reddit strategy written (Reddit-Strategy-Fintiq.md)
 - ✅ Reddit account created (u/trader1311)
 - ✅ First Reddit answers posted
+- ✅ Factor Screener (fintiq.uk/factor-screener.html) — full build with paywall
+  - Pricing: £0.99 one-off (CSV download, single use) + £3.99/month
+  - One-off Stripe link: https://buy.stripe.com/3cI14na8G96m8o8bfmaZi0a (redirects to ?access=oneoff)
+  - Monthly Stripe link: https://buy.stripe.com/bJe14n6WufuK33O5V2aZi0b (redirects to ?access=monthly)
+  - Owner URL param: ?owner=fintiq2026
+  - Data quality: 80% coverage filter, 250% alpha cap
+  - Pre-computed JSON: screener-data-1y.json, screener-data-2y.json, screener-data-3y.json
+  - Python script: C:\Users\imran\Desktop\Fintiq\screener\run_screener.py
+  - GitHub Actions: .github/workflows/screener.yml (runs every Sunday, auto-commits JSON)
+- ✅ Factor Screener article: fintiq.uk/learn/fama-french-factor-screener.html
+- ✅ Factor Screener tab added to app.fintiq.uk (24 July 2026)
+- ✅ Factor Screener polished (24 July 2026 session 2):
+  - Collapsible alpha decomposition box (details/summary) in both HTML and app
+  - Insight commentary text shown in app (was only in HTML before)
+  - Stock separator lines made more visible
+  - RF line in decomposition box
+  - Corrected predicted_return math in run_screener.py and JSON regenerated
 
 ---
 
 ## 12. NEXT STEPS (IN PRIORITY ORDER)
 
-1. **Reddit daily (1 hour/day):** Answer 3–4 questions per day to build karma. Once 20+ karma, start posting own content from Reddit-Strategy-Fintiq.md
-2. **LinkedIn daily (15 mins):** Post one post from LinkedIn-Posts-20-Days.md. Reply to all comments within 60 mins.
-3. **Build next free tool:** ISA vs SIPP Calculator (listed as coming soon on tools.html)
-4. **Twitter/X:** Set up Fintiq brand account and personal account
-5. **Important feature to add to app:** (Imran to specify — mentioned at end of 20 July session)
+1. **User Dashboard** — Build a personal dashboard tab in app.fintiq.uk (planned for next session, 25 July 2026)
+   - Ideas to explore: portfolio snapshot, watchlist summary, recent journal trades, factor screener picks saved, market overview widget, news feed, P&L chart
+2. **Reddit daily (1 hour/day):** Answer 3–4 questions per day to build karma. Once 20+ karma, start posting own content from Reddit-Strategy-Fintiq.md
+3. **LinkedIn daily (15 mins):** Post one post from LinkedIn-Posts-20-Days.md. Reply to all comments within 60 mins.
+4. **Build next free tool:** ISA vs SIPP Calculator (listed as coming soon on tools.html)
+5. **Twitter/X:** Set up Fintiq brand account and personal account
 6. **Update LinkedIn experience:** Add Fintiq Founder & CEO role per Imran-LinkedIn-Profile.md
 7. **Create Fintiq LinkedIn company page**
 8. **Monitor Google Search Console:** Check weekly for indexed pages and search queries
@@ -374,7 +413,9 @@ When starting a new session, read this document first, then:
 - **Never suggest adding GA** — already on all pages
 - **Never suggest creating articles** — 20 already exist
 - **Stripe is already integrated** — don't suggest setting it up
-- **GitHub repo:** imrankhakwani-oss/fintiq-landing (Vercel auto-deploys)
+- **Landing site repo:** imrankhakwani-oss/fintiq-landing → local: C:\Users\imran\Desktop\Fintiq\ (Vercel auto-deploys)
+- **App repo:** imrankhakwani-oss/fintiq → local: C:\Users\imran\Desktop\fintiq-app\ (Railway auto-deploys)
+- **NEVER push app changes to fintiq-landing** — they are different repos
 - **Reddit account:** u/trader1311 — new, building karma, no links yet
 - **LinkedIn:** Profile updated, featured added, 20 posts ready to go
 - **Always check this document before suggesting something that might already be done**
@@ -387,7 +428,12 @@ When starting a new session, read this document first, then:
 |----------|-------------|
 | Landing site | https://fintiq.uk |
 | App | https://app.fintiq.uk |
-| GitHub | https://github.com/imrankhakwani-oss/fintiq-landing |
+| Landing GitHub | https://github.com/imrankhakwani-oss/fintiq-landing |
+| App GitHub | https://github.com/imrankhakwani-oss/fintiq |
+| Factor Screener (HTML) | https://fintiq.uk/factor-screener.html |
+| Factor Screener (app tab) | app.fintiq.uk → 🔬 Factor Screener tab |
+| Factor Article | https://fintiq.uk/learn/fama-french-factor-screener.html |
+| Screener JSON (2yr) | https://fintiq.uk/screener-data-2y.json |
 | Vercel deployment | fintiq-landing.vercel.app |
 | Google Analytics | G-SFD342RVKK |
 | Google Search Console | sc-domain:fintiq.uk |
