@@ -1737,7 +1737,8 @@ RULES:
 - Always reference specific numbers from the data
 - If section is 'fundamentals' and user asks about DCF/valuation, tell them to open the Valuation section below
 - If section is 'valuation', the valuation_state field in data shows the user's current DCF slider assumptions — reference them specifically
-- If user asks about charts or technicals, point them to the Technical section"""
+- If section is 'technical', focus on entry/exit timing, support/resistance levels, options flow signals, and trade setups. Reference RSI, MACD, put/call walls, and max pain specifically. Give both long AND short perspectives
+- If user asks about charts or technicals from a different section, point them to the Technical section"""
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     resp = client.messages.create(
@@ -1816,3 +1817,368 @@ Use real numbers from the data. Be specific and opinionated — you are a senior
         messages=[{"role": "user", "content": prompt}],
     )
     return {"analysis": resp.content[0].text.strip()}
+
+
+# ════════════════════════════════════════════════════════════
+#  SECTION 3 — TECHNICAL ANALYSIS
+# ════════════════════════════════════════════════════════════
+
+_tech_jobs: dict = {}
+_TECH_TTL = 5 * 60  # 5 min cache
+
+
+def _run_technical(ticker: str):
+    """Background thread — compute indicators + options analytics."""
+    try:
+        import pandas as pd, numpy as np
+
+        tk = yf.Ticker(ticker)
+        hist = tk.history(period="1y")
+        if hist is None or hist.empty:
+            _tech_jobs[ticker] = {'status': 'error', 'error': f"No price data for {ticker}", 'ts': time.time()}
+            return
+
+        closes  = hist['Close'].astype(float)
+        highs   = hist['High'].astype(float)
+        lows    = hist['Low'].astype(float)
+        opens_  = hist['Open'].astype(float)
+        volumes = hist['Volume'].astype(float)
+
+        # ── Moving Averages ──
+        ma50  = closes.rolling(50).mean()
+        ma200 = closes.rolling(200).mean()
+
+        # ── RSI(14) — Wilder's smoothing ──
+        delta    = closes.diff()
+        gain     = delta.clip(lower=0)
+        loss     = (-delta).clip(lower=0)
+        avg_gain = gain.ewm(com=13, min_periods=14).mean()
+        avg_loss = loss.ewm(com=13, min_periods=14).mean()
+        rs  = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+        # ── MACD(12,26,9) ──
+        ema12       = closes.ewm(span=12, adjust=False).mean()
+        ema26       = closes.ewm(span=26, adjust=False).mean()
+        macd_line   = ema12 - ema26
+        macd_signal = macd_line.ewm(span=9, adjust=False).mean()
+        macd_hist_s = macd_line - macd_signal
+
+        # ── Bollinger Bands(20,2) ──
+        bb_mid  = closes.rolling(20).mean()
+        bb_std  = closes.rolling(20).std()
+        bb_up   = bb_mid + 2 * bb_std
+        bb_low  = bb_mid - 2 * bb_std
+
+        # ── Current snapshot ──
+        def sf(x):
+            try:
+                v = float(x)
+                return None if (v != v) else round(v, 4)
+            except: return None
+
+        curr   = sf(closes.iloc[-1])
+        c_ma50 = sf(ma50.iloc[-1])
+        c_ma200= sf(ma200.iloc[-1])
+        c_rsi  = sf(rsi.iloc[-1])
+        c_macd = sf(macd_line.iloc[-1])
+        c_msig = sf(macd_signal.iloc[-1])
+        c_mhst = sf(macd_hist_s.iloc[-1])
+        p_mhst = sf(macd_hist_s.iloc[-2]) if len(macd_hist_s) > 1 else 0
+        c_bbup = sf(bb_up.iloc[-1])
+        c_bblo = sf(bb_low.iloc[-1])
+
+        # ── Trend classification ──
+        p_ma50  = ((curr - c_ma50)  / c_ma50  * 100) if curr and c_ma50  else None
+        p_ma200 = ((curr - c_ma200) / c_ma200 * 100) if curr and c_ma200 else None
+        golden  = (c_ma50 > c_ma200) if c_ma50 and c_ma200 else None
+
+        if p_ma50 is not None and p_ma200 is not None:
+            if p_ma50 > 0 and p_ma200 > 0 and golden:
+                trend_cls = "Uptrend"
+            elif p_ma50 < 0 and p_ma200 < 0 and golden is False:
+                trend_cls = "Downtrend"
+            else:
+                trend_cls = "Sideways"
+        else:
+            trend_cls = "Insufficient data"
+
+        w52h = sf(highs.max())
+        w52l = sf(lows.min())
+        w52pct = round((curr - w52l) / (w52h - w52l) * 100, 1) if curr and w52h and w52l and w52h != w52l else None
+
+        # ── RSI signal ──
+        if c_rsi is not None:
+            if   c_rsi < 30: rsi_sig = "Oversold"
+            elif c_rsi > 70: rsi_sig = "Overbought"
+            elif c_rsi < 45: rsi_sig = "Mildly Oversold"
+            elif c_rsi > 55: rsi_sig = "Mildly Overbought"
+            else:             rsi_sig = "Neutral"
+        else: rsi_sig = None
+
+        # ── MACD crossover ──
+        if c_mhst is not None and p_mhst is not None:
+            if   c_mhst > 0 and p_mhst <= 0: macd_cross = "Bullish (fresh crossover)"
+            elif c_mhst < 0 and p_mhst >= 0: macd_cross = "Bearish (fresh crossover)"
+            elif c_mhst > 0:                  macd_cross = "Bullish"
+            else:                             macd_cross = "Bearish"
+        else: macd_cross = None
+
+        # ── BB signal ──
+        if curr and c_bbup and c_bblo:
+            if   curr > c_bbup: bb_sig = "Above upper band (overextended)"
+            elif curr < c_bblo: bb_sig = "Below lower band (oversold squeeze)"
+            else:               bb_sig = "Within bands"
+        else: bb_sig = None
+
+        # ── Key levels — support/resistance ──
+        recent63 = hist.iloc[-63:]  # 3 months
+        r3m_lo = sf(recent63['Low'].min())
+        r3m_hi = sf(recent63['High'].max())
+
+        # ── Volume analysis ──
+        avg_vol_20 = sf(volumes.rolling(20).mean().iloc[-1])
+        curr_vol   = sf(volumes.iloc[-1])
+        vol_ratio  = round(curr_vol / avg_vol_20, 2) if curr_vol and avg_vol_20 and avg_vol_20 > 0 else None
+
+        # ── Serialise last 126 bars (6 months) for chart ──
+        chart = hist.iloc[-126:]
+        dates_arr   = [i.strftime('%Y-%m-%d') for i in chart.index]
+        c_arr  = [sf(v) for v in chart['Close']]
+        o_arr  = [sf(v) for v in chart['Open']]
+        h_arr  = [sf(v) for v in chart['High']]
+        l_arr  = [sf(v) for v in chart['Low']]
+        v_arr  = [int(v) for v in chart['Volume']]
+
+        # Indicator series aligned to chart window
+        idx_map = {d: i for i, d in enumerate(hist.index)}
+        def ind_series(s):
+            out = []
+            for d in chart.index:
+                pos = list(hist.index).index(d)
+                out.append(sf(s.iloc[pos]))
+            return out
+
+        ma50_arr  = ind_series(ma50)
+        ma200_arr = ind_series(ma200)
+        rsi_arr   = ind_series(rsi)
+        macd_arr  = ind_series(macd_line)
+        msig_arr  = ind_series(macd_signal)
+        mhst_arr  = ind_series(macd_hist_s)
+        bbup_arr  = ind_series(bb_up)
+        bblo_arr  = ind_series(bb_low)
+
+        # ── Options analytics ──
+        opts = {}
+        try:
+            exps = tk.options
+            if exps:
+                chain = tk.option_chain(exps[0])
+                calls = chain.calls.copy()
+                puts  = chain.puts.copy()
+
+                # PCR (volume)
+                cv = float(calls['volume'].fillna(0).sum())
+                pv = float(puts['volume'].fillna(0).sum())
+                pcr = round(pv / cv, 2) if cv > 0 else None
+                if pcr is not None:
+                    if   pcr > 1.3: pcr_sig = "High fear — contrarian bullish"
+                    elif pcr > 0.9: pcr_sig = "Moderately bearish sentiment"
+                    elif pcr > 0.6: pcr_sig = "Neutral"
+                    elif pcr > 0.4: pcr_sig = "Moderately bullish sentiment"
+                    else:           pcr_sig = "Low fear — contrarian bearish"
+                else: pcr_sig = None
+
+                # ATM IV
+                calls2 = calls.copy(); calls2['dist'] = abs(calls2['strike'] - curr)
+                atm = calls2.nsmallest(1, 'dist')
+                atm_iv = round(float(atm['impliedVolatility'].iloc[0]) * 100, 1) if len(atm) else None
+
+                # Max pain
+                all_s = sorted(set(calls['strike'].tolist() + puts['strike'].tolist()))
+                mp, mp_val = None, float('inf')
+                for s in all_s:
+                    cl = ((s - calls['strike']).clip(lower=0) * calls['openInterest'].fillna(0)).sum()
+                    pl = ((puts['strike'] - s).clip(lower=0)  * puts['openInterest'].fillna(0)).sum()
+                    if cl + pl < mp_val:
+                        mp_val = cl + pl; mp = s
+
+                # Put wall / Call wall
+                pb = puts[puts['strike'] < curr].copy()
+                put_wall = float(pb.loc[pb['openInterest'].idxmax(), 'strike']) if not pb.empty else None
+
+                ca = calls[calls['strike'] > curr].copy()
+                call_wall = float(ca.loc[ca['openInterest'].idxmax(), 'strike']) if not ca.empty else None
+
+                # Unusual volume (vol > 2×OI and vol > 200)
+                def unusual(df, n=3):
+                    mask = (df['volume'].fillna(0) > df['openInterest'].fillna(0) * 2) & (df['volume'].fillna(0) > 200)
+                    top = df[mask].nlargest(n, 'volume')
+                    return [{'strike': float(r['strike']), 'volume': int(r['volume']), 'oi': int(r['openInterest'])} for _, r in top.iterrows()]
+
+                opts = {
+                    'expiry': exps[0],
+                    'pcr': pcr, 'pcr_signal': pcr_sig,
+                    'atm_iv': atm_iv,
+                    'max_pain': float(mp) if mp else None,
+                    'put_wall': put_wall,
+                    'call_wall': call_wall,
+                    'unusual_calls': unusual(calls),
+                    'unusual_puts':  unusual(puts),
+                }
+        except Exception as oe:
+            opts = {'error': str(oe)[:200]}
+
+        result = {
+            'ticker': ticker,
+            'dates':  dates_arr,
+            'ohlcv':  {'o': o_arr, 'h': h_arr, 'l': l_arr, 'c': c_arr, 'v': v_arr},
+            'ma50':   ma50_arr,
+            'ma200':  ma200_arr,
+            'bb_up':  bbup_arr,
+            'bb_low': bblo_arr,
+            'rsi':    rsi_arr,
+            'macd':   macd_arr,
+            'macd_signal': msig_arr,
+            'macd_hist':   mhst_arr,
+            'trend': {
+                'classification': trend_cls,
+                'ma50': c_ma50, 'ma200': c_ma200,
+                'pct_vs_ma50': round(p_ma50, 1) if p_ma50 else None,
+                'pct_vs_ma200': round(p_ma200, 1) if p_ma200 else None,
+                'golden_cross': golden,
+                'week52_high': w52h, 'week52_low': w52l, 'week52_pct': w52pct,
+                'bb_signal': bb_sig,
+            },
+            'momentum': {
+                'rsi': c_rsi, 'rsi_signal': rsi_sig,
+                'macd': c_macd, 'macd_signal_val': c_msig,
+                'macd_hist': c_mhst, 'macd_crossover': macd_cross,
+            },
+            'volume': {
+                'current': curr_vol, 'avg_20d': avg_vol_20, 'ratio': vol_ratio,
+                'signal': 'High volume' if vol_ratio and vol_ratio > 1.5 else ('Low volume' if vol_ratio and vol_ratio < 0.7 else 'Normal'),
+            },
+            'key_levels': {
+                'support1': c_ma50,   'support1_label': '50-day MA',
+                'support2': c_ma200,  'support2_label': '200-day MA',
+                'support3': r3m_lo,   'support3_label': '3-month low',
+                'resistance1': r3m_hi,'resistance1_label': '3-month high',
+                'resistance2': w52h,  'resistance2_label': '52-week high',
+            },
+            'options': opts,
+        }
+
+        # clean NaN/None
+        def _clean(obj):
+            if isinstance(obj, float) and obj != obj: return None
+            if isinstance(obj, dict): return {k: _clean(v) for k, v in obj.items()}
+            if isinstance(obj, list): return [_clean(v) for v in obj]
+            return obj
+
+        _tech_jobs[ticker] = {'status': 'done', 'data': _clean(result), 'ts': time.time()}
+
+    except Exception as e:
+        _tech_jobs[ticker] = {'status': 'error', 'error': str(e)[:300], 'ts': time.time()}
+
+
+@app.get("/technical")
+def get_technical(ticker: str):
+    ticker = ticker.strip().upper()
+    job = _tech_jobs.get(ticker)
+    if job and job['status'] == 'done' and time.time() - job['ts'] < _TECH_TTL:
+        return job['data']
+    if job and job['status'] == 'error':
+        raise HTTPException(status_code=500, detail=job.get('error', 'Unknown error'))
+    if job and job['status'] == 'processing':
+        return {"status": "processing"}
+    _tech_jobs[ticker] = {'status': 'processing', 'data': None, 'ts': time.time()}
+    threading.Thread(target=_run_technical, args=(ticker,), daemon=True).start()
+    return {"status": "processing"}
+
+
+@app.post("/technical/ai-commentary")
+def technical_ai_commentary(payload: dict):
+    """AI senior trader generates long + short trade setups from technical + options data."""
+    ticker   = payload.get("ticker", "").upper()
+    tech     = payload.get("tech_data", {})
+    fund_ctx = payload.get("fundamentals_summary", {})
+
+    if not ticker or not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=400, detail="ticker and ANTHROPIC_API_KEY required")
+
+    import json as _json
+    tr  = tech.get('trend', {})
+    mom = tech.get('momentum', {})
+    kl  = tech.get('key_levels', {})
+    vol = tech.get('volume', {})
+    opt = tech.get('options', {})
+    curr_price = (tech.get('ohlcv', {}).get('c') or [None])[-1]
+
+    prompt = f"""You are a senior trader and technical analyst at a hedge fund. You combine technical analysis with options flow to identify precise trade setups for timing entries and exits. The stock selection has already been done via fundamental and valuation analysis — your job is purely entry/exit timing.
+
+TICKER: {ticker}
+CURRENT PRICE: {curr_price}
+
+TECHNICAL DATA:
+- Trend: {tr.get('classification')} | Price vs MA50: {tr.get('pct_vs_ma50')}% | Price vs MA200: {tr.get('pct_vs_ma200')}%
+- MA50: {tr.get('ma50')} | MA200: {tr.get('ma200')} | Golden cross: {tr.get('golden_cross')}
+- 52-week range: {tr.get('week52_low')} – {tr.get('week52_high')} ({tr.get('week52_pct')}% of range)
+- Bollinger Band signal: {tr.get('bb_signal')}
+- RSI(14): {mom.get('rsi')} — {mom.get('rsi_signal')}
+- MACD: {mom.get('macd')} | Signal: {mom.get('macd_signal_val')} | Histogram: {mom.get('macd_hist')} | {mom.get('macd_crossover')}
+- Volume: {vol.get('ratio')}× avg ({vol.get('signal')})
+
+KEY LEVELS:
+- Support 1 (MA50): {kl.get('support1')}
+- Support 2 (MA200): {kl.get('support2')}
+- Support 3 (3-month low): {kl.get('support3')}
+- Resistance 1 (3-month high): {kl.get('resistance1')}
+- Resistance 2 (52-week high): {kl.get('resistance2')}
+
+OPTIONS FLOW:
+- Put/Call Ratio: {opt.get('pcr')} — {opt.get('pcr_signal')}
+- ATM Implied Volatility: {opt.get('atm_iv')}%
+- Max Pain ({opt.get('expiry')}): {opt.get('max_pain')}
+- Put Wall (largest put OI below price): {opt.get('put_wall')}
+- Call Wall (largest call OI above price): {opt.get('call_wall')}
+- Unusual call activity: {opt.get('unusual_calls')}
+- Unusual put activity: {opt.get('unusual_puts')}
+
+FUNDAMENTAL CONTEXT: {_json.dumps(fund_ctx, indent=2)[:1500]}
+
+Output EXACTLY in this format (plain text, no markdown, use the ━━ separators):
+
+TREND & MOMENTUM SUMMARY: [2-3 sentences — current technical posture, what the chart is telling you right now]
+
+━━ LONG TRADE SETUP ━━
+ENTRY ZONE: [specific price range with reasoning — anchor to support levels and/or options levels]
+CONFIRMATION NEEDED: [what must happen technically before pulling the trigger — MACD crossover, RSI, price action]
+STOP LOSS: [specific price with reasoning — below key support AND/OR below put wall, what a break means]
+TARGET 1 (near-term): [specific price with reasoning — first resistance or call wall]
+TARGET 2 (stretch): [specific price with reasoning — next major resistance or 52wk high]
+OPTIONS SIGNAL FOR LONG: [how PCR, put wall, max pain, unusual activity supports or contradicts the long]
+RISK TO LONG: [main technical or options risk — squeeze, distribution, volume weakness]
+
+━━ SHORT TRADE SETUP ━━
+ENTRY ZONE: [specific price range with reasoning — anchor to resistance and/or call wall]
+CONFIRMATION NEEDED: [what must fail technically before shorting — rejection candle, MACD, RSI]
+STOP LOSS: [specific price with reasoning — above call wall, short squeeze trigger level]
+TARGET 1 (near-term): [specific price — first support or put wall]
+TARGET 2 (stretch): [specific price — MA200 or 3-month low]
+OPTIONS SIGNAL FOR SHORT: [how PCR, call wall, max pain, unusual activity supports or contradicts the short]
+RISK TO SHORT: [squeeze risk, unusual call activity, momentum]
+
+━━ VERDICT ━━
+[2 sentences — which setup has more conviction right now given ALL the data, and what the single most important level to watch is]
+
+Be specific with price levels. Do not hedge every statement. You are a professional."""
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1400,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return {"commentary": resp.content[0].text.strip()}
+
