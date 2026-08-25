@@ -1250,6 +1250,7 @@ def _run_fundamentals(ticker: str):
                     'eps_growth': round(ni_g * 100, 1) if ni_g is not None else None,
                     'roic': round(roic * 100, 1) if roic is not None else None,
                     'op_margin': round(om * 100, 1) if om is not None else None,
+                    'nopat_margin': round(om * 0.75 * 100, 1) if om is not None else None,  # NOPAT margin = EBIT margin × (1-tax)
                     'inv_rate': round(inv_rate * 100, 1) if inv_rate is not None else None,
                 })
 
@@ -1334,6 +1335,17 @@ def _run_fundamentals(ticker: str):
         # Also compute ROIC for subject ticker (for peer table)
         subj_roic = growth_table[0].get('roic') if growth_table else None
         subj_fpe  = round(fv(info.get('forwardPE')),1) if fv(info.get('forwardPE')) else None
+
+        # ── Valuation inputs (for Section 2 DCF) ──
+        _pretax   = col_val(fin, 'Pretax Income', 'Income Before Tax')
+        _tax_prov = col_val(fin, 'Tax Provision', 'Income Tax Expense')
+        _int_exp  = col_val(fin, 'Interest Expense', 'Net Interest Income')
+        _total_debt = fv(info.get('totalDebt'))
+        _eff_tax  = abs(_tax_prov) / abs(_pretax) if _pretax and _tax_prov and _pretax != 0 else None
+        _eff_tax  = max(0.05, min(0.45, _eff_tax)) if _eff_tax else None  # clamp to sensible range
+        _kd_raw   = abs(_int_exp) / _total_debt if _int_exp and _total_debt and _total_debt > 0 else None
+        _bvps     = fv(info.get('bookValue'))
+        _rev_raw  = fv(info.get('totalRevenue'))
 
         # ── TSR ──
         tsr_data = _compute_tsr(hist, info, fin, cf, bs, qfin)
@@ -1619,6 +1631,17 @@ def _run_fundamentals(ticker: str):
             "subj_fpe": subj_fpe,
             "ff4": ff4,
             "tsr": tsr_data,
+            "valuation_inputs": {
+                "shares_outstanding": shares_out,
+                "ev_raw": round(ev, 0) if ev else None,
+                "mc_raw": round(mc, 0) if mc else None,
+                "net_debt": round(ev - mc, 0) if ev and mc else None,
+                "revenue_raw": _rev_raw,
+                "tax_rate": round(_eff_tax * 100, 1) if _eff_tax else None,
+                "kd": round(_kd_raw * 100, 1) if _kd_raw else None,
+                "total_debt": _total_debt,
+                "book_value_ps": round(_bvps, 2) if _bvps else None,
+            },
         }
         # Sanitize NaN/Inf floats — Python's json.dumps rejects them and causes 500 errors
         import math
@@ -1692,7 +1715,8 @@ def fundamentals_chat(payload: dict):
     import json as _json
     data_ctx = _json.dumps(section_data, indent=2)[:6000]
 
-    system = f"""You are a Senior Equity Analyst at a tier-1 hedge fund. You are helping a retail investor analyse {ticker} through the fundamentals lens.
+    section = payload.get("section", "fundamentals")
+    system = f"""You are a Senior Equity Analyst at a tier-1 hedge fund. You are helping a retail investor analyse {ticker} through the {section} lens.
 
 FUNDAMENTALS DATA (pre-computed, do not recalculate):
 {data_ctx}
@@ -1711,8 +1735,9 @@ CROSS-SECTION CONTEXT (what user has explored so far):
 RULES:
 - Max 4 short paragraphs per reply
 - Always reference specific numbers from the data
-- If user asks about valuation, DCF or price targets, tell them that section is in the Valuation tab
-- If user asks about charts or technicals, point them to the Technical tab"""
+- If section is 'fundamentals' and user asks about DCF/valuation, tell them to open the Valuation section below
+- If section is 'valuation', the valuation_state field in data shows the user's current DCF slider assumptions — reference them specifically
+- If user asks about charts or technicals, point them to the Technical section"""
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     resp = client.messages.create(
@@ -1723,3 +1748,71 @@ RULES:
     )
     return {"reply": resp.content[0].text, "input_tokens": resp.usage.input_tokens,
             "output_tokens": resp.usage.output_tokens}
+
+
+@app.post("/valuation/ai-assumptions")
+def valuation_ai_assumptions(payload: dict):
+    """AI senior analyst generates its own DCF assumption set with reasoning for the valuation section."""
+    ticker   = payload.get("ticker", "").upper()
+    fund_ctx = payload.get("fundamentals_summary", {})
+    user_vals= payload.get("user_values", {})
+
+    if not ticker or not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=400, detail="ticker and ANTHROPIC_API_KEY required")
+
+    import json as _json
+    ctx_str = _json.dumps(fund_ctx, indent=2)[:4000]
+
+    prompt = f"""You are a senior investment banker and equity analyst at a bulge-bracket firm. You are building a DCF model for {ticker}.
+
+FUNDAMENTALS DATA:
+{ctx_str}
+
+USER'S CURRENT SLIDER VALUES (for reference):
+{_json.dumps(user_vals, indent=2)}
+
+Your task: Generate THREE scenario assumption sets (Bear, Base, Bull) for a McKinsey value-driver DCF. Each scenario should reflect a coherent, internally consistent investment thesis — not just one variable changed in isolation.
+
+Respond in this EXACT format (plain text, no markdown headers):
+
+━━ BASE CASE (most likely outcome) ━━
+SHORT-TERM GROWTH (Yrs 1-3): [X]%
+MEDIUM-TERM GROWTH (Yrs 4-7): [X]%
+LONG-TERM GROWTH (Yrs 8-10): [X]%
+OPERATING MARGIN: [X]%
+INVESTMENT RATE: [X]% of NOPAT
+TERMINAL GROWTH: [X]%
+RONIC: [X]%
+THESIS: [2 sentences — what must go right, key catalysts, implied valuation vs current price]
+
+━━ BEAR CASE (downside scenario) ━━
+SHORT-TERM GROWTH (Yrs 1-3): [X]%
+MEDIUM-TERM GROWTH (Yrs 4-7): [X]%
+LONG-TERM GROWTH (Yrs 8-10): [X]%
+OPERATING MARGIN: [X]%
+INVESTMENT RATE: [X]% of NOPAT
+TERMINAL GROWTH: [X]%
+RONIC: [X]%
+THESIS: [2 sentences — what goes wrong, specific risk factors, implied downside]
+
+━━ BULL CASE (upside scenario) ━━
+SHORT-TERM GROWTH (Yrs 1-3): [X]%
+MEDIUM-TERM GROWTH (Yrs 4-7): [X]%
+LONG-TERM GROWTH (Yrs 8-10): [X]%
+OPERATING MARGIN: [X]%
+INVESTMENT RATE: [X]% of NOPAT
+TERMINAL GROWTH: [X]%
+RONIC: [X]%
+THESIS: [2 sentences — what exceeds expectations, key upside drivers, implied upside]
+
+KEY SWING FACTOR: [1-2 sentences — the single most important variable that differentiates the scenarios]
+
+Use real numbers from the data. Be specific and opinionated — you are a senior analyst, not a hedger. Each scenario should reflect genuinely different business outcomes, not just minor perturbations."""
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=1200,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return {"analysis": resp.content[0].text.strip()}
