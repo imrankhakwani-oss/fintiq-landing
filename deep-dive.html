@@ -865,6 +865,7 @@ function renderFundamentals(d) {
       ${growthRow('EPS Growth', gt, r=>r.eps_growth != null ? pct(r.eps_growth) : null, true)}
       ${growthRow('ROIC', gt, r=>r.roic != null ? pct(r.roic) : null, true)}
       ${growthRow('Operating Margin', gt, r=>r.op_margin != null ? pct(r.op_margin) : null, true)}
+      ${growthRow('NOPAT Margin', gt, r=>r.nopat_margin != null ? pct(r.nopat_margin) : null, true)}
       ${growthRow('Investment Rate', gt, r=>r.inv_rate != null ? pct(r.inv_rate) : null, false)}
     </table>
     </div>`;
@@ -1108,7 +1109,7 @@ function renderChat(section, data) {
     <div class="ai-chat-header">
       <div class="ai-chat-icon">🤖</div>
       <div>
-        <div class="ai-chat-title">AI Fundamentals Analyst</div>
+        <div class="ai-chat-title">Fintiq AI Analyst</div>
         <div class="ai-chat-sub">Data-grounded — references page data, uses knowledge for anything else</div>
       </div>
     </div>
@@ -1375,24 +1376,32 @@ function _buildValHTML() {
     </div>`;
   }
 
-  // ── WACC Block ──
+  // ── WACC Block (collapsible, open by default) ──
   html += `<div class="sub-label">WACC — Weighted Average Cost of Capital</div>
-  <div class="wacc-block">
-    <div class="wacc-formula">CAPM: Ke = Rf (${(0.045*100).toFixed(1)}%) + β (${vs.d?.market?.beta?.toFixed(2)||'1.00'}) × ERP (5.0%) = <strong>${ke_show.toFixed(1)}%</strong> &nbsp;·&nbsp; Kd (pre-tax) = <strong>${kd_show.toFixed(1)}%</strong></div>
-    <div class="wacc-row"><span class="wacc-key">Risk-free rate (10yr govt bond)</span><span class="wacc-val">4.5%</span></div>
-    <div class="wacc-row"><span class="wacc-key">Equity Risk Premium</span><span class="wacc-val">5.0%</span></div>
-    <div class="wacc-row"><span class="wacc-key">Beta (yfinance)</span><span class="wacc-val">${vs.d?.market?.beta?.toFixed(2)||'1.00'}</span></div>
-    <div class="wacc-row"><span class="wacc-key">Cost of Equity (Ke)</span><span class="wacc-val">${ke_show.toFixed(1)}%</span></div>
-    <div class="wacc-row"><span class="wacc-key">Cost of Debt pre-tax (Kd)</span><span class="wacc-val">${kd_show.toFixed(1)}%</span></div>
-    <div class="wacc-row"><span class="wacc-key">D/E ratio</span><span class="wacc-val">${vs.de.toFixed(2)}x</span></div>
-    <div class="wacc-row"><span class="wacc-key">Effective Tax Rate</span><span class="wacc-val">${vs.taxRate.toFixed(1)}%</span></div>
-    <div class="wacc-row"><span class="wacc-key">Weight of Equity</span><span class="wacc-val">${Math.round(100/(1+vs.de))}%</span></div>
-    <div class="wacc-row"><span class="wacc-key">Weight of Debt</span><span class="wacc-val">${Math.round(vs.de*100/(1+vs.de))}%</span></div>
-    <div class="wacc-row" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">
-      <span class="wacc-key">WACC = Ke×We + Kd×(1−t)×Wd</span>
-      <span class="wacc-val" style="color:var(--gold);font-size:0.9rem">${vs.wacc.toFixed(1)}%</span>
+  <div class="tsr-expander" style="margin-bottom:14px">
+    <div class="tsr-exp-header" onclick="toggleTsrExp(this)" style="background:rgba(56,189,248,0.04);border-color:rgba(56,189,248,0.15)">
+      <span style="color:var(--blue);font-size:0.82rem">⚙️ WACC Methodology &amp; Working &nbsp;·&nbsp; <strong>${vs.wacc.toFixed(1)}%</strong></span>
+      <span style="font-size:0.65rem;color:var(--muted)">▲</span>
     </div>
-    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Use the WACC slider below to stress-test different discount rates. Standard IB practice: Rf = current 10yr yield, ERP = 5% (Damodaran). Kd estimated from interest expense / total debt.</div>
+    <div class="tsr-exp-body open" style="padding:14px">
+      <div class="wacc-block" style="margin-bottom:0">
+        <div class="wacc-formula">CAPM: Ke = Rf (${(0.045*100).toFixed(1)}%) + β (${vs.d?.market?.beta?.toFixed(2)||'1.00'}) × ERP (5.0%) = <strong>${ke_show.toFixed(1)}%</strong> &nbsp;·&nbsp; Kd (pre-tax) = <strong>${kd_show.toFixed(1)}%</strong></div>
+        <div class="wacc-row"><span class="wacc-key">Risk-free rate (10yr govt bond)</span><span class="wacc-val">4.5%</span></div>
+        <div class="wacc-row"><span class="wacc-key">Equity Risk Premium (Damodaran)</span><span class="wacc-val">5.0%</span></div>
+        <div class="wacc-row"><span class="wacc-key">Beta (yfinance)</span><span class="wacc-val">${vs.d?.market?.beta?.toFixed(2)||'1.00'}</span></div>
+        <div class="wacc-row"><span class="wacc-key">Cost of Equity (Ke = Rf + β×ERP)</span><span class="wacc-val">${ke_show.toFixed(1)}%</span></div>
+        <div class="wacc-row"><span class="wacc-key">Cost of Debt pre-tax (Kd)</span><span class="wacc-val">${kd_show.toFixed(1)}%</span></div>
+        <div class="wacc-row"><span class="wacc-key">D/E ratio (from balance sheet)</span><span class="wacc-val">${vs.de.toFixed(2)}x</span></div>
+        <div class="wacc-row"><span class="wacc-key">Effective Tax Rate (4yr avg)</span><span class="wacc-val">${vs.taxRate.toFixed(1)}%</span></div>
+        <div class="wacc-row"><span class="wacc-key">Weight of Equity (We)</span><span class="wacc-val">${Math.round(100/(1+vs.de))}%</span></div>
+        <div class="wacc-row"><span class="wacc-key">Weight of Debt (Wd)</span><span class="wacc-val">${Math.round(vs.de*100/(1+vs.de))}%</span></div>
+        <div class="wacc-row" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">
+          <span class="wacc-key">WACC = Ke×We + Kd×(1−t)×Wd</span>
+          <span class="wacc-val" style="color:var(--gold);font-size:0.9rem">${vs.wacc.toFixed(1)}%</span>
+        </div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Standard IB practice: Rf = current 10yr govt bond yield, ERP = 5.0% (Damodaran). Kd estimated from interest expense / total debt. Use the WACC slider to stress-test — small changes here have a large impact on terminal value.</div>
+      </div>
+    </div>
   </div>`;
 
   // ── Fixed Assumptions ──
@@ -1450,7 +1459,7 @@ function _buildValHTML() {
 
   // ── Phase Diagnostics ──
   html += `<div class="sub-label">Phase Diagnostics — Implied NOPAT Growth vs Natural Investment Rate</div>
-  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Shows what your revenue growth + margin assumptions <em>actually imply</em> for NOPAT growth, and whether your investment rate is above or below the minimum needed to sustain that growth (g / RONIC).</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">For each phase, <strong>Natural Inv Rate = g ÷ RONIC</strong> — the minimum reinvestment needed to sustain your growth assumption. If your slider Inv Rate is <em>higher</em> than this, the company is over-investing (🔴) — value-creating only if RONIC &gt; WACC. If <em>lower</em>, it is under-investing (🟢) — implying cash returns to shareholders. The Signal column flags mismatches of &gt;10pp that may need attention.</div>
   <div id="phase-diag">${_buildPhaseDiag(vs)}</div>`;
 
   // ── DCF Output ──
@@ -1479,7 +1488,8 @@ function _buildValHTML() {
   // Average
   const vals = [dcfPs, grahamPs, industPe].filter(v=>v!=null && v>0);
   const avgVal = vals.length ? Math.round(vals.reduce((a,b)=>a+b)/vals.length * 100)/100 : null;
-  const avgUpside = avgVal && vs.price ? ((avgVal - vs.price)/vs.price*100).toFixed(1) : null;
+  const avgUpsideNum = (avgVal && vs.price && vs.price > 0) ? (avgVal - vs.price)/vs.price*100 : null;
+  const avgUpside = avgUpsideNum != null ? avgUpsideNum.toFixed(1) : null;
 
   html += `<div class="method-cards">
     ${_methodCard('METHOD 1 — DCF INTRINSIC VALUE', dcfPs, vs.price, cs, `McKinsey 3-phase · ${dcf.cv_pct}% terminal value`, `EV / Shares − Net Debt/Share`)}
@@ -1488,19 +1498,19 @@ function _buildValHTML() {
   </div>`;
 
   if (avgVal) {
-    const col = avgUpside > 0 ? 'var(--green)' : 'var(--red)';
-    const dir = avgUpside > 0 ? '▲' : '▼';
+    const col = avgUpsideNum != null && avgUpsideNum > 0 ? 'var(--green)' : 'var(--red)';
+    const dir = avgUpsideNum != null && avgUpsideNum > 0 ? '▲' : '▼';
     html += `<div class="avg-bar">
       <div>
         <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Average Intrinsic Value (All Methods)</div>
         <div class="avg-value">${cs}${avgVal.toFixed(2)}</div>
       </div>
       <div style="text-align:right">
-        <div class="avg-verdict" style="color:${col}">${dir} ${Math.abs(avgUpside)}% ${avgUpside > 0 ? 'Upside' : 'Downside'}</div>
+        <div class="avg-verdict" style="color:${col}">${dir} ${Math.abs(Number(avgUpside)).toFixed(1)}% ${avgUpsideNum > 0 ? 'Upside' : 'Downside'}</div>
         <div style="font-size:0.68rem;color:var(--muted)">vs current price ${cs}${vs.price?.toFixed(2)||'—'}</div>
       </div>
       <div style="font-size:0.7rem;color:var(--muted);padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:6px;border-left:2px solid var(--red);max-width:220px">
-        ${avgUpside > 0 ? '🟢 Below average intrinsic value — potential margin of safety if fundamentals hold.' : '🔴 Above average intrinsic value — premium priced. Needs strong growth justification or wait for better entry.'}
+        ${avgUpsideNum > 0 ? '🟢 Below average intrinsic value — potential margin of safety if fundamentals hold.' : '🔴 Above average intrinsic value — premium priced. Needs strong growth justification or wait for better entry.'}
       </div>
     </div>`;
   }
@@ -1535,12 +1545,14 @@ function _buildValHTML() {
   html += `<div class="sub-label">DCF Sensitivity Analysis — WACC × Terminal Growth</div>
   <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Each cell shows intrinsic value per share. <span style="color:var(--gold)">Gold border</span> = your current selection. <span style="color:var(--green)">Green</span> = undervalued vs current price. <span style="color:var(--red)">Red</span> = overvalued.</div>
   <div class="sens-wrap" id="sens-table-wrap">${_buildSensTable(vs)}</div>
-  <div style="font-size:0.65rem;color:var(--muted);margin-top:4px">Current price: ${cs}${vs.price?.toFixed(2)||'—'}</div>`;
+  <div style="font-size:0.65rem;color:var(--muted);margin-top:4px;margin-bottom:10px">Current price: ${cs}${vs.price?.toFixed(2)||'—'}</div>
+  <div id="sens-brief" style="background:rgba(56,189,248,0.04);border:1px solid rgba(56,189,248,0.15);border-radius:8px;padding:10px 14px;font-size:0.75rem;color:var(--dim);line-height:1.6;margin-bottom:14px">${_buildSensBrief(vs)}</div>`;
 
   // ── Monte Carlo ──
   html += `<div class="sub-label" style="margin-top:20px">Monte Carlo Simulation — 5,000 Scenarios</div>
   <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Samples ST revenue growth ±3pp, WACC ±1.5pp, Terminal growth ±0.75pp from your current slider values. All other assumptions held constant.</div>
-  <div id="mc-results">${_runMC(vs, cs)}</div>`;
+  <div id="mc-results">${_runMC(vs, cs)}</div>
+  <div id="mc-brief" style="background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px 14px;font-size:0.75rem;color:var(--dim);line-height:1.6;margin-top:10px;margin-bottom:14px"></div>`;
 
   // ── AI Valuation Analyst ──
   html += `<div class="sub-label" style="margin-top:20px">AI Senior Analyst — Recommended Assumptions & Commentary</div>
@@ -1605,6 +1617,8 @@ function _refreshValuation() {
   document.getElementById('sens-table-wrap').innerHTML = _buildSensTable(vs);
   document.getElementById('mc-results').innerHTML = _runMC(vs, cs);
   document.getElementById('val-waterfall').innerHTML = _buildWaterfall(dcf.bridge, cs);
+  const sb = document.getElementById('sens-brief'); if (sb) sb.innerHTML = _buildSensBrief(vs);
+  // mc-brief is updated inside _runMC
 
   // Update method cards — find and replace them
   const mc = document.getElementById('val-content');
@@ -1740,6 +1754,43 @@ function _buildPhaseDiag(vs) {
   return h;
 }
 
+// ── Sensitivity Brief ──
+function _buildSensBrief(vs) {
+  const cs = vs.currSym;
+  const price = vs.price;
+  if (!price) return '';
+  const curDcf = _computeDCF(vs);
+  const curVal = curDcf.equity_ps;
+
+  // Find break-even WACC (where val ≈ price)
+  let breakEvenWacc = null;
+  for (let w = 6; w <= 15; w += 0.5) {
+    const d = _computeDCF({ ...vs, wacc: w });
+    if (d.equity_ps && d.equity_ps < price) { breakEvenWacc = w; break; }
+  }
+
+  // Find break-even TG (where val ≈ price at current WACC)
+  let breakEvenTg = null;
+  for (let t = 0; t <= 5; t += 0.5) {
+    const d = _computeDCF({ ...vs, tg: t });
+    if (d.equity_ps && d.equity_ps >= price) { breakEvenTg = t; break; }
+  }
+
+  const verdict = curVal > price
+    ? `At your current WACC of ${vs.wacc}% and terminal growth of ${vs.tg}%, the intrinsic value of <strong>${cs}${curVal?.toFixed(0)}</strong> is above the current price of ${cs}${price.toFixed(0)} — the stock appears <strong style="color:var(--green)">undervalued</strong> on these assumptions.`
+    : `At your current WACC of ${vs.wacc}% and terminal growth of ${vs.tg}%, the intrinsic value of <strong>${cs}${curVal?.toFixed(0)}</strong> is below the current price of ${cs}${price.toFixed(0)} — the stock appears <strong style="color:var(--red)">overvalued</strong> on these assumptions.`;
+
+  const breakWacc = breakEvenWacc
+    ? ` The stock only looks undervalued if WACC is below approximately <strong>${breakEvenWacc}%</strong>.`
+    : ` The stock appears undervalued across almost all WACC scenarios tested.`;
+
+  const breakTg = breakEvenTg
+    ? ` A terminal growth rate above <strong>${breakEvenTg}%</strong> would push intrinsic value above the current price.`
+    : '';
+
+  return `📊 <strong>How to read this table:</strong> Each cell shows the intrinsic value per share at that combination of WACC (rows) and terminal growth (columns). Move right → higher terminal growth = higher value. Move down → higher WACC = lower value. The gold-bordered cell is your current assumption. Green cells mean the stock is undervalued at those assumptions; red means overvalued.<br><br>${verdict}${breakWacc}${breakTg} Note that terminal value accounts for <strong>${curDcf.cv_pct}%</strong> of total DCF at current settings — small changes in terminal growth and WACC have an outsized impact.`;
+}
+
 // ── Sensitivity Table ──
 function _buildSensTable(vs) {
   const waccs = [6,7,8,9,10,11,12,13,14,15];
@@ -1844,6 +1895,22 @@ function _runMC(vs, cs) {
     </div>`;
   });
 
+  // Build MC brief text
+  const spread = p90 - p10;
+  const spreadPct = price ? (spread / price * 100).toFixed(0) : null;
+  const pAboveTxt = pAbove >= 50
+    ? `<strong style="color:var(--green)">${pAbove.toFixed(0)}%</strong> of simulated scenarios land above the current price of ${cs}${price?.toFixed(0)} — the balance of probability favours upside.`
+    : `Only <strong style="color:var(--red)">${pAbove.toFixed(0)}%</strong> of simulated scenarios land above the current price of ${cs}${price?.toFixed(0)} — the balance of probability favours downside.`;
+
+  const mcBriefText = `🎲 <strong>How to read this simulation:</strong> Monte Carlo runs ${N.toLocaleString()} random scenarios by varying Phase 1 revenue growth (±3%), WACC (±1.5%), and terminal growth (±0.75%) around your current slider settings. Each scenario produces a separate intrinsic value. The histogram shows how those values are distributed — green bars are above the current price, red bars below.<br><br>
+<strong>Current settings imply:</strong> Bear ${cs}${p10.toFixed(0)} · Base ${cs}${p50.toFixed(0)} · Bull ${cs}${p90.toFixed(0)} (P10–P90 spread of ${cs}${spread.toFixed(0)}${spreadPct ? `, or ${spreadPct}% of current price` : ''}). ${pAboveTxt}<br><br>
+<em>Tip: Try adjusting the Phase 1 growth or WACC sliders — the distribution will shift in real time.</em>`;
+
+  setTimeout(() => {
+    const mb = document.getElementById('mc-brief');
+    if (mb) mb.innerHTML = mcBriefText;
+  }, 0);
+
   return `<div class="mc-results">
     <div class="mc-card"><div class="mc-label">🐻 Bear Case (P10)</div><div class="mc-value" style="color:var(--red)">${cs}${p10.toFixed(0)}</div><div class="mc-prob">10% of scenarios below</div></div>
     <div class="mc-card"><div class="mc-label">⚖️ Base Case (P50)</div><div class="mc-value" style="color:var(--gold)">${cs}${p50.toFixed(0)}</div><div class="mc-prob">Median scenario</div></div>
@@ -1870,10 +1937,15 @@ function _methodCard(label, val, price, cs, sub, formula) {
   if (!val || val <= 0) {
     return `<div class="method-card"><div class="method-label">${label}</div><div class="method-value" style="color:var(--muted)">N/A</div><div class="method-sub">${sub}</div></div>`;
   }
-  const upside = price ? ((val - price)/price*100).toFixed(1) : null;
-  const col    = upside > 0 ? 'var(--green)' : 'var(--red)';
-  const dir    = upside > 0 ? '▲' : '▼';
-  const verdict= upside > 0 ? `UNDERVALUED by ${Math.abs(upside)}%` : `OVERVALUED by ${Math.abs(upside)}%`;
+  // Use explicit numeric comparison to avoid JS string coercion bugs
+  const upsideNum = (price && price > 0) ? (val - price) / price * 100 : null;
+  const col    = upsideNum != null && upsideNum > 0 ? 'var(--green)' : 'var(--red)';
+  const dir    = upsideNum != null && upsideNum > 0 ? '▲' : '▼';
+  // val > price → intrinsic value above market price → stock UNDERVALUED (trading at discount)
+  const verdict= upsideNum != null && upsideNum > 0
+    ? `UNDERVALUED by ${Math.abs(upsideNum).toFixed(1)}%`
+    : `OVERVALUED by ${Math.abs(upsideNum || 0).toFixed(1)}%`;
+  const upsideStr = upsideNum != null ? (upsideNum > 0 ? '+' : '') + upsideNum.toFixed(1) + '%' : '';
   return `<div class="method-card">
     <div class="method-label">${label}</div>
     <div class="method-value">${cs}${val.toFixed(2)}</div>
