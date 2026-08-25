@@ -850,6 +850,8 @@ function renderFundamentals(d) {
 
   // ── Growth Table ──
   const gt = d.growth_table || [];
+  const _fundTaxRate = (d.valuation_inputs || {}).tax_rate;  // e.g. 15.2 (%)
+  const _taxFactor   = _fundTaxRate ? (1 - _fundTaxRate / 100) : 0.75;  // fallback 25% tax
   if (gt.length) {
     html += `<div class="sub-label">Historical Growth (Annual)</div>
     <div class="growth-table-wrap">
@@ -865,7 +867,12 @@ function renderFundamentals(d) {
       ${growthRow('EPS Growth', gt, r=>r.eps_growth != null ? pct(r.eps_growth) : null, true)}
       ${growthRow('ROIC', gt, r=>r.roic != null ? pct(r.roic) : null, true)}
       ${growthRow('Operating Margin', gt, r=>r.op_margin != null ? pct(r.op_margin) : null, true)}
-      ${growthRow('NOPAT Margin', gt, r=>r.nopat_margin != null ? pct(r.nopat_margin) : null, true)}
+      ${growthRow('NOPAT Margin', gt, r => {
+        // Prefer API-supplied value; compute client-side as fallback using op_margin × (1-tax)
+        if (r.nopat_margin != null) return pct(r.nopat_margin);
+        if (r.op_margin != null) return pct(parseFloat((r.op_margin * _taxFactor).toFixed(1)));
+        return null;
+      }, true)}
       ${growthRow('Investment Rate', gt, r=>r.inv_rate != null ? pct(r.inv_rate) : null, false)}
     </table>
     </div>`;
