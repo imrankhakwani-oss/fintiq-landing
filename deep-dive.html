@@ -249,6 +249,42 @@ a{color:var(--gold);text-decoration:none}
 .dot-pulse span:nth-child(3){animation-delay:.4s}
 @keyframes pulse{0%,80%,100%{opacity:.2}40%{opacity:1}}
 
+/* ── Technical Section ── */
+.tech-trend-banner{display:flex;align-items:center;gap:14px;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:14px}
+.tech-trend-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.tech-trend-val{font-size:1.1rem;font-weight:700;margin-top:2px}
+.tech-trend-up{color:var(--green)}.tech-trend-dn{color:var(--red)}.tech-trend-sw{color:var(--gold)}
+.tech-chart-wrap{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.tech-chart-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.tech-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.tech-card-title{font-size:0.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
+.tech-stat{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.78rem}
+.tech-stat:last-child{border-bottom:none}
+.tech-stat-label{color:var(--dim)}
+.tech-stat-val{font-weight:600;color:var(--text)}
+.opt-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.opt-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;text-align:center}
+.opt-card-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px}
+.opt-card-val{font-size:1.05rem;font-weight:700;color:var(--text)}
+.opt-card-sub{font-size:0.65rem;color:var(--muted);margin-top:2px}
+.trade-setup{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.trade-setup-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.trade-badge{font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:6px}
+.badge-long{background:rgba(16,185,129,0.12);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+.badge-short{background:rgba(239,68,68,0.12);color:var(--red);border:1px solid rgba(239,68,68,0.25)}
+.trade-row{display:grid;grid-template-columns:130px 1fr;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.8rem;align-items:start}
+.trade-row:last-child{border-bottom:none}
+.trade-row-label{color:var(--muted);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-top:1px}
+.trade-row-val{color:var(--dim);line-height:1.5}
+.trade-price{color:var(--gold);font-weight:700}
+.ai-tech-commentary{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:10px;padding:14px 16px;font-size:0.8rem;color:var(--dim);line-height:1.7;margin-bottom:14px;white-space:pre-wrap}
+.unusual-table{width:100%;border-collapse:collapse;font-size:0.72rem;margin-top:6px}
+.unusual-table th{color:var(--muted);text-align:left;padding:3px 6px;font-weight:600;font-size:0.6rem;text-transform:uppercase}
+.unusual-table td{padding:4px 6px;border-top:1px solid rgba(255,255,255,0.04)}
+.lvl-bar-wrap{height:6px;background:var(--card);border-radius:3px;margin:6px 0 2px;overflow:hidden}
+.lvl-bar{height:100%;background:var(--gold);border-radius:3px;transition:width .5s}
+
 /* ── Placeholder sections ── */
 .placeholder-section{padding:28px;text-align:center;color:var(--muted)}
 .placeholder-section .ph-icon{font-size:1.6rem;margin-bottom:8px;opacity:0.5}
@@ -475,9 +511,12 @@ a{color:var(--gold);text-decoration:none}
       <span class="section-chevron" id="chev-technical">▼</span>
     </div>
     <div class="section-body" id="body-technical">
-      <div class="placeholder-section">
-        <div class="ph-icon">🚧</div>
-        <p>Technical analysis section — interactive price chart with MA, RSI and MACD — coming next.</p>
+      <div class="sec-pad">
+        <div id="tech-loading" style="display:none;text-align:center;padding:32px;color:var(--muted)">
+          <div class="dot-pulse" style="justify-content:center;margin-bottom:10px"><span></span><span></span><span></span></div>
+          <div id="tech-loading-label" style="font-size:0.8rem">Fetching price data…</div>
+        </div>
+        <div id="tech-content" style="display:none"></div>
       </div>
     </div>
   </div>
@@ -634,6 +673,7 @@ function openSection(name) {
     _sectionOpened[name] = true;
     if (name === 'fundamentals') loadFundamentals();
     if (name === 'valuation') renderValuation(_session.fundamentals.data);
+    if (name === 'technical') loadTechnical();
   }
 }
 
@@ -1108,6 +1148,13 @@ function renderChat(section, data) {
       "What is the margin of safety at current assumptions?",
       "How sensitive is the valuation to WACC vs terminal growth?",
       "What does the Monte Carlo distribution tell us about risk/reward?",
+    ],
+    technical: [
+      "Is the current RSI level a good entry or should I wait?",
+      "What does the put wall tell us about near-term downside?",
+      "Is the MACD signal reliable here, or is volume weak?",
+      "What is the short squeeze risk on the short setup?",
+      "How should I size this trade given the ATM implied volatility?",
     ],
   };
   const chips = starters[section] || [];
@@ -1968,6 +2015,369 @@ function _randn() {
   while (u === 0) u = Math.random();
   while (v === 0) v = Math.random();
   return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// ════════════════════════════════════════════════════════════
+//  SECTION 3 — TECHNICAL ANALYSIS
+// ════════════════════════════════════════════════════════════
+
+let _techCharts = [];  // keep refs for cleanup
+
+function loadTechnical() {
+  if (!_session.ticker) return;
+  document.getElementById('tech-loading').style.display = 'block';
+  document.getElementById('tech-content').style.display = 'none';
+  _pollTechnical(0);
+}
+
+async function _pollTechnical(attempt) {
+  const loadEl = document.getElementById('tech-loading');
+  const contEl = document.getElementById('tech-content');
+  if (attempt > 40) {
+    loadEl.style.display = 'none';
+    contEl.innerHTML = `<div class="error-block">⚠️ Timed out loading technical data. Please try again.</div>`;
+    contEl.style.display = 'block';
+    return;
+  }
+  const labels = ['Fetching price history…','Computing indicators…','Analysing options flow…','Almost done…'];
+  const lbl = document.getElementById('tech-loading-label');
+  if (lbl) lbl.textContent = labels[Math.min(attempt >> 2, labels.length - 1)];
+  await new Promise(r => setTimeout(r, attempt === 0 ? 100 : 2000));
+  try {
+    const res = await fetch(`${API}/technical?ticker=${_session.ticker}`);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const d = await res.json();
+    if (d.status === 'processing') { _pollTechnical(attempt + 1); return; }
+    _session.technical = { data: d };
+    loadEl.style.display = 'none';
+    contEl.style.display = 'block';
+    setStatus('technical', 'done');
+    renderTechnical(d);
+  } catch(e) {
+    loadEl.style.display = 'none';
+    contEl.innerHTML = `<div class="error-block">⚠️ ${e.message}</div>`;
+    contEl.style.display = 'block';
+  }
+}
+
+function renderTechnical(d) {
+  // destroy any old Chart.js instances
+  _techCharts.forEach(c => { try { c.destroy(); } catch(_) {} });
+  _techCharts = [];
+
+  const tr  = d.trend || {};
+  const mom = d.momentum || {};
+  const kl  = d.key_levels || {};
+  const vol = d.volume || {};
+  const opt = d.options || {};
+  const curr = (d.ohlcv && d.ohlcv.c) ? d.ohlcv.c[d.ohlcv.c.length - 1] : null;
+  const cs   = (_session.fundamentals && _session.fundamentals.data)
+               ? ((_session.fundamentals.data.overview || {}).currency === 'GBP' ? '£' : '$') : '$';
+
+  // Trend colour
+  const tCls = tr.classification === 'Uptrend' ? 'tech-trend-up'
+             : tr.classification === 'Downtrend' ? 'tech-trend-dn' : 'tech-trend-sw';
+  const tIcon = tr.classification === 'Uptrend' ? '▲' : tr.classification === 'Downtrend' ? '▼' : '↔';
+
+  // RSI colour
+  const rsiCol = mom.rsi < 30 ? 'var(--green)' : mom.rsi > 70 ? 'var(--red)' : 'var(--gold)';
+
+  // MACD colour
+  const macdCol = (mom.macd_crossover || '').startsWith('Bullish') ? 'var(--green)' : 'var(--red)';
+
+  // Volume colour
+  const volCol = vol.ratio > 1.5 ? 'var(--green)' : vol.ratio < 0.7 ? 'var(--red)' : 'var(--text)';
+
+  // 52-week bar position
+  const w52pct = tr.week52_pct || 50;
+
+  const fmt = v => v != null ? `${cs}${parseFloat(v).toFixed(2)}` : '—';
+  const fmtN = v => v != null ? v.toFixed(2) : '—';
+
+  let html = '';
+
+  // ── Trend Banner ──
+  html += `<div class="tech-trend-banner">
+    <div style="flex:1">
+      <div class="tech-trend-label">Trend Classification</div>
+      <div class="tech-trend-val ${tCls}">${tIcon} ${tr.classification || '—'}</div>
+    </div>
+    <div style="flex:1;text-align:center">
+      <div class="tech-trend-label">52-Week Position</div>
+      <div style="font-size:0.75rem;color:var(--dim);margin-top:4px">${fmt(tr.week52_low)} ← <strong style="color:var(--gold)">${fmt(curr)}</strong> → ${fmt(tr.week52_high)}</div>
+      <div class="lvl-bar-wrap"><div class="lvl-bar" style="width:${w52pct}%"></div></div>
+      <div style="font-size:0.65rem;color:var(--muted)">${w52pct}% of 52-week range</div>
+    </div>
+    <div style="flex:1;text-align:right">
+      <div class="tech-trend-label">MA Cross</div>
+      <div style="font-size:0.85rem;font-weight:700;margin-top:4px;color:${tr.golden_cross ? 'var(--green)' : 'var(--red)'}">${tr.golden_cross ? '🌟 Golden Cross' : '💀 Death Cross'}</div>
+      <div style="font-size:0.68rem;color:var(--muted);margin-top:2px">MA50 ${fmt(tr.ma50)} / MA200 ${fmt(tr.ma200)}</div>
+    </div>
+  </div>`;
+
+  // ── Charts ──
+  html += `<div class="tech-chart-wrap">
+    <div class="tech-chart-label">Price — 6 Months (with MA50 · MA200 · Bollinger Bands)</div>
+    <canvas id="chart-price" height="220"></canvas>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="tech-chart-wrap" style="margin-bottom:0">
+      <div class="tech-chart-label">RSI (14) — <span style="color:${rsiCol}">${fmtN(mom.rsi)} · ${mom.rsi_signal || ''}</span></div>
+      <canvas id="chart-rsi" height="110"></canvas>
+    </div>
+    <div class="tech-chart-wrap" style="margin-bottom:0">
+      <div class="tech-chart-label">MACD (12·26·9) — <span style="color:${macdCol}">${mom.macd_crossover || ''}</span></div>
+      <canvas id="chart-macd" height="110"></canvas>
+    </div>
+  </div>`;
+
+  // ── Stats grid ──
+  html += `<div class="tech-grid">
+    <div class="tech-card">
+      <div class="tech-card-title">Momentum</div>
+      <div class="tech-stat"><span class="tech-stat-label">RSI (14)</span><span class="tech-stat-val" style="color:${rsiCol}">${fmtN(mom.rsi)} — ${mom.rsi_signal || '—'}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label">MACD</span><span class="tech-stat-val" style="color:${macdCol}">${fmtN(mom.macd)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label">MACD Signal</span><span class="tech-stat-val">${fmtN(mom.macd_signal_val)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label">Histogram</span><span class="tech-stat-val" style="color:${(mom.macd_hist||0)>0?'var(--green)':'var(--red)'}">${fmtN(mom.macd_hist)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label">Crossover</span><span class="tech-stat-val" style="color:${macdCol}">${mom.macd_crossover || '—'}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label">Bollinger</span><span class="tech-stat-val">${tr.bb_signal || '—'}</span></div>
+    </div>
+    <div class="tech-card">
+      <div class="tech-card-title">Key Levels</div>
+      <div class="tech-stat"><span class="tech-stat-label" style="color:var(--green)">Support 1 (MA50)</span><span class="tech-stat-val">${fmt(kl.support1)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label" style="color:var(--green)">Support 2 (MA200)</span><span class="tech-stat-val">${fmt(kl.support2)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label" style="color:var(--green)">Support 3 (3M low)</span><span class="tech-stat-val">${fmt(kl.support3)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label" style="color:var(--red)">Resistance 1 (3M high)</span><span class="tech-stat-val">${fmt(kl.resistance1)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label" style="color:var(--red)">Resistance 2 (52W high)</span><span class="tech-stat-val">${fmt(kl.resistance2)}</span></div>
+      <div class="tech-stat"><span class="tech-stat-label">Volume vs 20d avg</span><span class="tech-stat-val" style="color:${volCol}">${vol.ratio != null ? vol.ratio + '×' : '—'} — ${vol.signal || '—'}</span></div>
+    </div>
+  </div>`;
+
+  // ── Options Dashboard ──
+  if (!opt.error) {
+    const pcrCol = opt.pcr > 1.2 ? 'var(--green)' : opt.pcr < 0.5 ? 'var(--red)' : 'var(--gold)';
+    const mpVsCurr = opt.max_pain && curr ? ((opt.max_pain - curr) / curr * 100).toFixed(1) : null;
+    html += `<div class="sub-label" style="margin-top:4px">Options Flow — Expiry ${opt.expiry || 'nearest'}</div>
+    <div class="opt-grid">
+      <div class="opt-card">
+        <div class="opt-card-label">Put / Call Ratio</div>
+        <div class="opt-card-val" style="color:${pcrCol}">${opt.pcr != null ? opt.pcr : '—'}</div>
+        <div class="opt-card-sub">${opt.pcr_signal || ''}</div>
+      </div>
+      <div class="opt-card">
+        <div class="opt-card-label">ATM Implied Vol</div>
+        <div class="opt-card-val">${opt.atm_iv != null ? opt.atm_iv + '%' : '—'}</div>
+        <div class="opt-card-sub">${opt.atm_iv > 40 ? 'Elevated — big move priced in' : opt.atm_iv > 20 ? 'Moderate' : 'Low IV'}</div>
+      </div>
+      <div class="opt-card">
+        <div class="opt-card-label">Max Pain</div>
+        <div class="opt-card-val">${fmt(opt.max_pain)}</div>
+        <div class="opt-card-sub">${mpVsCurr != null ? (mpVsCurr > 0 ? `+${mpVsCurr}% above price → upward pull` : `${mpVsCurr}% below price → downward pull`) : ''}</div>
+      </div>
+      <div class="opt-card">
+        <div class="opt-card-label">Put Wall (support)</div>
+        <div class="opt-card-val" style="color:var(--green)">${fmt(opt.put_wall)}</div>
+        <div class="opt-card-sub">Largest put OI below price</div>
+      </div>
+      <div class="opt-card">
+        <div class="opt-card-label">Call Wall (resistance)</div>
+        <div class="opt-card-val" style="color:var(--red)">${fmt(opt.call_wall)}</div>
+        <div class="opt-card-sub">Largest call OI above price</div>
+      </div>
+      <div class="opt-card">
+        <div class="opt-card-label">Current Price</div>
+        <div class="opt-card-val">${fmt(curr)}</div>
+        <div class="opt-card-sub">${tr.pct_vs_ma50 != null ? (tr.pct_vs_ma50 > 0 ? '+' : '') + tr.pct_vs_ma50 + '% vs MA50' : ''}</div>
+      </div>
+    </div>`;
+
+    // Unusual activity
+    const hasUC = opt.unusual_calls && opt.unusual_calls.length > 0;
+    const hasUP = opt.unusual_puts  && opt.unusual_puts.length  > 0;
+    if (hasUC || hasUP) {
+      html += `<div class="sub-label">Unusual Options Activity</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">`;
+      if (hasUC) {
+        html += `<div class="tech-card">
+          <div class="tech-card-title" style="color:var(--green)">🚀 Unusual CALLS (bullish flow)</div>
+          <table class="unusual-table"><tr><th>Strike</th><th>Volume</th><th>OI</th><th>Vol/OI</th></tr>
+          ${opt.unusual_calls.map(r=>`<tr><td style="color:var(--green)">${cs}${r.strike}</td><td>${r.volume.toLocaleString()}</td><td>${r.oi.toLocaleString()}</td><td style="color:var(--gold)">${(r.volume/Math.max(r.oi,1)).toFixed(1)}×</td></tr>`).join('')}
+          </table></div>`;
+      }
+      if (hasUP) {
+        html += `<div class="tech-card">
+          <div class="tech-card-title" style="color:var(--red)">🐻 Unusual PUTS (bearish flow)</div>
+          <table class="unusual-table"><tr><th>Strike</th><th>Volume</th><th>OI</th><th>Vol/OI</th></tr>
+          ${opt.unusual_puts.map(r=>`<tr><td style="color:var(--red)">${cs}${r.strike}</td><td>${r.volume.toLocaleString()}</td><td>${r.oi.toLocaleString()}</td><td style="color:var(--gold)">${(r.volume/Math.max(r.oi,1)).toFixed(1)}×</td></tr>`).join('')}
+          </table></div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  // ── AI Commentary placeholder ──
+  html += `<div class="sub-label" style="margin-top:4px">AI Trade Setup — Long & Short</div>
+  <div id="ai-tech-wrap">
+    <div style="text-align:center;padding:20px;color:var(--muted);font-size:0.8rem">
+      <div class="dot-pulse" style="justify-content:center;margin-bottom:8px"><span></span><span></span><span></span></div>
+      Generating trade setups…
+    </div>
+  </div>`;
+
+  // ── Chat ──
+  html += renderChat('technical', d);
+
+  document.getElementById('tech-content').innerHTML = html;
+  setBadge('technical', 'done');
+
+  // Render charts (Chart.js already loaded in <head>)
+  _buildTechCharts(d);
+
+  // Fetch AI commentary
+  _loadTechCommentary(d);
+}
+
+function _buildTechCharts(d) {
+  const dates = d.dates || [];
+  const C = d.ohlcv?.c || [];
+  const V = d.ohlcv?.v || [];
+  const ma50  = d.ma50  || [];
+  const ma200 = d.ma200 || [];
+  const bbup  = d.bb_up  || [];
+  const bblo  = d.bb_low || [];
+  const rsiD  = d.rsi   || [];
+  const macdD = d.macd  || [];
+  const msigD = d.macd_signal || [];
+  const mhstD = d.macd_hist   || [];
+
+  const chartDefaults = {
+    responsive: true,
+    animation: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { display: true, labels: { color: '#94a3b8', font: { size: 10 }, boxWidth: 12 } }, tooltip: { backgroundColor: '#0d2137', titleColor: '#f5a623', bodyColor: '#cbd5e1', borderColor: '#1e3a5f', borderWidth: 1 } },
+    scales: {
+      x: { ticks: { color: '#64748b', maxTicksLimit: 8, font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+      y: { position: 'right', ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+    }
+  };
+
+  // ── Price chart ──
+  const priceCtx = document.getElementById('chart-price');
+  if (priceCtx) {
+    const pc = new Chart(priceCtx, {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [
+          { label: 'Price', data: C, borderColor: '#f5a623', borderWidth: 1.5, pointRadius: 0, tension: 0.1, yAxisID: 'y' },
+          { label: 'MA50',  data: ma50,  borderColor: '#38bdf8', borderWidth: 1.2, pointRadius: 0, borderDash: [], tension: 0 },
+          { label: 'MA200', data: ma200, borderColor: '#f472b6', borderWidth: 1.2, pointRadius: 0, borderDash: [4,2], tension: 0 },
+          { label: 'BB Upper', data: bbup, borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false },
+          { label: 'BB Lower', data: bblo, borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1, pointRadius: 0, tension: 0,
+            fill: '-1', backgroundColor: 'rgba(100,116,139,0.05)' },
+          { label: 'Volume', data: V, type: 'bar', backgroundColor: V.map((_,i) => C[i] >= (C[i-1]||C[i]) ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'), yAxisID: 'yv', barThickness: 'flex' }
+        ]
+      },
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+        y: { position: 'right', ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        yv: { position: 'left', display: false, grid: { display: false }, max: Math.max(...V) * 5 }
+      }}
+    });
+    _techCharts.push(pc);
+  }
+
+  // ── RSI chart ──
+  const rsiCtx = document.getElementById('chart-rsi');
+  if (rsiCtx) {
+    const rc = new Chart(rsiCtx, {
+      type: 'line',
+      data: {
+        labels: dates,
+        datasets: [
+          { label: 'RSI', data: rsiD, borderColor: '#f5a623', borderWidth: 1.5, pointRadius: 0, tension: 0.1 }
+        ]
+      },
+      options: { ...chartDefaults,
+        plugins: { ...chartDefaults.plugins, legend: { display: false },
+          annotation: undefined
+        },
+        scales: { ...chartDefaults.scales,
+          y: { position: 'right', min: 0, max: 100, ticks: { color: '#64748b', font: { size: 9 }, stepSize: 30 }, grid: { color: 'rgba(255,255,255,0.04)' } }
+        }
+      },
+      plugins: [{
+        id: 'rsi-zones',
+        afterDraw(chart) {
+          const {ctx, scales: {x, y}} = chart;
+          const y70 = y.getPixelForValue(70), y30 = y.getPixelForValue(30), y50 = y.getPixelForValue(50);
+          const left = x.left, right = x.right;
+          ctx.save();
+          ctx.fillStyle = 'rgba(239,68,68,0.08)';
+          ctx.fillRect(left, y70, right-left, chart.chartArea.top - y70 + (chart.chartArea.top - y70));
+          ctx.fillRect(left, chart.chartArea.top, right-left, y70 - chart.chartArea.top);
+          ctx.fillStyle = 'rgba(16,185,129,0.08)';
+          ctx.fillRect(left, y30, right-left, chart.chartArea.bottom - y30);
+          [y70, y30, y50].forEach((yp, i) => {
+            ctx.strokeStyle = i === 2 ? 'rgba(100,116,139,0.3)' : (i === 0 ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)');
+            ctx.lineWidth = 0.8;
+            ctx.setLineDash(i===2 ? [4,4] : []);
+            ctx.beginPath(); ctx.moveTo(left, yp); ctx.lineTo(right, yp); ctx.stroke();
+          });
+          ctx.restore();
+        }
+      }]
+    });
+    _techCharts.push(rc);
+  }
+
+  // ── MACD chart ──
+  const macdCtx = document.getElementById('chart-macd');
+  if (macdCtx) {
+    const mc = new Chart(macdCtx, {
+      type: 'bar',
+      data: {
+        labels: dates,
+        datasets: [
+          { label: 'Histogram', data: mhstD, backgroundColor: mhstD.map(v => v >= 0 ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)'), barThickness: 'flex', order: 3 },
+          { label: 'MACD',   type: 'line', data: macdD, borderColor: '#38bdf8', borderWidth: 1.5, pointRadius: 0, tension: 0, order: 1 },
+          { label: 'Signal', type: 'line', data: msigD, borderColor: '#f472b6', borderWidth: 1.2, pointRadius: 0, tension: 0, order: 2 },
+        ]
+      },
+      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
+        y: { position: 'right', ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }}
+    });
+    _techCharts.push(mc);
+  }
+}
+
+async function _loadTechCommentary(d) {
+  const wrapEl = document.getElementById('ai-tech-wrap');
+  if (!wrapEl) return;
+  try {
+    const fundSummary = _session.fundamentals ? {
+      name: (_session.fundamentals.data.overview || {}).name,
+      sector: (_session.fundamentals.data.overview || {}).sector,
+      market_cap: (_session.fundamentals.data.overview || {}).market_cap,
+      quality: _session.fundamentals.data.quality,
+      multiples: _session.fundamentals.data.multiples,
+    } : {};
+    const res = await fetch(`${API}/technical/ai-commentary`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker: _session.ticker, tech_data: d, fundamentals_summary: fundSummary })
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const r = await res.json();
+    const text = r.commentary || '';
+    // Format: bold the section headers
+    const formatted = text
+      .replace(/━━ (.*?) ━━/g, '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:12px 0 6px;border-top:1px solid rgba(245,166,35,0.2);padding-top:10px">$1</div>')
+      .replace(/^(TREND & MOMENTUM SUMMARY:|ENTRY ZONE:|CONFIRMATION NEEDED:|STOP LOSS:|TARGET 1.*?:|TARGET 2.*?:|OPTIONS SIGNAL.*?:|RISK.*?:|VERDICT:)/gm, '<strong style="color:var(--blue)">$1</strong>');
+    wrapEl.innerHTML = `<div class="ai-tech-commentary" style="white-space:normal">${formatted}</div>`;
+  } catch(e) {
+    wrapEl.innerHTML = `<div class="error-block">⚠️ Could not load AI commentary: ${e.message}</div>`;
+  }
 }
 
 // ── Method Card HTML ──
