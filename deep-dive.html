@@ -257,6 +257,95 @@ a{color:var(--gold);text-decoration:none}
 /* ── Error ── */
 .error-block{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:14px 16px;color:#fca5a5;font-size:0.82rem}
 
+/* ── Valuation — sliders ── */
+.val-section{margin-bottom:18px}
+.val-section-title{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.slider-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slider-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.slider-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.slider-value{font-size:0.82rem;font-weight:800;color:var(--gold)}
+.slider-input{width:100%;-webkit-appearance:none;appearance:none;height:4px;background:var(--border);border-radius:2px;outline:none;cursor:pointer}
+.slider-input::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--gold);cursor:pointer}
+.slider-input::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--gold);border:none;cursor:pointer}
+.slider-range{display:flex;justify-content:space-between;font-size:0.58rem;color:var(--muted);margin-top:3px}
+/* Phase boxes */
+.phase-boxes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.phase-box{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 10px 6px}
+.phase-box-title{font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+.pb-short{border-top:2px solid var(--green);color:var(--green)}
+.pb-mid{border-top:2px solid var(--gold);color:var(--gold)}
+.pb-long{border-top:2px solid var(--blue);color:var(--blue)}
+/* WACC rationale */
+.wacc-block{background:var(--card2);border:1px solid rgba(56,189,248,0.2);border-radius:8px;padding:14px;margin-bottom:14px}
+.wacc-formula{font-size:0.78rem;color:var(--blue);font-weight:600;margin-bottom:8px}
+.wacc-row{display:flex;justify-content:space-between;font-size:0.72rem;padding:4px 0;border-bottom:1px solid rgba(30,58,95,0.4)}
+.wacc-row:last-child{border-bottom:none;font-weight:700;color:var(--text)}
+.wacc-key{color:var(--muted)}
+.wacc-val{font-weight:600;color:var(--text)}
+/* Fixed assumptions */
+.fixed-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.fixed-item{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.fixed-label{font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:3px}
+.fixed-val{font-size:0.9rem;font-weight:700;color:var(--text)}
+.fixed-note{font-size:0.62rem;color:var(--muted);margin-top:2px}
+/* Method cards */
+.method-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.method-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+.method-label{font-size:0.58rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:6px}
+.method-value{font-size:1.3rem;font-weight:800;color:var(--text)}
+.method-verdict{font-size:0.68rem;font-weight:700;margin-top:4px}
+.method-sub{font-size:0.62rem;color:var(--muted);margin-top:3px;line-height:1.4}
+.method-formula{font-size:0.6rem;color:var(--muted);margin-top:6px;padding-top:6px;border-top:1px solid var(--border)}
+/* Average bar */
+.avg-bar{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);border-radius:8px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.avg-value{font-size:1.4rem;font-weight:800;color:var(--gold)}
+.avg-verdict{font-size:0.88rem;font-weight:700}
+/* EV bridge */
+.ev-bridge{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:0.78rem}
+.ev-bridge-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(30,58,95,0.3)}
+.ev-bridge-row:last-child{border-bottom:none;font-weight:700;color:var(--gold)}
+/* Value bridge / waterfall */
+.waterfall-wrap{margin-bottom:14px}
+.waterfall-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:0.72rem}
+.waterfall-label{width:160px;flex-shrink:0;color:var(--muted)}
+.waterfall-track{flex:1;background:rgba(30,58,95,0.4);border-radius:3px;height:16px;position:relative;overflow:hidden}
+.waterfall-fill{height:100%;border-radius:3px;transition:width .4s}
+.waterfall-num{width:70px;flex-shrink:0;text-align:right;font-weight:600}
+/* Phase diagnostics */
+.diag-table{width:100%;border-collapse:collapse;font-size:0.72rem}
+.diag-table th{padding:5px 8px;color:var(--muted);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);text-align:right}
+.diag-table th:first-child{text-align:left}
+.diag-table td{padding:5px 8px;border-bottom:1px solid rgba(30,58,95,0.3);text-align:right}
+.diag-table td:first-child{text-align:left;color:var(--dim)}
+.diag-table tr:last-child td{border-bottom:none}
+.diag-over{color:var(--red)}
+.diag-under{color:var(--green)}
+/* Sensitivity grid */
+.sens-wrap{overflow-x:auto;margin-bottom:14px}
+.sens-table{border-collapse:collapse;font-size:0.7rem;width:100%}
+.sens-table th{padding:5px 8px;color:var(--muted);font-size:0.6rem;text-transform:uppercase;letter-spacing:0.05em;text-align:center;border:1px solid var(--border)}
+.sens-table th:first-child{text-align:left}
+.sens-table td{padding:5px 8px;text-align:center;border:1px solid rgba(30,58,95,0.3);font-weight:600;font-size:0.7rem;transition:background .2s}
+.sens-table td:first-child{text-align:left;color:var(--muted);font-weight:400;white-space:nowrap}
+.sens-current{outline:2px solid var(--gold)!important;outline-offset:-2px}
+/* MC chart */
+.mc-results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.mc-card{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.mc-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
+.mc-value{font-size:1rem;font-weight:800}
+.mc-prob{font-size:0.62rem;color:var(--muted);margin-top:3px}
+.mc-bar-chart{height:80px;position:relative;background:var(--card2);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+/* CV bar */
+.cv-bar{background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.15);border-radius:6px;padding:8px 12px;font-size:0.72rem;color:var(--blue);margin-bottom:14px}
+/* AI assumptions */
+.ai-assumptions-wrap{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:14px;margin-bottom:14px}
+.ai-assumptions-header{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.ai-assumptions-text{font-size:0.78rem;color:var(--dim);line-height:1.7;white-space:pre-wrap}
+/* Implied growth callout */
+.implied-callout{background:rgba(129,140,248,0.08);border:1px solid rgba(129,140,248,0.2);border-radius:8px;padding:10px 14px;font-size:0.78rem;color:#a5b4fc;margin-bottom:14px}
+/* Continuing value note */
+.cv-pct-note{font-size:0.68rem;color:var(--muted);text-align:right;margin-bottom:12px}
+
 /* ── Responsive ── */
 @media(max-width:640px){
   .hero-title{font-size:1.25rem}
@@ -544,6 +633,7 @@ function openSection(name) {
   if (!_sectionOpened[name]) {
     _sectionOpened[name] = true;
     if (name === 'fundamentals') loadFundamentals();
+    if (name === 'valuation') renderValuation(_session.fundamentals.data);
   }
 }
 
@@ -1003,7 +1093,14 @@ function renderChat(section, data) {
       "What are the key risks to earnings?",
       "What are the main business segments and revenue breakdown?",
       "What is the moat — why can't competitors replicate this?",
-    ]
+    ],
+    valuation: [
+      "Are the DCF assumptions realistic vs the business model?",
+      "What revenue growth rate would justify the current market price?",
+      "What is the margin of safety at current assumptions?",
+      "How sensitive is the valuation to WACC vs terminal growth?",
+      "What does the Monte Carlo distribution tell us about risk/reward?",
+    ],
   };
   const chips = starters[section] || [];
 
@@ -1061,7 +1158,10 @@ async function sendChat(section) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ticker: _session.ticker,
-        section_data: _session[section].data || {},
+        section,
+        section_data: section === 'valuation'
+          ? { ...((_session.fundamentals && _session.fundamentals.data) || {}), valuation_state: _vs }
+          : (_session[section].data || {}),
         messages: _chatHistory[section],
         session_ctx: buildSessionCtx(),
       })
@@ -1157,6 +1257,685 @@ function markdownToHtml(text) {
     .replace(/\n\n/g,'</p><p>')
     .replace(/\n/g,'<br>')
     .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 2 — VALUATION
+// ═══════════════════════════════════════════════════════════════════
+
+// Global valuation state (slider values + computed WACC)
+let _vs = {};
+
+function renderValuation(d) {
+  const body = document.getElementById('body-valuation');
+  if (!d) {
+    body.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Load Fundamentals first (Section 1) before running Valuation.</div></div>`;
+    return;
+  }
+
+  const ov  = d.overview || {};
+  const q   = d.quality || {};
+  const mk  = d.market || {};
+  const mu  = d.multiples || {};
+  const gt  = d.growth_table || [];
+  const vi  = d.valuation_inputs || {};
+  const an  = d.analyst || {};
+  const price = ov.price;
+  const currSym = ov.currency === 'GBP' ? '£' : ov.currency === 'EUR' ? '€' : '$';
+
+  // ── 1. Compute WACC ──
+  const beta   = mk.beta || 1.0;
+  const rfRate = 0.045;   // ~10yr US Treasury / UK gilt
+  const erp    = 0.050;   // equity risk premium
+  const ke     = rfRate + beta * erp;
+  // D/E ratio — cap at 2x to avoid distortion from near-zero equity (buybacks)
+  const rawDE  = (q.debt_equity || 0) / 100;  // yfinance returns as ratio already
+  const de     = Math.min(Math.max(rawDE, 0), 2.0);
+  const wd     = de / (1 + de);
+  const we     = 1 - wd;
+  const taxRatePct = vi.tax_rate || 21;
+  const taxRate    = taxRatePct / 100;
+  // Kd: use reported or estimate from Ke × 0.55 (debt cheaper than equity, pre-tax ~6-7%)
+  const kdReported = vi.kd ? vi.kd / 100 : null;
+  const kd     = kdReported || Math.max(ke * 0.55, 0.04);
+  const waccCalc = ke * we + kd * (1 - taxRate) * wd;
+  const waccPct  = Math.round(waccCalc * 1000) / 10;
+
+  // ── 2. Smart defaults from historical data ──
+  const revGs  = gt.filter(r=>r.revenue_growth!=null).map(r=>r.revenue_growth);
+  const omGs   = gt.filter(r=>r.op_margin!=null).map(r=>r.op_margin);
+  const irGs   = gt.filter(r=>r.inv_rate!=null).map(r=>r.inv_rate);
+  const avg    = arr => arr.length ? arr.reduce((a,b)=>a+b)/arr.length : null;
+  const avgRevG  = avg(revGs);
+  const avgOM    = avg(omGs) || (q.op_margin || 15);
+  const avgIR    = avg(irGs) || 50;
+  const roicPct  = q.roic || 15;
+
+  // Phase defaults — moderate each phase
+  const g1d = Math.round(Math.min(Math.max(avgRevG || 8, -5), 40));
+  const g2d = Math.round(g1d * 0.65);
+  const g3d = Math.round(g2d * 0.65);
+  const om1d = Math.round(avgOM); const om2d = om1d; const om3d = om1d;
+  const ir1d = Math.round(Math.min(avgIR, 80));
+  const ir2d = ir1d; const ir3d = Math.round(Math.min(ir1d * 0.75, 60));
+  const tgd  = 2; const ronicd = Math.round(roicPct);
+
+  // Init global state
+  _vs = {
+    wacc: waccPct, taxRate: taxRatePct, de: Math.round(de*100)/100,
+    g1: g1d, om1: om1d, ir1: ir1d,
+    g2: g2d, om2: om2d, ir2: ir2d,
+    g3: g3d, om3: om3d, ir3: ir3d,
+    tg: tgd, ronic: ronicd,
+    currSym, price,
+    revRaw: vi.revenue_raw, shares: vi.shares_outstanding || 1e9,
+    netDebt: vi.net_debt || 0, evRaw: vi.ev_raw, mcRaw: vi.mc_raw,
+    bvps: vi.book_value_ps, epsTtm: q.eps_ttm,
+    pb: mu.price_book, peFwd: mu.pe_forward, sector: ov.sector,
+    ticker: d.ticker, d,
+  };
+
+  // ── 3. Reverse-engineer implied growth (find g1 that gives DCF = current price) ──
+  if (price && vi.revenue_raw) {
+    const implied = _solveImplied(price, _vs);
+    if (implied !== null) {
+      _vs.g1 = _vs.g2 = _vs.g3 = Math.round(implied);
+      _vs._impliedSolved = true;
+      _vs._impliedGrowth = Math.round(implied * 10) / 10;
+    }
+  }
+
+  // Inject HTML into section body
+  body.innerHTML = `<div class="sec-pad" id="val-content">${_buildValHTML()}</div>`;
+  setStatus('valuation', 'active');
+}
+
+function _buildValHTML() {
+  const vs = _vs;
+  const cs = vs.currSym;
+
+  // Compute DCF with current _vs values
+  const dcf = _computeDCF(vs);
+
+  // ── WACC rationale ──
+  const ke_pct  = (vs.wacc / 100 * (1 / (1 + vs.de)) + (vs.de / (1 + vs.de)) > 0)
+                ? Math.round((0.045 + (vs.d?.market?.beta || 1.0) * 0.05) * 1000) / 10
+                : vs.wacc;
+  const ke_show = Math.round((0.045 + (vs.d?.market?.beta || 1.0) * 0.05) * 1000) / 10;
+  const kd_show = vs.d?.valuation_inputs?.kd || Math.round(ke_show * 0.55 * 10) / 10;
+
+  let html = ``;
+
+  // ── Implied growth callout ──
+  if (vs._impliedSolved) {
+    html += `<div class="implied-callout">
+      <strong>🔍 Reverse-engineered defaults:</strong> At today's price of ${cs}${vs.price?.toFixed(2)},
+      the market is implying <strong>${vs._impliedGrowth}%</strong> annual revenue growth across all phases.
+      Sliders are pre-set to this. Adjust them to stress-test different scenarios.
+    </div>`;
+  }
+
+  // ── WACC Block ──
+  html += `<div class="sub-label">WACC — Weighted Average Cost of Capital</div>
+  <div class="wacc-block">
+    <div class="wacc-formula">CAPM: Ke = Rf (${(0.045*100).toFixed(1)}%) + β (${vs.d?.market?.beta?.toFixed(2)||'1.00'}) × ERP (5.0%) = <strong>${ke_show.toFixed(1)}%</strong> &nbsp;·&nbsp; Kd (pre-tax) = <strong>${kd_show.toFixed(1)}%</strong></div>
+    <div class="wacc-row"><span class="wacc-key">Risk-free rate (10yr govt bond)</span><span class="wacc-val">4.5%</span></div>
+    <div class="wacc-row"><span class="wacc-key">Equity Risk Premium</span><span class="wacc-val">5.0%</span></div>
+    <div class="wacc-row"><span class="wacc-key">Beta (yfinance)</span><span class="wacc-val">${vs.d?.market?.beta?.toFixed(2)||'1.00'}</span></div>
+    <div class="wacc-row"><span class="wacc-key">Cost of Equity (Ke)</span><span class="wacc-val">${ke_show.toFixed(1)}%</span></div>
+    <div class="wacc-row"><span class="wacc-key">Cost of Debt pre-tax (Kd)</span><span class="wacc-val">${kd_show.toFixed(1)}%</span></div>
+    <div class="wacc-row"><span class="wacc-key">D/E ratio</span><span class="wacc-val">${vs.de.toFixed(2)}x</span></div>
+    <div class="wacc-row"><span class="wacc-key">Effective Tax Rate</span><span class="wacc-val">${vs.taxRate.toFixed(1)}%</span></div>
+    <div class="wacc-row"><span class="wacc-key">Weight of Equity</span><span class="wacc-val">${Math.round(100/(1+vs.de))}%</span></div>
+    <div class="wacc-row"><span class="wacc-key">Weight of Debt</span><span class="wacc-val">${Math.round(vs.de*100/(1+vs.de))}%</span></div>
+    <div class="wacc-row" style="margin-top:4px;padding-top:8px;border-top:1px solid var(--border)">
+      <span class="wacc-key">WACC = Ke×We + Kd×(1−t)×Wd</span>
+      <span class="wacc-val" style="color:var(--gold);font-size:0.9rem">${vs.wacc.toFixed(1)}%</span>
+    </div>
+    <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">Use the WACC slider below to stress-test different discount rates. Standard IB practice: Rf = current 10yr yield, ERP = 5% (Damodaran). Kd estimated from interest expense / total debt.</div>
+  </div>`;
+
+  // ── Fixed Assumptions ──
+  html += `<div class="sub-label">Fixed Assumptions</div>
+  <div class="fixed-grid">
+    <div class="fixed-item">
+      <div class="fixed-label">Discount Rate / WACC</div>
+      <div class="fixed-val" id="disp-wacc">${vs.wacc.toFixed(1)}%</div>
+      <div class="fixed-note">CAPM-derived · adjust with slider</div>
+      <div style="margin-top:8px">
+        <input type="range" class="slider-input" id="sl-wacc" min="5" max="18" step="0.5" value="${vs.wacc}"
+          oninput="updSlider('wacc',this.value);document.getElementById('disp-wacc').textContent=parseFloat(this.value).toFixed(1)+'%'">
+        <div class="slider-range"><span>5%</span><span>18%</span></div>
+      </div>
+    </div>
+    <div class="fixed-item">
+      <div class="fixed-label">Operating Tax Rate</div>
+      <div class="fixed-val">${vs.taxRate.toFixed(1)}%</div>
+      <div class="fixed-note">4yr effective average from income statement</div>
+    </div>
+  </div>`;
+
+  // ── Variable Assumptions — 3 phases ──
+  html += `<div class="sub-label">Variable Assumptions — 3 Phase DCF</div>
+  <div class="phase-boxes">
+    ${_phaseBox('short','Yrs 1–3','pb-short','g1','om1','ir1')}
+    ${_phaseBox('mid','Yrs 4–7','pb-mid','g2','om2','ir2')}
+    ${_phaseBox('long','Yrs 8–10','pb-long','g3','om3','ir3')}
+  </div>`;
+
+  // ── Terminal ──
+  html += `<div class="sub-label">Terminal Period (Beyond Yr 10)</div>
+  <div class="fixed-grid">
+    <div class="fixed-item">
+      <div class="fixed-label">Terminal Growth Rate</div>
+      <div class="fixed-val" id="disp-tg">${vs.tg.toFixed(1)}%</div>
+      <div class="fixed-note">Anchor to GDP / long-run inflation</div>
+      <div style="margin-top:8px">
+        <input type="range" class="slider-input" id="sl-tg" min="0" max="5" step="0.5" value="${vs.tg}"
+          oninput="updSlider('tg',this.value);document.getElementById('disp-tg').textContent=parseFloat(this.value).toFixed(1)+'%'">
+        <div class="slider-range"><span>0%</span><span>5%</span></div>
+      </div>
+    </div>
+    <div class="fixed-item">
+      <div class="fixed-label">RONIC — Return on New Invested Capital</div>
+      <div class="fixed-val" id="disp-ronic">${vs.ronic}%</div>
+      <div class="fixed-note">Historical ROIC ≈ ${vs.d?.quality?.roic||'—'}% · lower in terminal</div>
+      <div style="margin-top:8px">
+        <input type="range" class="slider-input" id="sl-ronic" min="5" max="40" step="1" value="${vs.ronic}"
+          oninput="updSlider('ronic',this.value);document.getElementById('disp-ronic').textContent=this.value+'%'">
+        <div class="slider-range"><span>5%</span><span>40%</span></div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── Phase Diagnostics ──
+  html += `<div class="sub-label">Phase Diagnostics — Implied NOPAT Growth vs Natural Investment Rate</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Shows what your revenue growth + margin assumptions <em>actually imply</em> for NOPAT growth, and whether your investment rate is above or below the minimum needed to sustain that growth (g / RONIC).</div>
+  <div id="phase-diag">${_buildPhaseDiag(vs)}</div>`;
+
+  // ── DCF Output ──
+  html += `<div class="sub-label" style="margin-top:20px">Intrinsic Value — Three Methods</div>`;
+
+  // Method 1: DCF
+  const dcfPs = dcf.equity_ps;
+  const dcfUpside = dcfPs && vs.price ? ((dcfPs - vs.price)/vs.price*100).toFixed(1) : null;
+
+  // Method 2: Graham Number
+  let grahamPs = null;
+  if (vs.epsTtm && vs.bvps && vs.epsTtm > 0 && vs.bvps > 0) {
+    grahamPs = Math.round(Math.sqrt(22.5 * vs.epsTtm * vs.bvps) * 100) / 100;
+  }
+  const grahamUpside = grahamPs && vs.price ? ((grahamPs - vs.price)/vs.price*100).toFixed(1) : null;
+
+  // Method 3: Industry P/E
+  const SECTOR_PE = {'Technology':28,'Communication Services':22,'Healthcare':24,'Consumer Discretionary':20,
+    'Consumer Staples':18,'Financials':14,'Energy':12,'Industrials':18,'Materials':15,
+    'Real Estate':22,'Utilities':16};
+  const sectorPe = SECTOR_PE[vs.sector] || 20;
+  let industPe = null;
+  if (vs.epsTtm) industPe = Math.round(sectorPe * vs.epsTtm * 100) / 100;
+  const industUpside = industPe && vs.price ? ((industPe - vs.price)/vs.price*100).toFixed(1) : null;
+
+  // Average
+  const vals = [dcfPs, grahamPs, industPe].filter(v=>v!=null && v>0);
+  const avgVal = vals.length ? Math.round(vals.reduce((a,b)=>a+b)/vals.length * 100)/100 : null;
+  const avgUpside = avgVal && vs.price ? ((avgVal - vs.price)/vs.price*100).toFixed(1) : null;
+
+  html += `<div class="method-cards">
+    ${_methodCard('METHOD 1 — DCF INTRINSIC VALUE', dcfPs, vs.price, cs, `McKinsey 3-phase · ${dcf.cv_pct}% terminal value`, `EV / Shares − Net Debt/Share`)}
+    ${_methodCard('METHOD 2 — GRAHAM NUMBER', grahamPs, vs.price, cs, `Formula: √(22.5 × EPS × Book Value/Share)`, `EPS=${cs}${vs.epsTtm||'—'} · BVPS=${cs}${vs.bvps||'—'}`)}
+    ${_methodCard('METHOD 3 — INDUSTRY P/E', industPe, vs.price, cs, `Sector avg P/E (${vs.sector||'—'}): ${sectorPe}× EPS`, `Sector P/E=${sectorPe}x · EPS TTM=${cs}${vs.epsTtm||'—'}`)}
+  </div>`;
+
+  if (avgVal) {
+    const col = avgUpside > 0 ? 'var(--green)' : 'var(--red)';
+    const dir = avgUpside > 0 ? '▲' : '▼';
+    html += `<div class="avg-bar">
+      <div>
+        <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Average Intrinsic Value (All Methods)</div>
+        <div class="avg-value">${cs}${avgVal.toFixed(2)}</div>
+      </div>
+      <div style="text-align:right">
+        <div class="avg-verdict" style="color:${col}">${dir} ${Math.abs(avgUpside)}% ${avgUpside > 0 ? 'Upside' : 'Downside'}</div>
+        <div style="font-size:0.68rem;color:var(--muted)">vs current price ${cs}${vs.price?.toFixed(2)||'—'}</div>
+      </div>
+      <div style="font-size:0.7rem;color:var(--muted);padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:6px;border-left:2px solid var(--red);max-width:220px">
+        ${avgUpside > 0 ? '🟢 Below average intrinsic value — potential margin of safety if fundamentals hold.' : '🔴 Above average intrinsic value — premium priced. Needs strong growth justification or wait for better entry.'}
+      </div>
+    </div>`;
+  }
+
+  // ── EV → Equity Bridge ──
+  if (dcf.ev_total) {
+    html += `<div class="sub-label">EV → Equity Value Bridge</div>
+    <div class="ev-bridge">
+      <div class="ev-bridge-row"><span>Enterprise Value (PV of FCFs + Terminal)</span><span style="color:var(--text)">${cs}${_fmtLarge(dcf.ev_total)}</span></div>
+      <div class="ev-bridge-row"><span style="color:var(--red)">− Net Debt (Debt − Cash)</span><span style="color:var(--red)">−${cs}${_fmtLarge(Math.max(vs.netDebt, 0))}</span></div>
+      <div class="ev-bridge-row"><span>= Equity Value</span><span>${cs}${_fmtLarge(dcf.equity_val)}</span></div>
+      <div class="ev-bridge-row"><span>÷ Shares Outstanding</span><span>${_fmtLarge(vs.shares)}</span></div>
+      <div class="ev-bridge-row"><span>= Intrinsic Value Per Share</span><span>${cs}${dcfPs?.toFixed(2)||'—'}</span></div>
+    </div>`;
+  }
+
+  // ── Value Bridge (waterfall) ──
+  if (dcf.bridge) {
+    html += `<div class="sub-label">Value Bridge — Where Does Intrinsic Value Come From?</div>
+    <div class="waterfall-wrap" id="val-waterfall">${_buildWaterfall(dcf.bridge, cs)}</div>`;
+  }
+
+  // ── CV % note ──
+  html += `<div class="cv-bar">
+    <strong>Continuing Value formula:</strong> CV = NOPAT(Yr11) × (1 − TG/RONIC) / (WACC − TG) &nbsp;·&nbsp;
+    Terminal reinvestment = <strong>${Math.round(vs.tg/vs.ronic*100)}%</strong> of NOPAT &nbsp;·&nbsp;
+    FCF to perpetuity = <strong>${100 - Math.round(vs.tg/vs.ronic*100)}%</strong> of NOPAT &nbsp;·&nbsp;
+    Terminal value = <strong id="cv-pct-disp">${dcf.cv_pct}%</strong> of total DCF
+  </div>`;
+
+  // ── Sensitivity Table ──
+  html += `<div class="sub-label">DCF Sensitivity Analysis — WACC × Terminal Growth</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Each cell shows intrinsic value per share. <span style="color:var(--gold)">Gold border</span> = your current selection. <span style="color:var(--green)">Green</span> = undervalued vs current price. <span style="color:var(--red)">Red</span> = overvalued.</div>
+  <div class="sens-wrap" id="sens-table-wrap">${_buildSensTable(vs)}</div>
+  <div style="font-size:0.65rem;color:var(--muted);margin-top:4px">Current price: ${cs}${vs.price?.toFixed(2)||'—'}</div>`;
+
+  // ── Monte Carlo ──
+  html += `<div class="sub-label" style="margin-top:20px">Monte Carlo Simulation — 5,000 Scenarios</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Samples ST revenue growth ±3pp, WACC ±1.5pp, Terminal growth ±0.75pp from your current slider values. All other assumptions held constant.</div>
+  <div id="mc-results">${_runMC(vs, cs)}</div>`;
+
+  // ── AI Valuation Analyst ──
+  html += `<div class="sub-label" style="margin-top:20px">AI Senior Analyst — Recommended Assumptions & Commentary</div>
+  <div class="ai-assumptions-wrap">
+    <div class="ai-assumptions-header">
+      <div style="width:28px;height:28px;background:var(--gold2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem">🤖</div>
+      <div>
+        <div style="font-weight:700;font-size:0.88rem">Investment Banking Grade DCF Analysis</div>
+        <div style="font-size:0.7rem;color:var(--muted)">AI generates its own assumption set with reasoning, then you can discuss</div>
+      </div>
+      <button onclick="loadAIAssumptions()" id="ai-assump-btn"
+        style="margin-left:auto;background:var(--gold);color:#050f1c;border:none;border-radius:6px;padding:6px 14px;font-size:0.78rem;font-weight:700;cursor:pointer">
+        Generate AI Analysis
+      </button>
+    </div>
+    <div id="ai-assumptions-text" class="ai-assumptions-text" style="display:none"></div>
+  </div>`;
+
+  // ── AI Chat ──
+  html += renderChat('valuation', _vs.d);
+
+  return html;
+}
+
+function _phaseBox(id, title, cls, gKey, omKey, irKey) {
+  const vs = _vs;
+  return `<div class="phase-box ${cls}">
+    <div class="phase-box-title">${title}</div>
+    <div class="slider-item" style="border:none;background:none;padding:0;margin-bottom:8px">
+      <div class="slider-label"><span>Revenue Growth</span><span class="slider-value" id="disp-${gKey}">${vs[gKey]}%</span></div>
+      <input type="range" class="slider-input" id="sl-${gKey}" min="-10" max="50" step="1" value="${vs[gKey]}"
+        oninput="updSlider('${gKey}',this.value);document.getElementById('disp-${gKey}').textContent=this.value+'%'">
+      <div class="slider-range"><span>-10%</span><span>50%</span></div>
+    </div>
+    <div class="slider-item" style="border:none;background:none;padding:0;margin-bottom:8px">
+      <div class="slider-label"><span>Op. Margin</span><span class="slider-value" id="disp-${omKey}">${vs[omKey]}%</span></div>
+      <input type="range" class="slider-input" id="sl-${omKey}" min="0" max="60" step="1" value="${vs[omKey]}"
+        oninput="updSlider('${omKey}',this.value);document.getElementById('disp-${omKey}').textContent=this.value+'%'">
+      <div class="slider-range"><span>0%</span><span>60%</span></div>
+    </div>
+    <div class="slider-item" style="border:none;background:none;padding:0">
+      <div class="slider-label"><span>Inv. Rate % NOPAT</span><span class="slider-value" id="disp-${irKey}">${vs[irKey]}%</span></div>
+      <input type="range" class="slider-input" id="sl-${irKey}" min="0" max="100" step="5" value="${vs[irKey]}"
+        oninput="updSlider('${irKey}',this.value);document.getElementById('disp-${irKey}').textContent=this.value+'%'">
+      <div class="slider-range"><span>0%</span><span>100%</span></div>
+    </div>
+  </div>`;
+}
+
+function updSlider(key, val) {
+  _vs[key] = parseFloat(val);
+  _refreshValuation();
+}
+
+function _refreshValuation() {
+  const vs = _vs;
+  const cs = vs.currSym;
+  const dcf = _computeDCF(vs);
+
+  // Update DCF output areas (partial re-render to avoid full rebuild)
+  document.getElementById('phase-diag').innerHTML = _buildPhaseDiag(vs);
+  document.getElementById('sens-table-wrap').innerHTML = _buildSensTable(vs);
+  document.getElementById('mc-results').innerHTML = _runMC(vs, cs);
+  document.getElementById('val-waterfall').innerHTML = _buildWaterfall(dcf.bridge, cs);
+
+  // Update method cards — find and replace them
+  const mc = document.getElementById('val-content');
+  if (mc) {
+    // Update CV formula bar
+    const cvBar = document.getElementById('cv-pct-disp');
+    if (cvBar) cvBar.textContent = dcf.cv_pct + '%';
+
+    // Recompute Graham + Industry (unchanged), update DCF card
+    const dcfEls = mc.querySelectorAll('.method-value');
+    if (dcfEls[0]) dcfEls[0].textContent = dcf.equity_ps ? `${cs}${dcf.equity_ps.toFixed(2)}` : '—';
+  }
+}
+
+// ── McKinsey 3-phase DCF ──
+function _computeDCF(vs) {
+  const waccD = vs.wacc / 100;
+  const taxD  = vs.taxRate / 100;
+  const tgD   = vs.tg / 100;
+  const ronicD = vs.ronic / 100;
+
+  let rev = vs.revRaw;
+  if (!rev || rev <= 0) return { equity_ps: null, ev_total: null, equity_val: null, cv_pct: 0, bridge: null };
+
+  const phases = [
+    { years: 3, g: vs.g1/100, om: vs.om1/100, ir: vs.ir1/100 },
+    { years: 4, g: vs.g2/100, om: vs.om2/100, ir: vs.ir2/100 },
+    { years: 3, g: vs.g3/100, om: vs.om3/100, ir: vs.ir3/100 },
+  ];
+
+  let pvFcf = 0; let yr = 0;
+  let pvByPhase = [0, 0, 0];
+  let nopat_last = 0;
+
+  for (let p = 0; p < phases.length; p++) {
+    const ph = phases[p];
+    for (let y = 0; y < ph.years; y++) {
+      yr++;
+      rev = rev * (1 + ph.g);
+      const nopat = rev * ph.om * (1 - taxD);
+      const fcf   = nopat * (1 - ph.ir);
+      const pv    = fcf / Math.pow(1 + waccD, yr);
+      pvFcf += pv;
+      pvByPhase[p] += pv;
+      nopat_last = nopat;
+    }
+  }
+
+  // Terminal value (McKinsey continuing value formula)
+  const nopat11  = nopat_last * (1 + tgD);
+  const termIR   = ronicD > 0 ? Math.min(tgD / ronicD, 0.95) : 0;
+  const termFcf  = nopat11 * (1 - termIR);
+  const spread   = waccD - tgD;
+  if (spread <= 0.005) return { equity_ps: null, ev_total: null, equity_val: null, cv_pct: 0, bridge: null };
+
+  const tvUndiscounted = termFcf / spread;
+  const pvTV = tvUndiscounted / Math.pow(1 + waccD, 10);
+
+  const evTotal = pvFcf + pvTV;
+  const cv_pct  = Math.round(pvTV / evTotal * 100);
+  const eqVal   = evTotal - Math.max(vs.netDebt, 0);
+  const eqPs    = eqVal / vs.shares;
+
+  // Value bridge
+  const bridge = [
+    { label: 'Phase 1 FCFs (Yrs 1–3)', value: pvByPhase[0], color: 'var(--green)' },
+    { label: 'Phase 2 FCFs (Yrs 4–7)', value: pvByPhase[1], color: 'var(--blue)' },
+    { label: 'Phase 3 FCFs (Yrs 8–10)', value: pvByPhase[2], color: 'var(--purple)' },
+    { label: 'Terminal Value (PV)', value: pvTV, color: 'var(--gold)' },
+    { label: '− Net Debt', value: -Math.max(vs.netDebt, 0), color: 'var(--red)' },
+    { label: '= Equity Value', value: eqVal, color: 'var(--text)', total: true },
+  ];
+
+  return {
+    equity_ps: Math.round(eqPs * 100) / 100,
+    ev_total: evTotal, equity_val: eqVal, cv_pct, bridge,
+  };
+}
+
+// ── Solve implied growth rate (binary search) ──
+function _solveImplied(price, vs) {
+  const shares = vs.shares;
+  const netDebt = vs.netDebt;
+  if (!price || !shares || price <= 0) return null;
+
+  // Binary search: find g (applied uniformly to all phases) such that DCF equity/share ≈ price
+  let lo = -0.05, hi = 0.60;
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    const vsCopy = { ...vs, g1: mid*100, g2: mid*100*0.65, g3: mid*100*0.4 };
+    const d = _computeDCF(vsCopy);
+    if (!d.equity_ps) return null;
+    if (d.equity_ps > price) hi = mid;
+    else lo = mid;
+    if (Math.abs(hi - lo) < 0.001) break;
+  }
+  const g = (lo + hi) / 2;
+  return Math.max(-10, Math.min(50, g * 100));
+}
+
+// ── Phase Diagnostics table ──
+function _buildPhaseDiag(vs) {
+  const rows = [
+    { lbl: 'Yrs 1–3', g: vs.g1, om: vs.om1, ir: vs.ir1, cls:'s-green' },
+    { lbl: 'Yrs 4–7', g: vs.g2, om: vs.om2, ir: vs.ir2, cls:'s-gold' },
+    { lbl: 'Yrs 8–10', g: vs.g3, om: vs.om3, ir: vs.ir3, cls:'s-blue' },
+    { lbl: 'Terminal', g: vs.tg, om: null, ir: null, terminal: true },
+  ];
+  let h = `<div class="tbl-wrap"><table class="diag-table">
+    <tr><th>Phase</th><th>Rev CAGR</th><th>Op Margin</th><th>Implied NOPAT CAGR</th><th>Natural Inv Rate (g/RONIC)</th><th>Your Inv Rate</th><th>Signal</th></tr>`;
+  rows.forEach(r => {
+    if (r.terminal) {
+      const natIR = Math.round(vs.tg / vs.ronic * 100);
+      h += `<tr><td style="color:var(--gold)">${r.lbl}</td><td>${r.g}%</td><td>—</td><td>${r.g}%</td>
+        <td style="color:var(--blue)">${natIR}%</td><td>g/RONIC (auto)</td><td style="color:var(--muted)">McKinsey formula applied</td></tr>`;
+      return;
+    }
+    const nopatG = r.g; // revenue growth ≈ NOPAT growth when margins stable
+    const natIR  = Math.round(r.g / vs.ronic * 100);
+    const diff   = r.ir - natIR;
+    const sig    = diff > 10 ? `<span class="diag-over">🔴 Over-investing by ${diff}pp</span>`
+                 : diff < -10 ? `<span class="diag-under">🟢 Under-investing by ${Math.abs(diff)}pp</span>`
+                 : `<span style="color:var(--muted)">⚪ Balanced</span>`;
+    h += `<tr><td style="color:var(--gold)">${r.lbl}</td><td>${r.g}%</td><td>${r.om}%</td>
+      <td>${nopatG.toFixed(1)}%</td><td style="color:var(--blue)">${natIR}%</td><td>${r.ir}%</td><td>${sig}</td></tr>`;
+  });
+  h += `</table></div>
+  <div style="font-size:0.65rem;color:var(--muted);margin-top:6px">
+    🟢 Under-investing = returning cash — good if RONIC &lt; WACC &nbsp;·&nbsp;
+    🔴 Over-investing = burning more than NOPAT — only value-creating if RONIC &gt; WACC &nbsp;·&nbsp;
+    Natural Inv Rate = g/RONIC
+  </div>`;
+  return h;
+}
+
+// ── Sensitivity Table ──
+function _buildSensTable(vs) {
+  const waccs = [6,7,8,9,10,11,12,13,14,15];
+  const tgs   = [0,1,2,3,4,5];
+  const price = vs.price;
+  const curW  = Math.round(vs.wacc);
+  const curT  = Math.round(vs.tg);
+  const cs    = vs.currSym;
+
+  let h = `<table class="sens-table"><tr><th>WACC ↓ / TG →</th>`;
+  tgs.forEach(t => h += `<th>${t}%</th>`);
+  h += `</tr>`;
+
+  waccs.forEach(w => {
+    h += `<tr><td>${w === curW ? `<strong style="color:var(--gold)">${w}%</strong>` : w+'%'}</td>`;
+    tgs.forEach(t => {
+      const vsCopy = { ...vs, wacc: w, tg: t };
+      const d = _computeDCF(vsCopy);
+      const val = d.equity_ps;
+      if (!val) { h += `<td style="color:var(--muted)">—</td>`; return; }
+      // Color: green = undervalued, red = overvalued
+      const upside = price ? (val - price) / price : 0;
+      const alpha  = Math.min(Math.abs(upside) / 0.4, 1.0);
+      const bg     = upside > 0
+        ? `rgba(16,185,129,${(0.08 + alpha*0.35).toFixed(2)})`
+        : `rgba(239,68,68,${(0.08 + alpha*0.30).toFixed(2)})`;
+      const col    = upside > 0 ? '#4ade80' : '#f87171';
+      const isCur  = Math.round(w) === curW && Math.round(t) === curT;
+      h += `<td style="background:${bg};color:${col}${isCur?';outline:2px solid var(--gold);outline-offset:-2px':''}"
+        ${isCur?'class="sens-current"':''}>${cs}${val.toFixed(0)}</td>`;
+    });
+    h += `</tr>`;
+  });
+  h += `</table>`;
+  return h;
+}
+
+// ── Value Bridge Waterfall ──
+function _buildWaterfall(bridge, cs) {
+  if (!bridge) return '';
+  const maxVal = Math.max(...bridge.map(b=>Math.abs(b.value)));
+  return bridge.map(b => {
+    const pct = Math.round(Math.abs(b.value) / maxVal * 100);
+    const col  = b.value < 0 ? 'var(--red)' : b.color;
+    const sign = b.value < 0 ? '-' : '';
+    return `<div class="waterfall-bar">
+      <div class="waterfall-label">${b.label}</div>
+      <div class="waterfall-track">
+        <div class="waterfall-fill" style="width:${pct}%;background:${col};opacity:0.7"></div>
+      </div>
+      <div class="waterfall-num" style="color:${col}">${sign}${cs}${_fmtLarge(Math.abs(b.value))}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Monte Carlo ──
+function _runMC(vs, cs) {
+  const N = 5000;
+  const results = [];
+  const price = vs.price;
+
+  for (let i = 0; i < N; i++) {
+    const g1s  = vs.g1  + _randn() * 3;
+    const waccs= vs.wacc + _randn() * 1.5;
+    const tgs  = Math.max(0, vs.tg + _randn() * 0.75);
+    const vsCopy = { ...vs,
+      g1: g1s, g2: g1s*0.65, g3: g1s*0.4,
+      wacc: Math.max(5, Math.min(20, waccs)),
+      tg: Math.min(tgs, waccs - 0.5),
+    };
+    const d = _computeDCF(vsCopy);
+    if (d.equity_ps && d.equity_ps > 0 && d.equity_ps < price * 20) results.push(d.equity_ps);
+  }
+
+  if (!results.length) return `<div style="color:var(--muted);font-size:0.78rem">Monte Carlo could not run — revenue data unavailable.</div>`;
+
+  results.sort((a,b) => a-b);
+  const p10 = results[Math.floor(N * 0.10)];
+  const p50 = results[Math.floor(N * 0.50)];
+  const p90 = results[Math.floor(N * 0.90)];
+  const pAbove = price ? results.filter(v=>v>price).length/results.length*100 : 50;
+
+  // Simple histogram (20 buckets)
+  const minV = p10 * 0.7, maxV = p90 * 1.3;
+  const buckets = 20;
+  const bw = (maxV - minV) / buckets;
+  const hist = new Array(buckets).fill(0);
+  results.forEach(v => {
+    const b = Math.floor((v - minV) / bw);
+    if (b >= 0 && b < buckets) hist[b]++;
+  });
+  const maxH = Math.max(...hist);
+
+  let bars = '';
+  hist.forEach((count, i) => {
+    const bVal = minV + i * bw;
+    const h = Math.round(count / maxH * 100);
+    const isPrice = price && bVal <= price && bVal + bw > price;
+    const col = bVal < (price||p50) ? 'var(--red)' : 'var(--green)';
+    bars += `<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:80px">
+      <div style="width:90%;background:${col};opacity:0.7;height:${h}%;border-radius:2px 2px 0 0${isPrice?';outline:2px solid white':''}"></div>
+    </div>`;
+  });
+
+  return `<div class="mc-results">
+    <div class="mc-card"><div class="mc-label">🐻 Bear Case (P10)</div><div class="mc-value" style="color:var(--red)">${cs}${p10.toFixed(0)}</div><div class="mc-prob">10% of scenarios below</div></div>
+    <div class="mc-card"><div class="mc-label">⚖️ Base Case (P50)</div><div class="mc-value" style="color:var(--gold)">${cs}${p50.toFixed(0)}</div><div class="mc-prob">Median scenario</div></div>
+    <div class="mc-card"><div class="mc-label">🐂 Bull Case (P90)</div><div class="mc-value" style="color:var(--green)">${cs}${p90.toFixed(0)}</div><div class="mc-prob">10% of scenarios above</div></div>
+  </div>
+  <div style="display:flex;gap:1px;height:80px;padding:0 2px;margin-bottom:4px;background:var(--card2);border:1px solid var(--border);border-radius:8px;overflow:hidden;align-items:flex-end">${bars}</div>
+  <div style="font-size:0.65rem;color:var(--muted);display:flex;justify-content:space-between">
+    <span>${cs}${Math.round(minV)}</span>
+    ${price ? `<span style="color:${pAbove>50?'var(--green)':'var(--red)'}">${pAbove.toFixed(0)}% of scenarios above current price ${cs}${price.toFixed(0)}</span>` : ''}
+    <span>${cs}${Math.round(maxV)}</span>
+  </div>`;
+}
+
+function _randn() {
+  // Box-Muller transform
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// ── Method Card HTML ──
+function _methodCard(label, val, price, cs, sub, formula) {
+  if (!val || val <= 0) {
+    return `<div class="method-card"><div class="method-label">${label}</div><div class="method-value" style="color:var(--muted)">N/A</div><div class="method-sub">${sub}</div></div>`;
+  }
+  const upside = price ? ((val - price)/price*100).toFixed(1) : null;
+  const col    = upside > 0 ? 'var(--green)' : 'var(--red)';
+  const dir    = upside > 0 ? '▲' : '▼';
+  const verdict= upside > 0 ? `UNDERVALUED by ${Math.abs(upside)}%` : `OVERVALUED by ${Math.abs(upside)}%`;
+  return `<div class="method-card">
+    <div class="method-label">${label}</div>
+    <div class="method-value">${cs}${val.toFixed(2)}</div>
+    <div class="method-verdict" style="color:${col}">${dir} ${verdict}</div>
+    <div class="method-sub">${sub}</div>
+    <div class="method-formula">${formula}</div>
+  </div>`;
+}
+
+// ── Format large number ──
+function _fmtLarge(n) {
+  if (!n && n !== 0) return '—';
+  const abs = Math.abs(n);
+  if (abs >= 1e12) return (n/1e12).toFixed(1)+'T';
+  if (abs >= 1e9)  return (n/1e9).toFixed(1)+'B';
+  if (abs >= 1e6)  return (n/1e6).toFixed(1)+'M';
+  return n.toLocaleString();
+}
+
+// ── AI Assumptions loader ──
+async function loadAIAssumptions() {
+  const btn = document.getElementById('ai-assump-btn');
+  const txt = document.getElementById('ai-assumptions-text');
+  if (!btn || !txt) return;
+  btn.disabled = true; btn.textContent = 'Analysing…';
+  txt.style.display = 'none';
+
+  const d = _session.fundamentals.data || {};
+  const summary = {
+    ticker: d.ticker,
+    overview: d.overview,
+    quality: d.quality,
+    multiples: d.multiples,
+    market: d.market,
+    growth_table: d.growth_table,
+    valuation_inputs: d.valuation_inputs,
+  };
+  const userVals = {
+    wacc: _vs.wacc+'%', tax_rate: _vs.taxRate+'%',
+    g1: _vs.g1+'%', om1: _vs.om1+'%', ir1: _vs.ir1+'%',
+    g2: _vs.g2+'%', om2: _vs.om2+'%', ir2: _vs.ir2+'%',
+    g3: _vs.g3+'%', om3: _vs.om3+'%', ir3: _vs.ir3+'%',
+    terminal_growth: _vs.tg+'%', ronic: _vs.ronic+'%',
+  };
+
+  try {
+    const r = await fetch(`${API}/valuation/ai-assumptions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker: _session.ticker, fundamentals_summary: summary, user_values: userVals }),
+    });
+    if (!r.ok) throw new Error(`API error ${r.status}`);
+    const data = await r.json();
+    txt.textContent = data.analysis;
+    txt.style.display = 'block';
+    btn.textContent = '↻ Regenerate';
+  } catch(e) {
+    txt.textContent = `⚠️ ${e.message}`;
+    txt.style.display = 'block';
+    btn.textContent = 'Retry';
+  }
+  btn.disabled = false;
 }
 </script>
 
