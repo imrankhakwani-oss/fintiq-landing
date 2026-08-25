@@ -2228,7 +2228,7 @@ function renderTechnical(d) {
   html += renderChat('technical', d);
 
   document.getElementById('tech-content').innerHTML = html;
-  setBadge('technical', 'done');
+  setStatus('technical', 'done');
 
   // Render charts (Chart.js already loaded in <head>)
   _buildTechCharts(d);
