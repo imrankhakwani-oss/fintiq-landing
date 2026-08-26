@@ -320,6 +320,36 @@ a{color:var(--gold);text-decoration:none}
 .risk-medium{background:rgba(245,166,35,0.15);color:var(--gold)}
 .risk-high{background:rgba(239,68,68,0.15);color:var(--red)}
 .risk-veryhigh{background:rgba(239,68,68,0.25);color:#ff6b6b}
+/* ── Section 5: Catalyst Tracker ── */
+.cat-earnings-banner{border-radius:10px;padding:14px 18px;margin-bottom:14px;border:1px solid}
+.cat-countdown{font-size:2rem;font-weight:800;letter-spacing:-.02em}
+.cat-section-title{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid rgba(245,166,35,0.2)}
+.cat-surprise-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px}
+.cat-surprise-card{background:var(--card2);border-radius:8px;padding:10px 8px;text-align:center;border:1px solid var(--border)}
+.cat-surp-date{font-size:0.6rem;color:var(--muted);margin-bottom:4px}
+.cat-surp-beat{font-size:0.65rem;font-weight:700;margin-bottom:6px}
+.cat-surp-row{display:flex;justify-content:space-between;font-size:0.7rem;padding:2px 0}
+.cat-surp-label{color:var(--muted)}
+.cat-surp-val{font-weight:600;color:var(--text)}
+.cat-analyst-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.cat-analyst-card{background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);text-align:center}
+.cat-analyst-label{font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.cat-analyst-val{font-size:1.0rem;font-weight:700;color:var(--text)}
+.cat-analyst-sub{font-size:0.65rem;color:var(--muted);margin-top:2px}
+.cat-rec-badge{display:inline-block;padding:4px 12px;border-radius:12px;font-size:0.72rem;font-weight:700;letter-spacing:.04em}
+.cat-rec-buy{background:rgba(16,185,129,0.15);color:var(--green)}
+.cat-rec-hold{background:rgba(245,166,35,0.15);color:var(--gold)}
+.cat-rec-sell{background:rgba(239,68,68,0.15);color:var(--red)}
+.cat-changes-table{width:100%;border-collapse:collapse;font-size:0.72rem;margin-bottom:14px}
+.cat-changes-table th{color:var(--muted);text-align:left;padding:4px 8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:.05em}
+.cat-changes-table td{padding:5px 8px;border-top:1px solid rgba(255,255,255,0.04);color:var(--dim)}
+.cat-squeeze-banner{border-radius:8px;padding:12px 14px;margin-bottom:14px;border:1px solid}
+.cat-news-item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.cat-news-item:last-child{border-bottom:none}
+.cat-news-title{font-size:0.78rem;color:var(--text);margin-bottom:4px;line-height:1.4}
+.cat-news-meta{font-size:0.65rem;color:var(--muted)}
+.cat-news-snippet{font-size:0.72rem;color:var(--dim);margin-top:4px;line-height:1.5}
+.cat-ai-block{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:10px;padding:16px;font-size:0.81rem;color:var(--dim);line-height:1.8;margin-bottom:14px;white-space:pre-wrap}
 
 /* ── Placeholder sections ── */
 .placeholder-section{padding:28px;text-align:center;color:var(--muted)}
@@ -590,10 +620,11 @@ a{color:var(--gold);text-decoration:none}
       <span class="section-chevron" id="chev-catalyst">▼</span>
     </div>
     <div class="section-body" id="body-catalyst">
-      <div class="placeholder-section">
-        <div class="ph-icon">🚧</div>
-        <p>Catalyst tracker — earnings dates, macro events and news headlines — coming next.</p>
+      <div id="catalyst-loading" style="display:none;text-align:center;padding:40px 20px">
+        <div class="loading-spinner"></div>
+        <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Loading catalyst data…</div>
       </div>
+      <div id="catalyst-content" style="display:none"></div>
     </div>
   </div>
 
@@ -700,6 +731,7 @@ function resetSession() {
   document.getElementById('co-header').classList.remove('visible');
   document.getElementById('session-strip').classList.remove('visible');
   // Close all sections
+  _session.catalyst = null;
   ['fundamentals','valuation','technical','risk','catalyst','decision'].forEach(s => {
     document.getElementById('body-'+s).classList.remove('open');
     document.getElementById('chev-'+s).classList.remove('open');
@@ -732,6 +764,7 @@ function openSection(name) {
     if (name === 'valuation') renderValuation(_session.fundamentals.data);
     if (name === 'technical') loadTechnical();
     if (name === 'risk') loadRisk();
+    if (name === 'catalyst') loadCatalyst();
   }
 }
 
@@ -1844,7 +1877,8 @@ function _solveImplied(price, vs) {
   const shares = vs.shares;
   if (!price || !shares || price <= 0) return null;
 
-  let lo = -0.05, hi = 0.80;
+  // hi=1.50 (150%) to handle high-growth stocks like TSLA where implied rate can be >80%
+  let lo = -0.05, hi = 1.50;
   for (let i = 0; i < 80; i++) {
     const mid = (lo + hi) / 2;
     const vsCopy = { ...vs, g1: mid*100, g2: mid*100*0.65, g3: mid*100*0.40 };
@@ -1855,14 +1889,16 @@ function _solveImplied(price, vs) {
     if (Math.abs(hi - lo) < 0.0001) break;
   }
   const g = (lo + hi) / 2;
-  const gPct = Math.max(-10, Math.min(60, g * 100));
+  // Cap display at 120% but use raw g for the sanity check — don't clamp before checking
+  const gPct = g * 100;
+  const gPctDisplay = Math.max(-10, Math.min(120, gPct));
 
   // Sanity check: resulting DCF should be within 5% of price
   const check = _computeDCF({ ...vs, g1: gPct, g2: gPct*0.65, g3: gPct*0.40 });
   if (!check || check.equity_ps == null) return null;
   if (Math.abs(check.equity_ps - price) / price > 0.05) return null;
 
-  return gPct;
+  return gPctDisplay;
 }
 
 // ── Phase Diagnostics table ──
@@ -2985,6 +3021,245 @@ Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear p
     }
   } catch(e) {
     el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The simulation data above is fully usable without it.</span>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// SECTION 5 — CATALYST TRACKER
+// ══════════════════════════════════════════════════════
+
+function loadCatalyst() {
+  if (!_session.ticker) return;
+  document.getElementById('catalyst-loading').style.display = 'block';
+  document.getElementById('catalyst-content').style.display = 'none';
+  _pollCatalyst(0);
+}
+
+async function _pollCatalyst(attempt) {
+  if (attempt > 40) {
+    document.getElementById('catalyst-loading').style.display = 'none';
+    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Catalyst data timed out. Please try again.</div></div>`;
+    document.getElementById('catalyst-content').style.display = 'block';
+    return;
+  }
+  if (_session.ticker !== (document.getElementById('ticker-input')?.value || _session.ticker)) return;
+  try {
+    const url = attempt === 0
+      ? `${API}/catalyst?ticker=${_session.ticker}`
+      : `${API}/catalyst/status?ticker=${_session.ticker}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const d = await res.json();
+    if (d.status === 'processing') { setTimeout(() => _pollCatalyst(attempt + 1), 2000); return; }
+    if (d.status === 'error') throw new Error(d.error || 'Unknown error');
+    _session.catalyst = { data: d };
+    document.getElementById('catalyst-loading').style.display = 'none';
+    document.getElementById('catalyst-content').style.display = 'block';
+    setStatus('catalyst', 'done');
+    renderCatalyst(d);
+  } catch(e) {
+    document.getElementById('catalyst-loading').style.display = 'none';
+    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ ${e.message}</div></div>`;
+    document.getElementById('catalyst-content').style.display = 'block';
+  }
+}
+
+function renderCatalyst(d) {
+  const ea  = d.earnings || {};
+  const an  = d.analyst || {};
+  const si  = d.short_interest || {};
+  const news = d.news || [];
+  const cs  = _vs.currSym || '$';
+  const price = d.price;
+
+  // ── Earnings countdown banner ──
+  const days = ea.days_to;
+  const daysAbs = days != null ? Math.abs(days) : null;
+  const isFuture = days != null && days >= 0;
+  const bannerCol = daysAbs != null && daysAbs <= 14 ? 'rgba(239,68,68,0.15)' : daysAbs != null && daysAbs <= 30 ? 'rgba(245,166,35,0.12)' : 'rgba(56,189,248,0.08)';
+  const bannerBorder = daysAbs != null && daysAbs <= 14 ? 'rgba(239,68,68,0.4)' : daysAbs != null && daysAbs <= 30 ? 'rgba(245,166,35,0.4)' : 'rgba(56,189,248,0.3)';
+  const urgency = daysAbs != null && daysAbs <= 7 ? '🔴 IMMINENT' : daysAbs != null && daysAbs <= 14 ? '🟡 APPROACHING' : '🔵 UPCOMING';
+
+  let html = `<div class="sec-pad">`;
+
+  // Earnings banner
+  html += `<div class="cat-earnings-banner" style="background:${bannerCol};border-color:${bannerBorder}">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">${urgency} — Next Earnings</div>
+        <div class="cat-countdown">${ea.next_date || '—'}</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">${daysAbs != null ? (isFuture ? `${daysAbs} days from today` : `${daysAbs} days ago`) : 'Date unknown'}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;text-align:right">
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">EPS Estimate</div>
+          <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${ea.eps_estimate != null ? cs+ea.eps_estimate : '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted)">Next quarter</div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em">Revenue Est.</div>
+          <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${ea.rev_estimate_avg ? _fmtLarge(ea.rev_estimate_avg) : '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted)">Range: ${ea.rev_estimate_low ? _fmtLarge(ea.rev_estimate_low) : '?'} – ${ea.rev_estimate_high ? _fmtLarge(ea.rev_estimate_high) : '?'}</div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  // Growth momentum
+  const rv = ea.analyst_revisions || {};
+  if (rv.revenue_growth_yoy != null || rv.earnings_growth_yoy != null) {
+    html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      ${rv.revenue_growth_yoy != null ? `<div class="cat-analyst-card"><div class="cat-analyst-label">Revenue Growth YoY</div><div class="cat-analyst-val" style="color:${rv.revenue_growth_yoy>=0?'var(--green)':'var(--red)'}">${rv.revenue_growth_yoy>0?'+':''}${rv.revenue_growth_yoy}%</div></div>` : ''}
+      ${rv.earnings_growth_yoy != null ? `<div class="cat-analyst-card"><div class="cat-analyst-label">Earnings Growth YoY</div><div class="cat-analyst-val" style="color:${rv.earnings_growth_yoy>=0?'var(--green)':'var(--red)'}">${rv.earnings_growth_yoy>0?'+':''}${rv.earnings_growth_yoy}%</div></div>` : ''}
+      ${rv.eps_fwd != null ? `<div class="cat-analyst-card"><div class="cat-analyst-label">Forward EPS</div><div class="cat-analyst-val">${cs}${rv.eps_fwd}</div><div class="cat-analyst-sub">TTM: ${rv.eps_ttm != null ? cs+rv.eps_ttm : '—'}</div></div>` : ''}
+    </div>`;
+  }
+
+  // Earnings surprise history
+  const surprises = ea.surprise_history || [];
+  if (surprises.length) {
+    html += `<div class="cat-section-title">Earnings Surprise History — Last ${surprises.length} Quarters</div>
+    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Did the company beat or miss analyst estimates? Consistent beaters tend to keep beating.</div>
+    <div class="cat-surprise-grid">`;
+    surprises.forEach(s => {
+      const beat = s.beat === true;
+      const miss = s.beat === false;
+      const col = beat ? 'var(--green)' : miss ? 'var(--red)' : 'var(--muted)';
+      const beatLabel = beat ? '✅ BEAT' : miss ? '❌ MISSED' : '—';
+      const surpStr = s.surprise_pct != null ? (s.surprise_pct > 0 ? '+' : '') + s.surprise_pct + '%' : '—';
+      html += `<div class="cat-surprise-card" style="border-color:${col}33">
+        <div class="cat-surp-date">${s.date}</div>
+        <div class="cat-surp-beat" style="color:${col}">${beatLabel}</div>
+        <div class="cat-surp-row"><span class="cat-surp-label">Estimate</span><span class="cat-surp-val">${cs}${s.estimate ?? '—'}</span></div>
+        <div class="cat-surp-row"><span class="cat-surp-label">Actual</span><span class="cat-surp-val" style="color:${col}">${cs}${s.actual ?? '—'}</span></div>
+        <div class="cat-surp-row"><span class="cat-surp-label">Surprise</span><span class="cat-surp-val" style="color:${col}">${surpStr}</span></div>
+      </div>`;
+    });
+    html += `</div>`;
+
+    // Beat streak summary
+    const beats = surprises.filter(s => s.beat === true).length;
+    const streak = beats === surprises.length ? `✅ Beat every quarter in last ${surprises.length} — strong earnings quality` :
+                   beats >= surprises.length * 0.75 ? `✅ Beat ${beats}/${surprises.length} quarters — consistent outperformer` :
+                   beats <= 1 ? `⚠️ Only beat ${beats}/${surprises.length} quarters — treat estimates cautiously` :
+                   `↔️ Beat ${beats}/${surprises.length} quarters — mixed track record`;
+    const streakCol = beats >= surprises.length * 0.75 ? 'var(--green)' : beats <= 1 ? 'var(--red)' : 'var(--gold)';
+    html += `<div style="padding:8px 12px;background:rgba(0,0,0,0.15);border-radius:6px;font-size:0.75rem;color:${streakCol};margin-bottom:14px;font-weight:600">${streak}</div>`;
+  }
+
+  // ── Analyst Ratings ──
+  html += `<div class="cat-section-title">Analyst Ratings & Price Targets</div>`;
+  const recKey = (an.recommendation || '').toLowerCase().replace(/\s/g,'');
+  const recLabel = {strongbuy:'Strong Buy',buy:'Buy',hold:'Hold',underperform:'Underperform',sell:'Sell'}[recKey] || (an.recommendation || 'Unknown');
+  const recClass = ['buy','strongbuy'].includes(recKey) ? 'cat-rec-buy' : recKey === 'hold' ? 'cat-rec-hold' : 'cat-rec-sell';
+
+  html += `<div class="cat-analyst-grid">
+    <div class="cat-analyst-card">
+      <div class="cat-analyst-label">Consensus</div>
+      <div class="cat-analyst-val"><span class="cat-rec-badge ${recClass}">${recLabel}</span></div>
+      <div class="cat-analyst-sub">${an.num_analysts || '?'} analysts</div>
+    </div>
+    <div class="cat-analyst-card">
+      <div class="cat-analyst-label">Avg Price Target</div>
+      <div class="cat-analyst-val" style="color:${an.target_upside != null && an.target_upside > 0 ? 'var(--green)' : 'var(--red)'}">${an.target_mean ? cs+an.target_mean : '—'}</div>
+      <div class="cat-analyst-sub">${an.target_upside != null ? (an.target_upside > 0 ? '+' : '') + an.target_upside + '% upside' : '—'}</div>
+    </div>
+    <div class="cat-analyst-card">
+      <div class="cat-analyst-label">Target Range</div>
+      <div class="cat-analyst-val" style="font-size:0.82rem">${an.target_low ? cs+an.target_low : '?'} – ${an.target_high ? cs+an.target_high : '?'}</div>
+      <div class="cat-analyst-sub">Bear → Bull targets</div>
+    </div>
+  </div>`;
+
+  // Recent analyst changes
+  const changes = an.recent_changes || [];
+  if (changes.length) {
+    html += `<div style="font-size:0.7rem;color:var(--muted);margin-bottom:6px">Recent upgrades/downgrades — the <em>direction</em> of change matters more than the absolute rating</div>
+    <table class="cat-changes-table">
+      <tr><th>Date</th><th>Firm</th><th>Action</th><th>From</th><th>To</th></tr>`;
+    changes.forEach(c => {
+      const col = c.action === 'Upgrade' ? 'var(--green)' : c.action === 'Downgrade' ? 'var(--red)' : 'var(--muted)';
+      html += `<tr><td>${c.date}</td><td>${c.firm}</td><td style="color:${col};font-weight:600">${c.action}</td><td>${c.from_grade || '—'}</td><td>${c.to_grade || '—'}</td></tr>`;
+    });
+    html += `</table>`;
+  } else {
+    html += `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:14px;padding:8px 12px;background:var(--card2);border-radius:6px">No analyst rating changes in the last 60 days.</div>`;
+  }
+
+  // ── Short Interest ──
+  html += `<div class="cat-section-title">Short Interest &amp; Squeeze Potential</div>`;
+  const sqCol = si.squeeze_color === 'red' ? 'rgba(239,68,68,0.12)' : si.squeeze_color === 'amber' ? 'rgba(245,166,35,0.1)' : 'rgba(16,185,129,0.08)';
+  const sqBorder = si.squeeze_color === 'red' ? 'rgba(239,68,68,0.4)' : si.squeeze_color === 'amber' ? 'rgba(245,166,35,0.35)' : 'rgba(16,185,129,0.3)';
+  const sqTextCol = si.squeeze_color === 'red' ? 'var(--red)' : si.squeeze_color === 'amber' ? 'var(--gold)' : 'var(--green)';
+  html += `<div class="cat-squeeze-banner" style="background:${sqCol};border-color:${sqBorder}">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Squeeze Risk: <strong style="color:${sqTextCol}">${si.squeeze_score || '—'}</strong></div>
+        <div style="font-size:0.78rem;color:var(--dim)">${si.squeeze_signal || '—'}</div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">A short squeeze happens when investors who bet against the stock are forced to buy it back quickly — this amplifies any upward move dramatically.</div>
+      </div>
+      <div style="display:flex;gap:14px">
+        <div style="text-align:center"><div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase">Short Float</div><div style="font-size:1.2rem;font-weight:700;color:${sqTextCol}">${si.short_pct != null ? si.short_pct+'%' : '—'}</div></div>
+        <div style="text-align:center"><div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase">Days to Cover</div><div style="font-size:1.2rem;font-weight:700;color:var(--text)">${si.days_to_cover != null ? si.days_to_cover+'d' : '—'}</div></div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── News Feed ──
+  if (news.length) {
+    html += `<div class="cat-section-title">Recent News &amp; Market Narrative</div>
+    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">What is the market currently focused on? Understanding the narrative tells you what's already priced in.</div>
+    <div style="background:var(--card2);border-radius:10px;padding:12px 16px;margin-bottom:14px">`;
+    news.forEach(n => {
+      html += `<div class="cat-news-item">
+        <div class="cat-news-title"><a href="${n.url}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;hover:color:var(--gold)">${n.title}</a></div>
+        ${n.published ? `<div class="cat-news-meta">${n.published}</div>` : ''}
+        ${n.snippet ? `<div class="cat-news-snippet">${n.snippet}</div>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── AI Catalyst Summary ──
+  html += `<div class="cat-section-title">Fintiq AI Catalyst Analysis</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Plain-English assessment covering: should I enter before or after earnings, analyst direction, squeeze potential, what the market is worried about, and timing.</div>
+  <div class="cat-ai-block" id="cat-ai-text"><div style="text-align:center;color:var(--muted)">Generating catalyst analysis…</div></div>
+
+  </div>`;
+
+  document.getElementById('catalyst-content').innerHTML = html;
+
+  // Load AI summary
+  _loadCatalystAI(d);
+}
+
+async function _loadCatalystAI(d) {
+  const el = document.getElementById('cat-ai-text');
+  if (!el) return;
+  try {
+    const fundSummary = _session.fundamentals?.data ? {
+      name: (_session.fundamentals.data.overview || {}).name,
+      sector: (_session.fundamentals.data.overview || {}).sector,
+      quality: _session.fundamentals.data.quality,
+      multiples: _session.fundamentals.data.multiples,
+    } : {};
+    const res = await fetch(`${API}/catalyst/ai-summary`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        ticker: _session.ticker,
+        catalyst_data: d,
+        fundamentals_summary: fundSummary
+      })
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const r = await res.json();
+    if (r.summary) {
+      el.style.whiteSpace = 'pre-wrap';
+      el.textContent = r.summary;
+    } else throw new Error('Empty response');
+  } catch(e) {
+    el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The data above is fully usable without it.</span>`;
   }
 }
 
