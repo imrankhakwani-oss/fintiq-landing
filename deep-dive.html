@@ -2264,6 +2264,26 @@ function _buildTechCharts(d) {
   // ── Price chart ──
   const priceCtx = document.getElementById('chart-price');
   if (priceCtx) {
+    const kl = d.key_levels || {};
+    // Build flat horizontal-line datasets for support/resistance
+    const n = dates.length;
+    const srDatasets = [];
+    const srLevels = [
+      { key: 'support1',    label: 'S1 (MA50)',   color: 'rgba(16,185,129,0.6)' },
+      { key: 'support2',    label: 'S2 (MA200)',  color: 'rgba(16,185,129,0.4)' },
+      { key: 'support3',    label: 'S3 (3M low)', color: 'rgba(16,185,129,0.3)' },
+      { key: 'resistance1', label: 'R1 (3M high)',color: 'rgba(239,68,68,0.5)' },
+      { key: 'resistance2', label: 'R2 (52W high)',color: 'rgba(239,68,68,0.7)' },
+    ];
+    srLevels.forEach(({ key, label, color }) => {
+      const val = kl[key];
+      if (val) srDatasets.push({
+        label, data: Array(n).fill(val),
+        borderColor: color, borderWidth: 1, borderDash: [6, 3],
+        pointRadius: 0, tension: 0, fill: false, yAxisID: 'y'
+      });
+    });
+
     const pc = new Chart(priceCtx, {
       type: 'line',
       data: {
@@ -2275,6 +2295,7 @@ function _buildTechCharts(d) {
           { label: 'BB Upper', data: bbup, borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false },
           { label: 'BB Lower', data: bblo, borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1, pointRadius: 0, tension: 0,
             fill: '-1', backgroundColor: 'rgba(100,116,139,0.05)' },
+          ...srDatasets,
           { label: 'Volume', data: V, type: 'bar', backgroundColor: V.map((_,i) => C[i] >= (C[i-1]||C[i]) ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'), yAxisID: 'yv', barThickness: 'flex' }
         ]
       },
@@ -2370,11 +2391,50 @@ async function _loadTechCommentary(d) {
     if (!res.ok) throw new Error(`API ${res.status}`);
     const r = await res.json();
     const text = r.commentary || '';
-    // Format: bold the section headers
-    const formatted = text
-      .replace(/━━ (.*?) ━━/g, '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:12px 0 6px;border-top:1px solid rgba(245,166,35,0.2);padding-top:10px">$1</div>')
-      .replace(/^(TREND & MOMENTUM SUMMARY:|ENTRY ZONE:|CONFIRMATION NEEDED:|STOP LOSS:|TARGET 1.*?:|TARGET 2.*?:|OPTIONS SIGNAL.*?:|RISK.*?:|VERDICT:)/gm, '<strong style="color:var(--blue)">$1</strong>');
-    wrapEl.innerHTML = `<div class="ai-tech-commentary" style="white-space:normal">${formatted}</div>`;
+
+    // Extract TRADE DASHBOARD block and render separately as a card
+    const dashMatch = text.match(/━━ TRADE DASHBOARD ━━([\s\S]*?)(?:━━|$)/);
+    let dashHtml = '';
+    if (dashMatch) {
+      const dashLines = dashMatch[1].trim().split('\n').filter(l => l.trim());
+      const dashFields = {};
+      dashLines.forEach(line => {
+        const colon = line.indexOf(':');
+        if (colon > -1) {
+          const k = line.slice(0, colon).trim();
+          const v = line.slice(colon + 1).trim();
+          dashFields[k] = v;
+        }
+      });
+      const biasVal = dashFields['BIAS'] || '';
+      const biasColor = biasVal.startsWith('BULLISH') ? 'var(--green)' : biasVal.startsWith('BEARISH') ? 'var(--red)' : 'var(--muted)';
+      dashHtml = `
+        <div style="margin-top:20px;border:1px solid rgba(245,166,35,0.25);border-radius:10px;overflow:hidden">
+          <div style="background:rgba(245,166,35,0.08);padding:10px 14px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)">Trade Dashboard</div>
+          <div style="padding:14px 16px">
+            <div style="font-size:0.85rem;font-weight:700;color:${biasColor};margin-bottom:10px">${biasVal}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+              <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px">
+                <div style="font-size:0.65rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Long Setup</div>
+                ${['LONG ENTRY','LONG STOP','LONG TARGET 1','LONG TARGET 2'].map(k => dashFields[k] ? `<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--muted)">${k.replace('LONG ','')}</span><span style="color:#e2e8f0;font-weight:600">${dashFields[k]}</span></div>` : '').join('')}
+              </div>
+              <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px">
+                <div style="font-size:0.65rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Short Setup</div>
+                ${['SHORT ENTRY','SHORT STOP','SHORT TARGET 1','SHORT TARGET 2'].map(k => dashFields[k] ? `<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--muted)">${k.replace('SHORT ','')}</span><span style="color:#e2e8f0;font-weight:600">${dashFields[k]}</span></div>` : '').join('')}
+              </div>
+            </div>
+            ${dashFields['KEY LEVEL TO WATCH'] ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(245,166,35,0.06);border-radius:6px;font-size:0.75rem"><span style="color:var(--gold);font-weight:600">Key Level: </span><span style="color:#cbd5e1">${dashFields['KEY LEVEL TO WATCH']}</span></div>` : ''}
+            ${dashFields['OPTIONS VERDICT'] ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(56,189,248,0.05);border-radius:6px;font-size:0.75rem"><span style="color:var(--blue);font-weight:600">Options: </span><span style="color:#cbd5e1">${dashFields['OPTIONS VERDICT']}</span></div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    // Format the main commentary (everything except the dashboard block)
+    const mainText = text.replace(/━━ TRADE DASHBOARD ━━[\s\S]*$/, '').trim();
+    const formatted = mainText
+      .replace(/━━ (.*?) ━━/g, '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:14px 0 6px;border-top:1px solid rgba(245,166,35,0.2);padding-top:12px">$1</div>')
+      .replace(/^(TREND SUMMARY:|MOMENTUM:|VOLUME:|OPTIONS EXPLANATION:|ENTRY ZONE:|WHAT TO WAIT FOR:|STOP LOSS:|TARGET 1.*?:|TARGET 2.*?:|RISK\/REWARD:|BIAS:)/gm, '<strong style="color:var(--blue)">$1</strong>');
+    wrapEl.innerHTML = `<div class="ai-tech-commentary" style="white-space:normal">${formatted}${dashHtml}</div>`;
   } catch(e) {
     wrapEl.innerHTML = `<div class="error-block">⚠️ Could not load AI commentary: ${e.message}</div>`;
   }
