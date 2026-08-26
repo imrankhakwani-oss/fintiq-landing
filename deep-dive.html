@@ -3255,12 +3255,25 @@ async function _loadCatalystAI(d) {
     if (!res.ok) throw new Error(`API ${res.status}`);
     const r = await res.json();
     if (r.summary) {
-      el.style.whiteSpace = 'pre-wrap';
-      el.textContent = r.summary;
+      el.style.whiteSpace = 'normal';
+      el.innerHTML = _formatCatalystAI(r.summary);
     } else throw new Error('Empty response');
   } catch(e) {
     el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The data above is fully usable without it.</span>`;
   }
+}
+
+function _formatCatalystAI(text) {
+  // Render ▸ HEADER lines as styled headings, keep rest as paragraphs
+  return text.split('\n').map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('▸')) {
+      const label = trimmed.replace('▸', '').trim();
+      return `<div style="font-size:0.68rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-top:14px;margin-bottom:4px">▸ ${label}</div>`;
+    }
+    if (!trimmed) return '';
+    return `<div style="margin-bottom:6px">${trimmed}</div>`;
+  }).join('');
 }
 
 // ── Method Card HTML ──
