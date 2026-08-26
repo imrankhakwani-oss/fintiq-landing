@@ -2519,9 +2519,12 @@ let _riskMC = null;      // cached MC results keyed by horizon
 function loadRisk() {
   const techData = _session.technical?.data;
   if (!techData || !techData.ohlcv?.c?.length) {
+    // Reset so clicking again after Technical loads will retry
+    _sectionOpened['risk'] = false;
     document.getElementById('risk-content').innerHTML =
-      `<div class="sec-pad"><div class="error-block">⚠️ Please open the Technical section first — Risk analysis uses the price data loaded there.</div></div>`;
+      `<div class="sec-pad"><div class="error-block">⚠️ Please open the Technical section first and wait for it to finish loading — Risk analysis uses the price data loaded there.</div></div>`;
     document.getElementById('risk-content').style.display = 'block';
+    document.getElementById('risk-loading').style.display = 'none';
     setStatus('risk', 'active');
     return;
   }
@@ -2532,7 +2535,7 @@ function loadRisk() {
   setTimeout(() => {
     _riskMC = {};
     _renderRisk();
-  }, 50);
+  }, 80);
 }
 
 function _runMCSim(prices, days, nSim) {
@@ -2695,9 +2698,9 @@ function _renderRisk() {
         <div class="risk-input-label">Stop Loss Stress Test</div>
         <div class="risk-input-row">
           <label>Your stop loss price</label>
-          <input type="number" id="risk-stop-input" value="${(mc.S0 * 0.92).toFixed(2)}" step="0.5" oninput="_updateStopProb()">
+          <input type="number" id="risk-stop-input" placeholder="e.g. ${(mc.S0 * 0.92).toFixed(2)}" step="0.5" oninput="_updateStopProb()">
         </div>
-        <div class="risk-prob-result" id="risk-stop-result">Enter your planned stop loss to see the probability it gets hit.</div>
+        <div class="risk-prob-result" id="risk-stop-result" style="color:var(--muted)">Enter your planned stop loss price above to see how likely it is to get hit by normal market volatility.</div>
       </div>
       <!-- Position size calculator -->
       <div class="risk-input-block">
@@ -2786,15 +2789,16 @@ function _renderRisk() {
   document.getElementById('risk-content').style.display = 'block';
   setStatus('risk', 'done');
 
-  // Draw fan chart
-  _buildRiskChart(mc, cs);
-
-  // Trigger default calculations
-  _updateStopProb();
-  _updatePosSize();
-
-  // Load AI summary
-  _loadRiskAI(mc, hv, iv, volSignal);
+  // Wait for browser to paint DOM before drawing chart and wiring calculations
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      _buildRiskChart(mc, cs);
+      _updatePosSize();   // portfolio/risk% have defaults so this can auto-calculate
+      // stop loss left empty — user fills it in manually
+      // Load AI summary
+      _loadRiskAI(mc, hv, iv, volSignal);
+    }, 50);
+  });
 }
 
 function _buildRiskChart(mc, cs) {
@@ -2892,17 +2896,19 @@ function _updatePosSize() {
 
   const portfolio = parseFloat(portfolioEl.value);
   const riskPct   = parseFloat(riskPctEl.value);
-  const stop      = parseFloat(stopEl?.value || mc.S0 * 0.92);
+  const stopVal   = stopEl?.value ? parseFloat(stopEl.value) : NaN;
   const cs = _vs.currSym || '$';
 
   if (isNaN(portfolio) || isNaN(riskPct) || portfolio <= 0 || riskPct <= 0) {
     resultEl.innerHTML = 'Please enter valid portfolio size and risk %.';
     return;
   }
-  if (stop >= mc.S0) {
-    resultEl.innerHTML = 'Set a valid stop loss (below current price) to calculate position size.';
+  if (isNaN(stopVal) || stopVal <= 0 || stopVal >= mc.S0) {
+    const maxLoss = portfolio * (riskPct / 100);
+    resultEl.innerHTML = `Risk budget: <strong style="color:var(--gold)">${cs}${maxLoss.toFixed(0)}</strong> (${riskPct}% of ${cs}${portfolio.toLocaleString()}).<br><span style="color:var(--muted);font-size:0.7rem">Enter a stop loss price on the left to calculate your exact position size.</span>`;
     return;
   }
+  const stop = stopVal;
 
   const maxLoss    = portfolio * (riskPct / 100);
   const riskPerShr = mc.S0 - stop;
@@ -2928,43 +2934,55 @@ async function _loadRiskAI(mc, hv, iv, volSignal) {
   const opt = techData.options || {};
   const cs  = _vs.currSym || '$';
 
-  const prompt = `You are helping a retail investor understand the risk profile of ${ticker} in plain, simple English. They may not have much financial background. Explain everything clearly, like a knowledgeable friend walking them through the numbers.
+  const prompt = `You are helping a retail investor understand the risk profile of ${ticker} in plain, simple English. They may not have much financial background. Explain everything clearly, like a knowledgeable friend walking them through the numbers. Do not use jargon without immediately explaining it.
 
-HERE IS THE RISK DATA:
+RISK DATA FOR ${ticker}:
 - Current price: ${cs}${mc.S0.toFixed(2)}
-- Simulation horizon: ${mc.days} days, 2,000 scenarios
-- Worst 10% outcome (P10): ${cs}${mc.p10.toFixed(2)} (${((mc.p10-mc.S0)/mc.S0*100).toFixed(1)}%)
+- Simulation: 2,000 Monte Carlo scenarios over ${mc.days} trading days
+- Worst 10% outcome (P10): ${cs}${mc.p10.toFixed(2)} (${((mc.p10-mc.S0)/mc.S0*100).toFixed(1)}% from today)
+- Lower 25% outcome (P25): ${cs}${mc.p25.toFixed(2)} (${((mc.p25-mc.S0)/mc.S0*100).toFixed(1)}%)
 - Median outcome (P50): ${cs}${mc.p50.toFixed(2)} (${((mc.p50-mc.S0)/mc.S0*100).toFixed(1)}%)
+- Upper 75% outcome (P75): ${cs}${mc.p75.toFixed(2)} (${((mc.p75-mc.S0)/mc.S0*100).toFixed(1)}%)
 - Best 10% outcome (P90): ${cs}${mc.p90.toFixed(2)} (${((mc.p90-mc.S0)/mc.S0*100).toFixed(1)}%)
-- Probability stock is higher after ${mc.days} days: ${mc.probProfit}%
-- Historical annualised volatility: ${hv}%
-- ATM Implied Volatility: ${iv ? iv+'%' : 'unavailable'}
-- Options vol signal: ${volSignal}
-- Current trend: ${tr.classification || 'unknown'}
-- Max Pain level: ${opt.max_pain || 'unavailable'}
+- Probability stock is above today's price after ${mc.days} days: ${mc.probProfit}%
+- Historical annualised volatility: ${hv}% per year
+- ATM Implied Volatility: ${iv ? iv+'%' : 'not available'}
+- Volatility signal: ${volSignal}
+- Current price trend: ${tr.classification || 'unknown'}
+- Options Max Pain level: ${opt.max_pain ? cs+opt.max_pain : 'not available'}
 
-Write 3-4 short paragraphs in plain English covering:
-1. What the simulation tells us about the range of outcomes — what could realistically happen in the best and worst cases, and what the most likely path looks like. Use the actual prices and percentages.
-2. What the historical volatility means for this stock — is it a calm/stable stock or a wild mover? What does that mean for how much risk the investor is taking?
-3. What the implied vs historical volatility comparison means — is the market pricing in extra fear right now, or is the options market calm? What should the investor think about buying options for protection?
-4. One sentence: given all this, should the investor size this trade conservatively, moderately, or aggressively — and why?
+Write exactly 4 short paragraphs in plain, simple English. Each paragraph should be 2-3 sentences maximum.
 
-Be specific with numbers. Keep it simple. Teach as you go.`;
+Paragraph 1: Explain what the simulation is showing — what could realistically happen in the worst case, the most likely case, and the best case over ${mc.days} days. Use the actual prices. Tell the investor what this means in plain terms.
+
+Paragraph 2: Explain what ${hv}% annual volatility means for this specific stock — is it a calm stock or a volatile one? Compare it to a typical stock (e.g. a calm blue-chip moves ~15% annually, a volatile growth stock moves 40%+). What does this level of volatility mean for how much money they could realistically lose?
+
+Paragraph 3: Explain the implied vs historical volatility comparison in simple terms. ${iv ? `The ATM implied volatility is ${iv}%, which is ${iv > hv ? 'higher' : 'lower'} than the ${hv}% historical volatility.` : 'Implied volatility data is not available.'} What does this mean for someone considering buying options as protection?
+
+Paragraph 4: One concrete recommendation — given all this data, should they size this position conservatively (0.5-1% portfolio risk), moderately (1.5-2%), or aggressively (3%+)? Give a specific reason based on the volatility and simulation data.
+
+Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear paragraphs.`;
 
   try {
     const res = await fetch(`${API}/fundamentals/chat`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        ticker, section: 'risk',
+        ticker,
+        section: 'risk',
         messages: [{ role: 'user', content: prompt }],
-        fundamentals_data: {}
+        fundamentals_data: _session.fundamentals?.data || {}
       })
     });
+    if (!res.ok) throw new Error(`API ${res.status}`);
     const r = await res.json();
-    el.textContent = r.reply || 'Could not generate summary.';
+    if (r.reply) {
+      el.textContent = r.reply;
+    } else {
+      throw new Error('Empty response');
+    }
   } catch(e) {
-    el.textContent = 'Could not generate AI summary. You can still use the simulation data above.';
+    el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The simulation data above is fully usable without it.</span>`;
   }
 }
 
