@@ -284,6 +284,42 @@ a{color:var(--gold);text-decoration:none}
 .unusual-table td{padding:4px 6px;border-top:1px solid rgba(255,255,255,0.04)}
 .lvl-bar-wrap{height:6px;background:var(--card);border-radius:3px;margin:6px 0 2px;overflow:hidden}
 .lvl-bar{height:100%;background:var(--gold);border-radius:3px;transition:width .5s}
+/* ── Section 4: Risk & Position Sizing ── */
+.risk-horizon-tabs{display:flex;gap:6px;margin-bottom:18px}
+.risk-tab{padding:5px 16px;border-radius:20px;border:1px solid var(--border);background:none;color:var(--muted);font-size:0.75rem;cursor:pointer;transition:all .2s}
+.risk-tab.active{background:var(--gold);color:#0a1628;border-color:var(--gold);font-weight:700}
+.risk-fan-wrap{background:var(--card2);border-radius:10px;padding:14px;margin-bottom:14px;position:relative}
+.risk-fan-wrap canvas{width:100%!important;max-height:240px}
+.risk-outcome-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+.risk-outcome-card{background:var(--card2);border-radius:8px;padding:10px 8px;text-align:center;border:1px solid var(--border)}
+.risk-outcome-pct{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.risk-outcome-price{font-size:0.92rem;font-weight:700;color:var(--text)}
+.risk-outcome-chg{font-size:0.68rem;margin-top:2px}
+.risk-inputs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.risk-input-block{background:var(--card2);border-radius:8px;padding:12px 14px;border:1px solid var(--border)}
+.risk-input-label{font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.risk-input-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.risk-input-row label{font-size:0.75rem;color:var(--dim);min-width:120px}
+.risk-input-row input{background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.8rem;padding:4px 8px;width:90px}
+.risk-prob-result{margin-top:8px;padding:8px 10px;border-radius:6px;font-size:0.78rem;background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.2);color:var(--dim);line-height:1.5}
+.risk-pos-result{margin-top:8px;padding:8px 10px;border-radius:6px;font-size:0.78rem;background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.2);color:var(--dim);line-height:1.6}
+.risk-vol-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.risk-vol-card{background:var(--card2);border-radius:8px;padding:12px;border:1px solid var(--border);text-align:center}
+.risk-vol-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.risk-vol-val{font-size:1.4rem;font-weight:700;color:var(--text)}
+.risk-vol-sub{font-size:0.68rem;color:var(--muted);margin-top:4px}
+.risk-ai-block{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:10px;padding:14px 16px;font-size:0.8rem;color:var(--dim);line-height:1.75;margin-bottom:14px}
+.risk-dashboard{border:1px solid rgba(245,166,35,0.25);border-radius:10px;overflow:hidden;margin-bottom:14px}
+.risk-dashboard-header{background:rgba(245,166,35,0.08);padding:10px 14px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)}
+.risk-dashboard-body{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.risk-dash-cell{display:flex;flex-direction:column;gap:2px}
+.risk-dash-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.risk-dash-val{font-size:0.88rem;font-weight:700;color:var(--text)}
+.risk-level-badge{display:inline-block;padding:3px 10px;border-radius:12px;font-size:0.68rem;font-weight:700;letter-spacing:.05em}
+.risk-low{background:rgba(16,185,129,0.15);color:var(--green)}
+.risk-medium{background:rgba(245,166,35,0.15);color:var(--gold)}
+.risk-high{background:rgba(239,68,68,0.15);color:var(--red)}
+.risk-veryhigh{background:rgba(239,68,68,0.25);color:#ff6b6b}
 
 /* ── Placeholder sections ── */
 .placeholder-section{padding:28px;text-align:center;color:var(--muted)}
@@ -450,6 +486,7 @@ a{color:var(--gold);text-decoration:none}
       <span class="session-badge s-pending" id="sb-fundamentals">Fundamentals</span>
       <span class="session-badge s-pending" id="sb-valuation">Valuation</span>
       <span class="session-badge s-pending" id="sb-technical">Technical</span>
+      <span class="session-badge s-pending" id="sb-risk">Risk</span>
       <span class="session-badge s-pending" id="sb-catalyst">Catalyst</span>
       <span class="session-badge s-pending" id="sb-decision">Decision</span>
     </div>
@@ -521,7 +558,27 @@ a{color:var(--gold);text-decoration:none}
     </div>
   </div>
 
-  <!-- 4. Catalyst -->
+  <!-- 4. Risk & Position Sizing -->
+  <div class="section-accordion" id="acc-risk">
+    <div class="section-header" onclick="toggleSection('risk')">
+      <div class="section-icon">⚖️</div>
+      <div>
+        <div class="section-title">Risk &amp; Position Sizing</div>
+        <div class="section-desc">Monte Carlo price paths, stop loss probability, position size calculator, volatility</div>
+      </div>
+      <span class="section-status ss-pending" id="status-risk">Coming soon</span>
+      <span class="section-chevron" id="chev-risk">▼</span>
+    </div>
+    <div class="section-body" id="body-risk">
+      <div id="risk-loading" style="display:none;text-align:center;padding:40px 20px">
+        <div class="loading-spinner"></div>
+        <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Running simulations…</div>
+      </div>
+      <div id="risk-content" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- 5. Catalyst -->
   <div class="section-accordion" id="acc-catalyst">
     <div class="section-header" onclick="toggleSection('catalyst')">
       <div class="section-icon">⚡</div>
@@ -643,7 +700,7 @@ function resetSession() {
   document.getElementById('co-header').classList.remove('visible');
   document.getElementById('session-strip').classList.remove('visible');
   // Close all sections
-  ['fundamentals','valuation','technical','catalyst','decision'].forEach(s => {
+  ['fundamentals','valuation','technical','risk','catalyst','decision'].forEach(s => {
     document.getElementById('body-'+s).classList.remove('open');
     document.getElementById('chev-'+s).classList.remove('open');
   });
@@ -674,6 +731,7 @@ function openSection(name) {
     if (name === 'fundamentals') loadFundamentals();
     if (name === 'valuation') renderValuation(_session.fundamentals.data);
     if (name === 'technical') loadTechnical();
+    if (name === 'risk') loadRisk();
   }
 }
 
@@ -2447,6 +2505,466 @@ async function _loadTechCommentary(d) {
     wrapEl.innerHTML = `<div class="ai-tech-commentary" style="white-space:normal">${formatted}${dashHtml}</div>`;
   } catch(e) {
     wrapEl.innerHTML = `<div class="error-block">⚠️ Could not load AI commentary: ${e.message}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// SECTION 4 — RISK & POSITION SIZING
+// ══════════════════════════════════════════════════════
+
+let _riskChart = null;
+let _riskHorizon = 60;   // default horizon in days
+let _riskMC = null;      // cached MC results keyed by horizon
+
+function loadRisk() {
+  const techData = _session.technical?.data;
+  if (!techData || !techData.ohlcv?.c?.length) {
+    document.getElementById('risk-content').innerHTML =
+      `<div class="sec-pad"><div class="error-block">⚠️ Please open the Technical section first — Risk analysis uses the price data loaded there.</div></div>`;
+    document.getElementById('risk-content').style.display = 'block';
+    setStatus('risk', 'active');
+    return;
+  }
+  document.getElementById('risk-loading').style.display = 'block';
+  document.getElementById('risk-content').style.display = 'none';
+
+  // Small delay so loading spinner renders before heavy JS
+  setTimeout(() => {
+    _riskMC = {};
+    _renderRisk();
+  }, 50);
+}
+
+function _runMCSim(prices, days, nSim) {
+  // Compute daily log returns from price history
+  const logReturns = [];
+  for (let i = 1; i < prices.length; i++) {
+    if (prices[i] > 0 && prices[i-1] > 0)
+      logReturns.push(Math.log(prices[i] / prices[i-1]));
+  }
+  if (logReturns.length < 20) return null;
+  const mu  = logReturns.reduce((a,b) => a+b, 0) / logReturns.length;
+  const variance = logReturns.reduce((a,b) => a + (b-mu)**2, 0) / logReturns.length;
+  const sigma = Math.sqrt(variance);
+  const S0 = prices[prices.length - 1];
+
+  // Box-Muller normal random number generator
+  function randn() {
+    let u, v;
+    do { u = Math.random(); } while (u === 0);
+    do { v = Math.random(); } while (v === 0);
+    return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+  }
+
+  // Run simulations — GBM: S(t+1) = S(t) * exp((mu - sigma²/2)*dt + sigma*sqrt(dt)*Z)
+  const dt = 1;
+  const paths = [];
+  const finalPrices = [];
+  for (let s = 0; s < nSim; s++) {
+    let price = S0;
+    const path = [S0];
+    for (let d = 0; d < days; d++) {
+      price = price * Math.exp((mu - 0.5*variance)*dt + sigma*Math.sqrt(dt)*randn());
+      path.push(price);
+    }
+    paths.push(path);
+    finalPrices.push(price);
+  }
+
+  finalPrices.sort((a,b) => a - b);
+  const pct = (p) => finalPrices[Math.floor(p/100 * nSim)] || finalPrices[0];
+
+  // Build P10/P25/P50/P75/P90 path bands
+  const bandPaths = {};
+  ['p10','p25','p50','p75','p90'].forEach(k => {
+    const idx = {'p10':0.10,'p25':0.25,'p50':0.50,'p75':0.75,'p90':0.90}[k];
+    // Sort paths by final price, pick the representative one
+    const sorted = [...paths].sort((a,b) => a[a.length-1] - b[b.length-1]);
+    bandPaths[k] = sorted[Math.floor(idx * nSim)];
+  });
+
+  // Sample paths for fan chart (25 random paths, thin lines)
+  const sampleIdxs = [];
+  for (let i = 0; i < 25; i++) sampleIdxs.push(Math.floor(Math.random() * nSim));
+  const samplePaths = sampleIdxs.map(i => paths[i]);
+
+  // Probability of profit (final price > S0)
+  const probProfit = Math.round(finalPrices.filter(p => p > S0).length / nSim * 100);
+
+  return {
+    S0, mu, sigma, annualisedVol: Math.round(sigma * Math.sqrt(252) * 100 * 10) / 10,
+    days, nSim,
+    p10: pct(10), p25: pct(25), p50: pct(50), p75: pct(75), p90: pct(90),
+    bandPaths, samplePaths, finalPrices, probProfit
+  };
+}
+
+function _probHitStop(mc, stopPrice) {
+  if (!mc) return null;
+  // Count simulations where any path step went at or below stopPrice
+  // We use bandPaths/samplePaths as proxy — instead use finalPrices distribution
+  // Better: use GBM analytic formula P(min < S) ≈ 2*N(-(ln(S0/stop) + (mu-sigma²/2)*T) / (sigma*sqrt(T)))
+  const S0 = mc.S0, mu = mc.mu, sigma = mc.sigma, T = mc.days;
+  if (sigma <= 0 || T <= 0) return null;
+  const drift = (mu - 0.5*sigma*sigma)*T;
+  const vol   = sigma * Math.sqrt(T);
+  const d     = (Math.log(S0/stopPrice) + drift) / vol;
+  // Standard normal CDF approximation (Hart)
+  function ncdf(x) {
+    const a1=0.254829592,a2=-0.284496736,a3=1.421413741,a4=-1.453152027,a5=1.061405429,p=0.3275911;
+    const sign = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    const t = 1/(1+p*x);
+    const y = 1-((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t*Math.exp(-x*x);
+    return 0.5*(1+sign*y);
+  }
+  const prob = 2 * ncdf(-d);
+  return Math.min(99, Math.max(1, Math.round(prob * 100)));
+}
+
+function _renderRisk() {
+  const techData = _session.technical.data;
+  const prices = techData.ohlcv?.c || [];
+  const opt = techData.options || {};
+  const atm_iv = opt.atm_iv;
+
+  // Run MC for selected horizon (cache by days)
+  if (!_riskMC[_riskHorizon]) {
+    _riskMC[_riskHorizon] = _runMCSim(prices, _riskHorizon, 2000);
+  }
+  const mc = _riskMC[_riskHorizon];
+  if (!mc) {
+    document.getElementById('risk-loading').style.display = 'none';
+    document.getElementById('risk-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Not enough price history to run simulation.</div></div>`;
+    document.getElementById('risk-content').style.display = 'block';
+    return;
+  }
+
+  const cs = _vs.currSym || '$';
+  const fmtP = v => v != null ? cs + v.toFixed(2) : '—';
+  const chgPct = v => v != null ? ((v - mc.S0)/mc.S0*100).toFixed(1) : '—';
+  const chgCol = v => v >= mc.S0 ? 'var(--green)' : 'var(--red)';
+
+  // Historical vol vs IV
+  const hv = mc.annualisedVol;
+  const iv = atm_iv || null;
+  const volSignal = iv && hv ? (iv > hv * 1.1 ? 'Options are EXPENSIVE vs history — implied vol exceeds realised' : iv < hv * 0.9 ? 'Options are CHEAP vs history — consider buying options for protection' : 'Options pricing is broadly in line with historical volatility') : 'IV data unavailable';
+  const volBadgeCol = iv && hv ? (iv > hv * 1.1 ? 'var(--red)' : iv < hv * 0.9 ? 'var(--green)' : 'var(--gold)') : 'var(--muted)';
+
+  // Risk level based on annualised vol
+  let riskLevel, riskClass;
+  if (hv < 15) { riskLevel = 'LOW'; riskClass = 'risk-low'; }
+  else if (hv < 30) { riskLevel = 'MEDIUM'; riskClass = 'risk-medium'; }
+  else if (hv < 50) { riskLevel = 'HIGH'; riskClass = 'risk-high'; }
+  else { riskLevel = 'VERY HIGH'; riskClass = 'risk-veryhigh'; }
+
+  const html = `<div class="sec-pad">
+
+    <!-- Horizon tabs -->
+    <div class="risk-horizon-tabs">
+      <button class="risk-tab ${_riskHorizon===30?'active':''}" onclick="_setRiskHorizon(30)">30 Days</button>
+      <button class="risk-tab ${_riskHorizon===60?'active':''}" onclick="_setRiskHorizon(60)">60 Days</button>
+      <button class="risk-tab ${_riskHorizon===90?'active':''}" onclick="_setRiskHorizon(90)">90 Days</button>
+      <button class="risk-tab ${_riskHorizon===180?'active':''}" onclick="_setRiskHorizon(180)">180 Days</button>
+    </div>
+
+    <!-- Fan chart -->
+    <div class="risk-fan-wrap">
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">Price Path Simulation — 2,000 scenarios over ${_riskHorizon} days &nbsp;<span style="color:var(--gold);font-size:0.65rem">(based on this stock's own historical volatility, not a forecast)</span></div>
+      <canvas id="risk-fan-chart" height="200"></canvas>
+    </div>
+
+    <!-- P10–P90 outcome cards -->
+    <div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px">Outcome range after <strong style="color:var(--text)">${_riskHorizon} days</strong> — the stock lands somewhere in this spread in 80% of simulated scenarios</div>
+    <div class="risk-outcome-grid">
+      ${[{l:'Worst 10%',v:mc.p10},{l:'Lower 25%',v:mc.p25},{l:'Median',v:mc.p50},{l:'Upper 75%',v:mc.p75},{l:'Best 10%',v:mc.p90}].map(({l,v}) => `
+      <div class="risk-outcome-card">
+        <div class="risk-outcome-pct">${l}</div>
+        <div class="risk-outcome-price" style="color:${chgCol(v)}">${fmtP(v)}</div>
+        <div class="risk-outcome-chg" style="color:${chgCol(v)}">${chgPct(v)}%</div>
+      </div>`).join('')}
+    </div>
+    <div style="font-size:0.75rem;color:var(--dim);margin-bottom:14px;padding:8px 12px;background:rgba(56,189,248,0.05);border-radius:6px;border:1px solid rgba(56,189,248,0.15)">
+      📊 Probability the stock is <strong>above today's price</strong> after ${_riskHorizon} days: <strong style="color:var(--green)">${mc.probProfit}%</strong>
+    </div>
+
+    <!-- Stop loss & position sizing inputs -->
+    <div class="risk-inputs-grid">
+      <!-- Stop loss stress tester -->
+      <div class="risk-input-block">
+        <div class="risk-input-label">Stop Loss Stress Test</div>
+        <div class="risk-input-row">
+          <label>Your stop loss price</label>
+          <input type="number" id="risk-stop-input" value="${(mc.S0 * 0.92).toFixed(2)}" step="0.5" oninput="_updateStopProb()">
+        </div>
+        <div class="risk-prob-result" id="risk-stop-result">Enter your planned stop loss to see the probability it gets hit.</div>
+      </div>
+      <!-- Position size calculator -->
+      <div class="risk-input-block">
+        <div class="risk-input-label">Position Size Calculator</div>
+        <div class="risk-input-row">
+          <label>Portfolio size (${cs})</label>
+          <input type="number" id="risk-portfolio-input" value="10000" step="1000" oninput="_updatePosSize()">
+        </div>
+        <div class="risk-input-row">
+          <label>Max risk per trade (%)</label>
+          <input type="number" id="risk-risk-pct-input" value="1.5" step="0.5" min="0.1" max="10" oninput="_updatePosSize()">
+        </div>
+        <div class="risk-pos-result" id="risk-pos-result">Fill in the fields above.</div>
+      </div>
+    </div>
+
+    <!-- Volatility comparison -->
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600">Volatility</div>
+    <div class="risk-vol-grid" style="margin-bottom:6px">
+      <div class="risk-vol-card">
+        <div class="risk-vol-label">Historical Volatility (1yr)</div>
+        <div class="risk-vol-val">${hv}%</div>
+        <div class="risk-vol-sub">How much this stock has actually moved</div>
+      </div>
+      <div class="risk-vol-card">
+        <div class="risk-vol-label">Implied Volatility (ATM)</div>
+        <div class="risk-vol-val" style="color:${volBadgeCol}">${iv ? iv+'%' : '—'}</div>
+        <div class="risk-vol-sub">What the options market expects going forward</div>
+      </div>
+    </div>
+    <div style="font-size:0.75rem;padding:8px 12px;background:rgba(245,166,35,0.05);border-radius:6px;border:1px solid rgba(245,166,35,0.15);color:var(--dim);margin-bottom:14px">${volSignal}</div>
+
+    <!-- AI Risk Summary -->
+    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px">Fintiq AI Risk Summary</div>
+    <div class="risk-ai-block" id="risk-ai-text">
+      <div style="text-align:center;color:var(--muted);font-size:0.8rem">Generating plain-English risk summary…</div>
+    </div>
+
+    <!-- Risk Dashboard -->
+    <div class="risk-dashboard" id="risk-dashboard-card">
+      <div class="risk-dashboard-header">Risk Dashboard</div>
+      <div class="risk-dashboard-body">
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Overall Risk Level</div>
+          <div class="risk-dash-val"><span class="risk-level-badge ${riskClass}">${riskLevel}</span></div>
+        </div>
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Historical Vol (Ann.)</div>
+          <div class="risk-dash-val">${hv}%</div>
+        </div>
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Prob. Profit (${_riskHorizon}d)</div>
+          <div class="risk-dash-val" style="color:${mc.probProfit >= 50 ? 'var(--green)':'var(--red)'}">${mc.probProfit}%</div>
+        </div>
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Downside (P10)</div>
+          <div class="risk-dash-val" style="color:var(--red)">${chgPct(mc.p10)}%</div>
+        </div>
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Median Outcome</div>
+          <div class="risk-dash-val">${fmtP(mc.p50)}</div>
+        </div>
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Upside (P90)</div>
+          <div class="risk-dash-val" style="color:var(--green)">+${chgPct(mc.p90)}%</div>
+        </div>
+        <div class="risk-dash-cell" id="risk-dash-stop" style="grid-column:1">
+          <div class="risk-dash-label">Stop Loss (suggested)</div>
+          <div class="risk-dash-val">${fmtP(mc.p10)}</div>
+        </div>
+        <div class="risk-dash-cell" id="risk-dash-possize">
+          <div class="risk-dash-label">Max Position Size</div>
+          <div class="risk-dash-val" id="risk-dash-posval">Enter portfolio above</div>
+        </div>
+        <div class="risk-dash-cell">
+          <div class="risk-dash-label">Vol Status</div>
+          <div class="risk-dash-val" style="color:${volBadgeCol};font-size:0.72rem">${iv ? (iv > hv*1.1 ? 'IV Elevated' : iv < hv*0.9 ? 'IV Compressed' : 'IV Normal') : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+
+  document.getElementById('risk-loading').style.display = 'none';
+  document.getElementById('risk-content').innerHTML = html;
+  document.getElementById('risk-content').style.display = 'block';
+  setStatus('risk', 'done');
+
+  // Draw fan chart
+  _buildRiskChart(mc, cs);
+
+  // Trigger default calculations
+  _updateStopProb();
+  _updatePosSize();
+
+  // Load AI summary
+  _loadRiskAI(mc, hv, iv, volSignal);
+}
+
+function _buildRiskChart(mc, cs) {
+  if (_riskChart) { try { _riskChart.destroy(); } catch(_) {} _riskChart = null; }
+  const ctx = document.getElementById('risk-fan-chart');
+  if (!ctx) return;
+
+  const labels = Array.from({length: mc.days + 1}, (_, i) => i === 0 ? 'Now' : (i % 30 === 0 ? `Day ${i}` : ''));
+
+  // Sample paths (faded background)
+  const sampleDS = mc.samplePaths.map(path => ({
+    data: path, borderColor: 'rgba(100,116,139,0.12)', borderWidth: 1,
+    pointRadius: 0, tension: 0.2, fill: false, label: ''
+  }));
+
+  // Band paths
+  const bandDS = [
+    { key:'p10', color:'rgba(239,68,68,0.8)',  label:'Worst 10%',  dash:[4,2] },
+    { key:'p25', color:'rgba(239,68,68,0.4)',  label:'Lower 25%',  dash:[2,2] },
+    { key:'p50', color:'rgba(245,166,35,1)',   label:'Median',     dash:[] },
+    { key:'p75', color:'rgba(16,185,129,0.4)', label:'Upper 75%',  dash:[2,2] },
+    { key:'p90', color:'rgba(16,185,129,0.8)', label:'Best 10%',   dash:[4,2] },
+  ].map(b => ({
+    label: b.label, data: mc.bandPaths[b.key],
+    borderColor: b.color, borderWidth: b.key==='p50' ? 2 : 1.5,
+    borderDash: b.dash, pointRadius: 0, tension: 0.2, fill: false
+  }));
+
+  // Current price reference line
+  const refDS = {
+    label: 'Current Price', data: Array(mc.days + 1).fill(mc.S0),
+    borderColor: 'rgba(255,255,255,0.25)', borderWidth: 1, borderDash:[6,3],
+    pointRadius: 0, fill: false
+  };
+
+  _riskChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [...sampleDS, ...bandDS, refDS] },
+    options: {
+      responsive: true, animation: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: true, labels: { filter: item => !item.label.startsWith(''), color: '#94a3b8', font: {size:9}, boxWidth:12 } },
+        tooltip: {
+          backgroundColor:'#0d2137', titleColor:'#f5a623', bodyColor:'#cbd5e1',
+          filter: item => item.dataset.label && item.dataset.label !== '',
+          callbacks: { label: ctx => ctx.dataset.label ? `${ctx.dataset.label}: ${cs}${(ctx.parsed.y||0).toFixed(2)}` : '' }
+        }
+      },
+      scales: {
+        x: { ticks: { color:'#64748b', font:{size:9}, maxTicksLimit:8 }, grid: { color:'rgba(255,255,255,0.04)' } },
+        y: { position:'right', ticks: { color:'#64748b', font:{size:9}, callback: v => cs+v.toFixed(0) }, grid: { color:'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+function _setRiskHorizon(days) {
+  _riskHorizon = days;
+  _renderRisk();
+}
+
+function _updateStopProb() {
+  const mc = _riskMC && _riskMC[_riskHorizon];
+  const stopInput = document.getElementById('risk-stop-input');
+  const resultEl  = document.getElementById('risk-stop-result');
+  if (!mc || !stopInput || !resultEl) return;
+
+  const stopPrice = parseFloat(stopInput.value);
+  if (isNaN(stopPrice) || stopPrice <= 0 || stopPrice >= mc.S0) {
+    resultEl.innerHTML = `<span style="color:var(--red)">⚠️ Stop price must be below the current price of ${mc.S0.toFixed(2)}</span>`;
+    return;
+  }
+
+  const prob = _probHitStop(mc, stopPrice);
+  const pctBelow = Math.round((1 - stopPrice/mc.S0)*100);
+  const color = prob > 30 ? 'var(--red)' : prob > 15 ? 'var(--gold)' : 'var(--green)';
+
+  resultEl.innerHTML = `Your stop at <strong>${mc.S0 > 10 ? '$' : ''}${stopPrice.toFixed(2)}</strong> is ${pctBelow}% below current price.<br>
+  There is a <strong style="color:${color}">${prob}% probability</strong> the stock touches this level within ${_riskHorizon} days — even if your long-term thesis is correct.<br>
+  <span style="font-size:0.7rem;color:var(--muted)">${prob > 30 ? '⚠️ Stop may be too tight — high chance of being stopped out by normal volatility.' : prob < 10 ? '✅ Stop is well-placed — low risk of being hit by noise alone.' : '↔️ Stop has moderate exposure to normal price swings.'}</span>`;
+
+  // Update dashboard
+  const dashStop = document.getElementById('risk-dash-stop');
+  if (dashStop) dashStop.querySelector('.risk-dash-val').textContent = `$${stopPrice.toFixed(2)} (${prob}% prob)`;
+}
+
+function _updatePosSize() {
+  const mc = _riskMC && _riskMC[_riskHorizon];
+  const portfolioEl = document.getElementById('risk-portfolio-input');
+  const riskPctEl   = document.getElementById('risk-risk-pct-input');
+  const resultEl    = document.getElementById('risk-pos-result');
+  const stopEl      = document.getElementById('risk-stop-input');
+  if (!mc || !portfolioEl || !riskPctEl || !resultEl) return;
+
+  const portfolio = parseFloat(portfolioEl.value);
+  const riskPct   = parseFloat(riskPctEl.value);
+  const stop      = parseFloat(stopEl?.value || mc.S0 * 0.92);
+  const cs = _vs.currSym || '$';
+
+  if (isNaN(portfolio) || isNaN(riskPct) || portfolio <= 0 || riskPct <= 0) {
+    resultEl.innerHTML = 'Please enter valid portfolio size and risk %.';
+    return;
+  }
+  if (stop >= mc.S0) {
+    resultEl.innerHTML = 'Set a valid stop loss (below current price) to calculate position size.';
+    return;
+  }
+
+  const maxLoss    = portfolio * (riskPct / 100);
+  const riskPerShr = mc.S0 - stop;
+  const shares     = Math.floor(maxLoss / riskPerShr);
+  const capital    = shares * mc.S0;
+  const pctOfPort  = Math.round(capital / portfolio * 100);
+
+  resultEl.innerHTML = `Risk budget: <strong style="color:var(--gold)">${cs}${maxLoss.toFixed(0)}</strong> (${riskPct}% of ${cs}${portfolio.toLocaleString()}).<br>
+Risk per share: <strong>${cs}${riskPerShr.toFixed(2)}</strong> (entry → stop distance).<br>
+<strong style="color:var(--blue)">Buy no more than ${shares} shares</strong> = ${cs}${capital.toLocaleString(undefined,{maximumFractionDigits:0})} (${pctOfPort}% of portfolio).<br>
+<span style="font-size:0.7rem;color:var(--muted)">If the stock hits your stop, you lose exactly ${cs}${(shares*riskPerShr).toFixed(0)} — that's ${riskPct}% of your portfolio.</span>`;
+
+  const dashPos = document.getElementById('risk-dash-posval');
+  if (dashPos) dashPos.textContent = `${shares} shares (${cs}${capital.toLocaleString(undefined,{maximumFractionDigits:0})})`;
+}
+
+async function _loadRiskAI(mc, hv, iv, volSignal) {
+  const el = document.getElementById('risk-ai-text');
+  if (!el) return;
+  const ticker = _session.ticker || '';
+  const techData = _session.technical?.data || {};
+  const tr  = techData.trend || {};
+  const opt = techData.options || {};
+  const cs  = _vs.currSym || '$';
+
+  const prompt = `You are helping a retail investor understand the risk profile of ${ticker} in plain, simple English. They may not have much financial background. Explain everything clearly, like a knowledgeable friend walking them through the numbers.
+
+HERE IS THE RISK DATA:
+- Current price: ${cs}${mc.S0.toFixed(2)}
+- Simulation horizon: ${mc.days} days, 2,000 scenarios
+- Worst 10% outcome (P10): ${cs}${mc.p10.toFixed(2)} (${((mc.p10-mc.S0)/mc.S0*100).toFixed(1)}%)
+- Median outcome (P50): ${cs}${mc.p50.toFixed(2)} (${((mc.p50-mc.S0)/mc.S0*100).toFixed(1)}%)
+- Best 10% outcome (P90): ${cs}${mc.p90.toFixed(2)} (${((mc.p90-mc.S0)/mc.S0*100).toFixed(1)}%)
+- Probability stock is higher after ${mc.days} days: ${mc.probProfit}%
+- Historical annualised volatility: ${hv}%
+- ATM Implied Volatility: ${iv ? iv+'%' : 'unavailable'}
+- Options vol signal: ${volSignal}
+- Current trend: ${tr.classification || 'unknown'}
+- Max Pain level: ${opt.max_pain || 'unavailable'}
+
+Write 3-4 short paragraphs in plain English covering:
+1. What the simulation tells us about the range of outcomes — what could realistically happen in the best and worst cases, and what the most likely path looks like. Use the actual prices and percentages.
+2. What the historical volatility means for this stock — is it a calm/stable stock or a wild mover? What does that mean for how much risk the investor is taking?
+3. What the implied vs historical volatility comparison means — is the market pricing in extra fear right now, or is the options market calm? What should the investor think about buying options for protection?
+4. One sentence: given all this, should the investor size this trade conservatively, moderately, or aggressively — and why?
+
+Be specific with numbers. Keep it simple. Teach as you go.`;
+
+  try {
+    const res = await fetch(`${API}/fundamentals/chat`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        ticker, section: 'risk',
+        messages: [{ role: 'user', content: prompt }],
+        fundamentals_data: {}
+      })
+    });
+    const r = await res.json();
+    el.textContent = r.reply || 'Could not generate summary.';
+  } catch(e) {
+    el.textContent = 'Could not generate AI summary. You can still use the simulation data above.';
   }
 }
 
