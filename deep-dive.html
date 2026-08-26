@@ -1392,10 +1392,14 @@ function renderValuation(d) {
   };
 
   // ── 3. Reverse-engineer implied growth (find g1 that gives DCF = current price) ──
+  // Binary search uses declining profile: g2 = g1×0.65, g3 = g1×0.4
+  // We must apply the SAME ratios when setting — otherwise DCF won't equal price
   if (price && vi.revenue_raw) {
     const implied = _solveImplied(price, _vs);
     if (implied !== null) {
-      _vs.g1 = _vs.g2 = _vs.g3 = Math.round(implied);
+      _vs.g1 = Math.round(implied * 10) / 10;
+      _vs.g2 = Math.round(implied * 0.65 * 10) / 10;
+      _vs.g3 = Math.round(implied * 0.40 * 10) / 10;
       _vs._impliedSolved = true;
       _vs._impliedGrowth = Math.round(implied * 10) / 10;
     }
@@ -1777,24 +1781,30 @@ function _computeDCF(vs) {
 }
 
 // ── Solve implied growth rate (binary search) ──
+// Finds g1 such that DCF(g1, g2=g1×0.65, g3=g1×0.4) = current price
 function _solveImplied(price, vs) {
   const shares = vs.shares;
-  const netDebt = vs.netDebt;
   if (!price || !shares || price <= 0) return null;
 
-  // Binary search: find g (applied uniformly to all phases) such that DCF equity/share ≈ price
-  let lo = -0.05, hi = 0.60;
-  for (let i = 0; i < 60; i++) {
+  let lo = -0.05, hi = 0.80;
+  for (let i = 0; i < 80; i++) {
     const mid = (lo + hi) / 2;
-    const vsCopy = { ...vs, g1: mid*100, g2: mid*100*0.65, g3: mid*100*0.4 };
-    const d = _computeDCF(vsCopy);
-    if (!d.equity_ps) return null;
-    if (d.equity_ps > price) hi = mid;
+    const vsCopy = { ...vs, g1: mid*100, g2: mid*100*0.65, g3: mid*100*0.40 };
+    const r = _computeDCF(vsCopy);
+    if (!r || r.equity_ps == null) return null;
+    if (r.equity_ps > price) hi = mid;
     else lo = mid;
-    if (Math.abs(hi - lo) < 0.001) break;
+    if (Math.abs(hi - lo) < 0.0001) break;
   }
   const g = (lo + hi) / 2;
-  return Math.max(-10, Math.min(50, g * 100));
+  const gPct = Math.max(-10, Math.min(60, g * 100));
+
+  // Sanity check: resulting DCF should be within 5% of price
+  const check = _computeDCF({ ...vs, g1: gPct, g2: gPct*0.65, g3: gPct*0.40 });
+  if (!check || check.equity_ps == null) return null;
+  if (Math.abs(check.equity_ps - price) / price > 0.05) return null;
+
+  return gPct;
 }
 
 // ── Phase Diagnostics table ──
