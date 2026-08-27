@@ -1721,10 +1721,10 @@ function _buildValHTML() {
     html += `<div class="avg-bar">
       <div>
         <div style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:2px">Average Intrinsic Value (All Methods)</div>
-        <div class="avg-value">${cs}${avgVal.toFixed(2)}</div>
+        <div class="avg-value" id="avg-val-disp">${cs}${avgVal.toFixed(2)}</div>
       </div>
       <div style="text-align:right">
-        <div class="avg-verdict" style="color:${col}">${dir} ${Math.abs(Number(avgUpside)).toFixed(1)}% ${avgUpsideNum > 0 ? 'Upside' : 'Downside'}</div>
+        <div class="avg-verdict" id="avg-verdict-disp" style="color:${col}">${dir} ${Math.abs(Number(avgUpside)).toFixed(1)}% ${avgUpsideNum > 0 ? 'Upside' : 'Downside'}</div>
         <div style="font-size:0.68rem;color:var(--muted)">vs current price ${cs}${vs.price?.toFixed(2)||'—'}</div>
       </div>
       <div style="font-size:0.7rem;color:var(--muted);padding:6px 10px;background:rgba(239,68,68,0.08);border-radius:6px;border-left:2px solid var(--red);max-width:220px">
@@ -1824,21 +1824,21 @@ function _phaseBox(id, title, cls, gKey, omKey, irKey) {
     <div class="phase-box-title">${title}</div>
     <div class="slider-item" style="border:none;background:none;padding:0;margin-bottom:8px">
       <div class="slider-label"><span>Revenue Growth</span><span class="slider-value" id="disp-${gKey}">${vs[gKey]}%</span></div>
-      <input type="range" class="slider-input" id="sl-${gKey}" min="-10" max="50" step="1" value="${vs[gKey]}"
+      <input type="range" class="slider-input" id="sl-${gKey}" min="-10" max="150" step="1" value="${vs[gKey]}"
         oninput="updSlider('${gKey}',this.value);document.getElementById('disp-${gKey}').textContent=this.value+'%'">
-      <div class="slider-range"><span>-10%</span><span>50%</span></div>
+      <div class="slider-range"><span>-10%</span><span>150%</span></div>
     </div>
     <div class="slider-item" style="border:none;background:none;padding:0;margin-bottom:8px">
       <div class="slider-label"><span>Op. Margin</span><span class="slider-value" id="disp-${omKey}">${vs[omKey]}%</span></div>
-      <input type="range" class="slider-input" id="sl-${omKey}" min="0" max="60" step="1" value="${vs[omKey]}"
+      <input type="range" class="slider-input" id="sl-${omKey}" min="0" max="100" step="1" value="${vs[omKey]}"
         oninput="updSlider('${omKey}',this.value);document.getElementById('disp-${omKey}').textContent=this.value+'%'">
-      <div class="slider-range"><span>0%</span><span>60%</span></div>
+      <div class="slider-range"><span>0%</span><span>100%</span></div>
     </div>
     <div class="slider-item" style="border:none;background:none;padding:0">
       <div class="slider-label"><span>Inv. Rate % NOPAT</span><span class="slider-value" id="disp-${irKey}">${vs[irKey]}%</span></div>
-      <input type="range" class="slider-input" id="sl-${irKey}" min="0" max="100" step="5" value="${vs[irKey]}"
+      <input type="range" class="slider-input" id="sl-${irKey}" min="0" max="150" step="5" value="${vs[irKey]}"
         oninput="updSlider('${irKey}',this.value);document.getElementById('disp-${irKey}').textContent=this.value+'%'">
-      <div class="slider-range"><span>0%</span><span>100%</span></div>
+      <div class="slider-range"><span>0%</span><span>150%</span></div>
     </div>
   </div>`;
 }
@@ -1868,9 +1868,40 @@ function _refreshValuation() {
     const cvBar = document.getElementById('cv-pct-disp');
     if (cvBar) cvBar.textContent = dcf.cv_pct + '%';
 
-    // Recompute Graham + Industry (unchanged), update DCF card
-    const dcfEls = mc.querySelectorAll('.method-value');
-    if (dcfEls[0]) dcfEls[0].textContent = dcf.equity_ps ? `${cs}${dcf.equity_ps.toFixed(2)}` : '—';
+    // Recompute and update ALL three method cards dynamically
+    const cards = mc.querySelectorAll('.method-card');
+    if (cards[0] && dcf.equity_ps) {
+      const dcfPs = dcf.equity_ps;
+      const price = vs.price;
+      const upsideDcf = price ? (dcfPs - price) / price * 100 : null;
+      const colDcf = upsideDcf != null && upsideDcf > 0 ? 'var(--green)' : 'var(--red)';
+      const dirDcf = upsideDcf != null && upsideDcf > 0 ? '▲' : '▼';
+      const verdictDcf = upsideDcf != null
+        ? (upsideDcf > 0 ? `UNDERVALUED by ${Math.abs(upsideDcf).toFixed(1)}%` : `OVERVALUED by ${Math.abs(upsideDcf).toFixed(1)}%`)
+        : '—';
+      const valEl = cards[0].querySelector('.method-value');
+      const verdEl = cards[0].querySelector('.method-verdict');
+      if (valEl)  valEl.textContent = `${cs}${dcfPs.toFixed(2)}`;
+      if (verdEl) { verdEl.textContent = `${dirDcf} ${verdictDcf}`; verdEl.style.color = colDcf; }
+      const cvBar = document.getElementById('cv-pct-disp');
+      if (cvBar) cvBar.textContent = dcf.cv_pct + '%';
+    }
+    // Update average intrinsic value bar
+    const grahamPs2 = vs.epsTtm && vs.bvps ? Math.sqrt(22.5 * vs.epsTtm * vs.bvps) : null;
+    const sectorPe2 = {Technology:28,Healthcare:22,Financials:14,ConsumerCyclical:20,ConsumerDefensive:18,Energy:12,Utilities:16,Industrials:18,Materials:15,RealEstate:20,CommunicationServices:22}[vs.sector?.replace(/\s/g,'')] || 18;
+    const industPe2 = vs.epsTtm ? sectorPe2 * vs.epsTtm : null;
+    const vals2 = [dcf.equity_ps, grahamPs2, industPe2].filter(v => v && v > 0 && v < (vs.price||1e9) * 20);
+    if (vals2.length) {
+      const avg2 = vals2.reduce((a,b)=>a+b)/vals2.length;
+      const avgUp2 = vs.price ? (avg2 - vs.price)/vs.price*100 : null;
+      const avgValEl = document.getElementById('avg-val-disp');
+      const avgVerdEl = document.getElementById('avg-verdict-disp');
+      if (avgValEl) avgValEl.textContent = `${cs}${avg2.toFixed(2)}`;
+      if (avgVerdEl && avgUp2 != null) {
+        avgVerdEl.style.color = avgUp2 > 0 ? 'var(--green)' : 'var(--red)';
+        avgVerdEl.textContent = `${avgUp2 > 0 ? '▲' : '▼'} ${Math.abs(avgUp2).toFixed(1)}% ${avgUp2 > 0 ? 'Upside' : 'Downside'}`;
+      }
+    }
   }
 }
 
@@ -2802,8 +2833,12 @@ function _renderRisk() {
       <!-- Stop loss stress tester -->
       <div class="risk-input-block">
         <div class="risk-input-label">Stop Loss Stress Test</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button id="risk-sl-long-btn" onclick="_setStopDirection('long')" style="flex:1;padding:5px 8px;font-size:0.7rem;border-radius:5px;border:1px solid rgba(16,185,129,0.4);background:rgba(16,185,129,0.15);color:var(--green);cursor:pointer;font-weight:600">📈 Long</button>
+          <button id="risk-sl-short-btn" onclick="_setStopDirection('short')" style="flex:1;padding:5px 8px;font-size:0.7rem;border-radius:5px;border:1px solid rgba(255,255,255,0.1);background:var(--card2);color:var(--muted);cursor:pointer">📉 Short</button>
+        </div>
         <div class="risk-input-row">
-          <label>Your stop loss price</label>
+          <label id="risk-sl-label">Stop loss (below entry for long)</label>
           <input type="number" id="risk-stop-input" placeholder="e.g. ${(mc.S0 * 0.92).toFixed(2)}" step="0.5" oninput="_updateStopProb()">
         </div>
         <div class="risk-prob-result" id="risk-stop-result" style="color:var(--muted)">Enter your planned stop loss price above to see how likely it is to get hit by normal market volatility.</div>
@@ -2969,6 +3004,38 @@ function _setRiskHorizon(days) {
   _renderRisk();
 }
 
+let _stopDirection = 'long';
+
+function _setStopDirection(dir) {
+  _stopDirection = dir;
+  const longBtn  = document.getElementById('risk-sl-long-btn');
+  const shortBtn = document.getElementById('risk-sl-short-btn');
+  const label    = document.getElementById('risk-sl-label');
+  if (longBtn && shortBtn) {
+    if (dir === 'long') {
+      longBtn.style.border  = '1px solid rgba(16,185,129,0.4)';
+      longBtn.style.background = 'rgba(16,185,129,0.15)';
+      longBtn.style.color   = 'var(--green)';
+      longBtn.style.fontWeight = '600';
+      shortBtn.style.border = '1px solid rgba(255,255,255,0.1)';
+      shortBtn.style.background = 'var(--card2)';
+      shortBtn.style.color  = 'var(--muted)';
+      shortBtn.style.fontWeight = '400';
+    } else {
+      shortBtn.style.border = '1px solid rgba(239,68,68,0.4)';
+      shortBtn.style.background = 'rgba(239,68,68,0.15)';
+      shortBtn.style.color  = 'var(--red)';
+      shortBtn.style.fontWeight = '600';
+      longBtn.style.border  = '1px solid rgba(255,255,255,0.1)';
+      longBtn.style.background = 'var(--card2)';
+      longBtn.style.color   = 'var(--muted)';
+      longBtn.style.fontWeight = '400';
+    }
+  }
+  if (label) label.textContent = dir === 'long' ? 'Stop loss (below entry for long)' : 'Stop loss (above entry for short)';
+  _updateStopProb();
+}
+
 function _updateStopProb() {
   const mc = _riskMC && _riskMC[_riskHorizon];
   const stopInput = document.getElementById('risk-stop-input');
@@ -2976,22 +3043,41 @@ function _updateStopProb() {
   if (!mc || !stopInput || !resultEl) return;
 
   const stopPrice = parseFloat(stopInput.value);
-  if (isNaN(stopPrice) || stopPrice <= 0 || stopPrice >= mc.S0) {
-    resultEl.innerHTML = `<span style="color:var(--red)">⚠️ Stop price must be below the current price of ${mc.S0.toFixed(2)}</span>`;
+  const isShort = _stopDirection === 'short';
+
+  if (isNaN(stopPrice) || stopPrice <= 0) {
+    resultEl.innerHTML = `<span style="color:var(--muted)">Enter your planned stop loss price above.</span>`;
     return;
   }
 
-  const prob = _probHitStop(mc, stopPrice);
-  const pctBelow = Math.round((1 - stopPrice/mc.S0)*100);
-  const color = prob > 30 ? 'var(--red)' : prob > 15 ? 'var(--gold)' : 'var(--green)';
+  if (!isShort && stopPrice >= mc.S0) {
+    resultEl.innerHTML = `<span style="color:var(--red)">⚠️ For a long trade, stop must be below current price (${mc.S0.toFixed(2)})</span>`;
+    return;
+  }
+  if (isShort && stopPrice <= mc.S0) {
+    resultEl.innerHTML = `<span style="color:var(--red)">⚠️ For a short trade, stop must be above current price (${mc.S0.toFixed(2)})</span>`;
+    return;
+  }
 
-  resultEl.innerHTML = `Your stop at <strong>${mc.S0 > 10 ? '$' : ''}${stopPrice.toFixed(2)}</strong> is ${pctBelow}% below current price.<br>
-  There is a <strong style="color:${color}">${prob}% probability</strong> the stock touches this level within ${_riskHorizon} days — even if your long-term thesis is correct.<br>
-  <span style="font-size:0.7rem;color:var(--muted)">${prob > 30 ? '⚠️ Stop may be too tight — high chance of being stopped out by normal volatility.' : prob < 10 ? '✅ Stop is well-placed — low risk of being hit by noise alone.' : '↔️ Stop has moderate exposure to normal price swings.'}</span>`;
+  const prob = _probHitStop(mc, isShort ? mc.S0 * 2 - stopPrice : stopPrice);
+  const pctAway = Math.abs(Math.round((stopPrice/mc.S0 - 1)*100));
+  const color = prob > 30 ? 'var(--red)' : prob > 15 ? 'var(--gold)' : 'var(--green)';
+  const direction = isShort ? 'above' : 'below';
+  const tradeType = isShort ? 'short' : 'long';
+
+  const tightMsg = prob > 30
+    ? `⚠️ Stop may be too tight — high chance of being hit by normal volatility.`
+    : prob < 10
+    ? `✅ Stop is well-placed — low risk of being triggered by noise alone.`
+    : `↔️ Stop has moderate exposure to normal price swings.`;
+
+  resultEl.innerHTML = `Your ${isShort ? 'short' : 'long'} stop at <strong>${stopPrice.toFixed(2)}</strong> is ${pctAway}% ${direction} current price.<br>
+  There is a <strong style="color:${color}">${prob}% probability</strong> the stock touches this level within ${_riskHorizon} days — even if your ${tradeType} thesis is correct.<br>
+  <span style="font-size:0.7rem;color:var(--muted)">${tightMsg}</span>`;
 
   // Update dashboard
   const dashStop = document.getElementById('risk-dash-stop');
-  if (dashStop) dashStop.querySelector('.risk-dash-val').textContent = `$${stopPrice.toFixed(2)} (${prob}% prob)`;
+  if (dashStop) dashStop.querySelector('.risk-dash-val').textContent = `${stopPrice.toFixed(2)} (${prob}% prob)`;
 }
 
 function _updatePosSize() {
