@@ -1,0 +1,5 @@
+{
+  "redirects": [
+    { "source": "/deep-dive.htm", "destination": "/deep-dive.html", "permanent": true }
+  ]
+}

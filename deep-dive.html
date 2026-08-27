@@ -868,9 +868,9 @@ function _openAIExp(id) {
 function setStatus(name, state) {
   const el = document.getElementById('status-'+name);
   el.className = 'section-status';
-  if (state === 'active') { el.classList.add('ss-active'); el.textContent = 'In progress'; }
-  else if (state === 'done') { el.classList.add('ss-done'); el.textContent = 'Done'; }
-  else { el.classList.add('ss-pending'); el.textContent = 'Not started'; }
+  if (state === 'active') { el.classList.add('ss-active'); el.textContent = 'In progress'; el.style.display = ''; }
+  else if (state === 'done') { el.style.display = 'none'; }
+  else { el.classList.add('ss-pending'); el.textContent = 'Not started'; el.style.display = ''; }
 }
 
 function updateSessionBadges() {
@@ -2102,6 +2102,8 @@ function _buildSensBrief(vs) {
 }
 
 // ── Sensitivity Table ──
+// Uses simple perpetuity TV = lastYrFCF*(1+tg)/(wacc-tg) so higher TG always
+// increases value (intuitive). pvFcf from the 10-year projection is held fixed.
 function _buildSensTable(vs) {
   const waccs = [6,7,8,9,10,11,12,13,14,15];
   const tgs   = [0,1,2,3,4,5];
@@ -2110,27 +2112,64 @@ function _buildSensTable(vs) {
   const curT  = Math.round(vs.tg);
   const cs    = vs.currSym;
 
+  // Pre-compute the 10-year FCF projection once (at user's current settings)
+  // to get pvFcf and the last year FCF for TV calculation
+  const taxD  = vs.taxRate / 100;
+  const waccCurD = vs.wacc / 100;
+  const phases = [
+    { years: 3, g: vs.g1/100, om: vs.om1/100, ir: vs.ir1/100 },
+    { years: 4, g: vs.g2/100, om: vs.om2/100, ir: vs.ir2/100 },
+    { years: 3, g: vs.g3/100, om: vs.om3/100, ir: vs.ir3/100 },
+  ];
+  let rev = vs.revRaw; let nopat_last = 0;
+  // We'll recompute pvFcf per WACC row (WACC affects discounting of early FCFs too)
+  // Collect undiscounted FCFs for each of the 10 years
+  const undiscFcf = [];
+  let revCur = vs.revRaw;
+  for (let p = 0; p < phases.length; p++) {
+    const ph = phases[p];
+    for (let y = 0; y < ph.years; y++) {
+      revCur = revCur * (1 + ph.g);
+      const nopat = revCur * ph.om * (1 - taxD);
+      const fcf   = nopat * (1 - ph.ir);
+      undiscFcf.push(fcf);
+      nopat_last = nopat;
+    }
+  }
+  // lastFcf for simple TV: last year FCF of explicit period
+  const lastFcf = undiscFcf[undiscFcf.length - 1];
+
   let h = `<table class="sens-table"><tr><th>WACC ↓ / TG →</th>`;
   tgs.forEach(t => h += `<th>${t}%</th>`);
   h += `</tr>`;
 
   waccs.forEach(w => {
+    const wD = w / 100;
+    // pvFcf discounted at this row's WACC
+    let pvFcfRow = 0;
+    undiscFcf.forEach((fcf, i) => { pvFcfRow += fcf / Math.pow(1 + wD, i + 1); });
+
     h += `<tr><td>${w === curW ? `<strong style="color:var(--gold)">${w}%</strong>` : w+'%'}</td>`;
     tgs.forEach(t => {
-      const vsCopy = { ...vs, wacc: w, tg: t };
-      const d = _computeDCF(vsCopy);
-      const val = d.equity_ps;
-      if (!val) { h += `<td style="color:var(--muted)">—</td>`; return; }
-      // Color: green = undervalued, red = overvalued
+      const tD = t / 100;
+      const spread = wD - tD;
+      if (spread <= 0.005) { h += `<td style="color:var(--muted)">—</td>`; return; }
+      // Simple Gordon Growth TV: last FCF * (1+tg) / (wacc - tg), discounted 10 yrs
+      const tvUndiscounted = lastFcf * (1 + tD) / spread;
+      const pvTV = tvUndiscounted / Math.pow(1 + wD, 10);
+      const evTotal = pvFcfRow + pvTV;
+      const eqVal   = evTotal - Math.max(vs.netDebt, 0);
+      const val     = eqVal / vs.shares;
+      if (!val || val < 0) { h += `<td style="color:var(--muted)">—</td>`; return; }
       const upside = price ? (val - price) / price : 0;
       const alpha  = Math.min(Math.abs(upside) / 0.4, 1.0);
       const bg     = upside > 0
         ? `rgba(16,185,129,${(0.08 + alpha*0.35).toFixed(2)})`
         : `rgba(239,68,68,${(0.08 + alpha*0.30).toFixed(2)})`;
       const col    = upside > 0 ? '#4ade80' : '#f87171';
-      const isCur  = Math.round(w) === curW && Math.round(t) === curT;
+      const isCur  = w === curW && t === curT;
       h += `<td style="background:${bg};color:${col}${isCur?';outline:2px solid var(--gold);outline-offset:-2px':''}"
-        ${isCur?'class="sens-current"':''}>${cs}${val.toFixed(0)}</td>`;
+        ${isCur?'class="sens-current"':''}>${cs}${Math.round(val)}</td>`;
     });
     h += `</tr>`;
   });
