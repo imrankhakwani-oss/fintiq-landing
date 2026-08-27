@@ -3861,8 +3861,7 @@ function _generateReport() {
     });
   }
 
-  const win = window.open('', '_blank');
-  win.document.write(`<!DOCTYPE html><html><head>
+  const _pdfHtml = `<!DOCTYPE html><html><head>
   <meta charset="UTF-8">
   <title>${ticker} — Fintiq Research Report</title>
   <style>
@@ -4001,9 +4000,17 @@ function _generateReport() {
   <div class="disclaimer">
     Fintiq Research Report · ${today} · ${ticker} · Educational use only — not financial advice · Fintiq is not FCA authorised · Always verify data independently
   </div>
-  </body></html>`);
-  win.document.close();
-  setTimeout(() => win.print(), 800);
+  </body></html>`;
+  const blob = new Blob([_pdfHtml], { type: 'text/html' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) {
+    // Fallback: download as HTML file
+    const a = document.createElement('a');
+    a.href = url; a.download = `${ticker}-fintiq-report.html`; a.click();
+  } else {
+    setTimeout(() => { try { win.print(); } catch(e) {} }, 1200);
+  }
 }
 
 // ── Method Card HTML ──
