@@ -1,4 +1,4 @@
-# Fintiq Project Context — Last updated 25/08/2026
+# Fintiq Project Context — Last updated 27/08/2026
 
 ---
 
@@ -170,6 +170,46 @@ Ends with: KEY SWING FACTOR (1-2 sentences).
 - Bear/Base/Bull AI scenarios: fetched from `/valuation/ai-assumptions`, parsed via `━━` separator regex
 - "Fintiq AI Analyst" label (not "AI Fundamentals Analyst")
 
+### Section 4 — Risk & Position Sizing (built 26/08/2026)
+- `loadRisk()` → `_pollRisk(attempt)` → `renderRisk(d)` then `_renderRisk()`
+- `_stopDirection` state variable — 'long' | 'short', toggled via buttons
+- `_setStopDirection(dir)` — updates labels, button colours, revalidates stop input
+- `_updateStopProb()` — direction-aware: long stop must be below S0, short stop must be above
+- `_updatePosSize()` — uses `Math.abs(mc.S0 - stopVal)` as riskPerShare regardless of direction
+- Risk Monte Carlo (GBM): separate from valuation MC — simulates 30/60/90d price paths
+- `mc.annualisedVol` and `mc.probProfit` are already percentages — do NOT multiply by 100
+- AI expander: `id="risk-ai-expander"`, auto-opened via `_openAIExp()`
+
+### Section 5 — Catalyst Tracker (built 26/08/2026)
+- Background thread: `_run_catalyst(ticker)` — all yfinance calls wrapped in `_safe(fn, timeout)` using `concurrent.futures`
+- `_safe()` helper defined at top of `_run_catalyst` — prevents yfinance hanging from blocking the thread
+- `_catalyst_jobs[ticker]` — stores `{status:'done', ...all data, ts:time.time()}`
+- Polling: `_pollCatalyst(attempt)` — 40 attempts × 2s = 80s timeout, then shows Retry button
+- AI summary: `catalyst_ai_summary()` — Haiku, 600 tokens, 5 sections with ▸ headers
+
+### Section 6 — Decision Analysis (built 27/08/2026)
+- `loadDecision()` → `renderDecision()` wrapped in try/catch — surfaces exact error to user
+- `_decSignals()` — reads from `_session.fundamentals.data`, `_session.technical.data`, `_session.risk`
+  - `td.trend` is an OBJECT `{classification, ...}` — always use `trendObj.classification`
+  - `td.momentum` is an OBJECT `{rsi, rsi_signal, macd, macd_signal_val, ...}` — use `.rsi_signal`
+  - `mc.annualisedVol` and `mc.probProfit` are already % — no `*100`
+- AI challenge: POST `/decision/ai-challenge` — **Sonnet model**, 1800 tokens
+  - Fetches Tavily web search first for fresh segment context
+  - Breaks down DCF implied growth by business segment
+  - Verdict paragraph: "Your thesis is correct if..." + judgemental probability %
+  - Returns JSON: `{counters: [{title, argument}], summary}`
+  - Response may have markdown code fences — `re.sub` strips them before `json.loads`
+- AI expanders: all 3 AI blocks (risk, technical, catalyst) wrapped in `.ai-expander` CSS with `_toggleAIExp(id)` / `_openAIExp(id)`
+- Section badges: `setStatus(name, 'done')` now hides the badge (`display:none`)
+
+### Section 6 — PDF Report
+- Button: `_generateReport()` → `_doGenerateReport()` (wrapped in try/catch with alert)
+- Uses Blob URL + always-download approach: `a.download = ticker-fintiq-report.html; a.click()`
+- Common PDF bugs fixed:
+  - `td.trend?.replace` → `td.trend` is object, use `td.trend?.classification`
+  - `td.momentum?.replace` → `td.momentum` is object, use `td.momentum?.rsi_signal`
+  - `annualisedVol * 100` and `probProfit * 100` → already %, remove `*100`
+
 ### Section 3 — Technical (built 25/08/2026)
 - `loadTechnical()` → `_pollTechnical(attempt)` → `renderTechnical(d)`
 - Trend banner: colour-coded (green/red/amber) with trend + momentum badges
@@ -228,19 +268,23 @@ discovery → confirm → fundamental → valuation → technical → finalise �
 
 ## 9. PENDING TASKS — START HERE NEXT SESSION
 
-### Deep Dive — Section 6 (next to build)
-- [ ] **Section 6 — Decision Analysis**: thesis challenge, conviction score, buy/short/hold verdict, PDF report
+### 27/08/2026 — Session status
+All 6 sections of deep-dive.html are now built and deployed. Known working:
+- Fundamentals ✅, Valuation ✅, Technical ✅, Risk ✅, Catalyst ✅ (after Railway deploy with yfinance timeouts), Decision Analysis ✅, PDF download ✅
 
-### Deep Dive — Known issues / polish
-- [ ] Valuation section: reverse DCF solver ceiling raised to 150% — verify Tesla now shows implied growth callout
-- [ ] Catalyst section: earnings date now uses future-only logic — verify with AAPL post-July earnings
-- [ ] Catalyst AI summary: now 250 words with ▸ headers — verify rendering looks clean
+### Next session — PRIORITY
+- [ ] **Conviction Calibrator** (new sub-section in Decision Analysis):
+  - Step 1: Base rate anchor — show historical win rate for stocks with this signal profile
+  - Step 2: Bayesian updater — each section shifts probability up/down from 50% base (visual needle)
+  - Step 3: Kelly sizing — user inputs upside/downside target → calculates Half-Kelly as % of portfolio
+  - Philosophy: closes the loop from "I think TSLA is going down" → "35% confidence, 3.5% of portfolio"
 
-### Other
+### Other pending
 - [ ] Mobile: My Dashboard 3-col grid → single column (task #23)
 - [ ] Apply remaining 9 audit fixes to main.py (task #74)
-- [ ] Re-enable login/paywall with new protocol
+- [ ] Re-enable login/paywall
 - [ ] Polygon.io news + earnings data feed ($29/mo) — would improve catalyst data quality
+- [ ] WACC/TG sensitivity table now uses simple Gordon Growth perpetuity (not McKinsey RONIC formula) — explain this in the table caption so users understand
 
 ---
 
@@ -273,3 +317,12 @@ discovery → confirm → fundamental → valuation → technical → finalise �
 | 26/08/2026 | Catalyst: earnings date showing past date (e.g. July 30 in August) | Added future-only filter; fallback search in `earnings_dates` |
 | 26/08/2026 | Valuation: reverse DCF not working for high-growth stocks (TSLA) | Raised solver ceiling from 80% to 150%; removed premature gPct clamp |
 | 26/08/2026 | git index.lock blocking commits | `del .git\index.lock` in PowerShell |
+| 27/08/2026 | WACC/TG sensitivity table: higher TG showing lower value | McKinsey RONIC formula: at low RONIC, higher TG = more reinvestment = lower FCF. Fixed: sensitivity table uses simple Gordon Growth TV = lastFCF*(1+tg)/(wacc-tg). Main DCF unchanged. |
+| 27/08/2026 | EV bridge shows different value than Method 1 after slider move | Bridge was static HTML baked at render. Added IDs `bridge-ev`, `bridge-eq`, `bridge-ps` and update them in `_refreshValuation()` |
+| 27/08/2026 | MC Bear/Base/Bull values wrong (TSLA: $55/$81/$123 vs DCF $413) | MC was hardcoding `g2=g1*0.65, g3=g1*0.4` ignoring user's phase 2/3 sliders. Fixed to use `vs.g2` and `vs.g3` as means with independent noise |
+| 27/08/2026 | Catalyst stuck on "Loading catalyst data..." | `_run_catalyst` yfinance calls blocking indefinitely. Fixed with `_safe(fn, timeout)` using `concurrent.futures.ThreadPoolExecutor` |
+| 27/08/2026 | PDF report error: `td.trend?.replace is not a function` | `td.trend` is object `{classification,...}`. In PDF template use `td.trend?.classification` |
+| 27/08/2026 | PDF: `td.momentum` showing `[object Object]` | `td.momentum` is object `{rsi, rsi_signal, macd,...}`. Use `td.momentum?.rsi_signal` |
+| 27/08/2026 | PDF: Annualised Vol showing 4950%, ProbProfit 3900% | Values already %, PDF template had extra `*100`. Removed. |
+| 27/08/2026 | AI Challenge showing shallow analysis, no segment breakdown | Upgraded to Sonnet model (1800 tokens), added Tavily web search pre-fetch, segment-level instructions, verdict with judgemental probability |
+| 27/08/2026 | PDF never downloading (popup blocked) | `window.open(blob_url, '_blank')` blocked by browser. Changed to always `a.download = file.html; a.click()` |
