@@ -3557,7 +3557,7 @@ function _decSignals() {
     const sig = trend.includes('UP') ? 'green' : trend.includes('DOWN') ? 'red' : 'amber';
     signals.push({ label: 'Technical', signal: sig,
       status: trend.includes('UP') ? 'Bullish' : trend.includes('DOWN') ? 'Bearish' : 'Neutral',
-      detail: (trendObj.classification || 'Neutral') + (td.momentum ? ' · ' + td.momentum.replace('_',' ') : '') });
+      detail: (trendObj.classification || 'Neutral') + (td.momentum ? ' · ' + String(td.momentum).replace('_',' ') : '') });
   } else {
     signals.push({ label: 'Technical', signal: 'grey', status: 'Not assessed', detail: '' });
   }
@@ -3565,12 +3565,12 @@ function _decSignals() {
   // Risk
   if (rd && rd.mc) {
     const mc = rd.mc;
-    const vol = Math.round(mc.annualisedVol * 100);
-    const probUp = Math.round(mc.probProfit * 100);
+    const vol = Math.round(mc.annualisedVol);   // already a %
+    const probUp = mc.probProfit;               // already a %
     const sig = probUp > 60 ? 'green' : probUp > 45 ? 'amber' : 'red';
     signals.push({ label: 'Risk', signal: sig,
       status: probUp > 60 ? 'Favourable' : probUp > 45 ? 'Balanced' : 'Cautious',
-      detail: `${vol}% vol · ${probUp}% prob profit` });
+      detail: `${vol}% vol · ${probUp}% prob above entry` });
   } else {
     signals.push({ label: 'Risk', signal: 'grey', status: 'Not assessed', detail: '' });
   }
