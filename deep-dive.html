@@ -4001,7 +4001,7 @@ function _doGenerateReport() {
   <div class="pg"><h2>Technical Analysis</h2>
   ${td ? `<table>
     <tr><th>Indicator</th><th>Reading</th><th>Indicator</th><th>Reading</th></tr>
-    <tr><td>Trend</td><td>${(typeof td.trend === 'object' ? td.trend?.classification : td.trend)?.replace(/_/g,' ')||'—'}</td><td>Momentum</td><td>${String(td.momentum||'').replace(/_/g,' ')||'—'}</td></tr>
+    <tr><td>Trend</td><td>${(typeof td.trend === 'object' ? td.trend?.classification : td.trend)?.replace(/_/g,' ')||'—'}</td><td>Momentum</td><td>${(typeof td.momentum === 'object' ? (td.momentum?.rsi_signal||td.momentum?.macd_crossover||'—') : String(td.momentum||'')).replace(/_/g,' ')||'—'}</td></tr>
     <tr><td>RSI (14)</td><td>${td.rsi?.length ? td.rsi[td.rsi.length-1]?.toFixed(1)||'—' : '—'}</td><td>Support</td><td>${td.key_levels?.support?.toFixed(2)||'—'}</td></tr>
     <tr><td>PCR</td><td>${td.options?.pcr||'—'}</td><td>Max Pain</td><td>${td.options?.max_pain||'—'}</td></tr>
     <tr><td>Put Wall</td><td>${td.options?.put_wall||'—'}</td><td>Call Wall</td><td>${td.options?.call_wall||'—'}</td></tr>
@@ -4012,8 +4012,8 @@ function _doGenerateReport() {
   <div class="pg"><h2>Risk & Position Sizing</h2>
   ${_session.risk?.mc ? `<table>
     <tr><th>Metric</th><th>Value</th></tr>
-    <tr><td>Annualised Volatility</td><td>${Math.round((_session.risk.mc.annualisedVol||0)*100)}%</td></tr>
-    <tr><td>Probability of Profit (${_session.risk.horizon||60}d)</td><td>${Math.round((_session.risk.mc.probProfit||0)*100)}%</td></tr>
+    <tr><td>Annualised Volatility</td><td>${Math.round(_session.risk.mc.annualisedVol||0)}%</td></tr>
+    <tr><td>Probability of Profit (${_session.risk.horizon||60}d)</td><td>${Math.round(_session.risk.mc.probProfit||0)}%</td></tr>
     <tr><td>P10 Price (bear scenario)</td><td>${cs}${_session.risk.mc.p10?.toFixed(2)||'—'}</td></tr>
     <tr><td>P50 Price (base scenario)</td><td>${cs}${_session.risk.mc.p50?.toFixed(2)||'—'}</td></tr>
     <tr><td>P90 Price (bull scenario)</td><td>${cs}${_session.risk.mc.p90?.toFixed(2)||'—'}</td></tr>
