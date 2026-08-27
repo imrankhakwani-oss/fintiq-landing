@@ -744,11 +744,9 @@ let _sectionOpened = { fundamentals: false, valuation: false, technical: false, 
 // ── URL param on load ──
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
-  const t = params.get('ticker');
-  if (t) {
-    document.getElementById('ticker-input').value = t.toUpperCase();
-    startAnalysis();
-  }
+  const t = params.get('ticker') || 'AAPL';
+  document.getElementById('ticker-input').value = t.toUpperCase();
+  startAnalysis();
 });
 
 function quickTicker(t) {
@@ -1765,12 +1763,12 @@ function _buildValHTML() {
   // ── EV → Equity Bridge ──
   if (dcf.ev_total) {
     html += `<div class="sub-label">EV → Equity Value Bridge</div>
-    <div class="ev-bridge">
-      <div class="ev-bridge-row"><span>Enterprise Value (PV of FCFs + Terminal)</span><span style="color:var(--text)">${cs}${_fmtLarge(dcf.ev_total)}</span></div>
+    <div class="ev-bridge" id="ev-bridge-wrap">
+      <div class="ev-bridge-row"><span>Enterprise Value (PV of FCFs + Terminal)</span><span id="bridge-ev" style="color:var(--text)">${cs}${_fmtLarge(dcf.ev_total)}</span></div>
       <div class="ev-bridge-row"><span style="color:var(--red)">− Net Debt (Debt − Cash)</span><span style="color:var(--red)">−${cs}${_fmtLarge(Math.max(vs.netDebt, 0))}</span></div>
-      <div class="ev-bridge-row"><span>= Equity Value</span><span>${cs}${_fmtLarge(dcf.equity_val)}</span></div>
+      <div class="ev-bridge-row"><span>= Equity Value</span><span id="bridge-eq">${cs}${_fmtLarge(dcf.equity_val)}</span></div>
       <div class="ev-bridge-row"><span>÷ Shares Outstanding</span><span>${_fmtLarge(vs.shares)}</span></div>
-      <div class="ev-bridge-row"><span>= Intrinsic Value Per Share</span><span>${cs}${dcfPs?.toFixed(2)||'—'}</span></div>
+      <div class="ev-bridge-row"><span>= Intrinsic Value Per Share</span><span id="bridge-ps">${cs}${dcfPs?.toFixed(2)||'—'}</span></div>
     </div>`;
   }
 
@@ -1888,6 +1886,10 @@ function _refreshValuation() {
   document.getElementById('mc-results').innerHTML = _runMC(vs, cs);
   document.getElementById('val-waterfall').innerHTML = _buildWaterfall(dcf.bridge, cs);
   const sb = document.getElementById('sens-brief'); if (sb) sb.innerHTML = _buildSensBrief(vs);
+  // Update EV bridge
+  const bEv = document.getElementById('bridge-ev'); if (bEv && dcf.ev_total) bEv.textContent = cs + _fmtLarge(dcf.ev_total);
+  const bEq = document.getElementById('bridge-eq'); if (bEq && dcf.equity_val) bEq.textContent = cs + _fmtLarge(dcf.equity_val);
+  const bPs = document.getElementById('bridge-ps'); if (bPs && dcf.equity_ps) bPs.textContent = cs + dcf.equity_ps.toFixed(2);
   // mc-brief is updated inside _runMC
 
   // Update method cards — find and replace them
@@ -2206,11 +2208,13 @@ function _runMC(vs, cs) {
 
   for (let i = 0; i < N; i++) {
     const g1s  = vs.g1  + _randn() * sdG;
+    const g2s  = vs.g2  + _randn() * sdG;
+    const g3s  = vs.g3  + _randn() * sdG * 0.5;
     const waccs= vs.wacc + _randn() * sdW;
     const tgs  = Math.max(0, vs.tg + _randn() * 0.75);
     const omShock = _randn() * sdOm;  // same margin shock applied to all 3 phases
     const vsCopy = { ...vs,
-      g1: g1s, g2: g1s*0.65, g3: g1s*0.4,
+      g1: g1s, g2: g2s, g3: g3s,
       om1: Math.max(0, vs.om1 + omShock),
       om2: Math.max(0, vs.om2 + omShock),
       om3: Math.max(0, vs.om3 + omShock),
@@ -3284,7 +3288,7 @@ function loadCatalyst() {
 async function _pollCatalyst(attempt) {
   if (attempt > 40) {
     document.getElementById('catalyst-loading').style.display = 'none';
-    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Catalyst data timed out. Please try again.</div></div>`;
+    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Catalyst data timed out. <button onclick="loadCatalyst()" style="margin-left:10px;background:var(--gold);color:#050f1c;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700">Retry</button></div></div>`;
     document.getElementById('catalyst-content').style.display = 'block';
     return;
   }
