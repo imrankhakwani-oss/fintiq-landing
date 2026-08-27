@@ -350,6 +350,15 @@ a{color:var(--gold);text-decoration:none}
 .cat-news-meta{font-size:0.65rem;color:var(--muted)}
 .cat-news-snippet{font-size:0.72rem;color:var(--dim);margin-top:4px;line-height:1.5}
 .cat-ai-block{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:10px;padding:16px;font-size:0.81rem;color:var(--dim);line-height:1.8;margin-bottom:14px;white-space:pre-wrap}
+/* AI Expander */
+.ai-expander{border:1px solid rgba(245,166,35,0.2);border-radius:10px;margin-bottom:14px;overflow:hidden}
+.ai-expander-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;cursor:pointer;background:rgba(245,166,35,0.06);user-select:none}
+.ai-expander-header:hover{background:rgba(245,166,35,0.1)}
+.ai-expander-title{display:flex;align-items:center;gap:8px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gold)}
+.ai-expander-chevron{color:var(--muted);font-size:0.6rem;transition:transform .2s}
+.ai-expander-chevron.open{transform:rotate(180deg)}
+.ai-expander-body{display:none;padding:14px 16px;background:rgba(245,166,35,0.03)}
+.ai-expander-body.open{display:block}
 
 /* ── Section 6 — Decision Analysis ── */
 .dec-signal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px}
@@ -834,6 +843,26 @@ function openSection(name) {
     if (name === 'catalyst') loadCatalyst();
     if (name === 'decision') loadDecision();
   }
+}
+
+function _toggleAIExp(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const body = el.querySelector('.ai-expander-body');
+  const chev = el.querySelector('.ai-expander-chevron');
+  if (!body) return;
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.classList.toggle('open', !isOpen);
+}
+
+function _openAIExp(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const body = el.querySelector('.ai-expander-body');
+  const chev = el.querySelector('.ai-expander-chevron');
+  if (body) body.classList.add('open');
+  if (chev) chev.classList.add('open');
 }
 
 function setStatus(name, state) {
@@ -2419,11 +2448,18 @@ function renderTechnical(d) {
   }
 
   // ── AI Commentary placeholder ──
-  html += `<div class="sub-label" style="margin-top:4px">AI Trade Setup — Long & Short</div>
+  html += `<div class="ai-expander" id="tech-ai-expander">
+    <div class="ai-expander-header" onclick="_toggleAIExp('tech-ai-expander')">
+      <div class="ai-expander-title">🤖 Fintiq AI — Long & Short Trade Setups</div>
+      <span class="ai-expander-chevron" id="tech-ai-chev">▼</span>
+    </div>
+    <div class="ai-expander-body" id="tech-ai-body">
   <div id="ai-tech-wrap">
     <div style="text-align:center;padding:20px;color:var(--muted);font-size:0.8rem">
       <div class="dot-pulse" style="justify-content:center;margin-bottom:8px"><span></span><span></span><span></span></div>
       Generating trade setups…
+    </div>
+  </div>
     </div>
   </div>`;
 
@@ -2638,6 +2674,7 @@ async function _loadTechCommentary(d) {
       .replace(/━━ (.*?) ━━/g, '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:14px 0 6px;border-top:1px solid rgba(245,166,35,0.2);padding-top:12px">$1</div>')
       .replace(/^(TREND SUMMARY:|MOMENTUM:|VOLUME:|OPTIONS EXPLANATION:|ENTRY ZONE:|WHAT TO WAIT FOR:|STOP LOSS:|TARGET 1.*?:|TARGET 2.*?:|RISK\/REWARD:|BIAS:)/gm, '<strong style="color:var(--blue)">$1</strong>');
     wrapEl.innerHTML = `<div class="ai-tech-commentary" style="white-space:normal">${formatted}${dashHtml}</div>`;
+    _openAIExp('tech-ai-expander');
   } catch(e) {
     wrapEl.innerHTML = `<div class="error-block">⚠️ Could not load AI commentary: ${e.message}</div>`;
   }
@@ -2875,9 +2912,16 @@ function _renderRisk() {
     <div style="font-size:0.75rem;padding:8px 12px;background:rgba(245,166,35,0.05);border-radius:6px;border:1px solid rgba(245,166,35,0.15);color:var(--dim);margin-bottom:14px">${volSignal}</div>
 
     <!-- AI Risk Summary -->
-    <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;font-weight:600;margin-bottom:6px">Fintiq AI Risk Summary</div>
-    <div class="risk-ai-block" id="risk-ai-text">
-      <div style="text-align:center;color:var(--muted);font-size:0.8rem">Generating plain-English risk summary…</div>
+    <div class="ai-expander" id="risk-ai-expander">
+      <div class="ai-expander-header" onclick="_toggleAIExp('risk-ai-expander')">
+        <div class="ai-expander-title">🤖 Fintiq AI Risk Summary</div>
+        <span class="ai-expander-chevron" id="risk-ai-chev">▼</span>
+      </div>
+      <div class="ai-expander-body" id="risk-ai-body">
+        <div class="risk-ai-block" id="risk-ai-text" style="margin-bottom:0;border:none;background:transparent;padding:0">
+          <div style="text-align:center;color:var(--muted);font-size:0.8rem">Generating plain-English risk summary…</div>
+        </div>
+      </div>
     </div>
 
     <!-- Risk Dashboard -->
@@ -3097,23 +3141,29 @@ function _updatePosSize() {
     resultEl.innerHTML = 'Please enter valid portfolio size and risk %.';
     return;
   }
-  if (isNaN(stopVal) || stopVal <= 0 || stopVal >= mc.S0) {
+  const isShortPos = _stopDirection === 'short';
+  const stopInvalid = isNaN(stopVal) || stopVal <= 0 ||
+    (!isShortPos && stopVal >= mc.S0) ||
+    (isShortPos && stopVal <= mc.S0);
+
+  if (stopInvalid) {
     const maxLoss = portfolio * (riskPct / 100);
-    resultEl.innerHTML = `Risk budget: <strong style="color:var(--gold)">${cs}${maxLoss.toFixed(0)}</strong> (${riskPct}% of ${cs}${portfolio.toLocaleString()}).<br><span style="color:var(--muted);font-size:0.7rem">Enter a stop loss price on the left to calculate your exact position size.</span>`;
+    resultEl.innerHTML = `Risk budget: <strong style="color:var(--gold)">${cs}${maxLoss.toFixed(0)}</strong> (${riskPct}% of ${cs}${portfolio.toLocaleString()}).<br><span style="color:var(--muted);font-size:0.7rem">Enter a valid stop loss price on the left (use the Long/Short toggle).</span>`;
     return;
   }
-  const stop = stopVal;
 
   const maxLoss    = portfolio * (riskPct / 100);
-  const riskPerShr = mc.S0 - stop;
+  const riskPerShr = Math.abs(mc.S0 - stopVal);
   const shares     = Math.floor(maxLoss / riskPerShr);
   const capital    = shares * mc.S0;
   const pctOfPort  = Math.round(capital / portfolio * 100);
+  const action     = isShortPos ? 'Short no more than' : 'Buy no more than';
+  const lossDesc   = isShortPos ? 'If the stock rallies to your stop, you lose' : 'If the stock falls to your stop, you lose';
 
   resultEl.innerHTML = `Risk budget: <strong style="color:var(--gold)">${cs}${maxLoss.toFixed(0)}</strong> (${riskPct}% of ${cs}${portfolio.toLocaleString()}).<br>
 Risk per share: <strong>${cs}${riskPerShr.toFixed(2)}</strong> (entry → stop distance).<br>
-<strong style="color:var(--blue)">Buy no more than ${shares} shares</strong> = ${cs}${capital.toLocaleString(undefined,{maximumFractionDigits:0})} (${pctOfPort}% of portfolio).<br>
-<span style="font-size:0.7rem;color:var(--muted)">If the stock hits your stop, you lose exactly ${cs}${(shares*riskPerShr).toFixed(0)} — that's ${riskPct}% of your portfolio.</span>`;
+<strong style="color:var(--blue)">${action} ${shares} shares</strong> = ${cs}${capital.toLocaleString(undefined,{maximumFractionDigits:0})} (${pctOfPort}% of portfolio).<br>
+<span style="font-size:0.7rem;color:var(--muted)">${lossDesc} exactly ${cs}${(shares*riskPerShr).toFixed(0)} — that's ${riskPct}% of your portfolio.</span>`;
 
   const dashPos = document.getElementById('risk-dash-posval');
   if (dashPos) dashPos.textContent = `${shares} shares (${cs}${capital.toLocaleString(undefined,{maximumFractionDigits:0})})`;
@@ -3172,6 +3222,7 @@ Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear p
     const r = await res.json();
     if (r.reply) {
       el.textContent = r.reply;
+      _openAIExp('risk-ai-expander');
     } else {
       throw new Error('Empty response');
     }
@@ -3377,9 +3428,16 @@ function renderCatalyst(d) {
   }
 
   // ── AI Catalyst Summary ──
-  html += `<div class="cat-section-title">Fintiq AI Catalyst Analysis</div>
-  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Plain-English assessment covering: should I enter before or after earnings, analyst direction, squeeze potential, what the market is worried about, and timing.</div>
-  <div class="cat-ai-block" id="cat-ai-text"><div style="text-align:center;color:var(--muted)">Generating catalyst analysis…</div></div>
+  html += `<div class="ai-expander" id="cat-ai-expander">
+    <div class="ai-expander-header" onclick="_toggleAIExp('cat-ai-expander')">
+      <div class="ai-expander-title">🤖 Fintiq AI Catalyst Analysis</div>
+      <span class="ai-expander-chevron" id="cat-ai-chev">▼</span>
+    </div>
+    <div class="ai-expander-body" id="cat-ai-body">
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Plain-English assessment: entry timing, analyst direction, squeeze potential, key risks, and what the market is watching.</div>
+      <div class="cat-ai-block" id="cat-ai-text" style="margin-bottom:0;border:none;background:transparent;padding:0"><div style="text-align:center;color:var(--muted)">Generating catalyst analysis…</div></div>
+    </div>
+  </div>`;
 
   </div>`;
 
@@ -3413,6 +3471,7 @@ async function _loadCatalystAI(d) {
     if (r.summary) {
       el.style.whiteSpace = 'normal';
       el.innerHTML = _formatCatalystAI(r.summary);
+      _openAIExp('cat-ai-expander');
     } else throw new Error('Empty response');
   } catch(e) {
     el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The data above is fully usable without it.</span>`;
@@ -3445,8 +3504,17 @@ function loadDecision() {
   setTimeout(() => {
     document.getElementById('decision-loading').style.display = 'none';
     document.getElementById('decision-content').style.display = 'block';
-    renderDecision();
-    setStatus('decision', 'active');
+    try {
+      renderDecision();
+      setStatus('decision', 'done');
+    } catch(e) {
+      document.getElementById('decision-content').innerHTML = `<div class="sec-pad" style="color:var(--muted);font-size:0.8rem">
+        <div style="color:var(--red);margin-bottom:8px">⚠️ Decision section error: ${e.message}</div>
+        <div style="font-size:0.7rem">Open Fundamentals, Valuation, and Risk sections first, then re-open Decision Analysis.</div>
+      </div>`;
+      setStatus('decision', 'active');
+      console.error('renderDecision failed:', e);
+    }
   }, 100);
 }
 
