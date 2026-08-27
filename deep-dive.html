@@ -3552,12 +3552,12 @@ function _decSignals() {
 
   // Technical
   if (td) {
-    const trend = td.trend || '';
+    const trendObj = td.trend || {};
+    const trend = (trendObj.classification || '').toUpperCase();
     const sig = trend.includes('UP') ? 'green' : trend.includes('DOWN') ? 'red' : 'amber';
-    const label = trend.replace('_',' ').replace('STRONG ','').replace('TREND','').trim();
     signals.push({ label: 'Technical', signal: sig,
       status: trend.includes('UP') ? 'Bullish' : trend.includes('DOWN') ? 'Bearish' : 'Neutral',
-      detail: label + (td.momentum ? ' · ' + td.momentum.replace('_',' ') : '') });
+      detail: (trendObj.classification || 'Neutral') + (td.momentum ? ' · ' + td.momentum.replace('_',' ') : '') });
   } else {
     signals.push({ label: 'Technical', signal: 'grey', status: 'Not assessed', detail: '' });
   }
