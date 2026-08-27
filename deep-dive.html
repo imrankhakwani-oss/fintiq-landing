@@ -4001,7 +4001,7 @@ function _doGenerateReport() {
   <div class="pg"><h2>Technical Analysis</h2>
   ${td ? `<table>
     <tr><th>Indicator</th><th>Reading</th><th>Indicator</th><th>Reading</th></tr>
-    <tr><td>Trend</td><td>${td.trend?.replace(/_/g,' ')||'—'}</td><td>Momentum</td><td>${td.momentum?.replace(/_/g,' ')||'—'}</td></tr>
+    <tr><td>Trend</td><td>${(typeof td.trend === 'object' ? td.trend?.classification : td.trend)?.replace(/_/g,' ')||'—'}</td><td>Momentum</td><td>${String(td.momentum||'').replace(/_/g,' ')||'—'}</td></tr>
     <tr><td>RSI (14)</td><td>${td.rsi?.length ? td.rsi[td.rsi.length-1]?.toFixed(1)||'—' : '—'}</td><td>Support</td><td>${td.key_levels?.support?.toFixed(2)||'—'}</td></tr>
     <tr><td>PCR</td><td>${td.options?.pcr||'—'}</td><td>Max Pain</td><td>${td.options?.max_pain||'—'}</td></tr>
     <tr><td>Put Wall</td><td>${td.options?.put_wall||'—'}</td><td>Call Wall</td><td>${td.options?.call_wall||'—'}</td></tr>
