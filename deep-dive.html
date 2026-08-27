@@ -4044,16 +4044,16 @@ function _generateReport() {
     Fintiq Research Report · ${today} · ${ticker} · Educational use only — not financial advice · Fintiq is not FCA authorised · Always verify data independently
   </div>
   </body></html>`;
+  // Always download as HTML file — popup approach is blocked by most browsers
   const blob = new Blob([_pdfHtml], { type: 'text/html' });
   const url  = URL.createObjectURL(blob);
-  const win  = window.open(url, '_blank');
-  if (!win) {
-    // Fallback: download as HTML file
-    const a = document.createElement('a');
-    a.href = url; a.download = `${ticker}-fintiq-report.html`; a.click();
-  } else {
-    setTimeout(() => { try { win.print(); } catch(e) {} }, 1200);
-  }
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${ticker}-fintiq-report.html`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
 // ── Method Card HTML ──
