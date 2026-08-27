@@ -351,6 +351,69 @@ a{color:var(--gold);text-decoration:none}
 .cat-news-snippet{font-size:0.72rem;color:var(--dim);margin-top:4px;line-height:1.5}
 .cat-ai-block{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:10px;padding:16px;font-size:0.81rem;color:var(--dim);line-height:1.8;margin-bottom:14px;white-space:pre-wrap}
 
+/* ── Section 6 — Decision Analysis ── */
+.dec-signal-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px}
+.dec-signal-card{background:var(--card2);border-radius:8px;padding:10px 8px;text-align:center}
+.dec-signal-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.dec-signal-dot{width:10px;height:10px;border-radius:50%;margin:0 auto 4px}
+.dec-signal-status{font-size:0.68rem;font-weight:600}
+.dec-thesis-area{width:100%;background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px;color:var(--text);font-size:0.82rem;resize:vertical;min-height:80px;font-family:inherit;outline:none;margin-bottom:10px}
+.dec-thesis-area:focus{border-color:rgba(245,166,35,0.4)}
+.dec-direction-toggle{display:flex;gap:8px;margin-bottom:12px}
+.dec-dir-btn{flex:1;padding:9px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:var(--card2);color:var(--muted);font-size:0.78rem;cursor:pointer;transition:.2s}
+.dec-dir-btn.active-long{background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.5);color:var(--green);font-weight:700}
+.dec-dir-btn.active-short{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.4);color:var(--red);font-weight:700}
+.dec-challenge-block{background:rgba(239,68,68,0.04);border:1px solid rgba(239,68,68,0.18);border-radius:10px;padding:16px;margin-bottom:14px}
+.dec-challenge-title{font-size:0.68rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+.dec-counter-item{display:flex;gap:10px;margin-bottom:10px;font-size:0.78rem;color:var(--dim);line-height:1.6}
+.dec-counter-num{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(239,68,68,0.2);color:var(--red);font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center}
+.dec-score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:18px}
+.dec-score-card{background:var(--card2);border-radius:8px;padding:12px 8px;text-align:center}
+.dec-score-label{font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.dec-score-ring{font-size:1.6rem;font-weight:800;line-height:1}
+.dec-score-sub{font-size:0.6rem;color:var(--muted);margin-top:4px}
+.dec-verdict-card{border-radius:12px;padding:20px 24px;margin-bottom:18px;border:1px solid}
+.dec-verdict-label{font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px}
+.dec-verdict-text{font-size:1.05rem;font-weight:800;margin-bottom:12px}
+.dec-verdict-rows{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dec-verdict-row{font-size:0.75rem;color:var(--dim)}
+.dec-verdict-row strong{color:var(--text)}
+.dec-pdf-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);color:var(--gold);border-radius:8px;padding:10px 20px;font-size:0.82rem;font-weight:600;cursor:pointer;text-decoration:none;transition:.2s}
+.dec-pdf-btn:hover{background:rgba(245,166,35,0.18)}
+.dec-section-title{font-size:0.68rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px}
+
+/* ── Print / PDF styles ── */
+@media print {
+  body{background:#fff!important;color:#111!important}
+  nav,.section-header,.section-chevron,.dec-pdf-btn,.dec-direction-toggle,.dec-thesis-area,button,#ticker-bar,footer{display:none!important}
+  .section-body{display:block!important;border:none!important}
+  .section-accordion{page-break-inside:avoid;margin-bottom:24pt}
+  .pdf-page-break{page-break-before:always}
+  .pdf-cover{text-align:center;padding:60pt 0 40pt}
+  .pdf-cover-ticker{font-size:36pt;font-weight:900;color:#111}
+  .pdf-cover-name{font-size:18pt;color:#444;margin-bottom:6pt}
+  .pdf-cover-price{font-size:14pt;color:#666}
+  .pdf-cover-date{font-size:10pt;color:#888;margin-top:20pt}
+  .pdf-cover-disclaimer{font-size:8pt;color:#999;margin-top:30pt;border-top:1px solid #ddd;padding-top:12pt;text-align:center}
+  .pdf-section-header{font-size:14pt;font-weight:700;color:#111;border-bottom:2px solid #f59e0b;padding-bottom:6pt;margin-bottom:12pt}
+  .pdf-table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12pt}
+  .pdf-table th{background:#f5f5f5;padding:5pt 8pt;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1px solid #ddd}
+  .pdf-table td{padding:5pt 8pt;border-bottom:1px solid #eee;color:#333}
+  .pdf-signal-green{color:#059669;font-weight:700}
+  .pdf-signal-amber{color:#d97706;font-weight:700}
+  .pdf-signal-red{color:#dc2626;font-weight:700}
+  .pdf-signal-grey{color:#9ca3af}
+  .pdf-chat-bubble-user{background:#f0f9ff;border-left:3px solid #0ea5e9;padding:6pt 10pt;margin-bottom:6pt;font-size:8.5pt;border-radius:0 4pt 4pt 0}
+  .pdf-chat-bubble-ai{background:#fafafa;border-left:3px solid #f59e0b;padding:6pt 10pt;margin-bottom:8pt;font-size:8.5pt;border-radius:0 4pt 4pt 0}
+  .pdf-chat-label{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:3pt}
+  .pdf-verdict-box{border:2px solid #111;border-radius:6pt;padding:12pt;margin-bottom:12pt}
+  .pdf-score-table{display:grid;grid-template-columns:repeat(5,1fr);gap:8pt;margin-bottom:12pt}
+  .pdf-score-cell{text-align:center;background:#f9f9f9;border-radius:4pt;padding:8pt 4pt}
+  .pdf-score-num{font-size:18pt;font-weight:900}
+  .pdf-score-lbl{font-size:7pt;color:#666;text-transform:uppercase}
+  * {-webkit-print-color-adjust: exact; print-color-adjust: exact}
+}
+
 /* ── Placeholder sections ── */
 .placeholder-section{padding:28px;text-align:center;color:var(--muted)}
 .placeholder-section .ph-icon{font-size:1.6rem;margin-bottom:8px;opacity:0.5}
@@ -640,10 +703,11 @@ a{color:var(--gold);text-decoration:none}
       <span class="section-chevron" id="chev-decision">▼</span>
     </div>
     <div class="section-body" id="body-decision">
-      <div class="placeholder-section">
-        <div class="ph-icon">🚧</div>
-        <p>Decision Analysis — structured AI challenge of your investment thesis using all section data — coming next.</p>
+      <div id="decision-loading" style="display:none;padding:28px;text-align:center;color:var(--muted)">
+        <div style="font-size:1.4rem;margin-bottom:8px">🎯</div>
+        <div style="font-size:0.82rem">Building your decision framework…</div>
       </div>
+      <div id="decision-content" style="display:none"></div>
     </div>
   </div>
 
@@ -732,6 +796,9 @@ function resetSession() {
   document.getElementById('session-strip').classList.remove('visible');
   // Close all sections
   _session.catalyst = null;
+  _session.risk = null;
+  _decAIResult = null;
+  _decDirection = 'long';
   ['fundamentals','valuation','technical','risk','catalyst','decision'].forEach(s => {
     document.getElementById('body-'+s).classList.remove('open');
     document.getElementById('chev-'+s).classList.remove('open');
@@ -765,6 +832,7 @@ function openSection(name) {
     if (name === 'technical') loadTechnical();
     if (name === 'risk') loadRisk();
     if (name === 'catalyst') loadCatalyst();
+    if (name === 'decision') loadDecision();
   }
 }
 
@@ -2678,6 +2746,8 @@ function _renderRisk() {
     document.getElementById('risk-content').style.display = 'block';
     return;
   }
+  // Store in session for Decision Analysis
+  _session.risk = { mc, horizon: _riskHorizon };
 
   const cs = _vs.currSym || '$';
   const fmtP = v => v != null ? cs + v.toFixed(2) : '—';
@@ -3274,6 +3344,513 @@ function _formatCatalystAI(text) {
     if (!trimmed) return '';
     return `<div style="margin-bottom:6px">${trimmed}</div>`;
   }).join('');
+}
+
+// ══════════════════════════════════════════════════════
+// SECTION 6 — DECISION ANALYSIS
+// ══════════════════════════════════════════════════════
+
+let _decDirection = 'long'; // 'long' | 'short'
+let _decAIResult  = null;
+
+function loadDecision() {
+  document.getElementById('decision-loading').style.display = 'block';
+  document.getElementById('decision-content').style.display = 'none';
+  setTimeout(() => {
+    document.getElementById('decision-loading').style.display = 'none';
+    document.getElementById('decision-content').style.display = 'block';
+    renderDecision();
+    setStatus('decision', 'active');
+  }, 100);
+}
+
+// ── Signal aggregator — reads from _session ──
+function _decSignals() {
+  const fd = _session.fundamentals?.data;
+  const td = _session.technical?.data;
+  const cd = _session.catalyst?.data;
+  const rd = _session.risk;
+
+  const signals = [];
+
+  // Fundamentals
+  if (fd) {
+    const q = fd.quality || {};
+    const roic = q.roic; const om = q.op_margin;
+    const score = (roic > 15 ? 1 : roic > 8 ? 0 : -1) + (om > 15 ? 1 : om > 5 ? 0 : -1);
+    signals.push({ label: 'Fundamentals', signal: score >= 1 ? 'green' : score === 0 ? 'amber' : 'red',
+      status: score >= 1 ? 'Strong' : score === 0 ? 'Mixed' : 'Weak',
+      detail: `ROIC ${roic != null ? roic+'%' : '—'} · Margin ${om != null ? om+'%' : '—'}` });
+  } else {
+    signals.push({ label: 'Fundamentals', signal: 'grey', status: 'Not assessed', detail: '' });
+  }
+
+  // Valuation
+  if (_vs && _vs.price && _vs._impliedSolved) {
+    const dcf = _computeDCF(_vs);
+    const upside = dcf ? Math.round((dcf.equity_ps - _vs.price) / _vs.price * 100) : null;
+    const sig = upside == null ? 'grey' : upside > 15 ? 'green' : upside > -5 ? 'amber' : 'red';
+    signals.push({ label: 'Valuation', signal: sig,
+      status: upside == null ? '—' : upside > 15 ? 'Undervalued' : upside > -5 ? 'Fair value' : 'Overvalued',
+      detail: upside != null ? `DCF ${upside > 0 ? '+' : ''}${upside}% vs price` : '' });
+  } else {
+    signals.push({ label: 'Valuation', signal: 'grey', status: 'Not assessed', detail: '' });
+  }
+
+  // Technical
+  if (td) {
+    const trend = td.trend || '';
+    const sig = trend.includes('UP') ? 'green' : trend.includes('DOWN') ? 'red' : 'amber';
+    const label = trend.replace('_',' ').replace('STRONG ','').replace('TREND','').trim();
+    signals.push({ label: 'Technical', signal: sig,
+      status: trend.includes('UP') ? 'Bullish' : trend.includes('DOWN') ? 'Bearish' : 'Neutral',
+      detail: label + (td.momentum ? ' · ' + td.momentum.replace('_',' ') : '') });
+  } else {
+    signals.push({ label: 'Technical', signal: 'grey', status: 'Not assessed', detail: '' });
+  }
+
+  // Risk
+  if (rd && rd.mc) {
+    const mc = rd.mc;
+    const vol = Math.round(mc.annualisedVol * 100);
+    const probUp = Math.round(mc.probProfit * 100);
+    const sig = probUp > 60 ? 'green' : probUp > 45 ? 'amber' : 'red';
+    signals.push({ label: 'Risk', signal: sig,
+      status: probUp > 60 ? 'Favourable' : probUp > 45 ? 'Balanced' : 'Cautious',
+      detail: `${vol}% vol · ${probUp}% prob profit` });
+  } else {
+    signals.push({ label: 'Risk', signal: 'grey', status: 'Not assessed', detail: '' });
+  }
+
+  // Catalyst
+  if (cd) {
+    const ea = cd.earnings || {};
+    const sq = (cd.short_interest || {}).squeeze_score || '';
+    const an = cd.analyst || {};
+    const up = an.target_upside;
+    const sig = up > 10 && ea.days_to > 0 ? 'green' : up < 0 ? 'red' : 'amber';
+    signals.push({ label: 'Catalyst', signal: sig,
+      status: sig === 'green' ? 'Positive' : sig === 'red' ? 'Negative' : 'Neutral',
+      detail: `${ea.days_to > 0 ? 'Earnings in '+ea.days_to+'d' : 'Past earnings'} · ${sq || '—'} squeeze` });
+  } else {
+    signals.push({ label: 'Catalyst', signal: 'grey', status: 'Not assessed', detail: '' });
+  }
+
+  return signals;
+}
+
+// ── Conviction score — 1-10 per dimension ──
+function _decScore(signals) {
+  const map = { green: 8, amber: 5, red: 2, grey: 0 };
+  return signals.map(s => ({
+    label: s.label,
+    score: map[s.signal] || 0,
+    detail: s.detail,
+  }));
+}
+
+function renderDecision() {
+  const cs = (_vs && _vs.currSym) || '$';
+  const ticker = _session.ticker || '—';
+  const fd = _session.fundamentals?.data;
+  const ov = fd?.overview || {};
+  const signals = _decSignals();
+  const scores = _decScore(signals);
+  const totalScore = scores.reduce((a, b) => a + b.score, 0);
+  const assessed = signals.filter(s => s.signal !== 'grey').length;
+
+  const colMap = { green: 'var(--green)', amber: 'var(--gold)', red: 'var(--red)', grey: 'var(--muted)' };
+  const verdictData = _decVerdictData(signals, totalScore, assessed);
+
+  let html = `<div class="sec-pad">`;
+
+  // ── Signal aggregator ──
+  html += `<div class="dec-section-title">📊 Section Signal Summary</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">What each section of your analysis concluded. Only sections you've opened are assessed.</div>
+  <div class="dec-signal-grid">`;
+  signals.forEach(s => {
+    html += `<div class="dec-signal-card">
+      <div class="dec-signal-label">${s.label}</div>
+      <div class="dec-signal-dot" style="background:${colMap[s.signal]}"></div>
+      <div class="dec-signal-status" style="color:${colMap[s.signal]}">${s.status}</div>
+      ${s.detail ? `<div style="font-size:0.58rem;color:var(--muted);margin-top:4px;line-height:1.3">${s.detail}</div>` : ''}
+    </div>`;
+  });
+  html += `</div>`;
+
+  // Assessed warning
+  if (assessed < 3) {
+    html += `<div style="background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:7px;padding:9px 14px;font-size:0.73rem;color:var(--gold);margin-bottom:14px">
+      ⚠️ Only ${assessed}/5 sections assessed. Open more sections above for a more complete decision framework.
+    </div>`;
+  }
+
+  // ── Conviction Scorecard ──
+  html += `<div class="dec-section-title">🎯 Conviction Scorecard</div>
+  <div class="dec-score-grid">`;
+  scores.forEach(s => {
+    const col = s.score >= 7 ? 'var(--green)' : s.score >= 4 ? 'var(--gold)' : s.score > 0 ? 'var(--red)' : 'var(--muted)';
+    html += `<div class="dec-score-card">
+      <div class="dec-score-label">${s.label}</div>
+      <div class="dec-score-ring" style="color:${col}">${s.score > 0 ? s.score : '—'}</div>
+      <div class="dec-score-sub">/ 10</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  const totalMax = assessed * 10;
+  const pct = totalMax > 0 ? Math.round(totalScore / totalMax * 100) : 0;
+  const totalCol = pct >= 65 ? 'var(--green)' : pct >= 45 ? 'var(--gold)' : 'var(--red)';
+  html += `<div style="display:flex;align-items:center;gap:14px;background:var(--card2);border-radius:8px;padding:12px 16px;margin-bottom:18px">
+    <div style="font-size:2rem;font-weight:900;color:${totalCol}">${totalScore}</div>
+    <div>
+      <div style="font-size:0.68rem;color:var(--muted)">Total conviction score (assessed sections only)</div>
+      <div style="font-size:0.78rem;color:${totalCol};font-weight:700">${pct}% — ${pct >= 65 ? 'High conviction' : pct >= 45 ? 'Moderate conviction' : 'Low conviction'}</div>
+    </div>
+    <div style="flex:1;height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-left:8px">
+      <div style="height:100%;width:${pct}%;background:${totalCol};border-radius:3px;transition:width .6s"></div>
+    </div>
+  </div>`;
+
+  // ── Thesis Builder ──
+  html += `<div class="dec-section-title">⚔️ Build & Challenge Your Thesis</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">State your investment case. The AI will counter it from the opposite side — long thesis gets a short-seller's challenge, short thesis gets a bull's response.</div>
+  <div class="dec-direction-toggle">
+    <button class="dec-dir-btn ${_decDirection==='long'?'active-long':''}" onclick="_setDirection('long')">📈 I'm LONG — bullish case</button>
+    <button class="dec-dir-btn ${_decDirection==='short'?'active-short':''}" onclick="_setDirection('short')">📉 I'm SHORT — bearish case</button>
+  </div>
+  <textarea class="dec-thesis-area" id="dec-thesis-input" placeholder="e.g. I believe ${ticker} will re-rate higher because revenue growth is accelerating, the valuation is undemanding relative to peers, and the upcoming earnings report should beat estimates given the track record…"></textarea>
+  <button onclick="_submitThesis()" style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);color:var(--gold);border-radius:7px;padding:9px 20px;font-size:0.8rem;font-weight:600;cursor:pointer;margin-bottom:18px">Challenge My Thesis →</button>
+
+  <div id="dec-challenge-output"></div>`;
+
+  // ── Verdict ──
+  html += `<div class="dec-section-title">📋 Framework Verdict</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Based on your data. This is an analytical framework output — not advice. Always do your own research.</div>`;
+
+  const vc = verdictData;
+  html += `<div class="dec-verdict-card" style="background:${vc.bg};border-color:${vc.border}">
+    <div class="dec-verdict-label" style="color:${vc.col}">${vc.icon} Framework Output — ${vc.direction}</div>
+    <div class="dec-verdict-text" style="color:${vc.col}">${vc.verdict}</div>
+    <div class="dec-verdict-rows">
+      <div class="dec-verdict-row"><strong>Conviction:</strong> ${vc.conviction}</div>
+      <div class="dec-verdict-row"><strong>Sections assessed:</strong> ${assessed}/5</div>
+      <div class="dec-verdict-row"><strong>Key strength:</strong> ${vc.strength}</div>
+      <div class="dec-verdict-row"><strong>Key risk:</strong> ${vc.risk}</div>
+    </div>
+  </div>`;
+
+  // ── PDF Report button ──
+  html += `<div class="dec-section-title">📄 Research Report</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Generates a printable report of your full analysis including all section data and any AI conversations.</div>
+  <button class="dec-pdf-btn" onclick="_generateReport()">📄 Download Research Report (PDF)</button>
+  </div>`;
+
+  document.getElementById('decision-content').innerHTML = html;
+  setStatus('decision', 'done');
+}
+
+function _setDirection(dir) {
+  _decDirection = dir;
+  document.querySelectorAll('.dec-dir-btn').forEach(b => {
+    b.className = 'dec-dir-btn';
+    if (b.textContent.includes('LONG') && dir === 'long') b.classList.add('active-long');
+    if (b.textContent.includes('SHORT') && dir === 'short') b.classList.add('active-short');
+  });
+}
+
+async function _submitThesis() {
+  const thesis = document.getElementById('dec-thesis-input')?.value?.trim();
+  const out = document.getElementById('dec-challenge-output');
+  if (!thesis || thesis.length < 20) {
+    out.innerHTML = `<div style="color:var(--red);font-size:0.75rem;margin-bottom:14px">Please write your thesis (at least a sentence or two) before challenging it.</div>`;
+    return;
+  }
+  out.innerHTML = `<div class="dec-challenge-block"><div class="dec-challenge-title">⚔️ ${_decDirection === 'long' ? 'Short-Seller Challenge' : 'Bull Counter-Thesis'}</div><div style="color:var(--muted);font-size:0.78rem">Generating counter-arguments…</div></div>`;
+
+  try {
+    const signals = _decSignals();
+    const fd = _session.fundamentals?.data;
+    const td = _session.technical?.data;
+    const cd = _session.catalyst?.data;
+    const ticker = _session.ticker;
+
+    const res = await fetch(`${API}/decision/ai-challenge`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker,
+        direction: _decDirection,
+        thesis,
+        signals: signals.map(s => ({ label: s.label, signal: s.signal, status: s.status, detail: s.detail })),
+        fundamentals_summary: fd ? { quality: fd.quality, multiples: fd.multiples, overview: { name: fd.overview?.name, sector: fd.overview?.sector } } : null,
+        technical_summary: td ? { trend: td.trend, momentum: td.momentum, key_levels: td.key_levels } : null,
+        catalyst_summary: cd ? { earnings: cd.earnings, analyst: cd.analyst, short_interest: cd.short_interest } : null,
+        dcf_summary: _vs ? { price: _vs.price, equity_ps: _computeDCF(_vs)?.equity_ps, implied_growth: _vs._impliedGrowth } : null,
+      })
+    });
+    if (!res.ok) throw new Error(`API ${res.status}`);
+    const r = await res.json();
+    _decAIResult = r;
+    _renderChallenge(r);
+  } catch(e) {
+    out.innerHTML = `<div class="dec-challenge-block"><div class="dec-challenge-title">Error</div><div style="color:var(--muted);font-size:0.78rem">${e.message}</div></div>`;
+  }
+}
+
+function _renderChallenge(r) {
+  const out = document.getElementById('dec-challenge-output');
+  if (!out) return;
+  const title = _decDirection === 'long' ? '⚔️ Short-Seller\'s Challenge to Your Bull Case' : '⚔️ Bull Trader\'s Challenge to Your Bear Case';
+  const col = _decDirection === 'long' ? 'var(--red)' : 'var(--green)';
+  const borderCol = _decDirection === 'long' ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)';
+  const bgCol = _decDirection === 'long' ? 'rgba(239,68,68,0.04)' : 'rgba(16,185,129,0.05)';
+
+  const counters = (r.counters || []);
+  const summary = r.summary || '';
+
+  let html = `<div style="background:${bgCol};border:1px solid ${borderCol};border-radius:10px;padding:16px;margin-bottom:14px">
+    <div style="font-size:0.68rem;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">${title}</div>`;
+
+  counters.forEach((c, i) => {
+    html += `<div style="display:flex;gap:10px;margin-bottom:12px">
+      <div style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:${bgCol};border:1px solid ${borderCol};color:${col};font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center">${i+1}</div>
+      <div>
+        <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:3px">${c.title || ''}</div>
+        <div style="font-size:0.75rem;color:var(--dim);line-height:1.6">${c.argument || ''}</div>
+      </div>
+    </div>`;
+  });
+
+  if (summary) {
+    html += `<div style="border-top:1px solid ${borderCol};padding-top:10px;margin-top:4px;font-size:0.75rem;color:var(--dim);line-height:1.6;font-style:italic">${summary}</div>`;
+  }
+
+  html += `</div>`;
+  out.innerHTML = html;
+}
+
+function _decVerdictData(signals, totalScore, assessed) {
+  const greens = signals.filter(s => s.signal === 'green').length;
+  const reds   = signals.filter(s => s.signal === 'red').length;
+  const pct    = assessed > 0 ? totalScore / (assessed * 10) : 0;
+
+  let verdict, icon, col, bg, border, conviction, strength, risk, direction;
+
+  if (assessed === 0) {
+    return { verdict: 'Open sections above to build your analysis', icon: '📊', col: 'var(--muted)',
+      bg: 'rgba(255,255,255,0.03)', border: 'rgba(255,255,255,0.1)',
+      conviction: '—', strength: '—', risk: 'Insufficient data', direction: 'Undetermined' };
+  }
+
+  if (pct >= 0.65 && greens >= reds) {
+    verdict = 'Data supports a bullish bias'; icon = '✅'; col = 'var(--green)';
+    bg = 'rgba(16,185,129,0.06)'; border = 'rgba(16,185,129,0.25)'; direction = 'LONG BIAS';
+  } else if (pct <= 0.40 || reds > greens + 1) {
+    verdict = 'Data flags meaningful headwinds'; icon = '⚠️'; col = 'var(--red)';
+    bg = 'rgba(239,68,68,0.06)'; border = 'rgba(239,68,68,0.25)'; direction = 'CAUTIOUS';
+  } else {
+    verdict = 'Mixed signals — wait for clearer setup'; icon = '↔️'; col = 'var(--gold)';
+    bg = 'rgba(245,166,35,0.06)'; border = 'rgba(245,166,35,0.25)'; direction = 'NEUTRAL';
+  }
+
+  const bestSignal = signals.filter(s => s.signal === 'green')[0];
+  const worstSignal = signals.filter(s => s.signal === 'red')[0];
+  strength = bestSignal ? bestSignal.label + ' (' + bestSignal.status + ')' : 'No clear strength';
+  risk     = worstSignal ? worstSignal.label + ' (' + worstSignal.status + ')' : 'No major flags';
+  conviction = pct >= 0.65 ? 'High' : pct >= 0.45 ? 'Moderate' : 'Low';
+
+  return { verdict, icon, col, bg, border, conviction, strength, risk, direction };
+}
+
+// ── Generate print-ready PDF report ──
+function _generateReport() {
+  const ticker  = _session.ticker || 'UNKNOWN';
+  const fd      = _session.fundamentals?.data;
+  const td      = _session.technical?.data;
+  const cd      = _session.catalyst?.data;
+  const ov      = fd?.overview || {};
+  const q       = fd?.quality  || {};
+  const mu      = fd?.multiples || {};
+  const an_fd   = fd?.analyst  || {};
+  const cs      = (_vs && _vs.currSym) || '$';
+  const price   = (_vs && _vs.price)   || '—';
+  const signals = _decSignals();
+  const scores  = _decScore(signals);
+  const total   = scores.reduce((a,b) => a+b.score, 0);
+  const assessed = signals.filter(s => s.signal !== 'grey').length;
+  const dcfR    = _vs ? _computeDCF(_vs) : null;
+  const today   = new Date().toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' });
+
+  const sigColPdf = { green:'#059669', amber:'#d97706', red:'#dc2626', grey:'#9ca3af' };
+
+  // Chat history formatter for PDF
+  function chatSection(section, label) {
+    const hist = _chatHistory[section] || [];
+    if (!hist.length) return '';
+    let h = `<div class="pdf-section-header" style="margin-top:18pt">${label} — AI Conversation</div>`;
+    hist.forEach(m => {
+      const isUser = m.role === 'user';
+      h += `<div class="${isUser ? 'pdf-chat-bubble-user' : 'pdf-chat-bubble-ai'}">
+        <div class="pdf-chat-label" style="color:${isUser ? '#0369a1' : '#b45309'}">${isUser ? 'You' : 'Fintiq AI'}</div>
+        ${m.content}
+      </div>`;
+    });
+    return h;
+  }
+
+  // Surprise history
+  let surpriseRows = '';
+  if (cd?.earnings?.surprise_history) {
+    cd.earnings.surprise_history.forEach(s => {
+      const beat = s.beat === true;
+      surpriseRows += `<tr><td>${s.date}</td><td>${cs}${s.estimate ?? '—'}</td><td style="color:${beat?'#059669':'#dc2626'}">${cs}${s.actual ?? '—'}</td><td style="color:${beat?'#059669':'#dc2626'}">${beat?'✅ Beat':'❌ Miss'} ${s.surprise_pct != null ? '('+s.surprise_pct+'%)' : ''}</td></tr>`;
+    });
+  }
+
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head>
+  <meta charset="UTF-8">
+  <title>${ticker} — Fintiq Research Report</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:Georgia,serif;font-size:10pt;color:#222;background:#fff;padding:40pt 50pt}
+    h1{font-size:28pt;font-weight:900;margin-bottom:4pt}
+    h2{font-size:11pt;font-weight:700;border-bottom:2px solid #f59e0b;padding-bottom:5pt;margin:18pt 0 10pt;text-transform:uppercase;letter-spacing:.05em}
+    p{margin-bottom:6pt;line-height:1.6}
+    table{width:100%;border-collapse:collapse;margin-bottom:12pt;font-size:9pt}
+    th{background:#f5f5f5;padding:5pt 8pt;text-align:left;font-size:8pt;text-transform:uppercase;letter-spacing:.04em;color:#555;border-bottom:1px solid #ddd}
+    td{padding:5pt 8pt;border-bottom:1px solid #eee}
+    .cover{text-align:center;padding:60pt 0 40pt;page-break-after:always}
+    .cover h1{font-size:36pt;color:#111}
+    .cover .sub{font-size:14pt;color:#555;margin-top:6pt}
+    .cover .price{font-size:12pt;color:#777;margin-top:4pt}
+    .cover .date{font-size:9pt;color:#999;margin-top:20pt}
+    .disclaimer{font-size:7.5pt;color:#999;border-top:1px solid #e5e7eb;padding-top:10pt;margin-top:20pt;text-align:center;line-height:1.5}
+    .sig-table td{padding:6pt 10pt;font-weight:600;font-size:9pt}
+    .score-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8pt;margin-bottom:14pt}
+    .score-cell{text-align:center;background:#f9f9f9;border:1px solid #e5e7eb;border-radius:4pt;padding:8pt 4pt}
+    .score-num{font-size:18pt;font-weight:900}
+    .score-lbl{font-size:7pt;color:#666;text-transform:uppercase;margin-top:3pt}
+    .verdict-box{border:2px solid #111;border-radius:5pt;padding:14pt;margin-bottom:14pt}
+    .verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:8pt;margin-top:10pt;font-size:9pt}
+    .chat-user{background:#eff6ff;border-left:3px solid #3b82f6;padding:6pt 10pt;margin-bottom:5pt;font-size:8.5pt;border-radius:0 3pt 3pt 0}
+    .chat-ai{background:#fafafa;border-left:3px solid #f59e0b;padding:6pt 10pt;margin-bottom:8pt;font-size:8.5pt;border-radius:0 3pt 3pt 0}
+    .chat-lbl{font-size:7pt;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3pt}
+    .pg{page-break-before:always;padding-top:10pt}
+    @media print{body{padding:20pt 30pt}.cover{page-break-after:always}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+  </style></head><body>
+
+  <!-- COVER -->
+  <div class="cover">
+    <div style="font-size:11pt;color:#f59e0b;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-bottom:14pt">Fintiq Research Report</div>
+    <h1>${ticker}</h1>
+    <div class="sub">${ov.name || ticker}</div>
+    <div class="price">${cs}${typeof price === 'number' ? price.toFixed(2) : price} &nbsp;·&nbsp; ${ov.sector || '—'} &nbsp;·&nbsp; ${ov.exchange || ''}</div>
+    <div class="date">Generated: ${today}</div>
+    <div class="disclaimer" style="margin-top:30pt;max-width:480pt;margin-left:auto;margin-right:auto">
+      <strong>Important: This report is for educational and informational purposes only.</strong><br>
+      It does not constitute financial advice, investment advice, or a recommendation to buy, sell, or hold any security. Fintiq is not authorised or regulated by the FCA. Always seek independent financial advice before making investment decisions.
+    </div>
+  </div>
+
+  <!-- PAGE 1 — EXECUTIVE SUMMARY -->
+  <h2>Executive Summary — Signal Aggregator</h2>
+  <table class="sig-table">
+    <tr><th>Section</th><th>Signal</th><th>Status</th><th>Detail</th></tr>
+    ${signals.map(s => `<tr><td>${s.label}</td><td style="color:${sigColPdf[s.signal]}">${s.signal === 'green' ? '✅' : s.signal === 'amber' ? '⚠️' : s.signal === 'red' ? '❌' : '○'}</td><td style="color:${sigColPdf[s.signal]};font-weight:600">${s.status}</td><td style="color:#555">${s.detail || '—'}</td></tr>`).join('')}
+  </table>
+
+  <h2>Conviction Scorecard</h2>
+  <div class="score-grid">
+    ${scores.map(s => {
+      const col = s.score >= 7 ? '#059669' : s.score >= 4 ? '#d97706' : s.score > 0 ? '#dc2626' : '#9ca3af';
+      return `<div class="score-cell"><div class="score-num" style="color:${col}">${s.score > 0 ? s.score : '—'}</div><div class="score-lbl">${s.label}</div></div>`;
+    }).join('')}
+  </div>
+  <p><strong>Total: ${total} / ${assessed*10}</strong> (${assessed}/5 sections assessed) — ${total/(assessed||1)/10 >= .65 ? 'High conviction' : total/(assessed||1)/10 >= .45 ? 'Moderate conviction' : 'Low conviction'}</p>
+
+  ${_decAIResult ? `<h2>AI Thesis Challenge</h2>
+  <p><em>Direction: ${_decDirection.toUpperCase()}</em></p>
+  ${(_decAIResult.counters||[]).map((c,i) => `<p><strong>${i+1}. ${c.title||''}</strong><br>${c.argument||''}</p>`).join('')}
+  ${_decAIResult.summary ? `<p style="font-style:italic;color:#555;margin-top:8pt">${_decAIResult.summary}</p>` : ''}` : ''}
+
+  <!-- PAGE 2 — FUNDAMENTALS -->
+  <div class="pg"><h2>Fundamentals</h2>
+  <table>
+    <tr><th>Metric</th><th>Value</th><th>Metric</th><th>Value</th></tr>
+    <tr><td>ROIC</td><td>${q.roic != null ? q.roic+'%' : '—'}</td><td>Op Margin</td><td>${q.op_margin != null ? q.op_margin+'%' : '—'}</td></tr>
+    <tr><td>Revenue Growth</td><td>${q.revenue_growth != null ? q.revenue_growth+'%' : '—'}</td><td>EPS Growth</td><td>${q.earnings_growth != null ? q.earnings_growth+'%' : '—'}</td></tr>
+    <tr><td>P/E (Fwd)</td><td>${mu.pe_forward != null ? mu.pe_forward+'x' : '—'}</td><td>EV/EBITDA</td><td>${mu.ev_ebitda != null ? mu.ev_ebitda+'x' : '—'}</td></tr>
+    <tr><td>D/E Ratio</td><td>${q.debt_equity != null ? q.debt_equity : '—'}</td><td>Beta</td><td>${fd?.market?.beta != null ? fd.market.beta : '—'}</td></tr>
+    <tr><td>Analyst Consensus</td><td>${an_fd.recommendation || '—'}</td><td>Price Target</td><td>${an_fd.target_mean != null ? cs+an_fd.target_mean : '—'}</td></tr>
+  </table>
+  ${chatSection('fundamentals', 'Fundamentals')}</div>
+
+  <!-- PAGE 3 — VALUATION -->
+  <div class="pg"><h2>Valuation (DCF)</h2>
+  ${_vs ? `<table>
+    <tr><th>Input</th><th>Value</th><th>Input</th><th>Value</th></tr>
+    <tr><td>Current Price</td><td>${cs}${typeof price==='number'?price.toFixed(2):price}</td><td>DCF Fair Value</td><td>${dcfR?.equity_ps != null ? cs+dcfR.equity_ps.toFixed(2) : '—'}</td></tr>
+    <tr><td>Implied Growth (Reverse DCF)</td><td>${_vs._impliedGrowth != null ? _vs._impliedGrowth+'%' : '—'}</td><td>WACC</td><td>${_vs.wacc != null ? _vs.wacc+'%' : '—'}</td></tr>
+    <tr><td>Phase 1 Growth (Yrs 1-3)</td><td>${_vs.g1}%</td><td>Op Margin (used)</td><td>${_vs.om1}%</td></tr>
+    <tr><td>Phase 2 Growth (Yrs 4-7)</td><td>${_vs.g2}%</td><td>Terminal Growth</td><td>${_vs.tg}%</td></tr>
+    <tr><td>MC P10 / P50 / P90</td><td colspan="3">${_session.risk?.mc ? `${cs}${_session.risk.mc.p10?.toFixed(2)||'—'} / ${cs}${_session.risk.mc.p50?.toFixed(2)||'—'} / ${cs}${_session.risk.mc.p90?.toFixed(2)||'—'}` : '—'}</td></tr>
+  </table>` : '<p>Valuation section not opened.</p>'}
+  ${chatSection('valuation', 'Valuation')}</div>
+
+  <!-- PAGE 4 — TECHNICAL -->
+  <div class="pg"><h2>Technical Analysis</h2>
+  ${td ? `<table>
+    <tr><th>Indicator</th><th>Reading</th><th>Indicator</th><th>Reading</th></tr>
+    <tr><td>Trend</td><td>${td.trend?.replace(/_/g,' ')||'—'}</td><td>Momentum</td><td>${td.momentum?.replace(/_/g,' ')||'—'}</td></tr>
+    <tr><td>RSI (14)</td><td>${td.rsi?.length ? td.rsi[td.rsi.length-1]?.toFixed(1)||'—' : '—'}</td><td>Support</td><td>${td.key_levels?.support?.toFixed(2)||'—'}</td></tr>
+    <tr><td>PCR</td><td>${td.options?.pcr||'—'}</td><td>Max Pain</td><td>${td.options?.max_pain||'—'}</td></tr>
+    <tr><td>Put Wall</td><td>${td.options?.put_wall||'—'}</td><td>Call Wall</td><td>${td.options?.call_wall||'—'}</td></tr>
+  </table>` : '<p>Technical section not opened.</p>'}
+  ${chatSection('technical', 'Technical')}</div>
+
+  <!-- PAGE 5 — RISK -->
+  <div class="pg"><h2>Risk & Position Sizing</h2>
+  ${_session.risk?.mc ? `<table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Annualised Volatility</td><td>${Math.round((_session.risk.mc.annualisedVol||0)*100)}%</td></tr>
+    <tr><td>Probability of Profit (${_session.risk.horizon||60}d)</td><td>${Math.round((_session.risk.mc.probProfit||0)*100)}%</td></tr>
+    <tr><td>P10 Price (bear scenario)</td><td>${cs}${_session.risk.mc.p10?.toFixed(2)||'—'}</td></tr>
+    <tr><td>P50 Price (base scenario)</td><td>${cs}${_session.risk.mc.p50?.toFixed(2)||'—'}</td></tr>
+    <tr><td>P90 Price (bull scenario)</td><td>${cs}${_session.risk.mc.p90?.toFixed(2)||'—'}</td></tr>
+  </table>` : '<p>Risk section not opened.</p>'}</div>
+
+  <!-- PAGE 6 — CATALYST -->
+  <div class="pg"><h2>Catalyst Tracker</h2>
+  ${cd ? `<table>
+    <tr><th>Metric</th><th>Value</th></tr>
+    <tr><td>Next Earnings Date</td><td>${cd.earnings?.next_date||'—'} (${cd.earnings?.days_to != null ? cd.earnings.days_to+' days' : '—'})</td></tr>
+    <tr><td>EPS Estimate</td><td>${cd.earnings?.eps_estimate != null ? cs+cd.earnings.eps_estimate : '—'}</td></tr>
+    <tr><td>Analyst Consensus</td><td>${cd.analyst?.recommendation||'—'}</td></tr>
+    <tr><td>Price Target</td><td>${cd.analyst?.target_mean != null ? cs+cd.analyst.target_mean : '—'} (${cd.analyst?.target_upside != null ? cd.analyst.target_upside+'% upside' : '—'})</td></tr>
+    <tr><td>Short Float</td><td>${cd.short_interest?.short_pct != null ? cd.short_interest.short_pct+'%' : '—'}</td></tr>
+    <tr><td>Squeeze Score</td><td>${cd.short_interest?.squeeze_score||'—'}</td></tr>
+  </table>
+  ${surpriseRows ? `<h2 style="font-size:9pt;margin:10pt 0 6pt">Earnings Surprise History</h2><table><tr><th>Date</th><th>Estimate</th><th>Actual</th><th>Result</th></tr>${surpriseRows}</table>` : ''}` : '<p>Catalyst section not opened.</p>'}
+  ${chatSection('catalyst', 'Catalyst')}</div>
+
+  <!-- PAGE 7 — DECISION -->
+  <div class="pg"><h2>Decision Analysis</h2>
+  <div class="verdict-box">
+    <p><strong>Conviction Score:</strong> ${total} / ${assessed*10} (${assessed}/5 sections)</p>
+    <div class="verdict-grid">
+      ${signals.map(s => `<div><strong>${s.label}:</strong> <span style="color:${sigColPdf[s.signal]}">${s.status}</span></div>`).join('')}
+    </div>
+  </div>
+  ${chatSection('decision', 'Decision')}</div>
+
+  <div class="disclaimer">
+    Fintiq Research Report · ${today} · ${ticker} · Educational use only — not financial advice · Fintiq is not FCA authorised · Always verify data independently
+  </div>
+  </body></html>`);
+  win.document.close();
+  setTimeout(() => win.print(), 800);
 }
 
 // ── Method Card HTML ──
