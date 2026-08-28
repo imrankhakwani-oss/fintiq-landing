@@ -1162,14 +1162,14 @@ function renderFundamentals(d) {
     const pcrNote = pcr == null ? '' : pcr < 0.7 ? 'Bullish sentiment — more calls than puts' : pcr > 1.2 ? 'Bearish/hedging — elevated put demand' : 'Neutral positioning';
     html += `<div class="sub-label">Options Market</div>
     <div class="options-grid">
-      <div class="opt-card"><div class="opt-label">Put/Call Ratio</div><div class="opt-value ${pcrClass}">${pcr != null ? pcr : '—'}</div><div class="opt-note">${pcrNote}</div></div>
+      <div class="opt-card"><div class="opt-label">Put/Call Ratio (OI)</div><div class="opt-value ${pcrClass}">${pcr != null ? pcr : '—'}</div><div class="opt-note">${pcrNote}</div></div>
       <div class="opt-card"><div class="opt-label">ATM Implied Vol</div><div class="opt-value">${op.atm_iv != null ? op.atm_iv+'%' : '—'}</div><div class="opt-note">Near-term market expectation of price swing</div></div>
       <div class="opt-card"><div class="opt-label">Call Open Interest</div><div class="opt-value">${op.call_oi ? Number(op.call_oi).toLocaleString() : '—'}</div><div class="opt-note">Contracts outstanding</div></div>
       <div class="opt-card"><div class="opt-label">Put Open Interest</div><div class="opt-value">${op.put_oi ? Number(op.put_oi).toLocaleString() : '—'}</div><div class="opt-note">Contracts outstanding</div></div>
       <div class="opt-card"><div class="opt-label">Expiry Dates</div><div class="opt-value">${op.total_expirations || '—'}</div><div class="opt-note">Available maturities</div></div>
     </div>
     <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;padding:8px 10px;background:var(--card2);border-radius:6px;border-left:2px solid var(--border)">
-      <strong style="color:var(--dim)">How to read options:</strong> Put/Call ratio above 1.2 signals hedging or bearish positioning. ATM IV shows how much the market expects the stock to move over the next 30 days — high IV = expensive options, often near events. Data: nearest expiry only.
+      <strong style="color:var(--dim)">How to read options:</strong> <strong>PCR (OI)</strong> uses open interest across all expiries — shows cumulative positioning (1.62 = more puts open = hedging/bearish lean). The Technical section shows <strong>PCR (Volume)</strong> — today's trading activity only (0.62 = more calls traded today = bullish session). Both are valid but measure different things. ATM IV shows how much the market expects the stock to move over the next 30 days — high IV = expensive options, often near events.
     </div>`;
   }
 
@@ -2463,7 +2463,7 @@ function renderTechnical(d) {
     html += `<div class="sub-label" style="margin-top:4px">Options Flow — Expiry ${opt.expiry || 'nearest'}</div>
     <div class="opt-grid">
       <div class="opt-card">
-        <div class="opt-card-label">Put / Call Ratio</div>
+        <div class="opt-card-label">Put / Call Ratio (Vol)</div>
         <div class="opt-card-val" style="color:${pcrCol}">${opt.pcr != null ? opt.pcr : '—'}</div>
         <div class="opt-card-sub">${opt.pcr_signal || ''}</div>
       </div>
@@ -3567,6 +3567,7 @@ function _formatCatalystAI(text) {
 
 let _decDirection = 'long'; // 'long' | 'short'
 let _decAIResult  = null;
+let _ccProb       = 50;    // conviction calibrator probability — set by renderDecision, read by _calcKelly
 
 function loadDecision() {
   document.getElementById('decision-loading').style.display = 'block';
@@ -3767,7 +3768,36 @@ function renderDecision() {
   // ── Conviction Calibrator ──
   const bayesProb = _computeBayesProb(signals, _decDirection);
   html += `<div class="dec-section-title">🧮 Conviction Calibrator</div>
-  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:14px">Turns your analysis into a calibrated probability and mathematically optimal position size. Based on Bayesian updating and the Half-Kelly criterion.</div>`;
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Turns your analysis into a calibrated probability and mathematically optimal position size. Based on Bayesian updating and the Half-Kelly criterion.</div>
+
+  <div class="ai-expander" id="cc-explainer" style="margin-bottom:16px">
+    <div class="ai-exp-header" onclick="_toggleAIExp('cc-explainer')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07)">
+      <span style="font-size:0.75rem;font-weight:700;color:var(--dim)">📚 How to use the Conviction Calibrator</span>
+      <span class="ai-exp-chevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
+    </div>
+    <div class="ai-exp-body" style="display:none;padding:14px;border:1px solid rgba(255,255,255,0.07);border-top:none;border-radius:0 0 8px 8px;background:rgba(255,255,255,0.02)">
+      <div style="font-size:0.75rem;color:var(--dim);line-height:1.7">
+        <p style="margin:0 0 10px"><strong style="color:var(--text)">Why this matters</strong><br>
+        The most successful traders can answer two questions before any trade: "How confident am I this works out?" and "How much of my portfolio should I risk?" Most investors skip these entirely — they have a vague feeling ("I think this is going up") but no number. The Conviction Calibrator forces you to quantify both.</p>
+
+        <p style="margin:0 0 10px"><strong style="color:var(--text)">Step 1 — Base Rate Anchor</strong><br>
+        Before you even look at the specific stock, history gives you a baseline. If you are buying a stock with strong fundamentals, fair valuation, and bullish technicals, academic research (Fama-French, AQR) shows those signals historically predict outperformance ~65–70% of the time. This is your starting point — not 50/50.</p>
+
+        <p style="margin:0 0 10px"><strong style="color:var(--text)">Step 2 — Signal-Adjusted Probability</strong><br>
+        Starting at 50% (no edge), each section you've opened shifts the probability based on what the data actually says. Green signals support your thesis and push the probability up; red signals cut against it. The final number — say 72% — means that based on the weight of your evidence, you should expect this thesis to play out roughly 7 times out of 10. A key insight: if you can't get above 55%, the trade probably isn't worth the risk at standard position sizes.</p>
+
+        <p style="margin:0 0 10px"><strong style="color:var(--text)">Step 3 — Half-Kelly Position Size</strong><br>
+        The Kelly Criterion is a mathematical formula used by professional traders and gamblers to find the optimal fraction of capital to risk. It balances the desire to grow wealth quickly against the risk of ruin. Full Kelly is often too aggressive (it assumes your probability is perfect), so we use Half-Kelly — which still grows your capital faster than naive sizing while protecting against estimation error.<br><br>
+        Formula: <span style="font-family:monospace;background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px">Half-Kelly = ((p × b − (1−p)) / b) / 2</span><br>
+        where <em>p</em> = your win probability, <em>b</em> = upside % ÷ downside %</p>
+
+        <p style="margin:0 0 6px"><strong style="color:var(--text)">Reading the output</strong><br>
+        A typical result might say: <em>67% conviction → 4.2% of portfolio → £4,200 on a £100k portfolio.</em> This turns "I think AAPL is going up" into a precise, defensible position — one that a hedge fund risk committee could evaluate. If the Kelly output is negative, the math is telling you there's no edge at those numbers — skip the trade or revisit your upside/downside assumptions.</p>
+
+        <p style="margin:0;font-size:0.68rem;color:var(--muted);font-style:italic">⚠️ This is an educational framework, not financial advice. Always cap single positions at 5–10% regardless of Kelly output, and never risk capital you cannot afford to lose.</p>
+      </div>
+    </div>
+  </div>`;
   html += _renderConvictionCalibrator(signals, bayesProb, cs, ov);
 
   // ── PDF Report button ──
@@ -4021,8 +4051,8 @@ function _renderConvictionCalibrator(signals, prob, cs, ov) {
     </div>
   </div>`;
 
-  // Store prob for Kelly calc
-  html += `<script>window._ccProb = ${prob}; window._ccDirection = '${direction}';<\/script>`;
+  // Store prob for Kelly calc — set module-level var (script tags in innerHTML don't execute)
+  _ccProb = prob;
 
   return html;
 }
@@ -4035,7 +4065,7 @@ function _calcKelly() {
   if (!el) return;
   if (!portfolio || !upside || !downside || portfolio <= 0 || upside <= 0 || downside <= 0) { el.style.display = 'none'; return; }
 
-  const p = (window._ccProb || 50) / 100;   // win probability
+  const p = (_ccProb || 50) / 100;   // win probability
   const q = 1 - p;                           // loss probability
   const b = upside / downside;               // odds ratio
 
@@ -4057,7 +4087,7 @@ function _calcKelly() {
     ${!isNeg ? `
     <div class="cc-kelly-result-row">
       <span class="cc-kelly-label">Win probability (from calibrator)</span>
-      <span class="cc-kelly-val">${window._ccProb}%</span>
+      <span class="cc-kelly-val">${_ccProb}%</span>
     </div>
     <div class="cc-kelly-result-row">
       <span class="cc-kelly-label">Risk/Reward ratio (b)</span>
@@ -4076,8 +4106,8 @@ function _calcKelly() {
       <span class="cc-kelly-main">${cs2}${positionSize.toLocaleString('en-US', {maximumFractionDigits:0})}</span>
     </div>
     <div style="font-size:0.7rem;color:var(--muted);margin-top:8px">
-      At ${window._ccProb}% calibrated confidence with ${upside}% upside / ${downside}% downside,
-      Half-Kelly suggests risking <strong style="color:var(--gold)">${kellyPct}%</strong> of your portfolio on this ${window._ccDirection} position.
+      At ${_ccProb}% calibrated confidence with ${upside}% upside / ${downside}% downside,
+      Half-Kelly suggests risking <strong style="color:var(--gold)">${kellyPct}%</strong> of your portfolio on this ${_decDirection} position.
       ${parseFloat(kellyPct) >= 5 ? `<br><span style="color:var(--gold)">⚠️ Kelly output above 5% — consider capping at 5% for prudent diversification.</span>` : ''}
     </div>` : ''}
   `;
