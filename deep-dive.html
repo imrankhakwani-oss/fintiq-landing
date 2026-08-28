@@ -1723,9 +1723,9 @@ function _buildValHTML() {
       <div class="fixed-val" id="disp-ronic">${vs.ronic}%</div>
       <div class="fixed-note">Historical ROIC ≈ ${vs.d?.quality?.roic||'—'}% · lower in terminal</div>
       <div style="margin-top:8px">
-        <input type="range" class="slider-input" id="sl-ronic" min="5" max="40" step="1" value="${vs.ronic}"
+        <input type="range" class="slider-input" id="sl-ronic" min="0" max="100" step="1" value="${vs.ronic}"
           oninput="updSlider('ronic',this.value);document.getElementById('disp-ronic').textContent=this.value+'%'">
-        <div class="slider-range"><span>5%</span><span>40%</span></div>
+        <div class="slider-range"><span>0%</span><span>100%</span></div>
       </div>
     </div>
   </div>`;
@@ -3771,11 +3771,11 @@ function renderDecision() {
   <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Turns your analysis into a calibrated probability and mathematically optimal position size. Based on Bayesian updating and the Half-Kelly criterion.</div>
 
   <div class="ai-expander" id="cc-explainer" style="margin-bottom:16px">
-    <div class="ai-expander-header" onclick="_toggleAIExp('cc-explainer')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07)">
-      <span style="font-size:0.75rem;font-weight:700;color:var(--dim)">📚 How to use the Conviction Calibrator</span>
-      <span class="ai-expander-chevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
+    <div class="ai-expander-header" onclick="_toggleAIExp('cc-explainer')">
+      <div class="ai-expander-title">📚 How to use the Conviction Calibrator</div>
+      <span class="ai-expander-chevron">▼</span>
     </div>
-    <div class="ai-expander-body" style="display:none;padding:14px;border:1px solid rgba(255,255,255,0.07);border-top:none;border-radius:0 0 8px 8px;background:rgba(255,255,255,0.02)">
+    <div class="ai-expander-body">
       <div style="font-size:0.75rem;color:var(--dim);line-height:1.7">
         <p style="margin:0 0 10px"><strong style="color:var(--text)">Why this matters</strong><br>
         The most successful traders can answer two questions before any trade: "How confident am I this works out?" and "How much of my portfolio should I risk?" Most investors skip these entirely — they have a vague feeling ("I think this is going up") but no number. The Conviction Calibrator forces you to quantify both.</p>
@@ -4225,6 +4225,44 @@ function _doGenerateReport() {
   <p><em>Direction: ${_decDirection.toUpperCase()}</em></p>
   ${(_decAIResult.counters||[]).map((c,i) => `<p><strong>${i+1}. ${c.title||''}</strong><br>${c.argument||''}</p>`).join('')}
   ${_decAIResult.summary ? `<p style="font-style:italic;color:#555;margin-top:8pt">${_decAIResult.summary}</p>` : ''}` : ''}
+
+  <h2>Conviction Calibrator</h2>
+  ${(() => {
+    const pdfSignals = _decSignals();
+    const pdfProb = _computeBayesProb(pdfSignals, _decDirection);
+    const pdfBr = _baseRateForProfile(pdfProb, _decDirection);
+    const pdfWeights = { 'Fundamentals': 14, 'Valuation': 12, 'Technical': 9, 'Catalyst': 9, 'Risk': 6 };
+    const pdfRows = pdfSignals.filter(s=>s.signal!=='grey').map(s => {
+      const w = pdfWeights[s.label]||8;
+      const supp = (_decDirection==='long') ? (s.signal==='green') : (s.signal==='red');
+      const opp  = (_decDirection==='long') ? (s.signal==='red')   : (s.signal==='green');
+      const delta = supp ? +w : opp ? -w : 0;
+      return `<tr><td>${s.label}</td><td>${s.status}</td><td style="font-weight:600;color:${delta>0?'#059669':delta<0?'#dc2626':'#6b7280'}">${delta>0?'+':''}${delta}%</td></tr>`;
+    }).join('');
+    return `<table>
+      <tr><th colspan="3">Base Rate: ${pdfBr.label} — ${pdfBr.rate} historical win rate</th></tr>
+      <tr><th>Section</th><th>Signal</th><th>Probability Shift</th></tr>
+      ${pdfRows}
+      <tr style="font-weight:700"><td colspan="2">Calibrated Conviction (${_decDirection.toUpperCase()} thesis)</td><td style="color:${pdfProb>=60?'#059669':pdfProb>=45?'#d97706':'#dc2626'}">${pdfProb}%</td></tr>
+    </table>
+    <p><em>${pdfBr.note}</em></p>`;
+  })()}
+  ${_ccProb > 0 && document.getElementById('cc-portfolio')?.value ? (() => {
+    const port = parseFloat(document.getElementById('cc-portfolio').value)||0;
+    const up   = parseFloat(document.getElementById('cc-upside').value)||0;
+    const dn   = parseFloat(document.getElementById('cc-downside').value)||0;
+    if (!port||!up||!dn) return '';
+    const p = _ccProb/100, q = 1-p, b = up/dn;
+    const hk = Math.max(0,(p*b-q)/b/2);
+    const pos = port*hk;
+    return `<h2 style="font-size:9pt;margin:10pt 0 4pt">Half-Kelly Position Size</h2>
+    <table>
+      <tr><td>Portfolio Value</td><td>${cs}${port.toLocaleString()}</td><td>Upside Target</td><td>${up}%</td></tr>
+      <tr><td>Downside Risk</td><td>${dn}%</td><td>Risk/Reward (b)</td><td>${b.toFixed(2)}×</td></tr>
+      <tr><td>Win Probability</td><td>${_ccProb}%</td><td>Full Kelly</td><td>${(Math.max(0,(p*b-q)/b)*100).toFixed(1)}%</td></tr>
+      <tr style="font-weight:700"><td colspan="2">Half-Kelly (recommended)</td><td colspan="2" style="color:#d97706">${(hk*100).toFixed(1)}% = ${cs}${pos.toLocaleString('en-US',{maximumFractionDigits:0})}</td></tr>
+    </table>`;
+  })() : ''}
 
   <!-- PAGE 2 — FUNDAMENTALS -->
   <div class="pg"><h2>Fundamentals</h2>
