@@ -3767,7 +3767,7 @@ function renderDecision() {
 
   // ── Conviction Calibrator ──
   const bayesProb = _computeBayesProb(signals, _decDirection);
-  html += `<div class="dec-section-title">🧮 Conviction Calibrator</div>
+  html += `<div id="cc-wrap"><div class="dec-section-title">🧮 Conviction Calibrator</div>
   <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Turns your analysis into a calibrated probability and mathematically optimal position size. Based on Bayesian updating and the Half-Kelly criterion.</div>
 
   <div class="ai-expander" id="cc-explainer" style="margin-bottom:16px">
@@ -3799,6 +3799,7 @@ function renderDecision() {
     </div>
   </div>`;
   html += _renderConvictionCalibrator(signals, bayesProb, cs, ov);
+  html += `</div>`; // close #cc-wrap
 
   // ── PDF Report button ──
   html += `<div class="dec-section-title">📄 Research Report</div>
@@ -3817,6 +3818,42 @@ function _setDirection(dir) {
     if (b.textContent.includes('LONG') && dir === 'long') b.classList.add('active-long');
     if (b.textContent.includes('SHORT') && dir === 'short') b.classList.add('active-short');
   });
+  // Re-render the Conviction Calibrator for the new direction
+  const wrap = document.getElementById('cc-wrap');
+  if (!wrap) return;
+  // Preserve Kelly inputs before re-render
+  const _savedPortfolio = document.getElementById('cc-portfolio')?.value || '';
+  const _savedUpside    = document.getElementById('cc-upside')?.value    || '';
+  const _savedDownside  = document.getElementById('cc-downside')?.value  || '';
+  const signals = _decSignals();
+  const newProb = _computeBayesProb(signals, dir);
+  const cs2 = (_vs && _vs.currSym) || '$';
+  const fd = _session.fundamentals?.data;
+  const ov2 = fd?.overview || {};
+  let ccHtml = `<div class="dec-section-title">🧮 Conviction Calibrator</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Turns your analysis into a calibrated probability and mathematically optimal position size. Based on Bayesian updating and the Half-Kelly criterion.</div>
+  <div class="ai-expander" id="cc-explainer">
+    <div class="ai-expander-header" onclick="_toggleAIExp('cc-explainer')">
+      <div class="ai-expander-title">📚 How to use the Conviction Calibrator</div>
+      <span class="ai-expander-chevron">▼</span>
+    </div>
+    <div class="ai-expander-body">
+      <div style="font-size:0.75rem;color:var(--dim);line-height:1.7">
+        <p style="margin:0 0 10px"><strong style="color:var(--text)">Why this matters</strong><br>The most successful traders can answer two questions before any trade: "How confident am I this works out?" and "How much should I risk?" The Calibrator forces you to quantify both.</p>
+        <p style="margin:0 0 10px"><strong style="color:var(--text)">Step 2 — Signal-Adjusted Probability</strong><br>Direction-aware: green signals support a LONG thesis (push probability up) but work against a SHORT (push it down). Red signals do the opposite. Switch direction above to see your short conviction recalculated.</p>
+        <p style="margin:0;font-size:0.68rem;color:var(--muted);font-style:italic">⚠️ Educational framework only — not financial advice.</p>
+      </div>
+    </div>
+  </div>`;
+  ccHtml += _renderConvictionCalibrator(signals, newProb, cs2, ov2);
+  wrap.innerHTML = ccHtml;
+  // Restore Kelly inputs and recalculate automatically
+  if (_savedPortfolio) {
+    const p = document.getElementById('cc-portfolio'); if (p) p.value = _savedPortfolio;
+    const u = document.getElementById('cc-upside');    if (u) u.value = _savedUpside;
+    const d = document.getElementById('cc-downside');  if (d) d.value = _savedDownside;
+    _calcKelly();
+  }
 }
 
 async function _submitThesis() {
