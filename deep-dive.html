@@ -3771,11 +3771,11 @@ function renderDecision() {
   <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Turns your analysis into a calibrated probability and mathematically optimal position size. Based on Bayesian updating and the Half-Kelly criterion.</div>
 
   <div class="ai-expander" id="cc-explainer" style="margin-bottom:16px">
-    <div class="ai-exp-header" onclick="_toggleAIExp('cc-explainer')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07)">
+    <div class="ai-expander-header" onclick="_toggleAIExp('cc-explainer')" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.07)">
       <span style="font-size:0.75rem;font-weight:700;color:var(--dim)">📚 How to use the Conviction Calibrator</span>
-      <span class="ai-exp-chevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
+      <span class="ai-expander-chevron" style="font-size:0.7rem;color:var(--muted)">▼</span>
     </div>
-    <div class="ai-exp-body" style="display:none;padding:14px;border:1px solid rgba(255,255,255,0.07);border-top:none;border-radius:0 0 8px 8px;background:rgba(255,255,255,0.02)">
+    <div class="ai-expander-body" style="display:none;padding:14px;border:1px solid rgba(255,255,255,0.07);border-top:none;border-radius:0 0 8px 8px;background:rgba(255,255,255,0.02)">
       <div style="font-size:0.75rem;color:var(--dim);line-height:1.7">
         <p style="margin:0 0 10px"><strong style="color:var(--text)">Why this matters</strong><br>
         The most successful traders can answer two questions before any trade: "How confident am I this works out?" and "How much of my portfolio should I risk?" Most investors skip these entirely — they have a vague feeling ("I think this is going up") but no number. The Conviction Calibrator forces you to quantify both.</p>
@@ -4070,11 +4070,10 @@ function _calcKelly() {
   const b = upside / downside;               // odds ratio
 
   const fullKelly = (p * b - q) / b;         // Kelly fraction
-  const halfKelly = fullKelly / 2;           // Half-Kelly (safer)
-  const cappedKelly = Math.max(0, Math.min(0.10, halfKelly)); // cap at 10%
+  const halfKelly = Math.max(0, fullKelly / 2); // Half-Kelly (safer), floored at 0
 
-  const positionSize = portfolio * cappedKelly;
-  const kellyPct = (cappedKelly * 100).toFixed(1);
+  const positionSize = portfolio * halfKelly;
+  const kellyPct = (halfKelly * 100).toFixed(1);
   const fullKellyPct = (Math.max(0, fullKelly) * 100).toFixed(1);
   const cs2 = (_vs && _vs.currSym) || '$';
 
@@ -4108,7 +4107,7 @@ function _calcKelly() {
     <div style="font-size:0.7rem;color:var(--muted);margin-top:8px">
       At ${_ccProb}% calibrated confidence with ${upside}% upside / ${downside}% downside,
       Half-Kelly suggests risking <strong style="color:var(--gold)">${kellyPct}%</strong> of your portfolio on this ${_decDirection} position.
-      ${parseFloat(kellyPct) >= 5 ? `<br><span style="color:var(--gold)">⚠️ Kelly output above 5% — consider capping at 5% for prudent diversification.</span>` : ''}
+      ${parseFloat(kellyPct) >= 15 ? `<br><span style="color:var(--gold)">⚠️ Half-Kelly above 15% — consider capping at 10–15% for prudent diversification across a portfolio.</span>` : parseFloat(kellyPct) >= 5 ? `<br><span style="color:var(--dim)">ℹ️ Above 5% — typical single-stock max for a diversified portfolio.</span>` : ''}
     </div>` : ''}
   `;
 }
