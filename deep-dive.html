@@ -755,6 +755,22 @@ a{color:var(--gold);text-decoration:none}
 const API = 'https://api.fintiq.uk';
 
 // ── Session state (cross-section memory) ──
+// Exchange code → human-readable name mapping
+function _exchangeName(raw) {
+  if (!raw) return '';
+  const map = {
+    'NMS': 'NASDAQ', 'NGM': 'NASDAQ', 'NCM': 'NASDAQ',
+    'NYQ': 'NYSE', 'PCX': 'NYSE Arca', 'ASE': 'NYSE American',
+    'LSE': 'LSE', 'IOB': 'LSE', 'AIM': 'AIM',
+    'FRA': 'Frankfurt', 'XETRA': 'XETRA',
+    'PAR': 'Euronext Paris', 'AMS': 'Euronext Amsterdam',
+    'TOR': 'TSX', 'TSX': 'TSX',
+    'ASX': 'ASX', 'HKG': 'HKEX', 'SHH': 'Shanghai',
+    'TYO': 'Tokyo', 'BOM': 'BSE', 'NSI': 'NSE',
+  };
+  return map[raw.toUpperCase()] || raw;
+}
+
 let _session = {
   ticker: null,
   fundamentals: { data: null, chat_conclusions: null, completed: false },
@@ -1003,7 +1019,7 @@ function renderFundamentals(d) {
   const badges = [];
   if (ov.sector)   badges.push(`<span class="badge badge-sector">${ov.sector}</span>`);
   if (ov.country)  badges.push(`<span class="badge badge-country">${ov.country}</span>`);
-  if (ov.exchange) badges.push(`<span class="badge badge-exchange">${ov.exchange}</span>`);
+  if (ov.exchange) badges.push(`<span class="badge badge-exchange">${_exchangeName(ov.exchange)}</span>`);
   document.getElementById('co-badges').innerHTML = badges.join('');
 
   // Analyst pill
@@ -1048,7 +1064,7 @@ function renderFundamentals(d) {
     ${ovItem('Employees', ov.employees ? Number(ov.employees).toLocaleString() : null)}
     ${ovItem('FY Year End', ov.fy_end)}
     ${ovItem('Latest Quarter', ov.q_end)}
-    ${ovItem('Exchange', ov.exchange)}
+    ${ovItem('Exchange', _exchangeName(ov.exchange))}
     ${ovItem('Website', ov.website ? `<a href="${ov.website}" target="_blank" style="font-size:0.72rem">${ov.website.replace('https://','').replace('http://','')}</a>` : null, true)}
   </div>`;
 
@@ -3626,7 +3642,7 @@ function _decSignals() {
     const sig = trend.includes('UP') ? 'green' : trend.includes('DOWN') ? 'red' : 'amber';
     signals.push({ label: 'Technical', signal: sig,
       status: trend.includes('UP') ? 'Bullish' : trend.includes('DOWN') ? 'Bearish' : 'Neutral',
-      detail: (trendObj.classification || 'Neutral') + (td.momentum ? ' · ' + String(td.momentum).replace('_',' ') : '') });
+      detail: (trendObj.classification || 'Neutral') + (td.momentum ? ' · ' + (typeof td.momentum === 'object' ? (td.momentum.rsi_signal || td.momentum.macd_crossover || '') : String(td.momentum)).replace(/_/g,' ') : '') });
   } else {
     signals.push({ label: 'Technical', signal: 'grey', status: 'Not assessed', detail: '' });
   }
@@ -4231,7 +4247,7 @@ function _doGenerateReport() {
     <div style="font-size:11pt;color:#f59e0b;font-weight:700;letter-spacing:.15em;text-transform:uppercase;margin-bottom:14pt">Fintiq Research Report</div>
     <h1>${ticker}</h1>
     <div class="sub">${ov.name || ticker}</div>
-    <div class="price">${cs}${typeof price === 'number' ? price.toFixed(2) : price} &nbsp;·&nbsp; ${ov.sector || '—'} &nbsp;·&nbsp; ${ov.exchange || ''}</div>
+    <div class="price">${cs}${typeof price === 'number' ? price.toFixed(2) : price} &nbsp;·&nbsp; ${ov.sector || '—'} &nbsp;·&nbsp; ${_exchangeName(ov.exchange) || ''}</div>
     <div class="date">Generated: ${today}</div>
     <div class="disclaimer" style="margin-top:30pt;max-width:480pt;margin-left:auto;margin-right:auto">
       <strong>Important: This report is for educational and informational purposes only.</strong><br>
