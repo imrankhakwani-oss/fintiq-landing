@@ -1,4 +1,4 @@
-# Fintiq Project Context — Last updated 27/08/2026
+# Fintiq Project Context — Last updated 29/08/2026
 
 ---
 
@@ -268,16 +268,27 @@ discovery → confirm → fundamental → valuation → technical → finalise �
 
 ## 9. PENDING TASKS — START HERE NEXT SESSION
 
-### 27/08/2026 — Session status
-All 6 sections of deep-dive.html are now built and deployed. Known working:
-- Fundamentals ✅, Valuation ✅, Technical ✅, Risk ✅, Catalyst ✅ (after Railway deploy with yfinance timeouts), Decision Analysis ✅, PDF download ✅
+### 29/08/2026 — Session status
+All 6 sections of deep-dive.html built and deployed. Conviction Calibrator complete with Bayesian updater + Half-Kelly sizer.
+
+**Nav standardised across all pages (28/08/2026):**
+- All pages now have: Home | Market Bulletin | Stock Deep Dive | Tools | Learn
+- No "Analyse a Stock" CTA button anywhere
+- App button fully removed from index.html, tools.html, bulletin.html
+- Active page highlighted with `.active` class
+- deep-dive.html nav: Home | Market Bulletin | **Stock Deep Dive** | Tools | Learn
+- "Coming soon" / "In progress" section status badges removed from deep-dive.html
+
+**Landing page repositioned (28/08/2026):**
+- Hero: "From Curiosity to Conviction." — not a screener, an analysis framework
+- CTA: "Analyse a Stock Free →" → /deep-dive.html
+- Showcase tabs rebuilt: DeepDive / Valuation / Technical / Conviction / Morning
 
 ### Next session — PRIORITY
-- [ ] **Conviction Calibrator** (new sub-section in Decision Analysis):
-  - Step 1: Base rate anchor — show historical win rate for stocks with this signal profile
-  - Step 2: Bayesian updater — each section shifts probability up/down from 50% base (visual needle)
-  - Step 3: Kelly sizing — user inputs upside/downside target → calculates Half-Kelly as % of portfolio
-  - Philosophy: closes the loop from "I think TSLA is going down" → "35% confidence, 3.5% of portfolio"
+- [ ] Watchlist (Imran has a different approach in mind — wait for his brief)
+- [ ] Landing page deeper redesign — hero browser mockup still shows old screener image (`img/screener-1.png`). Need a real Deep Dive screenshot.
+- [ ] Accounting quality score in Fundamentals (accruals ratio, FCF vs net income, DSO trend)
+- [ ] Railway deploy for catalyst fix still needed — copy Articles/fintiq-api/main.py → Desktop/fintiq-api/main.py then push
 
 ### Other pending
 - [ ] Mobile: My Dashboard 3-col grid → single column (task #23)
@@ -326,3 +337,10 @@ All 6 sections of deep-dive.html are now built and deployed. Known working:
 | 27/08/2026 | PDF: Annualised Vol showing 4950%, ProbProfit 3900% | Values already %, PDF template had extra `*100`. Removed. |
 | 27/08/2026 | AI Challenge showing shallow analysis, no segment breakdown | Upgraded to Sonnet model (1800 tokens), added Tavily web search pre-fetch, segment-level instructions, verdict with judgemental probability |
 | 27/08/2026 | PDF never downloading (popup blocked) | `window.open(blob_url, '_blank')` blocked by browser. Changed to always `a.download = file.html; a.click()` |
+| 27/08/2026 | Catalyst `_safe()` blocking indefinitely | `with ThreadPoolExecutor() as ex:` calls `shutdown(wait=True)` on exit — blocks forever on hung yfinance threads. Fixed: `ex.shutdown(wait=False)` in explicit `finally` block |
+| 27/08/2026 | Kelly always showing same $1,000 | Hard cap `Math.min(0.10, halfKelly)` — all cases exceed 10%. Removed cap, use `Math.max(0, fullKelly/2)` |
+| 27/08/2026 | Kelly showing `undefined%` | `<script>` tags in innerHTML don't execute. Was setting `window._ccProb` via injected script. Fixed: module-level `let _ccProb = 50` set directly as `_ccProb = prob` |
+| 27/08/2026 | Kelly not direction-aware | 67% LONG prob baked at render. SHORT thesis for AAPL should be ~33%. `_setDirection()` now re-renders calibrator with `_computeBayesProb(signals, 'short')` |
+| 27/08/2026 | Conviction Calibrator explainer not opening | `.ai-exp-body` class wrong (should be `.ai-expander-body`); also inline `style="display:none"` overriding class toggle. Fixed both. |
+| 28/08/2026 | "In progress" / "Coming soon" badges cluttering deep-dive.html section headers | Badges hidden (`display:none`); `setStatus()` stubbed to no-op |
+| 28/08/2026 | Nav inconsistent across pages; App button still present | All pages updated to: Home \| Market Bulletin \| Stock Deep Dive \| Tools \| Learn. App button removed everywhere. |

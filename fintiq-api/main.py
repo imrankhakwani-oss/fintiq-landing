@@ -1059,6 +1059,17 @@ def _compute_tsr(hist, info, financials, cashflow, balance_sheet, q_financials):
     return res
 
 
+# ── Module-level NaN sanitiser (shared by all background tasks) ────────────────
+import math as _math
+def _clean(obj):
+    if isinstance(obj, float):
+        return None if (_math.isnan(obj) or _math.isinf(obj)) else obj
+    if isinstance(obj, dict):
+        return {k: _clean(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_clean(v) for v in obj]
+    return obj
+
 # ── Fundamentals job cache ─────────────────────────────────────────────────────
 # Stores: {ticker: {status: 'processing'|'done'|'error', data: dict|None, ts: float, error: str}}
 _fund_jobs: dict = {}
@@ -2115,7 +2126,7 @@ def technical_ai_commentary(payload: dict):
     opt = tech.get('options', {})
     curr_price = (tech.get('ohlcv', {}).get('c') or [None])[-1]
 
-    prompt = f"""You are a senior trader and technical analyst at a hedge fund. You combine technical analysis with options flow to identify precise trade setups for timing entries and exits. The stock selection has already been done via fundamental and valuation analysis — your job is purely entry/exit timing.
+    prompt = f"""You are an experienced trader helping a retail investor understand what the charts and options market are telling them about {ticker}. Your job is to explain things clearly and simply — like a knowledgeable friend walking them through the data, not a textbook. Use plain English. When you use a technical term, explain it in a bracket straight away. Avoid jargon. Be specific with price levels. Be direct about what the data says.
 
 TICKER: {ticker}
 CURRENT PRICE: {curr_price}
@@ -2149,36 +2160,500 @@ FUNDAMENTAL CONTEXT: {_json.dumps(fund_ctx, indent=2)[:1500]}
 
 Output EXACTLY in this format (plain text, no markdown, use the ━━ separators):
 
-TREND & MOMENTUM SUMMARY: [2-3 sentences — current technical posture, what the chart is telling you right now]
+━━ WHAT THE CHART IS SAYING ━━
+TREND SUMMARY: [2-3 sentences in plain English. Tell the investor what the overall trend looks like — are buyers or sellers in control? Is the stock above or below its key moving averages and what does that mean? Mention the 52-week position in simple terms.]
+MOMENTUM: [1-2 sentences explaining RSI and MACD in plain English. For example: "The RSI [a speed gauge for price] is at X, which means the stock is [overbought/oversold/neutral — explain what that means for timing]. The MACD [a trend-following signal] is showing [describe the crossover situation and what to watch for]."]
+VOLUME: [1 sentence on what volume is telling us — is there conviction behind the recent move or is it weak?]
+
+━━ WHAT THE OPTIONS MARKET IS SAYING ━━
+OPTIONS EXPLANATION: [3-4 sentences explaining the options data in plain, teaching English. Cover: (1) What does the Put/Call Ratio tell us — are investors buying more protection (puts) or more upside (calls)? (2) What does Max Pain mean and how should the investor think about it — this is the price where options sellers win most, so the stock often drifts toward it near expiry. (3) What do the Put Wall and Call Wall mean — these are big clusters of bets that act like magnets or barriers for the price. (4) Is there any unusual activity and what might it signal? End with one sentence on what the options market overall is suggesting about near-term direction.]
 
 ━━ LONG TRADE SETUP ━━
-ENTRY ZONE: [specific price range with reasoning — anchor to support levels and/or options levels]
-CONFIRMATION NEEDED: [what must happen technically before pulling the trigger — MACD crossover, RSI, price action]
-STOP LOSS: [specific price with reasoning — below key support AND/OR below put wall, what a break means]
-TARGET 1 (near-term): [specific price with reasoning — first resistance or call wall]
-TARGET 2 (stretch): [specific price with reasoning — next major resistance or 52wk high]
-OPTIONS SIGNAL FOR LONG: [how PCR, put wall, max pain, unusual activity supports or contradicts the long]
-RISK TO LONG: [main technical or options risk — squeeze, distribution, volume weakness]
+ENTRY ZONE: [Specific price range. Explain WHY this is the entry — e.g. "Between $X and $Y, because this is where the MA50 [the 50-day average price, a key support level] sits and the put wall provides a floor"]
+WHAT TO WAIT FOR: [In plain English, what signal should the investor see before buying? e.g. "Wait for the stock to hold above $X for two consecutive days, or for the MACD line to cross above the signal line [meaning momentum is turning positive]"]
+STOP LOSS: [Specific price. Explain: "If the stock falls below $X, the trade idea is wrong — this is below the [support level]. A stop loss means you automatically exit to protect yourself from a larger loss."]
+TARGET 1: [Specific price with plain-English reasoning]
+TARGET 2: [Specific price with plain-English reasoning]
+RISK/REWARD: [Calculate and state: "You risk $X to potentially make $Y — that's a 1:Z risk/reward ratio" using the entry midpoint, stop, and Target 1]
 
 ━━ SHORT TRADE SETUP ━━
-ENTRY ZONE: [specific price range with reasoning — anchor to resistance and/or call wall]
-CONFIRMATION NEEDED: [what must fail technically before shorting — rejection candle, MACD, RSI]
-STOP LOSS: [specific price with reasoning — above call wall, short squeeze trigger level]
-TARGET 1 (near-term): [specific price — first support or put wall]
-TARGET 2 (stretch): [specific price — MA200 or 3-month low]
-OPTIONS SIGNAL FOR SHORT: [how PCR, call wall, max pain, unusual activity supports or contradicts the short]
-RISK TO SHORT: [squeeze risk, unusual call activity, momentum]
+ENTRY ZONE: [Specific price range with plain-English reasoning anchored to resistance/call wall]
+WHAT TO WAIT FOR: [Plain English signal — what failure pattern or rejection to look for before shorting]
+STOP LOSS: [Specific price. Remind them: "Shorting means you profit if the price falls. A stop loss above $X protects you if the stock squeezes higher instead."]
+TARGET 1: [Specific price with plain-English reasoning]
+TARGET 2: [Specific price with plain-English reasoning]
+RISK/REWARD: [Calculate and state the ratio as above]
 
-━━ VERDICT ━━
-[2 sentences — which setup has more conviction right now given ALL the data, and what the single most important level to watch is]
+━━ TRADE DASHBOARD ━━
+BIAS: [BULLISH / BEARISH / NEUTRAL — one word, then one sentence on why]
+LONG ENTRY: [single price or tight range]
+LONG STOP: [single price]
+LONG TARGET 1: [single price]
+LONG TARGET 2: [single price]
+SHORT ENTRY: [single price or tight range]
+SHORT STOP: [single price]
+SHORT TARGET 1: [single price]
+SHORT TARGET 2: [single price]
+KEY LEVEL TO WATCH: [The single most important price level right now and why]
+OPTIONS VERDICT: [One sentence — what the options market is telling you to expect over the next 2-4 weeks]
 
-Be specific with price levels. Do not hedge every statement. You are a professional."""
+Be specific. Be simple. Teach as you go."""
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=1400,
+        max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
     )
     return {"commentary": resp.content[0].text.strip()}
+
+
+# ══════════════════════════════════════════════════════════════
+# SECTION 5 — CATALYST TRACKER
+# ══════════════════════════════════════════════════════════════
+
+_catalyst_jobs: dict = {}
+_CATALYST_TTL = 5 * 60
+
+
+def _run_catalyst(ticker: str):
+    """Background thread — collect earnings, analyst, short interest, news data."""
+    import datetime, requests as _req
+    from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FuturesTimeout
+    def _safe(fn, timeout=12, default=None):
+        """Run fn() with a timeout; return default if it hangs or errors.
+        IMPORTANT: shutdown(wait=False) so we don't block on hung yfinance threads."""
+        ex = ThreadPoolExecutor(max_workers=1)
+        try:
+            fut = ex.submit(fn)
+            return fut.result(timeout=timeout)
+        except Exception:
+            return default
+        finally:
+            ex.shutdown(wait=False)  # never wait for a hung thread
+    try:
+        tk = yf.Ticker(ticker)
+        info = _safe(lambda: tk.info, timeout=20) or {}
+        curr_price = info.get('currentPrice') or info.get('regularMarketPrice')
+
+        # ── 1. Earnings ──
+        # Try earningsTimestamp first — but validate it's in the future
+        earnings_ts = info.get('earningsTimestamp') or info.get('earningsTimestampStart')
+        earnings_date = None
+        days_to_earnings = None
+        now_dt = datetime.datetime.now()
+        if earnings_ts:
+            try:
+                ed = datetime.datetime.fromtimestamp(int(earnings_ts))
+                # Only use if it's a future date
+                if ed > now_dt:
+                    earnings_date = ed.strftime('%Y-%m-%d')
+                    days_to_earnings = (ed - now_dt).days
+            except Exception:
+                pass
+
+        # Fetch earnings_dates ONCE — reused for both future date lookup and surprise history
+        _ed_cache = _safe(lambda: tk.earnings_dates, timeout=10)
+
+        # If timestamp was missing/past, look in earnings_dates for next future date
+        if not earnings_date:
+            try:
+                ed_all = _ed_cache
+                if ed_all is not None and not ed_all.empty:
+                    for idx in ed_all.index:
+                        try:
+                            idx_dt = idx.to_pydatetime().replace(tzinfo=None)
+                        except Exception:
+                            try: idx_dt = datetime.datetime.strptime(str(idx)[:10], '%Y-%m-%d')
+                            except Exception: continue
+                        if idx_dt > now_dt:
+                            earnings_date = idx_dt.strftime('%Y-%m-%d')
+                            days_to_earnings = (idx_dt - now_dt).days
+                            break
+            except Exception:
+                pass
+
+        # Calendar — EPS + revenue estimates for next quarter
+        eps_estimate = None
+        rev_estimate_low = None
+        rev_estimate_high = None
+        rev_estimate_avg = None
+        try:
+            cal = _safe(lambda: tk.calendar, timeout=10)
+            if cal is not None:
+                # calendar can be a dict or DataFrame depending on yfinance version
+                if isinstance(cal, dict):
+                    eps_estimate = cal.get('Earnings Average') or cal.get('EPS Estimate')
+                    rev_estimate_avg = cal.get('Revenue Average')
+                    rev_estimate_low = cal.get('Revenue Low')
+                    rev_estimate_high = cal.get('Revenue High')
+                elif hasattr(cal, 'loc'):
+                    def _cal(k):
+                        try: return float(cal.loc[k].iloc[0])
+                        except Exception: return None
+                    eps_estimate = _cal('Earnings Average') or _cal('EPS Estimate')
+                    rev_estimate_avg = _cal('Revenue Average')
+                    rev_estimate_low  = _cal('Revenue Low')
+                    rev_estimate_high = _cal('Revenue High')
+        except Exception:
+            pass
+
+        # Earnings surprise history — last 4 reported quarters (use cached earnings_dates)
+        surprises = []
+        try:
+            ed_df = _ed_cache
+            if ed_df is not None and not ed_df.empty:
+                past = ed_df[ed_df.get('Reported EPS', ed_df.iloc[:, 1] if ed_df.shape[1] > 1 else ed_df.iloc[:, 0]).notna()].head(4)
+                for idx, row in past.iterrows():
+                    est = row.get('EPS Estimate') if 'EPS Estimate' in row else None
+                    act = row.get('Reported EPS') if 'Reported EPS' in row else None
+                    if act is None:
+                        continue
+                    try:
+                        est_f = float(est) if est is not None else None
+                        act_f = float(act)
+                        surp = round((act_f - est_f) / abs(est_f) * 100, 1) if est_f and est_f != 0 else None
+                        surprises.append({
+                            'date': str(idx.date()) if hasattr(idx, 'date') else str(idx)[:10],
+                            'estimate': round(est_f, 2) if est_f is not None else None,
+                            'actual':   round(act_f, 2),
+                            'surprise_pct': surp,
+                            'beat': act_f > est_f if est_f is not None else None
+                        })
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
+        # Analyst estimate revisions (30d change from info fields)
+        eps_fwd = info.get('forwardEps')
+        eps_ttm = info.get('trailingEps')
+        revenue_growth = info.get('revenueGrowth')
+        earnings_growth = info.get('earningsGrowth')
+        analyst_revisions = {
+            'eps_fwd': round(eps_fwd, 2) if eps_fwd else None,
+            'eps_ttm': round(eps_ttm, 2) if eps_ttm else None,
+            'revenue_growth_yoy': round(revenue_growth * 100, 1) if revenue_growth else None,
+            'earnings_growth_yoy': round(earnings_growth * 100, 1) if earnings_growth else None,
+        }
+
+        # ── 2. Analyst Ratings ──
+        target_mean = info.get('targetMeanPrice')
+        target_high = info.get('targetHighPrice')
+        target_low  = info.get('targetLowPrice')
+        num_analysts = info.get('numberOfAnalystOpinions')
+        rec_key  = (info.get('recommendationKey') or '').lower()
+        rec_mean = info.get('recommendationMean')  # 1.0=Strong Buy … 5.0=Strong Sell
+        target_upside = round((target_mean - curr_price) / curr_price * 100, 1) if target_mean and curr_price else None
+
+        # Recent upgrades/downgrades (last 60 days)
+        recent_changes = []
+        try:
+            upg = _safe(lambda: tk.upgrades_downgrades, timeout=10)
+            if upg is not None and not upg.empty:
+                upg = upg.reset_index()
+                cutoff = datetime.datetime.now() - datetime.timedelta(days=60)
+                if 'GradeDate' in upg.columns:
+                    upg['GradeDate'] = pd.to_datetime(upg['GradeDate'], errors='coerce')
+                    recent = upg[upg['GradeDate'] >= cutoff].head(6)
+                    for _, row in recent.iterrows():
+                        action = str(row.get('Action', '')).strip()
+                        if action.lower() in ('up', 'down', 'init', 'main', 'reit'):
+                            label = {'up': 'Upgrade', 'down': 'Downgrade', 'init': 'Initiated', 'main': 'Maintained', 'reit': 'Reiterated'}.get(action.lower(), action)
+                            recent_changes.append({
+                                'date': str(row['GradeDate'].date()),
+                                'firm': str(row.get('Firm', '')),
+                                'action': label,
+                                'from_grade': str(row.get('FromGrade', '')),
+                                'to_grade': str(row.get('ToGrade', ''))
+                            })
+        except Exception:
+            pass
+
+        # ── 3. Short Interest ──
+        short_pct_raw = info.get('shortPercentOfFloat')
+        short_pct = round(short_pct_raw * 100, 1) if short_pct_raw else None
+        short_ratio = info.get('shortRatio')
+        shares_short = info.get('sharesShort')
+        float_shares = info.get('floatShares')
+
+        squeeze_score = 'LOW'
+        squeeze_color = 'green'
+        squeeze_signal = 'Low short interest — minimal squeeze risk'
+        if short_pct:
+            if short_pct > 20:
+                squeeze_score = 'HIGH'
+                squeeze_color = 'red'
+                squeeze_signal = f'{short_pct}% of the float is sold short — very high squeeze potential if a positive catalyst hits'
+            elif short_pct > 10:
+                squeeze_score = 'MODERATE'
+                squeeze_color = 'amber'
+                squeeze_signal = f'{short_pct}% of the float is sold short — moderate squeeze risk worth watching'
+            else:
+                squeeze_signal = f'{short_pct}% of the float is sold short — low squeeze risk'
+
+        # ── 4. News via Tavily ──
+        news_items = []
+        if TAVILY_API_KEY:
+            try:
+                company_name = info.get('longName') or ticker
+                resp_tv = _req.post('https://api.tavily.com/search', json={
+                    'api_key': TAVILY_API_KEY,
+                    'query': f'{company_name} {ticker} stock news earnings analyst 2026',
+                    'search_depth': 'basic',
+                    'max_results': 7,
+                    'include_answer': False
+                }, timeout=12)
+                if resp_tv.ok:
+                    for r in resp_tv.json().get('results', []):
+                        news_items.append({
+                            'title':     r.get('title', ''),
+                            'url':       r.get('url', ''),
+                            'published': (r.get('published_date') or '')[:10],
+                            'snippet':   (r.get('content') or '')[:250]
+                        })
+            except Exception:
+                pass
+
+        result = {
+            'status': 'done',
+            'ticker': ticker,
+            'price': curr_price,
+            'earnings': {
+                'next_date': earnings_date,
+                'days_to': days_to_earnings,
+                'eps_estimate': round(eps_estimate, 2) if eps_estimate else None,
+                'rev_estimate_avg': int(rev_estimate_avg) if rev_estimate_avg else None,
+                'rev_estimate_low': int(rev_estimate_low) if rev_estimate_low else None,
+                'rev_estimate_high': int(rev_estimate_high) if rev_estimate_high else None,
+                'eps_ttm': round(eps_ttm, 2) if eps_ttm else None,
+                'surprise_history': surprises,
+                'analyst_revisions': analyst_revisions,
+            },
+            'analyst': {
+                'target_mean':    round(target_mean, 2) if target_mean else None,
+                'target_high':    round(target_high, 2) if target_high else None,
+                'target_low':     round(target_low, 2) if target_low else None,
+                'target_upside':  target_upside,
+                'num_analysts':   num_analysts,
+                'recommendation': rec_key,
+                'recommendation_mean': round(rec_mean, 1) if rec_mean else None,
+                'recent_changes': recent_changes,
+            },
+            'short_interest': {
+                'short_pct':      short_pct,
+                'days_to_cover':  round(float(short_ratio), 1) if short_ratio else None,
+                'squeeze_score':  squeeze_score,
+                'squeeze_color':  squeeze_color,
+                'squeeze_signal': squeeze_signal,
+            },
+            'news': news_items,
+            'ts': time.time()
+        }
+        _catalyst_jobs[ticker] = _clean(result)
+
+    except Exception as e:
+        _catalyst_jobs[ticker] = {'status': 'error', 'error': str(e), 'ts': time.time()}
+
+
+@app.get("/catalyst")
+def get_catalyst(ticker: str):
+    ticker = ticker.upper().strip()
+    now = time.time()
+    job = _catalyst_jobs.get(ticker)
+    if job:
+        if job.get('status') == 'done' and now - job.get('ts', 0) < _CATALYST_TTL:
+            return job
+        if job.get('status') == 'processing' and now - job.get('ts', 0) < 90:
+            return {"status": "processing"}
+    _catalyst_jobs[ticker] = {'status': 'processing', 'data': None, 'ts': now}
+    threading.Thread(target=_run_catalyst, args=(ticker,), daemon=True).start()
+    return {"status": "processing"}
+
+
+@app.get("/catalyst/status")
+def get_catalyst_status(ticker: str):
+    ticker = ticker.upper().strip()
+    job = _catalyst_jobs.get(ticker)
+    if not job:
+        return {"status": "not_started"}
+    return job
+
+
+@app.post("/catalyst/ai-summary")
+def catalyst_ai_summary(payload: dict):
+    """AI analyst generates comprehensive catalyst assessment in plain English."""
+    ticker   = payload.get("ticker", "").upper()
+    cat_data = payload.get("catalyst_data", {})
+    fund_ctx = payload.get("fundamentals_summary", {})
+
+    if not ticker or not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=400, detail="ticker required")
+
+    import json as _json
+    ea  = cat_data.get('earnings', {})
+    an  = cat_data.get('analyst', {})
+    si  = cat_data.get('short_interest', {})
+    news = cat_data.get('news', [])
+    price = cat_data.get('price')
+
+    # Format earnings surprise history
+    surp_txt = ''
+    for s in ea.get('surprise_history', []):
+        beat = '✅ BEAT' if s.get('beat') else ('❌ MISSED' if s.get('beat') is False else '—')
+        surp_txt += f"  {s.get('date','')}: Est ${s.get('estimate','?')} → Actual ${s.get('actual','?')} ({'+' if (s.get('surprise_pct') or 0) > 0 else ''}{s.get('surprise_pct','?')}%) {beat}\n"
+
+    # Format recent analyst changes
+    changes_txt = ''
+    for c in an.get('recent_changes', []):
+        changes_txt += f"  {c.get('date','')} | {c.get('firm','')} | {c.get('action','')} | {c.get('from_grade','')} → {c.get('to_grade','')}\n"
+
+    # Format news headlines
+    news_txt = ''
+    for n in news[:6]:
+        news_txt += f"  • {n.get('title','')}\n    {n.get('snippet','')[:120]}\n"
+
+    rec_label = {
+        'strongbuy': 'Strong Buy', 'buy': 'Buy', 'hold': 'Hold',
+        'underperform': 'Underperform', 'sell': 'Sell'
+    }.get((an.get('recommendation') or '').replace(' ','').lower(), an.get('recommendation', 'Unknown'))
+
+    prompt = f"""You are a senior equity analyst. Give a sharp, concise catalyst briefing for {ticker} at ${price}. Plain English only — no jargon without explanation. Be direct and specific.
+
+DATA:
+- Next earnings: {ea.get('next_date', 'Unknown')} ({ea.get('days_to', '?')} days away)
+- EPS estimate: ${ea.get('eps_estimate', 'N/A')} | Rev estimate: {'{:,.0f}'.format(ea.get('rev_estimate_avg')) if ea.get('rev_estimate_avg') else 'N/A'}
+- Beat/miss history (last 4Q): {surp_txt or 'N/A'}
+- Rev growth YoY: {ea.get('analyst_revisions', {}).get('revenue_growth_yoy', 'N/A')}% | EPS growth: {ea.get('analyst_revisions', {}).get('earnings_growth_yoy', 'N/A')}%
+- Analyst consensus: {rec_label} | Target: ${an.get('target_mean', '?')} ({an.get('target_upside', '?')}% upside) | {an.get('num_analysts', '?')} analysts
+- Recent changes: {changes_txt or 'None'}
+- Short float: {si.get('short_pct', '?')}% | Days to cover: {si.get('days_to_cover', '?')} | Squeeze: {si.get('squeeze_score', '?')}
+- News: {news_txt or 'None'}
+
+Write exactly 5 SHORT sections (2-4 sentences each). Use these exact headers on their own line:
+
+▸ EARNINGS TIMING
+Should I enter before or after earnings? State the date, the risk/reward, and what the beat history suggests. Be direct.
+
+▸ ANALYST DIRECTION
+Is sentiment improving or stagnating? Focus on direction of change, not just the rating. One or two sentences max on what recent moves signal.
+
+▸ SQUEEZE POTENTIAL
+Is short interest meaningful? If <5% float shorted, say it's not a factor. If high, explain what a squeeze means in one sentence.
+
+▸ WHAT'S PRICED IN
+Based on news, what concern or theme is the market focused on? If that concern is resolved, the stock re-rates. If it's valid, it's a risk.
+
+▸ VERDICT
+One clear recommendation: what's the key event to watch and when. What does the investor do now vs. after earnings. 2 sentences max.
+
+Total length: 200-250 words. No long paragraphs. Specific numbers and dates."""
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=600,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return {"summary": resp.content[0].text.strip()}
+
+
+# ══════════════════════════════════════════════════════
+# SECTION 6 — DECISION ANALYSIS
+# ══════════════════════════════════════════════════════
+
+@app.post("/decision/ai-challenge")
+async def decision_ai_challenge(payload: dict):
+    ticker    = payload.get("ticker", "")
+    direction = payload.get("direction", "long")   # 'long' | 'short'
+    thesis    = payload.get("thesis", "")
+    signals   = payload.get("signals", [])
+    fund      = payload.get("fundamentals_summary") or {}
+    tech      = payload.get("technical_summary") or {}
+    cat       = payload.get("catalyst_summary") or {}
+    dcf       = payload.get("dcf_summary") or {}
+
+    sig_txt = "\n".join([f"  {s['label']}: {s['signal'].upper()} — {s['status']} — {s.get('detail','')}" for s in signals])
+
+    # ── Optional: fetch fresh web context via Tavily ──
+    web_ctx = ""
+    if TAVILY_API_KEY:
+        import requests as _req2
+        try:
+            tv = _req2.post('https://api.tavily.com/search', json={
+                'api_key': TAVILY_API_KEY,
+                'query': f'{ticker} stock analysis revenue growth segments business outlook 2025 2026',
+                'search_depth': 'basic', 'max_results': 4, 'include_answer': True
+            }, timeout=8)
+            if tv.ok:
+                tvj = tv.json()
+                if tvj.get('answer'):
+                    web_ctx += f"\nWEB RESEARCH SUMMARY: {tvj['answer'][:600]}"
+                for r in tvj.get('results', [])[:3]:
+                    web_ctx += f"\n• {r.get('title','')}: {(r.get('content',''))[:200]}"
+        except Exception:
+            pass
+
+    if direction == "long":
+        role_desc = "a seasoned short-seller and hedge fund bear analyst"
+        opp_role = "BULL"
+        instruction = """Challenge this bull thesis with institutional-grade depth. You must:
+1. Break down the DCF implied growth rate by business segment — what revenue each segment would need to deliver, and whether that is realistic given current trajectory and market size constraints.
+2. Identify the single most dangerous assumption in the thesis and stress-test it with specific numbers.
+3. Connect the technical picture, valuation, and fundamental data to show why the risk/reward is unfavourable.
+Be brutally specific — cite exact figures from the data provided."""
+    else:
+        role_desc = "a top-tier long-only fund manager and hedge fund bull analyst"
+        opp_role = "BEAR"
+        instruction = """Challenge this bear thesis with institutional-grade depth. You must:
+1. Break down what the company's key business segments could realistically achieve and how that maps to a credible growth path — use specific segment-level logic.
+2. Identify what the bear is most likely wrong about — cite specific data that contradicts their view.
+3. Connect catalyst timing, technical setup, and valuation to show why the upside case is underappreciated.
+Be specific — cite exact figures from the data provided."""
+
+    prompt = f"""You are {role_desc} reviewing an investment thesis on {ticker}.
+
+INVESTOR'S {direction.upper()} THESIS:
+"{thesis}"
+
+QUANTITATIVE CONTEXT:
+- DCF fair value: {dcf.get('equity_ps','—')} vs current price {dcf.get('price','—')} — implied revenue growth baked in: {dcf.get('implied_growth','—')}%
+- Signals: {sig_txt}
+- Fundamentals: Quality={fund.get('quality',{})}, Multiples={fund.get('multiples',{})}
+- Technical: Trend={tech.get('trend','—')}, Momentum={tech.get('momentum','—')}
+- Catalyst: Next earnings={cat.get('earnings',{}).get('next_date','—')}, Analyst consensus={cat.get('analyst',{}).get('recommendation','—')}, Short squeeze={cat.get('short_interest',{}).get('squeeze_score','—')}
+{web_ctx}
+
+{instruction}
+
+Then write a VERDICT paragraph that does two things:
+(a) "Your {direction} thesis is correct if..." — state the specific conditions (metrics, events, timeframe) that would validate it.
+(b) Give your judgemental probability: "I assign X% probability to this thesis playing out over the next 12 months because..." — be direct, not wishy-washy.
+
+Respond in this EXACT JSON format (no markdown, no extra text):
+{{
+  "counters": [
+    {{"title": "Short counter-argument title", "argument": "3-4 sentences with specific numbers, segment breakdowns, and data references. Connect dots across fundamentals, valuation and technicals."}},
+    {{"title": "Short counter-argument title", "argument": "3-4 sentences with specific numbers, segment breakdowns, and data references."}},
+    {{"title": "Short counter-argument title", "argument": "3-4 sentences with specific numbers, segment breakdowns, and data references."}}
+  ],
+  "summary": "Your {direction} thesis is correct if [specific conditions]. I assign [X]% probability to this playing out over 12 months because [specific reasoning connecting valuation, fundamentals, and catalysts]."
+}}"""
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    resp = client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=1800,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    import json as _json2, re as _re2
+    raw = resp.content[0].text.strip()
+    # Strip markdown code fences if present
+    raw = _re2.sub(r'^```(?:json)?\s*', '', raw)
+    raw = _re2.sub(r'\s*```$', '', raw.strip())
+    try:
+        result = _json2.loads(raw)
+    except Exception:
+        result = {"counters": [], "summary": raw}
+    return result
 
