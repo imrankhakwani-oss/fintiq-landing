@@ -374,6 +374,57 @@
     h2 { text-align: center; font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 800; margin-bottom: 14px; letter-spacing: -0.5px; }
     .section-sub { text-align: center; color: var(--muted); max-width: 560px; margin: 0 auto; font-size: 0.97rem; }
 
+    /* ── VIDEO SECTION ── */
+    .video-section { padding: 80px 5%; background: var(--navy-mid); text-align: center; }
+    .video-wrap {
+      max-width: 840px; margin: 48px auto 0;
+      border-radius: 14px; overflow: hidden;
+      border: 1px solid rgba(245,158,11,0.25);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+      background: #000; position: relative;
+    }
+    .video-wrap iframe { width: 100%; aspect-ratio: 16/9; display: block; border: none; }
+    .video-placeholder {
+      width: 100%; aspect-ratio: 16/9;
+      background: rgba(13,31,53,0.9);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; cursor: pointer;
+    }
+    .video-placeholder .play-btn {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--gold); display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+    }
+    .video-placeholder p { color: var(--muted); font-size: 0.9rem; }
+
+    /* ── LEARN & TOOLS ROW ── */
+    .extras-section { padding: 70px 5%; background: var(--navy); }
+    .extras-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 24px; max-width: 900px; margin: 48px auto 0;
+    }
+    .extras-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 16px; padding: 36px 32px;
+      display: flex; gap: 24px; align-items: flex-start;
+      transition: border-color 0.2s, transform 0.2s;
+      text-decoration: none; color: inherit;
+    }
+    .extras-card:hover { border-color: rgba(245,158,11,0.5); transform: translateY(-3px); }
+    .extras-card-icon { font-size: 2.4rem; flex-shrink: 0; }
+    .extras-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .extras-card p { font-size: 0.87rem; color: var(--muted); line-height: 1.7; margin-bottom: 14px; }
+    .extras-card .extras-items { display: flex; flex-wrap: wrap; gap: 6px; }
+    .extras-item {
+      font-size: 0.72rem; font-weight: 600; color: var(--gold);
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      padding: 3px 10px; border-radius: 10px;
+    }
+    @media (max-width: 640px) {
+      .extras-grid { grid-template-columns: 1fr; }
+      .video-section, .extras-section { padding: 56px 5%; }
+    }
+
     /* ── AI ANALYST ── */
     .ai-analyst { padding: 80px 5%; background: var(--navy); }
     .ai-analyst-inner {
@@ -810,6 +861,60 @@
   </div>
 </section>
 
+<!-- ═══ VIDEO DEMO ═══ -->
+<section class="video-section" id="demo">
+  <div class="section-label">See It In Action</div>
+  <h2>A Full AAPL Deep Dive — <span class="gold">In 90 Seconds</span></h2>
+  <p class="section-sub">Watch a complete institutional analysis run from ticker entry to Conviction Calibrator output.</p>
+  <div class="video-wrap" id="videoWrap">
+    <!-- Replace VIDEO_ID below with your YouTube video ID once recorded -->
+    <!-- e.g. if your URL is https://youtu.be/dQw4w9WgXcQ the ID is dQw4w9WgXcQ -->
+    <div class="video-placeholder" id="videoPlaceholder" onclick="loadVideo()">
+      <div class="play-btn">▶</div>
+      <p>Demo video coming soon — record a 90-second Deep Dive walkthrough and drop the YouTube ID in here</p>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ LEARN & TOOLS ═══ -->
+<section class="extras-section" id="extras">
+  <div class="section-label">Also on Fintiq</div>
+  <h2>Free Tools &amp; Investment Guides</h2>
+  <p class="section-sub">Beyond the Deep Dive, Fintiq offers standalone calculators and in-depth educational guides written specifically for retail investors.</p>
+  <div class="extras-grid">
+
+    <a href="/tools.html" class="extras-card">
+      <div class="extras-card-icon">🛠️</div>
+      <div>
+        <h3>Free Tools</h3>
+        <p>Standalone investment calculators you can use without running a full Deep Dive — useful for quick sanity checks and scenario planning.</p>
+        <div class="extras-items">
+          <span class="extras-item">UK Pension Planner</span>
+          <span class="extras-item">Factor Screener</span>
+          <span class="extras-item">DCF Calculator</span>
+          <span class="extras-item">Position Sizer</span>
+        </div>
+      </div>
+    </a>
+
+    <a href="/learn.html" class="extras-card">
+      <div class="extras-card-icon">📚</div>
+      <div>
+        <h3>Investment Guides</h3>
+        <p>20+ in-depth guides covering everything from reading a balance sheet to running a Monte Carlo simulation — written in plain English, no finance degree needed.</p>
+        <div class="extras-items">
+          <span class="extras-item">DCF Valuation</span>
+          <span class="extras-item">Monte Carlo</span>
+          <span class="extras-item">Kelly Criterion</span>
+          <span class="extras-item">ISA & SIPP</span>
+          <span class="extras-item">Technical Analysis</span>
+        </div>
+      </div>
+    </a>
+
+  </div>
+</section>
+
 <!-- ═══ DAILY BULLETIN ═══ -->
 <section class="bulletin-strip" id="bulletin">
   <div class="bulletin-inner">
@@ -819,23 +924,10 @@
       <p>Every morning, Fintiq's AI publishes a concise institutional-style brief — overnight moves, macro events, sector rotation, upcoming earnings, and what it all means for your positions.</p>
       <a href="/bulletin.html" class="btn-primary">Read Today's Bulletin →</a>
     </div>
-    <div class="bulletin-preview">
-      <div class="bp-date">Market Bulletin — Sample</div>
-      <div class="bulletin-item">
-        <div class="bi-dot"></div>
-        <p><strong>S&P 500</strong> — Futures pointing to a gap-up open after stronger-than-expected non-farm payrolls. Watch the 5,500 resistance level for conviction.</p>
-      </div>
-      <div class="bulletin-item">
-        <div class="bi-dot"></div>
-        <p><strong>Macro</strong> — Fed minutes released this week. Market pricing in one cut in Q4. TIPS breakevens ticking higher — watch for rotation from growth to value.</p>
-      </div>
-      <div class="bulletin-item">
-        <div class="bi-dot"></div>
-        <p><strong>Earnings this week</strong> — NVDA, CRM, COST. Implied moves suggest elevated IV — consider selling premium into earnings if you're already long.</p>
-      </div>
-      <div class="bulletin-item">
-        <div class="bi-dot"></div>
-        <p><strong>Sector rotation</strong> — Energy and financials seeing institutional accumulation. Tech holding but momentum diverging from price — watch MACD weekly.</p>
+    <div class="bulletin-preview" id="hp-bulletin-preview">
+      <div class="bp-date" id="hp-bulletin-date">Loading today's bulletin…</div>
+      <div id="hp-bulletin-items" style="color:var(--muted);font-size:0.82rem;min-height:120px;display:flex;align-items:center;justify-content:center">
+        <span>Fetching live market brief…</span>
       </div>
     </div>
   </div>
@@ -937,7 +1029,18 @@
 <footer>
   <div class="footer-top">
     <div class="footer-brand">
-      <div class="logo">📊 Fintiq</div>
+      <div class="logo" style="display:flex;align-items:center;gap:8px">
+        <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+          <line x1="5" y1="19" x2="5" y2="22" stroke="#22c55e" stroke-width="1.2"/>
+          <rect x="3.5" y="19" width="3" height="3" rx="0.5" fill="#22c55e"/>
+          <line x1="12" y1="11" x2="12" y2="13" stroke="#22c55e" stroke-width="1.2"/>
+          <rect x="10.5" y="13" width="3" height="5" rx="0.5" fill="#22c55e"/>
+          <line x1="19" y1="4" x2="19" y2="7" stroke="#22c55e" stroke-width="1.2"/>
+          <rect x="17.5" y="7" width="3" height="9" rx="0.5" fill="#22c55e"/>
+          <polyline points="5,18 12,13 19,7" stroke="#22c55e" stroke-width="1.2" fill="none" opacity="0.45"/>
+        </svg>
+        Fintiq
+      </div>
       <p>From curiosity to conviction. Institutional-grade stock analysis for retail investors — free, no account needed.</p>
       <p style="margin-top:12px;font-size:0.78rem;color:#64748b;line-height:1.6">
         Fintiq Ltd<br>
@@ -1005,6 +1108,59 @@
 </nav>
 
 <script>
+  // Live bulletin fetch for homepage preview
+  (async function loadBulletinPreview() {
+    const dateEl = document.getElementById('hp-bulletin-date');
+    const itemsEl = document.getElementById('hp-bulletin-items');
+    try {
+      const res = await fetch('https://api.fintiq.uk/bulletin', { signal: AbortSignal.timeout(10000) });
+      if (!res.ok) throw new Error('API error');
+      const data = await res.json();
+
+      // Show today's date
+      const today = new Date().toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+      dateEl.textContent = 'Market Bulletin · ' + today;
+
+      // Extract up to 4 bullet points from the bulletin text
+      const text = data.bulletin || data.content || data.text || '';
+      // Split on common bullet patterns: newlines starting with -, •, *, or numbered
+      const lines = text.split('\n')
+        .map(l => l.replace(/^[\-\*•·]\s*/, '').replace(/^\d+\.\s*/, '').trim())
+        .filter(l => l.length > 40)  // only substantive lines
+        .slice(0, 4);
+
+      if (lines.length === 0) throw new Error('No content');
+
+      itemsEl.innerHTML = lines.map(line => `
+        <div class="bulletin-item">
+          <div class="bi-dot"></div>
+          <p>${line}</p>
+        </div>`).join('');
+    } catch(e) {
+      // Graceful fallback — show a note instead of broken UI
+      dateEl.textContent = 'Market Bulletin';
+      itemsEl.innerHTML = `
+        <div class="bulletin-item"><div class="bi-dot"></div>
+          <p><strong>Markets</strong> — Live bulletin loads each morning. <a href="/bulletin.html" style="color:var(--gold)">Read today's full brief →</a></p>
+        </div>
+        <div class="bulletin-item"><div class="bi-dot"></div>
+          <p>Covers overnight moves, macro events, sector rotation, upcoming earnings and catalyst alerts — published daily, free.</p>
+        </div>`;
+    }
+  })();
+
+  // Video placeholder — replace VIDEO_ID with actual YouTube ID when ready
+  const YOUTUBE_VIDEO_ID = ''; // e.g. 'dQw4w9WgXcQ'
+  function loadVideo() {
+    if (!YOUTUBE_VIDEO_ID) return;
+    const wrap = document.getElementById('videoWrap');
+    wrap.innerHTML = `<iframe src="https://www.youtube.com/embed/${YOUTUBE_VIDEO_ID}?autoplay=1" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+  }
+  // Hide video section entirely if no video ID yet
+  if (!YOUTUBE_VIDEO_ID) {
+    document.getElementById('demo').style.display = 'none';
+  }
+
   // Hero search
   function heroSearch() {
     const ticker = document.getElementById('heroTicker').value.trim().toUpperCase();
