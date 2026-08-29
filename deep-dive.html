@@ -566,9 +566,10 @@ a{color:var(--gold);text-decoration:none}
   <div class="nav-logo">Fintiq</div>
   <div class="nav-links">
     <a href="/index.html">Home</a>
-    <a href="/bulletin.html">Bulletin</a>
-    <a href="/deep-dive.html" class="active">Deep Dive</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html" class="active">Stock Deep Dive</a>
     <a href="/tools.html">Tools</a>
+    <a href="/learn.html">Learn</a>
   </div>
 </nav>
 
@@ -635,7 +636,7 @@ a{color:var(--gold);text-decoration:none}
         <div class="section-title">Fundamental Analysis</div>
         <div class="section-desc">Business quality, growth, valuation multiples, competitors, TSR</div>
       </div>
-      <span class="section-status ss-pending" id="status-fundamentals">Not started</span>
+      <span class="section-status" id="status-fundamentals" style="display:none"></span>
       <span class="section-chevron" id="chev-fundamentals">▼</span>
     </div>
     <div class="section-body" id="body-fundamentals">
@@ -655,7 +656,7 @@ a{color:var(--gold);text-decoration:none}
         <div class="section-title">Valuation</div>
         <div class="section-desc">DCF, Monte Carlo, sensitivity grid, Graham number, sector multiples</div>
       </div>
-      <span class="section-status ss-pending" id="status-valuation">Coming soon</span>
+      <span class="section-status" id="status-valuation" style="display:none"></span>
       <span class="section-chevron" id="chev-valuation">▼</span>
     </div>
     <div class="section-body" id="body-valuation">
@@ -674,7 +675,7 @@ a{color:var(--gold);text-decoration:none}
         <div class="section-title">Technical Analysis</div>
         <div class="section-desc">Price chart, MA, RSI, MACD, support/resistance, trend classification</div>
       </div>
-      <span class="section-status ss-pending" id="status-technical">Coming soon</span>
+      <span class="section-status" id="status-technical" style="display:none"></span>
       <span class="section-chevron" id="chev-technical">▼</span>
     </div>
     <div class="section-body" id="body-technical">
@@ -696,7 +697,7 @@ a{color:var(--gold);text-decoration:none}
         <div class="section-title">Risk &amp; Position Sizing</div>
         <div class="section-desc">Monte Carlo price paths, stop loss probability, position size calculator, volatility</div>
       </div>
-      <span class="section-status ss-pending" id="status-risk">Coming soon</span>
+      <span class="section-status" id="status-risk" style="display:none"></span>
       <span class="section-chevron" id="chev-risk">▼</span>
     </div>
     <div class="section-body" id="body-risk">
@@ -716,7 +717,7 @@ a{color:var(--gold);text-decoration:none}
         <div class="section-title">Catalyst Tracker</div>
         <div class="section-desc">Upcoming earnings, economic events, recent news, options activity</div>
       </div>
-      <span class="section-status ss-pending" id="status-catalyst">Coming soon</span>
+      <span class="section-status" id="status-catalyst" style="display:none"></span>
       <span class="section-chevron" id="chev-catalyst">▼</span>
     </div>
     <div class="section-body" id="body-catalyst">
@@ -736,7 +737,7 @@ a{color:var(--gold);text-decoration:none}
         <div class="section-title">Decision Analysis</div>
         <div class="section-desc">AI challenges your thesis — buy, short or hold — conviction score</div>
       </div>
-      <span class="section-status ss-pending" id="status-decision">Coming soon</span>
+      <span class="section-status" id="status-decision" style="display:none"></span>
       <span class="section-chevron" id="chev-decision">▼</span>
     </div>
     <div class="section-body" id="body-decision">
@@ -892,11 +893,7 @@ function _openAIExp(id) {
 }
 
 function setStatus(name, state) {
-  const el = document.getElementById('status-'+name);
-  el.className = 'section-status';
-  if (state === 'active') { el.classList.add('ss-active'); el.textContent = 'In progress'; el.style.display = ''; }
-  else if (state === 'done') { el.style.display = 'none'; }
-  else { el.classList.add('ss-pending'); el.textContent = 'Not started'; el.style.display = ''; }
+  // Status badges hidden — function kept for compatibility
 }
 
 function updateSessionBadges() {
