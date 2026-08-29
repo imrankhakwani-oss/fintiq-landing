@@ -508,30 +508,6 @@
     .footer-bottom p, .footer-disclaimer { color: var(--muted); font-size: 0.78rem; }
     .footer-disclaimer { max-width: 560px; line-height: 1.55; }
 
-    /* ── DEEP DIVE PREVIEW STRIP ── */
-    .preview-strip {
-      padding: 80px 5%;
-      background: var(--navy);
-      text-align: center;
-    }
-    .preview-images {
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      max-width: 900px;
-      margin: 48px auto 0;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid rgba(245,158,11,0.25);
-      box-shadow: 0 24px 64px rgba(0,0,0,0.5);
-    }
-    .preview-images img {
-      width: 100%;
-      display: block;
-      border-bottom: 1px solid rgba(245,158,11,0.12);
-    }
-    .preview-images img:last-child { border-bottom: none; }
-
     /* ── MOBILE ── */
     @media (max-width: 768px) {
       .nav-hamburger { display: block; }
@@ -727,43 +703,10 @@
   </div>
 
   <!-- Example output callout -->
-  <div class="example-output">
-    <div>
-      <div class="ex-label">Stock Analysed</div>
-      <div class="ex-value">AAPL</div>
-    </div>
-    <div class="ex-divider"></div>
-    <div>
-      <div class="ex-label">Signals</div>
-      <div class="ex-value">4 Green · 1 Amber · 1 Red</div>
-    </div>
-    <div class="ex-divider"></div>
-    <div>
-      <div class="ex-label">Conviction (LONG)</div>
-      <div class="ex-value gold">67%</div>
-    </div>
-    <div class="ex-divider"></div>
-    <div>
-      <div class="ex-label">Half-Kelly Position</div>
-      <div class="ex-value green">4.2% of portfolio</div>
-    </div>
+  <div style="max-width:900px;margin:48px auto 0;border-radius:16px;overflow:hidden;border:1px solid rgba(245,158,11,0.25);box-shadow:0 24px 64px rgba(0,0,0,0.5);">
+    <img src="/img/deep-dive-preview-3.png" alt="Fintiq Deep Dive — Decision Analysis conviction scorecard" style="width:100%;display:block;" loading="lazy" />
   </div>
-  <p class="example-note">Example output for illustration. Results vary by stock and market conditions. Not financial advice.</p>
-</section>
-
-<!-- ═══ DEEP DIVE PREVIEW STRIP ═══ -->
-<section class="preview-strip">
-  <div class="section-label">See It In Action</div>
-  <h2>What a <span class="gold">Full Deep Dive</span> Looks Like</h2>
-  <p class="section-sub">Real output from a live AAPL analysis — ticker search, six analysis sections, and the Conviction Scorecard with position sizing.</p>
-  <div class="preview-images">
-    <img src="/img/deep-dive-preview-1.png" alt="Fintiq Stock Deep Dive — ticker search and stock header" loading="lazy" />
-    <img src="/img/deep-dive-preview-2.png" alt="Fintiq Deep Dive — six analysis sections expanded" loading="lazy" />
-    <img src="/img/deep-dive-preview-3.png" alt="Fintiq Deep Dive — Decision Analysis conviction scorecard" loading="lazy" />
-  </div>
-  <div style="text-align:center;margin-top:32px">
-    <a href="/deep-dive.html" class="btn-primary">Try It Now — Any Stock, Free →</a>
-  </div>
+  <p class="example-note">Live output from a real AAPL analysis. Results vary by stock and market conditions. Not financial advice.</p>
 </section>
 
 <!-- ═══ 6 ANALYSIS SECTIONS ═══ -->
