@@ -374,6 +374,64 @@
     h2 { text-align: center; font-size: clamp(1.8rem, 3vw, 2.5rem); font-weight: 800; margin-bottom: 14px; letter-spacing: -0.5px; }
     .section-sub { text-align: center; color: var(--muted); max-width: 560px; margin: 0 auto; font-size: 0.97rem; }
 
+    /* ── AI ANALYST ── */
+    .ai-analyst { padding: 80px 5%; background: var(--navy); }
+    .ai-analyst-inner {
+      max-width: 960px; margin: 56px auto 0;
+      display: flex; gap: 56px; align-items: center; flex-wrap: wrap;
+    }
+    .ai-analyst-text { flex: 1; min-width: 260px; }
+    .ai-analyst-text h3 { font-size: clamp(1.4rem, 2.5vw, 1.9rem); font-weight: 800; margin-bottom: 14px; }
+    .ai-analyst-text p { color: var(--muted); font-size: 0.95rem; line-height: 1.8; margin-bottom: 20px; }
+    .ai-features { list-style: none; margin-bottom: 28px; }
+    .ai-features li {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 7px 0; font-size: 0.9rem; color: var(--muted);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .ai-features li:last-child { border-bottom: none; }
+    .ai-features li span.tick { color: var(--gold); font-weight: 700; flex-shrink: 0; }
+    .ai-chat-mock {
+      flex: 1.1; min-width: 300px;
+      background: rgba(13,31,53,0.95); border: 1px solid rgba(245,158,11,0.25);
+      border-radius: 16px; overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .ai-chat-header {
+      background: rgba(245,158,11,0.08); border-bottom: 1px solid rgba(245,158,11,0.15);
+      padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+    }
+    .ai-chat-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--gold); display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; font-weight: 900; color: var(--navy);
+    }
+    .ai-chat-name { font-size: 0.85rem; font-weight: 700; }
+    .ai-chat-sub { font-size: 0.72rem; color: var(--muted); }
+    .ai-chat-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+    .chat-bubble {
+      max-width: 88%; padding: 11px 15px; border-radius: 14px;
+      font-size: 0.82rem; line-height: 1.6;
+    }
+    .chat-bubble.user {
+      align-self: flex-end; background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.2); color: var(--text);
+      border-bottom-right-radius: 4px;
+    }
+    .chat-bubble.ai {
+      align-self: flex-start; background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08); color: var(--muted);
+      border-bottom-left-radius: 4px;
+    }
+    .chat-bubble.ai strong { color: var(--text); }
+    .chat-bubble.ai .ai-label {
+      font-size: 0.68rem; color: var(--gold); font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px;
+    }
+    @media (max-width: 768px) {
+      .ai-analyst-inner { flex-direction: column; }
+    }
+
     /* ── FOOTER ── */
     footer {
       background: #050d18; border-top: 1px solid var(--border);
@@ -493,7 +551,7 @@
 
     <div class="hero-badge">🌍 Any Stock · Any Market · Institutional-Grade Analysis</div>
 
-    <h1>Stop Guessing.<br>Start <span class="gold">Investing.</span></h1>
+    <h1>Stop Speculating.<br>Start <span class="gold">Investing.</span></h1>
 
     <p class="hero-tagline" style="margin-top:16px">
       Enter any stock ticker. Fintiq runs the same 6-step analysis a hedge fund analyst uses —
@@ -707,6 +765,51 @@
   </div>
 </section>
 
+<!-- ═══ FINTIQ AI ANALYST ═══ -->
+<section class="ai-analyst" id="ai-analyst">
+  <div class="section-label">Unique to Fintiq</div>
+  <h2>Meet the <span class="gold">Fintiq AI Analyst</span></h2>
+  <p class="section-sub">Every section of the Deep Dive includes an AI Analyst you can talk to — ask questions, probe the data, and have your investment thesis challenged before you commit a single penny.</p>
+
+  <div class="ai-analyst-inner">
+    <div class="ai-analyst-text">
+      <h3>Your Personal Hedge Fund Analyst — On Demand</h3>
+      <p>Static analysis tells you what the numbers are. The Fintiq AI Analyst tells you <em>what they mean for your specific thesis</em> — and pushes back when your reasoning has gaps.</p>
+      <ul class="ai-features">
+        <li><span class="tick">→</span> Ask any question about the fundamentals, valuation, or technicals — in plain English</li>
+        <li><span class="tick">→</span> Get Bear/Base/Bull DCF scenarios explained with the reasoning behind each assumption</li>
+        <li><span class="tick">→</span> Receive AI-generated long and short trade setups with specific entry zones, stops and targets</li>
+        <li><span class="tick">→</span> Have your investment thesis challenged: "Your thesis is correct if… but breaks down if…"</li>
+        <li><span class="tick">→</span> Download a full institutional-style PDF research report of the complete analysis</li>
+      </ul>
+      <a href="/deep-dive.html" class="btn-primary">Try the AI Analyst →</a>
+    </div>
+
+    <div class="ai-chat-mock">
+      <div class="ai-chat-header">
+        <div class="ai-chat-avatar">F</div>
+        <div>
+          <div class="ai-chat-name">Fintiq AI Analyst</div>
+          <div class="ai-chat-sub">Analysing AAPL · Decision Analysis</div>
+        </div>
+      </div>
+      <div class="ai-chat-body">
+        <div class="chat-bubble user">I'm bullish on Apple. Services revenue is compounding and the installed base is sticky. I want to go long.</div>
+        <div class="chat-bubble ai">
+          <div class="ai-label">Fintiq AI Analyst</div>
+          <strong>Your thesis is directionally sound — but the current price already implies it.</strong> The reverse DCF shows the market is pricing in ~14% annual FCF growth for the next decade. Services has been growing at ~13% — so you need to believe the acceleration continues, not just sustains. <br><br>
+          The key risk: at 28× forward earnings, there is virtually no margin of safety if Services growth decelerates even modestly. What's your stop-loss level and what would change your mind?
+        </div>
+        <div class="chat-bubble user">Good point. What's the Half-Kelly position size given my upside target of $230 and stop at $195?</div>
+        <div class="chat-bubble ai">
+          <div class="ai-label">Fintiq AI Analyst</div>
+          At 67% conviction (your signal profile), upside $230 vs downside $195 from current $212 gives a 2.2:1 reward/risk ratio. <strong>Half-Kelly = 4.2% of portfolio.</strong> That's the mathematically optimal size — enough to matter if you're right, small enough not to hurt badly if you're wrong.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ═══ DAILY BULLETIN ═══ -->
 <section class="bulletin-strip" id="bulletin">
   <div class="bulletin-inner">
@@ -836,6 +939,11 @@
     <div class="footer-brand">
       <div class="logo">📊 Fintiq</div>
       <p>From curiosity to conviction. Institutional-grade stock analysis for retail investors — free, no account needed.</p>
+      <p style="margin-top:12px;font-size:0.78rem;color:#64748b;line-height:1.6">
+        Fintiq Ltd<br>
+        Companies House No. 07989936<br>
+        <a href="mailto:contactfintiq@gmail.com" style="color:#64748b;text-decoration:none;transition:color 0.2s" onmouseover="this.style.color='#F59E0B'" onmouseout="this.style.color='#64748b'">contactfintiq@gmail.com</a>
+      </p>
     </div>
     <div class="footer-links">
       <h4>Tools</h4>
@@ -868,8 +976,9 @@
   <div class="footer-bottom">
     <p>© 2026 Fintiq. All rights reserved.</p>
     <p class="footer-disclaimer">
-      Fintiq provides information and analytical tools for educational purposes only. This is not financial advice.
-      Investing involves risk. Past performance is not indicative of future results. Always do your own research.
+      Fintiq Ltd (Companies House No. 07989936) provides information and analytical tools for educational purposes only.
+      This is not financial advice. Investing involves risk. Past performance is not indicative of future results.
+      Always do your own research. Queries: <a href="mailto:contactfintiq@gmail.com" style="color:inherit;text-decoration:underline">contactfintiq@gmail.com</a>
     </p>
   </div>
 </footer>
