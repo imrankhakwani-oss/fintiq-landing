@@ -554,6 +554,32 @@ a{color:var(--gold);text-decoration:none}
 /* Continuing value note */
 .cv-pct-note{font-size:0.68rem;color:var(--muted);text-align:right;margin-bottom:12px}
 
+/* ── Fintiq AI Copilot ── */
+.copilot-wrap{position:relative;border:1px solid rgba(245,166,35,0.3);border-radius:12px;overflow:hidden;margin-top:20px;background:rgba(245,166,35,0.03)}
+.copilot-locked{pointer-events:none}
+.copilot-paywall-overlay{position:absolute;inset:0;background:rgba(5,15,28,0.88);backdrop-filter:blur(4px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:10}
+.copilot-header{display:flex;align-items:center;gap:10px;padding:12px 16px;background:rgba(245,166,35,0.07);border-bottom:1px solid rgba(245,166,35,0.15)}
+.copilot-icon{width:30px;height:30px;background:linear-gradient(135deg,#f5a623,#e08e00);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;color:#050f1c;font-weight:900;flex-shrink:0}
+.copilot-title{font-weight:700;font-size:0.9rem;color:var(--text)}
+.copilot-sub{font-size:0.68rem;color:var(--muted)}
+.copilot-send{background:linear-gradient(135deg,#f5a623,#e08e00)!important;color:#050f1c!important}
+
+/* ── Investment Committee ── */
+.committee-card{border:1px solid rgba(129,140,248,0.3);border-radius:12px;overflow:hidden;margin-top:24px;background:rgba(129,140,248,0.03)}
+.committee-header{background:rgba(129,140,248,0.08);padding:14px 18px;display:flex;align-items:center;gap:12px}
+.committee-icon{width:36px;height:36px;background:linear-gradient(135deg,#818cf8,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.committee-title{font-weight:700;font-size:0.95rem;color:var(--text)}
+.committee-sub{font-size:0.7rem;color:var(--muted);margin-top:2px}
+.committee-body{padding:16px 18px}
+.committee-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.committee-pillar{background:rgba(129,140,248,0.07);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:8px 10px;font-size:0.68rem;color:var(--dim);text-align:center}
+.committee-pillar strong{display:block;font-size:0.75rem;color:var(--text);margin-bottom:3px}
+.committee-btn{width:100%;background:linear-gradient(135deg,#818cf8,#6366f1);color:#fff;border:none;border-radius:8px;padding:11px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:opacity .15s;letter-spacing:.02em}
+.committee-btn:hover{opacity:.88}
+.committee-btn:disabled{opacity:.5;cursor:not-allowed}
+.committee-output{margin-top:14px;display:none}
+.committee-beta{font-size:0.6rem;background:rgba(129,140,248,0.15);color:#818cf8;border:1px solid rgba(129,140,248,0.3);border-radius:20px;padding:2px 8px;margin-left:8px;font-weight:700}
+
 /* ── Thesis Capture Box ── */
 .thesis-capture{display:none;margin:20px 0 4px;border:1px solid rgba(245,166,35,0.3);border-radius:12px;overflow:hidden;animation:fadeSlideUp .35s ease}
 .thesis-capture.visible{display:block}
@@ -802,7 +828,7 @@ let _session = {
 };
 
 // Per-section chat message history
-let _chatHistory = { fundamentals: [], valuation: [], technical: [], catalyst: [], decision: [] };
+let _chatHistory = { fundamentals: [], valuation: [], technical: [], catalyst: [], risk: [], decision: [] };
 
 // Which sections have been opened (for lazy loading)
 let _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
@@ -1277,13 +1303,13 @@ function renderFundamentals(d) {
   html += renderTSR(d.tsr, currSym);
 
   // ── AI Chat ──
-  html += renderChat('fundamentals', d);
+  html += renderCopilot('fundamentals');
 
   html += `</div>`;// /sec-pad
 
   document.getElementById('fund-content').innerHTML = html;
   document.getElementById('fund-content').style.display = 'block';
-  setStatus('fundamentals', 'active');
+  setStatus('fundamentals', 'done');
 }
 
 // ── TSR renderer ──
@@ -1386,39 +1412,62 @@ function toggleTsrExp(header) {
   header.querySelector('span').textContent = isOpen ? '▼' : '▲';
 }
 
-// ── AI Chat renderer ──
-function renderChat(section, data) {
+// ══════════════════════════════════════════════════════
+// PAYWALL FLAG — set to true to activate credit gate
+// ══════════════════════════════════════════════════════
+const _paywallActive = false; // ← flip to true when ready
+
+// ── Fintiq AI Copilot renderer ──
+function renderCopilot(section) {
   const starters = {
     fundamentals: [
       "What does the ROIC tell us about capital efficiency?",
       "How do the margins compare to industry norms?",
-      "What are the key risks to earnings?",
-      "What are the main business segments and revenue breakdown?",
       "What is the moat — why can't competitors replicate this?",
+      "What are the key risks to the earnings outlook?",
     ],
     valuation: [
       "Are the DCF assumptions realistic vs the business model?",
-      "What revenue growth rate would justify the current market price?",
+      "What revenue growth rate justifies the current market price?",
       "What is the margin of safety at current assumptions?",
-      "How sensitive is the valuation to WACC vs terminal growth?",
-      "What does the Monte Carlo distribution tell us about risk/reward?",
+      "How sensitive is this valuation to WACC vs terminal growth?",
     ],
     technical: [
       "Is the current RSI level a good entry or should I wait?",
       "What does the put wall tell us about near-term downside?",
-      "Is the MACD signal reliable here, or is volume weak?",
-      "What is the short squeeze risk on the short setup?",
-      "How should I size this trade given the ATM implied volatility?",
+      "What is the short squeeze risk if I go short here?",
+      "How should I size this trade given ATM implied volatility?",
+    ],
+    catalyst: [
+      "Which catalyst is most likely to move the stock near-term?",
+      "Is the market correctly pricing the upcoming earnings?",
+      "What does the analyst revision trend tell us?",
+    ],
+    risk: [
+      "Is my stop loss level technically sound?",
+      "How does the annualised volatility compare to sector peers?",
+      "What position size would a HF analyst use here?",
     ],
   };
   const chips = starters[section] || [];
 
-  return `<div class="ai-chat-wrap">
-    <div class="ai-chat-header">
-      <div class="ai-chat-icon">🤖</div>
+  const lockedOverlay = _paywallActive ? `
+    <div class="copilot-paywall-overlay">
+      <div style="font-size:1.4rem;margin-bottom:8px">🔒</div>
+      <div style="font-size:0.9rem;font-weight:700;color:var(--text);margin-bottom:6px">Fintiq AI Copilot</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:14px;max-width:260px;text-align:center">Unlock AI analysis of this section. Ask anything, get data-grounded answers.</div>
+      <button onclick="alert('Credits coming soon!')" style="background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:9px 22px;font-size:0.82rem;font-weight:700;cursor:pointer">Use 1 Credit to Unlock</button>
+    </div>` : '';
+
+  const betaBadge = !_paywallActive ? `<span style="font-size:0.6rem;background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:2px 8px;margin-left:8px;font-weight:700;letter-spacing:.05em">BETA · FREE</span>` : '';
+
+  return `<div class="copilot-wrap${_paywallActive ? ' copilot-locked' : ''}" id="copilot-${section}">
+    ${lockedOverlay}
+    <div class="copilot-header">
+      <div class="copilot-icon">✦</div>
       <div>
-        <div class="ai-chat-title">Fintiq AI Analyst</div>
-        <div class="ai-chat-sub">Data-grounded — references page data, uses knowledge for anything else</div>
+        <div class="copilot-title">Fintiq AI Copilot${betaBadge}</div>
+        <div class="copilot-sub">Ask anything about this section — data-grounded, context-aware</div>
       </div>
     </div>
     <div class="chat-starters" id="chat-starters-${section}">
@@ -1426,9 +1475,9 @@ function renderChat(section, data) {
     </div>
     <div class="chat-messages" id="chat-msgs-${section}"></div>
     <div class="chat-input-row">
-      <textarea class="chat-input" id="chat-in-${section}" rows="2" placeholder="Ask about the fundamentals… (Enter to send, Shift+Enter for new line)"
-        onkeydown="chatKey(event,'${section}')"></textarea>
-      <button class="chat-send" id="chat-btn-${section}" onclick="sendChat('${section}')">Send</button>
+      <textarea class="chat-input" id="chat-in-${section}" rows="2" placeholder="Ask a question…  (Enter to send, Shift+Enter for new line)"
+        onkeydown="chatKey(event,'${section}')" ${_paywallActive ? 'disabled' : ''}></textarea>
+      <button class="chat-send copilot-send" id="chat-btn-${section}" onclick="sendChat('${section}')" ${_paywallActive ? 'disabled' : ''}>Send</button>
     </div>
   </div>`;
 }
@@ -1661,7 +1710,7 @@ function renderValuation(d) {
 
   // Inject HTML into section body
   body.innerHTML = `<div class="sec-pad" id="val-content">${_buildValHTML()}</div>`;
-  setStatus('valuation', 'active');
+  setStatus('valuation', 'done');
 }
 
 function _buildValHTML() {
@@ -1891,7 +1940,7 @@ function _buildValHTML() {
   <div id="mc-brief" style="background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px 14px;font-size:0.75rem;color:var(--dim);line-height:1.6;margin-top:10px;margin-bottom:14px"></div>`;
 
   // ── AI Chat ──
-  html += renderChat('valuation', _vs.d);
+  html += renderCopilot('valuation');
 
   return html;
 }
@@ -2588,7 +2637,7 @@ function renderTechnical(d) {
   html += `<div id="tech-ai-expander"></div>`;
 
   // ── Chat ──
-  html += renderChat('technical', d);
+  html += renderCopilot('technical');
 
   document.getElementById('tech-content').innerHTML = html;
   setStatus('technical', 'done');
@@ -3041,6 +3090,8 @@ function _renderRisk() {
     </div>
 
   </div>`;
+
+  html += renderCopilot('risk');
 
   document.getElementById('risk-loading').style.display = 'none';
   document.getElementById('risk-content').innerHTML = html;
@@ -3500,6 +3551,7 @@ function renderCatalyst(d) {
     html += `</div>`;
   }
 
+  html += renderCopilot('catalyst');
   document.getElementById('catalyst-content').innerHTML = html;
 }
 
@@ -3747,6 +3799,12 @@ function renderDecision() {
   <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">Generates a printable report of your full analysis including all section data and any AI conversations.</div>
   <button class="dec-pdf-btn" onclick="_generateReport()">📄 Download Research Report (PDF)</button>
   </div>`;
+
+  // ── Investment Committee ──
+  html += _renderCommitteeCard();
+
+  // ── Copilot ──
+  html += renderCopilot('decision');
 
   document.getElementById('decision-content').innerHTML = html;
   setStatus('decision', 'done');
@@ -4294,6 +4352,121 @@ function _fmtLarge(n) {
 }
 
 // loadAIAssumptions removed — replaced by Copilot layer (paywall)
+
+// ══════════════════════════════════════════════════════
+// Fintiq Investment Committee
+// ══════════════════════════════════════════════════════
+
+function _renderCommitteeCard() {
+  const betaBadge = !_paywallActive ? `<span class="committee-beta">BETA · FREE</span>` : '';
+  const pillars = [
+    { label: 'Thesis Review', desc: 'Bull & Bear case stress-tested' },
+    { label: 'Contradictions', desc: 'Flags conflicts in your analysis' },
+    { label: 'Missing Evidence', desc: 'What you haven\'t answered' },
+    { label: 'Valuation Range', desc: 'Bear / Base / Bull price targets' },
+    { label: 'Conditions', desc: 'What must be true for this to work' },
+    { label: 'Confidence', desc: 'Overall conviction score' },
+  ];
+  return `<div class="committee-card">
+    <div class="committee-header">
+      <div class="committee-icon">⚖️</div>
+      <div>
+        <div class="committee-title">Fintiq Investment Committee${betaBadge}</div>
+        <div class="committee-sub">A senior Sonnet-powered analyst reviews your full session and produces an institutional-grade report</div>
+      </div>
+    </div>
+    <div class="committee-body">
+      <div class="committee-pillars">
+        ${pillars.map(p => `<div class="committee-pillar"><strong>${p.label}</strong>${p.desc}</div>`).join('')}
+      </div>
+      <button class="committee-btn" id="committee-btn" onclick="_runCommitteeReport()" ${_paywallActive ? 'disabled' : ''}>
+        ${_paywallActive ? '🔒 Unlock — Use 5 Credits' : '⚖️ Generate Investment Committee Report'}
+      </button>
+      <div class="committee-output" id="committee-output"></div>
+    </div>
+  </div>`;
+}
+
+async function _runCommitteeReport() {
+  const btn = document.getElementById('committee-btn');
+  const out = document.getElementById('committee-output');
+  if (!btn || !out) return;
+
+  btn.disabled = true;
+  btn.textContent = '⚙️ Committee convening…';
+  out.style.display = 'block';
+  out.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted);font-size:0.8rem">
+    <div style="font-size:1.5rem;margin-bottom:8px">⚖️</div>
+    Reviewing your full session across all sections…<br>
+    <span style="font-size:0.7rem">This may take 20–30 seconds</span>
+  </div>`;
+
+  try {
+    const session = _syncFintiqSession();
+    const r = await fetch(`${API}/committee/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker: _session.ticker, session })
+    });
+    if (!r.ok) throw new Error(`API error ${r.status}`);
+    const d = await r.json();
+    _renderCommitteeOutput(d);
+  } catch(e) {
+    out.innerHTML = `<div style="color:var(--red);font-size:0.8rem;padding:12px">⚠️ ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = '↻ Re-run Committee Report';
+}
+
+function _renderCommitteeOutput(r) {
+  const out = document.getElementById('committee-output');
+  if (!out) return;
+
+  const section = (title, content, col='var(--gold)') => content ? `
+    <div style="margin-bottom:14px">
+      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:${col};margin-bottom:6px">${title}</div>
+      <div style="font-size:0.78rem;color:var(--dim);line-height:1.65">${content}</div>
+    </div>` : '';
+
+  const conf = r.confidence;
+  const confCol = conf >= 65 ? 'var(--green)' : conf >= 45 ? '#f5a623' : 'var(--red)';
+
+  out.innerHTML = `
+    <div style="border-top:1px solid rgba(129,140,248,0.2);padding-top:16px;margin-top:4px">
+      ${section('Investment Thesis', r.thesis)}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:12px">
+          <div style="font-size:0.65rem;font-weight:700;color:var(--green);text-transform:uppercase;margin-bottom:6px">Bull Case</div>
+          <div style="font-size:0.75rem;color:var(--dim);line-height:1.6">${r.bull_case || '—'}</div>
+        </div>
+        <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px">
+          <div style="font-size:0.65rem;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:6px">Bear Case</div>
+          <div style="font-size:0.75rem;color:var(--dim);line-height:1.6">${r.bear_case || '—'}</div>
+        </div>
+      </div>
+      ${section('Contradictions Identified', r.contradictions, 'var(--red)')}
+      ${section('Missing Evidence', r.missing_evidence, '#f59e0b')}
+      ${r.valuation_range ? `
+      <div style="margin-bottom:14px">
+        <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:6px">Valuation Range</div>
+        <div style="display:flex;gap:10px">
+          ${['bear','base','bull'].map(s => `<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:7px;padding:8px;text-align:center">
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase">${s}</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text)">${r.valuation_range[s] || '—'}</div>
+          </div>`).join('')}
+        </div>
+      </div>` : ''}
+      ${section('Investment Conditions', r.conditions)}
+      ${conf != null ? `
+      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.2);border-radius:8px">
+        <div style="font-size:2rem;font-weight:900;color:${confCol}">${conf}%</div>
+        <div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--text)">Overall Conviction</div>
+          <div style="font-size:0.68rem;color:var(--muted)">Committee confidence in the thesis given evidence reviewed</div>
+        </div>
+      </div>` : ''}
+    </div>`;
+}
 
 // ══════════════════════════════════════════════════════
 // window._fintiqSession — session data object for Copilot
