@@ -256,6 +256,12 @@ a{color:var(--gold);text-decoration:none}
 .tech-trend-up{color:var(--green)}.tech-trend-dn{color:var(--red)}.tech-trend-sw{color:var(--gold)}
 .tech-chart-wrap{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
 .tech-chart-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+.chart-tabs{display:flex;gap:0;margin-bottom:12px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card2)}
+.chart-tab{flex:1;padding:8px 4px;font-size:0.72rem;font-weight:700;text-align:center;cursor:pointer;color:var(--muted);border-right:1px solid var(--border);transition:all .15s;text-transform:uppercase;letter-spacing:.05em}
+.chart-tab:last-child{border-right:none}
+.chart-tab.active{background:rgba(245,166,35,0.12);color:var(--gold)}
+.chart-tab:hover:not(.active){background:rgba(255,255,255,0.04);color:var(--text)}
+.chart-pane{display:none}.chart-pane.active{display:block}
 .tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
 .tech-card{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
 .tech-card-title{font-size:0.6rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:8px}
@@ -547,6 +553,21 @@ a{color:var(--gold);text-decoration:none}
 .implied-callout{background:rgba(129,140,248,0.08);border:1px solid rgba(129,140,248,0.2);border-radius:8px;padding:10px 14px;font-size:0.78rem;color:#a5b4fc;margin-bottom:14px}
 /* Continuing value note */
 .cv-pct-note{font-size:0.68rem;color:var(--muted);text-align:right;margin-bottom:12px}
+
+/* ── Thesis Capture Box ── */
+.thesis-capture{display:none;margin:20px 0 4px;border:1px solid rgba(245,166,35,0.3);border-radius:12px;overflow:hidden;animation:fadeSlideUp .35s ease}
+.thesis-capture.visible{display:block}
+@keyframes fadeSlideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.thesis-capture-header{background:rgba(245,166,35,0.08);padding:10px 14px;display:flex;align-items:center;gap:8px}
+.thesis-capture-header span{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--gold)}
+.thesis-capture-header small{font-size:0.65rem;color:var(--muted);margin-left:auto}
+.thesis-capture-body{padding:12px 14px}
+.thesis-prompt{font-size:0.72rem;color:var(--muted);margin-bottom:5px}
+.thesis-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:var(--text);font-size:0.8rem;padding:8px 10px;resize:vertical;min-height:60px;font-family:inherit;transition:border-color .15s;box-sizing:border-box}
+.thesis-input:focus{outline:none;border-color:rgba(245,166,35,0.4)}
+.thesis-save-btn{margin-top:8px;background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);color:var(--gold);border-radius:6px;padding:6px 16px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:background .15s}
+.thesis-save-btn:hover{background:rgba(245,166,35,0.22)}
+.thesis-saved-note{display:none;font-size:0.68rem;color:var(--green);margin-top:5px}
 
 /* ── Responsive ── */
 @media(max-width:640px){
@@ -910,6 +931,12 @@ function _openAIExp(id) {
 
 function setStatus(name, state) {
   // Status badges hidden — function kept for compatibility
+  if (state === 'done') {
+    setTimeout(_syncFintiqSession, 200);
+    if (typeof _captureConfig !== 'undefined' && _captureConfig[name]) {
+      setTimeout(() => _injectCaptureBox(name), 300);
+    }
+  }
 }
 
 function updateSessionBadges() {
@@ -1863,23 +1890,6 @@ function _buildValHTML() {
   <div id="mc-results">${_runMC(vs, cs)}</div>
   <div id="mc-brief" style="background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px 14px;font-size:0.75rem;color:var(--dim);line-height:1.6;margin-top:10px;margin-bottom:14px"></div>`;
 
-  // ── AI Valuation Analyst ──
-  html += `<div class="sub-label" style="margin-top:20px">AI Senior Analyst — Recommended Assumptions & Commentary</div>
-  <div class="ai-assumptions-wrap">
-    <div class="ai-assumptions-header">
-      <div style="width:28px;height:28px;background:var(--gold2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem">🤖</div>
-      <div>
-        <div style="font-weight:700;font-size:0.88rem">Investment Banking Grade DCF Analysis</div>
-        <div style="font-size:0.7rem;color:var(--muted)">AI generates its own assumption set with reasoning, then you can discuss</div>
-      </div>
-      <button onclick="loadAIAssumptions()" id="ai-assump-btn"
-        style="margin-left:auto;background:var(--gold);color:#050f1c;border:none;border-radius:6px;padding:6px 14px;font-size:0.78rem;font-weight:700;cursor:pointer">
-        Generate AI Analysis
-      </button>
-    </div>
-    <div id="ai-assumptions-text" class="ai-assumptions-text" style="display:none"></div>
-  </div>`;
-
   // ── AI Chat ──
   html += renderChat('valuation', _vs.d);
 
@@ -2431,19 +2441,62 @@ function renderTechnical(d) {
     </div>
   </div>`;
 
-  // ── Charts ──
-  html += `<div class="tech-chart-wrap">
-    <div class="tech-chart-label">Price — 6 Months (with MA50 · MA200 · Bollinger Bands)</div>
-    <canvas id="chart-price" height="220"></canvas>
+  // ── Tabbed Charts: Daily / Swing / Long Term ──
+  html += `
+  <div class="chart-tabs">
+    <div class="chart-tab active" onclick="_switchChartTab('daily',this)">📅 Daily <span style="font-size:0.6rem;font-weight:400;display:block;color:var(--muted)">3 Months</span></div>
+    <div class="chart-tab" onclick="_switchChartTab('swing',this)">📈 Swing <span style="font-size:0.6rem;font-weight:400;display:block;color:var(--muted)">1 Year</span></div>
+    <div class="chart-tab" onclick="_switchChartTab('longterm',this)">🏔️ Long Term <span style="font-size:0.6rem;font-weight:400;display:block;color:var(--muted)">3 Years</span></div>
   </div>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-    <div class="tech-chart-wrap" style="margin-bottom:0">
-      <div class="tech-chart-label">RSI (14) — <span style="color:${rsiCol}">${fmtN(mom.rsi)} · ${mom.rsi_signal || ''}</span></div>
-      <canvas id="chart-rsi" height="110"></canvas>
+
+  <div id="chart-pane-daily" class="chart-pane active">
+    <div class="tech-chart-wrap">
+      <div class="tech-chart-label">Price — 3 Months · RSI/MACD focus · momentum timing</div>
+      <canvas id="chart-price-daily" height="200"></canvas>
     </div>
-    <div class="tech-chart-wrap" style="margin-bottom:0">
-      <div class="tech-chart-label">MACD (12·26·9) — <span style="color:${macdCol}">${mom.macd_crossover || ''}</span></div>
-      <canvas id="chart-macd" height="110"></canvas>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="tech-chart-wrap" style="margin-bottom:0">
+        <div class="tech-chart-label">RSI (14) — <span style="color:${rsiCol}">${fmtN(mom.rsi)} · ${mom.rsi_signal || ''}</span></div>
+        <canvas id="chart-rsi-daily" height="100"></canvas>
+      </div>
+      <div class="tech-chart-wrap" style="margin-bottom:0">
+        <div class="tech-chart-label">MACD (12·26·9) — <span style="color:${macdCol}">${mom.macd_crossover || ''}</span></div>
+        <canvas id="chart-macd-daily" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="chart-pane-swing" class="chart-pane">
+    <div class="tech-chart-wrap">
+      <div class="tech-chart-label">Price — 1 Year · MA50 · MA200 · Bollinger Bands · support/resistance</div>
+      <canvas id="chart-price-swing" height="200"></canvas>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="tech-chart-wrap" style="margin-bottom:0">
+        <div class="tech-chart-label">RSI (14)</div>
+        <canvas id="chart-rsi-swing" height="100"></canvas>
+      </div>
+      <div class="tech-chart-wrap" style="margin-bottom:0">
+        <div class="tech-chart-label">MACD (12·26·9)</div>
+        <canvas id="chart-macd-swing" height="100"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div id="chart-pane-longterm" class="chart-pane">
+    <div class="tech-chart-wrap">
+      <div class="tech-chart-label">Price — 3 Years · MA200 · major trend · key structural levels</div>
+      <canvas id="chart-price-longterm" height="200"></canvas>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="tech-chart-wrap" style="margin-bottom:0">
+        <div class="tech-chart-label">RSI (14) — Long Term</div>
+        <canvas id="chart-rsi-longterm" height="100"></canvas>
+      </div>
+      <div class="tech-chart-wrap" style="margin-bottom:0">
+        <div class="tech-chart-label">MACD (12·26·9) — Long Term</div>
+        <canvas id="chart-macd-longterm" height="100"></canvas>
+      </div>
     </div>
   </div>`;
 
@@ -2531,21 +2584,8 @@ function renderTechnical(d) {
     }
   }
 
-  // ── AI Commentary placeholder ──
-  html += `<div class="ai-expander" id="tech-ai-expander">
-    <div class="ai-expander-header" onclick="_toggleAIExp('tech-ai-expander')">
-      <div class="ai-expander-title">🤖 Fintiq AI — Long & Short Trade Setups</div>
-      <span class="ai-expander-chevron" id="tech-ai-chev">▼</span>
-    </div>
-    <div class="ai-expander-body" id="tech-ai-body">
-  <div id="ai-tech-wrap">
-    <div style="text-align:center;padding:20px;color:var(--muted);font-size:0.8rem">
-      <div class="dot-pulse" style="justify-content:center;margin-bottom:8px"><span></span><span></span><span></span></div>
-      Generating trade setups…
-    </div>
-  </div>
-    </div>
-  </div>`;
+  // AI Copilot placeholder (paywall — coming soon)
+  html += `<div id="tech-ai-expander"></div>`;
 
   // ── Chat ──
   html += renderChat('technical', d);
@@ -2555,23 +2595,46 @@ function renderTechnical(d) {
 
   // Render charts (Chart.js already loaded in <head>)
   _buildTechCharts(d);
+}
 
-  // Fetch AI commentary
-  _loadTechCommentary(d);
+function _switchChartTab(name, el) {
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.chart-pane').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('chart-pane-' + name).classList.add('active');
 }
 
 function _buildTechCharts(d) {
-  const dates = d.dates || [];
-  const C = d.ohlcv?.c || [];
-  const V = d.ohlcv?.v || [];
-  const ma50  = d.ma50  || [];
-  const ma200 = d.ma200 || [];
-  const bbup  = d.bb_up  || [];
-  const bblo  = d.bb_low || [];
-  const rsiD  = d.rsi   || [];
-  const macdD = d.macd  || [];
-  const msigD = d.macd_signal || [];
-  const mhstD = d.macd_hist   || [];
+  const allDates = d.dates || [];
+  const allC     = d.ohlcv?.c || [];
+  const allV     = d.ohlcv?.v || [];
+  const allMa50  = d.ma50  || [];
+  const allMa200 = d.ma200 || [];
+  const allBbup  = d.bb_up  || [];
+  const allBblo  = d.bb_low || [];
+  const allRsi   = d.rsi   || [];
+  const allMacd  = d.macd  || [];
+  const allMsig  = d.macd_signal || [];
+  const allMhst  = d.macd_hist   || [];
+
+  // Slice helpers for each timeframe
+  const total = allDates.length;
+  const sl = (arr, n) => arr.slice(Math.max(0, total - n));
+  const daily   = n => sl(n === 'dates' ? allDates : n === 'C' ? allC : n === 'V' ? allV : n === 'ma50' ? allMa50 : n === 'ma200' ? allMa200 : n === 'bbup' ? allBbup : n === 'bblo' ? allBblo : n === 'rsi' ? allRsi : n === 'macd' ? allMacd : n === 'msig' ? allMsig : allMhst, 60);
+  const swing   = n => sl(n === 'dates' ? allDates : n === 'C' ? allC : n === 'V' ? allV : n === 'ma50' ? allMa50 : n === 'ma200' ? allMa200 : n === 'bbup' ? allBbup : n === 'bblo' ? allBblo : n === 'rsi' ? allRsi : n === 'macd' ? allMacd : n === 'msig' ? allMsig : allMhst, 252);
+  const longterm = n => n === 'dates' ? allDates : n === 'C' ? allC : n === 'V' ? allV : n === 'ma50' ? allMa50 : n === 'ma200' ? allMa200 : n === 'bbup' ? allBbup : n === 'bblo' ? allBblo : n === 'rsi' ? allRsi : n === 'macd' ? allMacd : n === 'msig' ? allMsig : allMhst;
+
+  // Convenience getters
+  const g = {
+    daily:   { dates: daily('dates'),    C: daily('C'),    V: daily('V'),    ma50: daily('ma50'),   ma200: daily('ma200'),   bbup: daily('bbup'),   bblo: daily('bblo'),   rsi: daily('rsi'),   macd: daily('macd'),   msig: daily('msig'),   mhst: daily('mhst') },
+    swing:   { dates: swing('dates'),    C: swing('C'),    V: swing('V'),    ma50: swing('ma50'),   ma200: swing('ma200'),   bbup: swing('bbup'),   bblo: swing('bblo'),   rsi: swing('rsi'),   macd: swing('macd'),   msig: swing('msig'),   mhst: swing('mhst') },
+    longterm:{ dates: longterm('dates'), C: longterm('C'), V: longterm('V'), ma50: longterm('ma50'),ma200: longterm('ma200'),bbup: longterm('bbup'),bblo: longterm('bblo'),rsi: longterm('rsi'),macd: longterm('macd'),msig: longterm('msig'),mhst: longterm('mhst') }
+  };
+
+  const kl = d.key_levels || {};
+
+  // Shared defaults
+  const dates = allDates; // not used directly — each pane uses its slice
 
   const chartDefaults = {
     responsive: true,
@@ -2584,185 +2647,111 @@ function _buildTechCharts(d) {
     }
   };
 
-  // ── Price chart ──
-  const priceCtx = document.getElementById('chart-price');
-  if (priceCtx) {
-    const kl = d.key_levels || {};
-    // Build flat horizontal-line datasets for support/resistance
-    const n = dates.length;
-    const srDatasets = [];
-    const srLevels = [
-      { key: 'support1',    label: 'S1 (MA50)',   color: 'rgba(16,185,129,0.6)' },
-      { key: 'support2',    label: 'S2 (MA200)',  color: 'rgba(16,185,129,0.4)' },
-      { key: 'support3',    label: 'S3 (3M low)', color: 'rgba(16,185,129,0.3)' },
-      { key: 'resistance1', label: 'R1 (3M high)',color: 'rgba(239,68,68,0.5)' },
-      { key: 'resistance2', label: 'R2 (52W high)',color: 'rgba(239,68,68,0.7)' },
-    ];
-    srLevels.forEach(({ key, label, color }) => {
-      const val = kl[key];
-      if (val) srDatasets.push({
-        label, data: Array(n).fill(val),
-        borderColor: color, borderWidth: 1, borderDash: [6, 3],
-        pointRadius: 0, tension: 0, fill: false, yAxisID: 'y'
+  const rsiZonePlugin = {
+    id: 'rsi-zones',
+    afterDraw(chart) {
+      const {ctx, scales: {x, y}} = chart;
+      if (!y) return;
+      const y70 = y.getPixelForValue(70), y30 = y.getPixelForValue(30), y50 = y.getPixelForValue(50);
+      const left = x.left, right = x.right;
+      ctx.save();
+      ctx.fillStyle = 'rgba(239,68,68,0.08)';
+      ctx.fillRect(left, chart.chartArea.top, right-left, y70 - chart.chartArea.top);
+      ctx.fillStyle = 'rgba(16,185,129,0.08)';
+      ctx.fillRect(left, y30, right-left, chart.chartArea.bottom - y30);
+      [[y70,'rgba(239,68,68,0.4)',false],[y30,'rgba(16,185,129,0.4)',false],[y50,'rgba(100,116,139,0.3)',true]].forEach(([yp,col,dash]) => {
+        ctx.strokeStyle=col; ctx.lineWidth=0.8; ctx.setLineDash(dash?[4,4]:[]);
+        ctx.beginPath(); ctx.moveTo(left,yp); ctx.lineTo(right,yp); ctx.stroke();
       });
-    });
-
-    const pc = new Chart(priceCtx, {
-      type: 'line',
-      data: {
-        labels: dates,
-        datasets: [
-          { label: 'Price', data: C, borderColor: '#f5a623', borderWidth: 1.5, pointRadius: 0, tension: 0.1, yAxisID: 'y' },
-          { label: 'MA50',  data: ma50,  borderColor: '#38bdf8', borderWidth: 1.2, pointRadius: 0, borderDash: [], tension: 0 },
-          { label: 'MA200', data: ma200, borderColor: '#f472b6', borderWidth: 1.2, pointRadius: 0, borderDash: [4,2], tension: 0 },
-          { label: 'BB Upper', data: bbup, borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1, pointRadius: 0, tension: 0, fill: false },
-          { label: 'BB Lower', data: bblo, borderColor: 'rgba(100,116,139,0.4)', borderWidth: 1, pointRadius: 0, tension: 0,
-            fill: '-1', backgroundColor: 'rgba(100,116,139,0.05)' },
-          ...srDatasets,
-          { label: 'Volume', data: V, type: 'bar', backgroundColor: V.map((_,i) => C[i] >= (C[i-1]||C[i]) ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'), yAxisID: 'yv', barThickness: 'flex' }
-        ]
-      },
-      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
-        y: { position: 'right', ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
-        yv: { position: 'left', display: false, grid: { display: false }, max: Math.max(...V) * 5 }
-      }}
-    });
-    _techCharts.push(pc);
-  }
-
-  // ── RSI chart ──
-  const rsiCtx = document.getElementById('chart-rsi');
-  if (rsiCtx) {
-    const rc = new Chart(rsiCtx, {
-      type: 'line',
-      data: {
-        labels: dates,
-        datasets: [
-          { label: 'RSI', data: rsiD, borderColor: '#f5a623', borderWidth: 1.5, pointRadius: 0, tension: 0.1 }
-        ]
-      },
-      options: { ...chartDefaults,
-        plugins: { ...chartDefaults.plugins, legend: { display: false },
-          annotation: undefined
-        },
-        scales: { ...chartDefaults.scales,
-          y: { position: 'right', min: 0, max: 100, ticks: { color: '#64748b', font: { size: 9 }, stepSize: 30 }, grid: { color: 'rgba(255,255,255,0.04)' } }
-        }
-      },
-      plugins: [{
-        id: 'rsi-zones',
-        afterDraw(chart) {
-          const {ctx, scales: {x, y}} = chart;
-          const y70 = y.getPixelForValue(70), y30 = y.getPixelForValue(30), y50 = y.getPixelForValue(50);
-          const left = x.left, right = x.right;
-          ctx.save();
-          ctx.fillStyle = 'rgba(239,68,68,0.08)';
-          ctx.fillRect(left, y70, right-left, chart.chartArea.top - y70 + (chart.chartArea.top - y70));
-          ctx.fillRect(left, chart.chartArea.top, right-left, y70 - chart.chartArea.top);
-          ctx.fillStyle = 'rgba(16,185,129,0.08)';
-          ctx.fillRect(left, y30, right-left, chart.chartArea.bottom - y30);
-          [y70, y30, y50].forEach((yp, i) => {
-            ctx.strokeStyle = i === 2 ? 'rgba(100,116,139,0.3)' : (i === 0 ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)');
-            ctx.lineWidth = 0.8;
-            ctx.setLineDash(i===2 ? [4,4] : []);
-            ctx.beginPath(); ctx.moveTo(left, yp); ctx.lineTo(right, yp); ctx.stroke();
-          });
-          ctx.restore();
-        }
-      }]
-    });
-    _techCharts.push(rc);
-  }
-
-  // ── MACD chart ──
-  const macdCtx = document.getElementById('chart-macd');
-  if (macdCtx) {
-    const mc = new Chart(macdCtx, {
-      type: 'bar',
-      data: {
-        labels: dates,
-        datasets: [
-          { label: 'Histogram', data: mhstD, backgroundColor: mhstD.map(v => v >= 0 ? 'rgba(16,185,129,0.5)' : 'rgba(239,68,68,0.5)'), barThickness: 'flex', order: 3 },
-          { label: 'MACD',   type: 'line', data: macdD, borderColor: '#38bdf8', borderWidth: 1.5, pointRadius: 0, tension: 0, order: 1 },
-          { label: 'Signal', type: 'line', data: msigD, borderColor: '#f472b6', borderWidth: 1.2, pointRadius: 0, tension: 0, order: 2 },
-        ]
-      },
-      options: { ...chartDefaults, scales: { ...chartDefaults.scales,
-        y: { position: 'right', ticks: { color: '#64748b', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
-      }}
-    });
-    _techCharts.push(mc);
-  }
-}
-
-async function _loadTechCommentary(d) {
-  const wrapEl = document.getElementById('ai-tech-wrap');
-  if (!wrapEl) return;
-  try {
-    const fundSummary = _session.fundamentals ? {
-      name: (_session.fundamentals.data.overview || {}).name,
-      sector: (_session.fundamentals.data.overview || {}).sector,
-      market_cap: (_session.fundamentals.data.overview || {}).market_cap,
-      quality: _session.fundamentals.data.quality,
-      multiples: _session.fundamentals.data.multiples,
-    } : {};
-    const res = await fetch(`${API}/technical/ai-commentary`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticker: _session.ticker, tech_data: d, fundamentals_summary: fundSummary })
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const r = await res.json();
-    const text = r.commentary || '';
-
-    // Extract TRADE DASHBOARD block and render separately as a card
-    const dashMatch = text.match(/━━ TRADE DASHBOARD ━━([\s\S]*?)(?:━━|$)/);
-    let dashHtml = '';
-    if (dashMatch) {
-      const dashLines = dashMatch[1].trim().split('\n').filter(l => l.trim());
-      const dashFields = {};
-      dashLines.forEach(line => {
-        const colon = line.indexOf(':');
-        if (colon > -1) {
-          const k = line.slice(0, colon).trim();
-          const v = line.slice(colon + 1).trim();
-          dashFields[k] = v;
-        }
-      });
-      const biasVal = dashFields['BIAS'] || '';
-      const biasColor = biasVal.startsWith('BULLISH') ? 'var(--green)' : biasVal.startsWith('BEARISH') ? 'var(--red)' : 'var(--muted)';
-      dashHtml = `
-        <div style="margin-top:20px;border:1px solid rgba(245,166,35,0.25);border-radius:10px;overflow:hidden">
-          <div style="background:rgba(245,166,35,0.08);padding:10px 14px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold)">Trade Dashboard</div>
-          <div style="padding:14px 16px">
-            <div style="font-size:0.85rem;font-weight:700;color:${biasColor};margin-bottom:10px">${biasVal}</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-              <div style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:10px">
-                <div style="font-size:0.65rem;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Long Setup</div>
-                ${['LONG ENTRY','LONG STOP','LONG TARGET 1','LONG TARGET 2'].map(k => dashFields[k] ? `<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--muted)">${k.replace('LONG ','')}</span><span style="color:#e2e8f0;font-weight:600">${dashFields[k]}</span></div>` : '').join('')}
-              </div>
-              <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:10px">
-                <div style="font-size:0.65rem;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Short Setup</div>
-                ${['SHORT ENTRY','SHORT STOP','SHORT TARGET 1','SHORT TARGET 2'].map(k => dashFields[k] ? `<div style="display:flex;justify-content:space-between;font-size:0.75rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04)"><span style="color:var(--muted)">${k.replace('SHORT ','')}</span><span style="color:#e2e8f0;font-weight:600">${dashFields[k]}</span></div>` : '').join('')}
-              </div>
-            </div>
-            ${dashFields['KEY LEVEL TO WATCH'] ? `<div style="margin-top:10px;padding:8px 10px;background:rgba(245,166,35,0.06);border-radius:6px;font-size:0.75rem"><span style="color:var(--gold);font-weight:600">Key Level: </span><span style="color:#cbd5e1">${dashFields['KEY LEVEL TO WATCH']}</span></div>` : ''}
-            ${dashFields['OPTIONS VERDICT'] ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(56,189,248,0.05);border-radius:6px;font-size:0.75rem"><span style="color:var(--blue);font-weight:600">Options: </span><span style="color:#cbd5e1">${dashFields['OPTIONS VERDICT']}</span></div>` : ''}
-          </div>
-        </div>`;
+      ctx.restore();
     }
+  };
 
-    // Format the main commentary (everything except the dashboard block)
-    const mainText = text.replace(/━━ TRADE DASHBOARD ━━[\s\S]*$/, '').trim();
-    const formatted = mainText
-      .replace(/━━ (.*?) ━━/g, '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin:14px 0 6px;border-top:1px solid rgba(245,166,35,0.2);padding-top:12px">$1</div>')
-      .replace(/^(TREND SUMMARY:|MOMENTUM:|VOLUME:|OPTIONS EXPLANATION:|ENTRY ZONE:|WHAT TO WAIT FOR:|STOP LOSS:|TARGET 1.*?:|TARGET 2.*?:|RISK\/REWARD:|BIAS:)/gm, '<strong style="color:var(--blue)">$1</strong>');
-    wrapEl.innerHTML = `<div class="ai-tech-commentary" style="white-space:normal">${formatted}${dashHtml}</div>`;
-    _openAIExp('tech-ai-expander');
-  } catch(e) {
-    wrapEl.innerHTML = `<div class="error-block">⚠️ Could not load AI commentary: ${e.message}</div>`;
+  function _buildPriceChart(canvasId, pane) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    const { dates: D, C, V, ma50, ma200, bbup, bblo } = g[pane];
+    const n = D.length;
+    const srDatasets = [];
+    const isLong = pane === 'longterm';
+    if (!isLong) {
+      [
+        { key:'support1',    label:'S1 (MA50)',    color:'rgba(16,185,129,0.6)' },
+        { key:'support3',    label:'S3 (3M low)',  color:'rgba(16,185,129,0.3)' },
+        { key:'resistance1', label:'R1 (3M high)', color:'rgba(239,68,68,0.5)' },
+        { key:'resistance2', label:'R2 (52W high)',color:'rgba(239,68,68,0.7)' },
+      ].forEach(({key,label,color}) => {
+        if (kl[key]) srDatasets.push({ label, data: Array(n).fill(kl[key]), borderColor:color, borderWidth:1, borderDash:[6,3], pointRadius:0, tension:0, fill:false, yAxisID:'y' });
+      });
+    }
+    const datasets = [
+      { label:'Price', data:C, borderColor:'#f5a623', borderWidth:1.5, pointRadius:0, tension:0.1, yAxisID:'y' },
+    ];
+    if (pane !== 'daily') {
+      datasets.push({ label:'MA50',  data:ma50,  borderColor:'#38bdf8', borderWidth:1.2, pointRadius:0, tension:0 });
+      datasets.push({ label:'MA200', data:ma200, borderColor:'#f472b6', borderWidth:1.2, pointRadius:0, borderDash:[4,2], tension:0 });
+    }
+    if (pane === 'swing') {
+      datasets.push({ label:'BB Upper', data:bbup, borderColor:'rgba(100,116,139,0.4)', borderWidth:1, pointRadius:0, tension:0, fill:false });
+      datasets.push({ label:'BB Lower', data:bblo, borderColor:'rgba(100,116,139,0.4)', borderWidth:1, pointRadius:0, tension:0, fill:'-1', backgroundColor:'rgba(100,116,139,0.05)' });
+    }
+    if (isLong) {
+      datasets.push({ label:'MA200', data:ma200, borderColor:'#f472b6', borderWidth:1.5, pointRadius:0, borderDash:[4,2], tension:0 });
+    }
+    datasets.push(...srDatasets);
+    datasets.push({ label:'Volume', data:V, type:'bar', backgroundColor:V.map((_,i)=>C[i]>=(C[i-1]||C[i])?'rgba(16,185,129,0.2)':'rgba(239,68,68,0.2)'), yAxisID:'yv', barThickness:'flex' });
+    const chart = new Chart(ctx, {
+      type:'line', data:{ labels:D, datasets },
+      options:{ ...chartDefaults, scales:{ ...chartDefaults.scales,
+        y:{position:'right',ticks:{color:'#64748b',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}},
+        yv:{position:'left',display:false,grid:{display:false},max:Math.max(...V.filter(Boolean))*5}
+      }}
+    });
+    _techCharts.push(chart);
   }
+
+  function _buildRsiChart(canvasId, pane) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    const { dates: D, rsi } = g[pane];
+    const chart = new Chart(ctx, {
+      type:'line', data:{ labels:D, datasets:[{ label:'RSI', data:rsi, borderColor:'#f5a623', borderWidth:1.5, pointRadius:0, tension:0.1 }] },
+      options:{ ...chartDefaults, plugins:{...chartDefaults.plugins,legend:{display:false}},
+        scales:{...chartDefaults.scales, y:{position:'right',min:0,max:100,ticks:{color:'#64748b',font:{size:9},stepSize:30},grid:{color:'rgba(255,255,255,0.04)'}}}
+      },
+      plugins:[rsiZonePlugin]
+    });
+    _techCharts.push(chart);
+  }
+
+  function _buildMacdChart(canvasId, pane) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    const { dates: D, macd, msig, mhst } = g[pane];
+    const chart = new Chart(ctx, {
+      type:'bar', data:{ labels:D, datasets:[
+        { label:'Histogram', data:mhst, backgroundColor:mhst.map(v=>v>=0?'rgba(16,185,129,0.5)':'rgba(239,68,68,0.5)'), barThickness:'flex', order:3 },
+        { label:'MACD',   type:'line', data:macd, borderColor:'#38bdf8', borderWidth:1.5, pointRadius:0, tension:0, order:1 },
+        { label:'Signal', type:'line', data:msig, borderColor:'#f472b6', borderWidth:1.2, pointRadius:0, tension:0, order:2 },
+      ]},
+      options:{ ...chartDefaults, scales:{...chartDefaults.scales, y:{position:'right',ticks:{color:'#64748b',font:{size:9}},grid:{color:'rgba(255,255,255,0.04)'}}} }
+    });
+    _techCharts.push(chart);
+  }
+
+  // Build all three panes
+  _buildPriceChart('chart-price-daily',   'daily');
+  _buildRsiChart(  'chart-rsi-daily',     'daily');
+  _buildMacdChart( 'chart-macd-daily',    'daily');
+  _buildPriceChart('chart-price-swing',   'swing');
+  _buildRsiChart(  'chart-rsi-swing',     'swing');
+  _buildMacdChart( 'chart-macd-swing',    'swing');
+  _buildPriceChart('chart-price-longterm','longterm');
+  _buildRsiChart(  'chart-rsi-longterm',  'longterm');
+  _buildMacdChart( 'chart-macd-longterm', 'longterm');
 }
+
+// _loadTechCommentary removed — replaced by Copilot layer (paywall)
 
 // ══════════════════════════════════════════════════════
 // SECTION 4 — RISK & POSITION SIZING
@@ -3511,68 +3500,12 @@ function renderCatalyst(d) {
     html += `</div>`;
   }
 
-  // ── AI Catalyst Summary ──
-  html += `<div class="ai-expander" id="cat-ai-expander">
-    <div class="ai-expander-header" onclick="_toggleAIExp('cat-ai-expander')">
-      <div class="ai-expander-title">🤖 Fintiq AI Catalyst Analysis</div>
-      <span class="ai-expander-chevron" id="cat-ai-chev">▼</span>
-    </div>
-    <div class="ai-expander-body" id="cat-ai-body">
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">Plain-English assessment: entry timing, analyst direction, squeeze potential, key risks, and what the market is watching.</div>
-      <div class="cat-ai-block" id="cat-ai-text" style="margin-bottom:0;border:none;background:transparent;padding:0"><div style="text-align:center;color:var(--muted)">Generating catalyst analysis…</div></div>
-    </div>
-  </div>
   </div>`;
 
   document.getElementById('catalyst-content').innerHTML = html;
-
-  // Load AI summary
-  _loadCatalystAI(d);
 }
 
-async function _loadCatalystAI(d) {
-  const el = document.getElementById('cat-ai-text');
-  if (!el) return;
-  try {
-    const fundSummary = _session.fundamentals?.data ? {
-      name: (_session.fundamentals.data.overview || {}).name,
-      sector: (_session.fundamentals.data.overview || {}).sector,
-      quality: _session.fundamentals.data.quality,
-      multiples: _session.fundamentals.data.multiples,
-    } : {};
-    const res = await fetch(`${API}/catalyst/ai-summary`, {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        ticker: _session.ticker,
-        catalyst_data: d,
-        fundamentals_summary: fundSummary
-      })
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const r = await res.json();
-    if (r.summary) {
-      el.style.whiteSpace = 'normal';
-      el.innerHTML = _formatCatalystAI(r.summary);
-      _openAIExp('cat-ai-expander');
-    } else throw new Error('Empty response');
-  } catch(e) {
-    el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The data above is fully usable without it.</span>`;
-  }
-}
-
-function _formatCatalystAI(text) {
-  // Render ▸ HEADER lines as styled headings, keep rest as paragraphs
-  return text.split('\n').map(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('▸')) {
-      const label = trimmed.replace('▸', '').trim();
-      return `<div style="font-size:0.68rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.08em;margin-top:14px;margin-bottom:4px">▸ ${label}</div>`;
-    }
-    if (!trimmed) return '';
-    return `<div style="margin-bottom:6px">${trimmed}</div>`;
-  }).join('');
-}
+// _loadCatalystAI + _formatCatalystAI removed — replaced by Copilot layer (paywall)
 
 // ══════════════════════════════════════════════════════
 // SECTION 6 — DECISION ANALYSIS
@@ -3751,16 +3684,13 @@ function renderDecision() {
   </div>`;
 
   // ── Thesis Builder ──
-  html += `<div class="dec-section-title">⚔️ Build & Challenge Your Thesis</div>
-  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">State your investment case. The AI will counter it from the opposite side — long thesis gets a short-seller's challenge, short thesis gets a bull's response.</div>
+  html += `<div class="dec-section-title">📝 Your Investment Thesis</div>
+  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">State your investment case. This will be captured for your Investment Committee report.</div>
   <div class="dec-direction-toggle">
     <button class="dec-dir-btn ${_decDirection==='long'?'active-long':''}" onclick="_setDirection('long')">📈 I'm LONG — bullish case</button>
     <button class="dec-dir-btn ${_decDirection==='short'?'active-short':''}" onclick="_setDirection('short')">📉 I'm SHORT — bearish case</button>
   </div>
-  <textarea class="dec-thesis-area" id="dec-thesis-input" placeholder="e.g. I believe ${ticker} will re-rate higher because revenue growth is accelerating, the valuation is undemanding relative to peers, and the upcoming earnings report should beat estimates given the track record…"></textarea>
-  <button onclick="_submitThesis()" style="background:rgba(245,166,35,0.12);border:1px solid rgba(245,166,35,0.3);color:var(--gold);border-radius:7px;padding:9px 20px;font-size:0.8rem;font-weight:600;cursor:pointer;margin-bottom:18px">Challenge My Thesis →</button>
-
-  <div id="dec-challenge-output"></div>`;
+  <textarea class="dec-thesis-area" id="dec-thesis-input" placeholder="e.g. I believe ${ticker} will re-rate higher because revenue growth is accelerating, the valuation is undemanding relative to peers, and the upcoming earnings report should beat estimates given the track record…"></textarea>`;
 
   // ── Verdict ──
   html += `<div class="dec-section-title">📋 Framework Verdict</div>
@@ -3831,6 +3761,7 @@ function _setDirection(dir) {
     if (b.textContent.includes('LONG') && dir === 'long') b.classList.add('active-long');
     if (b.textContent.includes('SHORT') && dir === 'short') b.classList.add('active-short');
   });
+  setTimeout(_syncFintiqSession, 0);
   // Re-render the Conviction Calibrator for the new direction
   const wrap = document.getElementById('cc-wrap');
   if (!wrap) return;
@@ -3869,76 +3800,7 @@ function _setDirection(dir) {
   }
 }
 
-async function _submitThesis() {
-  const thesis = document.getElementById('dec-thesis-input')?.value?.trim();
-  const out = document.getElementById('dec-challenge-output');
-  if (!thesis || thesis.length < 20) {
-    out.innerHTML = `<div style="color:var(--red);font-size:0.75rem;margin-bottom:14px">Please write your thesis (at least a sentence or two) before challenging it.</div>`;
-    return;
-  }
-  out.innerHTML = `<div class="dec-challenge-block"><div class="dec-challenge-title">⚔️ ${_decDirection === 'long' ? 'Short-Seller Challenge' : 'Bull Counter-Thesis'}</div><div style="color:var(--muted);font-size:0.78rem">Generating counter-arguments…</div></div>`;
-
-  try {
-    const signals = _decSignals();
-    const fd = _session.fundamentals?.data;
-    const td = _session.technical?.data;
-    const cd = _session.catalyst?.data;
-    const ticker = _session.ticker;
-
-    const res = await fetch(`${API}/decision/ai-challenge`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ticker,
-        direction: _decDirection,
-        thesis,
-        signals: signals.map(s => ({ label: s.label, signal: s.signal, status: s.status, detail: s.detail })),
-        fundamentals_summary: fd ? { quality: fd.quality, multiples: fd.multiples, overview: { name: fd.overview?.name, sector: fd.overview?.sector } } : null,
-        technical_summary: td ? { trend: td.trend, momentum: td.momentum, key_levels: td.key_levels } : null,
-        catalyst_summary: cd ? { earnings: cd.earnings, analyst: cd.analyst, short_interest: cd.short_interest } : null,
-        dcf_summary: _vs ? { price: _vs.price, equity_ps: _computeDCF(_vs)?.equity_ps, implied_growth: _vs._impliedGrowth } : null,
-      })
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const r = await res.json();
-    _decAIResult = r;
-    _renderChallenge(r);
-  } catch(e) {
-    out.innerHTML = `<div class="dec-challenge-block"><div class="dec-challenge-title">Error</div><div style="color:var(--muted);font-size:0.78rem">${e.message}</div></div>`;
-  }
-}
-
-function _renderChallenge(r) {
-  const out = document.getElementById('dec-challenge-output');
-  if (!out) return;
-  const title = _decDirection === 'long' ? '⚔️ Short-Seller\'s Challenge to Your Bull Case' : '⚔️ Bull Trader\'s Challenge to Your Bear Case';
-  const col = _decDirection === 'long' ? 'var(--red)' : 'var(--green)';
-  const borderCol = _decDirection === 'long' ? 'rgba(239,68,68,0.18)' : 'rgba(16,185,129,0.18)';
-  const bgCol = _decDirection === 'long' ? 'rgba(239,68,68,0.04)' : 'rgba(16,185,129,0.05)';
-
-  const counters = (r.counters || []);
-  const summary = r.summary || '';
-
-  let html = `<div style="background:${bgCol};border:1px solid ${borderCol};border-radius:10px;padding:16px;margin-bottom:14px">
-    <div style="font-size:0.68rem;font-weight:700;color:${col};text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px">${title}</div>`;
-
-  counters.forEach((c, i) => {
-    html += `<div style="display:flex;gap:10px;margin-bottom:12px">
-      <div style="flex-shrink:0;width:22px;height:22px;border-radius:50%;background:${bgCol};border:1px solid ${borderCol};color:${col};font-size:0.65rem;font-weight:700;display:flex;align-items:center;justify-content:center">${i+1}</div>
-      <div>
-        <div style="font-size:0.78rem;font-weight:600;color:var(--text);margin-bottom:3px">${c.title || ''}</div>
-        <div style="font-size:0.75rem;color:var(--dim);line-height:1.6">${c.argument || ''}</div>
-      </div>
-    </div>`;
-  });
-
-  if (summary) {
-    html += `<div style="border-top:1px solid ${borderCol};padding-top:10px;margin-top:4px;font-size:0.75rem;color:var(--dim);line-height:1.6;font-style:italic">${summary}</div>`;
-  }
-
-  html += `</div>`;
-  out.innerHTML = html;
-}
+// _submitThesis + _renderChallenge removed — replaced by Copilot layer (paywall)
 
 function _decVerdictData(signals, totalScore, assessed) {
   const greens = signals.filter(s => s.signal === 'green').length;
@@ -4433,50 +4295,168 @@ function _fmtLarge(n) {
   return n.toLocaleString();
 }
 
-// ── AI Assumptions loader ──
-async function loadAIAssumptions() {
-  const btn = document.getElementById('ai-assump-btn');
-  const txt = document.getElementById('ai-assumptions-text');
-  if (!btn || !txt) return;
-  btn.disabled = true; btn.textContent = 'Analysing…';
-  txt.style.display = 'none';
+// loadAIAssumptions removed — replaced by Copilot layer (paywall)
 
-  const d = _session.fundamentals.data || {};
-  const summary = {
-    ticker: d.ticker,
-    overview: d.overview,
-    quality: d.quality,
-    multiples: d.multiples,
-    market: d.market,
-    growth_table: d.growth_table,
-    valuation_inputs: d.valuation_inputs,
-  };
-  const userVals = {
-    wacc: _vs.wacc+'%', tax_rate: _vs.taxRate+'%',
-    g1: _vs.g1+'%', om1: _vs.om1+'%', ir1: _vs.ir1+'%',
-    g2: _vs.g2+'%', om2: _vs.om2+'%', ir2: _vs.ir2+'%',
-    g3: _vs.g3+'%', om3: _vs.om3+'%', ir3: _vs.ir3+'%',
-    terminal_growth: _vs.tg+'%', ronic: _vs.ronic+'%',
-  };
+// ══════════════════════════════════════════════════════
+// window._fintiqSession — session data object for Copilot
+// ══════════════════════════════════════════════════════
 
-  try {
-    const r = await fetch(`${API}/valuation/ai-assumptions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticker: _session.ticker, fundamentals_summary: summary, user_values: userVals }),
-    });
-    if (!r.ok) throw new Error(`API error ${r.status}`);
-    const data = await r.json();
-    txt.textContent = data.analysis;
-    txt.style.display = 'block';
-    btn.textContent = '↻ Regenerate';
-  } catch(e) {
-    txt.textContent = `⚠️ ${e.message}`;
-    txt.style.display = 'block';
-    btn.textContent = 'Retry';
+function _syncFintiqSession() {
+  const s = window._fintiqSession || {};
+  s.ticker     = _session.ticker || null;
+  s.updated_at = new Date().toISOString();
+
+  // Direction & thesis (Decision section)
+  s.direction = _decDirection || 'long';
+  const thesisEl = document.getElementById('dec-thesis-input');
+  if (thesisEl) s.thesis = thesisEl.value.trim() || null;
+
+  // Conviction probability from calibrator
+  s.conviction_prob = _ccProb || null;
+
+  // DCF assumptions (if valuation has been opened)
+  if (_vs) {
+    s.dcf_inputs = {
+      wacc:      _vs.wacc,
+      tax_rate:  _vs.taxRate,
+      g1: _vs.g1, om1: _vs.om1, ir1: _vs.ir1,
+      g2: _vs.g2, om2: _vs.om2, ir2: _vs.ir2,
+      g3: _vs.g3, om3: _vs.om3, ir3: _vs.ir3,
+      terminal_growth: _vs.tg,
+      ronic: _vs.ronic,
+    };
+    const dcf = _computeDCF(_vs);
+    s.dcf_result = dcf ? {
+      equity_per_share: dcf.equity_ps,
+      upside_pct: _vs.price ? Math.round((dcf.equity_ps - _vs.price) / _vs.price * 100) : null,
+    } : null;
   }
-  btn.disabled = false;
+
+  // Signals from decision section
+  try { s.signals = _decSignals(); } catch(e) {}
+
+  // Section completion states
+  s.sections_opened = ['fundamentals','valuation','technical','catalyst','risk','decision']
+    .filter(sec => document.getElementById(sec+'-content')?.style.display !== 'none');
+
+  window._fintiqSession = s;
+  return s;
 }
+
+// Sync thesis textarea on input (debounced)
+let _thesisDebounce;
+document.addEventListener('input', e => {
+  if (e.target?.id === 'dec-thesis-input') {
+    clearTimeout(_thesisDebounce);
+    _thesisDebounce = setTimeout(_syncFintiqSession, 500);
+  }
+});
+
+// Initialize empty session object on load
+window._fintiqSession = {};
+
+// ══════════════════════════════════════════════════════
+// Thesis Capture Boxes — scroll-triggered per section
+// ══════════════════════════════════════════════════════
+
+const _captureConfig = {
+  fundamentals: {
+    prompts: [
+      'What stands out about the quality of this business?',
+      'What is the key risk to the fundamental thesis?'
+    ],
+    keys: ['fundamental_view', 'fundamental_risk']
+  },
+  valuation: {
+    prompts: [
+      'Does the DCF suggest the stock is cheap or expensive at current price?',
+      'What assumption are you most uncertain about?'
+    ],
+    keys: ['valuation_view', 'valuation_uncertainty']
+  },
+  technical: {
+    prompts: [
+      'What does the chart structure tell you about the trend?',
+      'What would change your technical view?'
+    ],
+    keys: ['technical_view', 'technical_invalidation']
+  },
+  catalyst: {
+    prompts: [
+      'Which catalyst is most likely to move the stock in the next 30 days?',
+      'Is the market correctly pricing this catalyst?'
+    ],
+    keys: ['catalyst_view', 'catalyst_pricing']
+  },
+  risk: {
+    prompts: [
+      'What is the single biggest risk to this position?',
+      'At what price would you exit to cut losses?'
+    ],
+    keys: ['risk_view', 'risk_exit']
+  }
+};
+
+function _injectCaptureBox(sectionId) {
+  const cfg = _captureConfig[sectionId];
+  if (!cfg) return;
+  const content = document.getElementById(sectionId + '-content');
+  if (!content || document.getElementById('capture-' + sectionId)) return;
+
+  const box = document.createElement('div');
+  box.id = 'capture-' + sectionId;
+  box.className = 'thesis-capture sec-pad';
+
+  let inputsHtml = cfg.prompts.map((p, i) => `
+    <div style="margin-bottom:12px">
+      <div class="thesis-prompt">${p}</div>
+      <textarea class="thesis-input" id="capture-${sectionId}-${i}" rows="2"
+        oninput="_saveCaptureInput('${sectionId}',${i},this.value)"
+        placeholder="Your view…"></textarea>
+    </div>`).join('');
+
+  box.innerHTML = `
+    <div class="thesis-capture-header">
+      <span>📝 Your View</span>
+      <small>Saved to your session — used by AI Copilot</small>
+    </div>
+    <div class="thesis-capture-body">
+      ${inputsHtml}
+      <div class="thesis-saved-note" id="capture-saved-${sectionId}">✓ Saved to session</div>
+    </div>`;
+
+  content.appendChild(box);
+
+  // Sentinel div to trigger visibility
+  const sentinel = document.createElement('div');
+  sentinel.id = 'sentinel-' + sectionId;
+  sentinel.style.height = '1px';
+  content.appendChild(sentinel);
+
+  // IntersectionObserver — show capture box when user scrolls to bottom of section
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        box.classList.add('visible');
+        obs.disconnect();
+      }
+    });
+  }, { threshold: 0.5 });
+  obs.observe(sentinel);
+}
+
+function _saveCaptureInput(sectionId, idx, value) {
+  const cfg = _captureConfig[sectionId];
+  if (!cfg) return;
+  const key = cfg.keys[idx];
+  if (!window._fintiqSession.explicit_inputs) window._fintiqSession.explicit_inputs = {};
+  window._fintiqSession.explicit_inputs[key] = value;
+  window._fintiqSession.updated_at = new Date().toISOString();
+  const note = document.getElementById('capture-saved-' + sectionId);
+  if (note) { note.style.display = 'block'; setTimeout(() => note.style.display = 'none', 1500); }
+}
+
+// _injectCaptureBox is called from setStatus (defined earlier in the file)
 </script>
 
 <!-- ── FCA-style disclaimer footer ── -->
