@@ -156,6 +156,16 @@ a{color:var(--gold);text-decoration:none}
 .growth-table td:first-child{text-align:left;color:var(--dim);font-weight:400}
 .growth-table tr:last-child td{border-bottom:none}
 
+/* ── Segment revenue table ── */
+.seg-table{width:100%;border-collapse:collapse;font-size:0.78rem}
+.seg-table th{padding:6px 10px;color:var(--muted);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);text-align:left}
+.seg-table th.r{text-align:right}
+.seg-table td{padding:7px 10px;border-bottom:1px solid rgba(30,58,95,0.4)}
+.seg-table td.r{text-align:right}
+.seg-table tr:last-child td{border-bottom:none}
+.seg-bar-wrap{width:80px;display:inline-block;vertical-align:middle}
+.seg-bar{height:6px;border-radius:3px;background:var(--gold);display:inline-block}
+
 /* ── Competitor table ── */
 .comp-table{width:100%;border-collapse:collapse;font-size:0.78rem}
 .comp-table th{padding:6px 10px;color:var(--muted);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);text-align:right}
@@ -1123,6 +1133,45 @@ function renderFundamentals(d) {
     ${ovItem('Website', ov.website ? `<a href="${ov.website}" target="_blank" style="font-size:0.72rem">${ov.website.replace('https://','').replace('http://','')}</a>` : null, true)}
   </div>`;
 
+  // ── Revenue Segments (Layer 1 data — from FMP, no AI) ──
+  const segs = d.revenue_segments || [];
+  const geos = d.revenue_geo || [];
+  if (segs.length || geos.length) {
+    html += `<div class="sub-label">Revenue Breakdown</div>`;
+    if (segs.length) {
+      const total = segs.reduce((s, r) => s + (r.value || 0), 0);
+      html += `<div style="font-size:0.68rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em">By Product / Segment</div>
+      <div class="tbl-wrap"><table class="seg-table">
+        <tr><th>Segment</th><th class="r">Revenue</th><th class="r">% of Total</th><th></th></tr>
+        ${segs.slice(0,8).map(r => {
+          const pct = total > 0 ? Math.round(r.value / total * 100) : null;
+          return `<tr>
+            <td>${r.name}</td>
+            <td class="r">${_fmt_rev(r.value, currSym)}</td>
+            <td class="r">${pct != null ? pct + '%' : '—'}</td>
+            <td><div class="seg-bar-wrap"><div class="seg-bar" style="width:${pct || 0}%"></div></div></td>
+          </tr>`;
+        }).join('')}
+      </table></div>`;
+    }
+    if (geos.length) {
+      const gtotal = geos.reduce((s, r) => s + (r.value || 0), 0);
+      html += `<div style="font-size:0.68rem;color:var(--muted);margin:10px 0 6px;text-transform:uppercase;letter-spacing:0.06em">By Geography</div>
+      <div class="tbl-wrap"><table class="seg-table">
+        <tr><th>Region</th><th class="r">Revenue</th><th class="r">% of Total</th><th></th></tr>
+        ${geos.slice(0,8).map(r => {
+          const pct = gtotal > 0 ? Math.round(r.value / gtotal * 100) : null;
+          return `<tr>
+            <td>${r.name}</td>
+            <td class="r">${_fmt_rev(r.value, currSym)}</td>
+            <td class="r">${pct != null ? pct + '%' : '—'}</td>
+            <td><div class="seg-bar-wrap"><div class="seg-bar" style="width:${pct || 0}%;background:var(--green)"></div></div></td>
+          </tr>`;
+        }).join('')}
+      </table></div>`;
+    }
+  }
+
   // ── Analyst Consensus ──
   if (totalRecs) {
     const bPct = Math.round(((an.strong_buy||0)+(an.buy||0))/totalRecs*100);
@@ -1313,6 +1362,7 @@ function renderFundamentals(d) {
   document.getElementById('fund-content').innerHTML = html;
   document.getElementById('fund-content').style.display = 'block';
   setStatus('fundamentals', 'done');
+
 }
 
 // ── TSR renderer ──
@@ -1599,6 +1649,14 @@ function pctColor(v) {
   if (v == null) return '—';
   const col = v >= 0 ? '#22c55e' : '#ef4444';
   return `<span style="color:${col};font-weight:700">${v >= 0 ? '+' : ''}${(v*100).toFixed(1)}%</span>`;
+}
+
+// Format raw revenue number (from FMP segment data) with currency + B/M suffix
+function _fmt_rev(v, sym) {
+  if (!v || isNaN(v)) return '—';
+  if (Math.abs(v) >= 1e9) return `${sym}${(v/1e9).toFixed(1)}B`;
+  if (Math.abs(v) >= 1e6) return `${sym}${(v/1e6).toFixed(0)}M`;
+  return `${sym}${v.toLocaleString()}`;
 }
 
 function ovItem(label, value, raw=false) {

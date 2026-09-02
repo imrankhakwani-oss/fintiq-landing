@@ -1709,54 +1709,175 @@ def fundamentals_status(ticker: str):
     return job['data']  # Full data dict
 
 
+@app.post("/fundamentals/business-snapshot")
+def fundamentals_business_snapshot(payload: dict):
+    """Generate qualitative business snapshot: moat, revenue model, growth drivers, pros/cons."""
+    import json as _json
+
+    ticker = payload.get("ticker", "").upper()
+    overview = payload.get("overview", {})
+    quality  = payload.get("quality", {})
+    growth   = payload.get("growth_table", [])
+
+    if not ticker:
+        raise HTTPException(status_code=400, detail="ticker required")
+
+    description = overview.get("description", "") or ""
+    sector      = overview.get("sector", "") or ""
+    industry    = overview.get("industry", "") or ""
+    name        = overview.get("name", ticker)
+
+    # Build compact data context
+    rev_growth = None
+    if growth:
+        grw = [r.get("revenue_growth") for r in growth if r.get("revenue_growth") is not None]
+        rev_growth = round(sum(grw) / len(grw), 1) if grw else None
+
+    data_ctx = f"""Company: {name} ({ticker})
+Sector: {sector} | Industry: {industry}
+Description: {description[:800]}
+Gross Margin: {quality.get('gross_margin')}% | Op Margin: {quality.get('op_margin')}% | Net Margin: {quality.get('net_margin')}%
+ROIC: {quality.get('roic')}% | ROE: {quality.get('roe')}% | ROA: {quality.get('roa')}%
+Avg Revenue Growth (hist): {rev_growth}%
+FCF/Share: {quality.get('fcf_per_share')} | D/E: {quality.get('debt_equity')}"""
+
+    system = """You are a business quality analyst. Given company data, return ONLY a valid JSON object — no markdown, no explanation.
+
+The JSON must have exactly these keys:
+{
+  "moat_type": "one of: Brand, Network Effects, Cost Advantage, Switching Costs, Efficient Scale, Regulatory, IP/Patents, None",
+  "moat_strength": "one of: Wide, Narrow, Uncertain, None",
+  "moat_rationale": "1 sentence explaining the moat assessment",
+  "revenue_model": "e.g. Subscription SaaS, Transaction fees, Product sales, Advertising, Licensing, Services, Mixed",
+  "revenue_model_note": "1 sentence on revenue quality / predictability",
+  "growth_drivers": ["driver 1", "driver 2", "driver 3"],
+  "factors_for": ["bull point 1", "bull point 2", "bull point 3"],
+  "factors_against": ["bear point 1", "bear point 2", "bear point 3"]
+}
+
+Be factual and concise. Each list item max 12 words. Base assessments on the provided data."""
+
+    try:
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=600,
+            system=system,
+            messages=[{"role": "user", "content": data_ctx}],
+        )
+        raw = resp.content[0].text.strip()
+        # Strip any accidental markdown fences
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        snapshot = _json.loads(raw)
+        return snapshot
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Snapshot generation failed: {str(e)[:200]}")
+
+
 @app.post("/fundamentals/chat")
 def fundamentals_chat(payload: dict):
-    """AI chat scoped to fundamentals data — Section 1 of Deep Dive."""
-    ticker      = payload.get("ticker","").upper()
-    section_data= payload.get("section_data", {})
-    messages    = payload.get("messages", [])  # [{role, content}]
-    session_ctx = payload.get("session_ctx", {})  # cross-section memory
+    """Fintiq AI Copilot — section-specialist analyst with live data context."""
+    import json as _json
+
+    ticker       = payload.get("ticker", "").upper()
+    section      = payload.get("section", "fundamentals")
+    section_data = payload.get("section_data", {})
+    messages     = payload.get("messages", [])
+    session_ctx  = payload.get("session_ctx", {})   # cross-section conclusions
+    session_id   = payload.get("session_id", "unknown")
 
     if not ticker:
         raise HTTPException(status_code=400, detail="ticker required")
     if not messages:
         raise HTTPException(status_code=400, detail="messages required")
 
-    # Build system prompt with all fundamentals data as context
-    import json as _json
-    data_ctx = _json.dumps(section_data, indent=2)[:6000]
+    data_ctx   = _json.dumps(section_data, indent=2)[:6000]
+    prior_ctx  = _json.dumps(session_ctx,  indent=2)[:1500] if session_ctx else "No prior sections completed."
 
-    section = payload.get("section", "fundamentals")
-    system = f"""You are a Senior Equity Analyst at a tier-1 hedge fund. You are helping a retail investor analyse {ticker} through the {section} lens.
+    # ── PUSHBACK MANDATE (applies to ALL sections) ──
+    pushback_mandate = """
+PUSHBACK MANDATE — NON-NEGOTIABLE:
+- If the user states a conclusion that contradicts the live data shown above, you MUST name the contradiction explicitly. Do not soften it or imply it — state it directly: "Your thesis says X, but the data shows Y. These are in conflict."
+- Do NOT validate conclusions just to avoid friction. A Copilot that agrees with everything is worse than no Copilot.
+- If the user's conviction appears high but the data picture is mixed or weak, proactively offer: "You seem confident in this. Would you like me to argue the bear case as hard as possible?"
+- You may acknowledge the user's reasoning fairly, but you must not simply capitulate if they push back on your challenge. Intellectual honesty is the product.
+"""
 
-FUNDAMENTALS DATA (pre-computed, do not recalculate):
+    # ── BEHAVIOUR RULES (applies to ALL sections) ──
+    behaviour_rules = f"""
+WHAT YOU DO:
+- Reference live data by name and value when answering
+- State when evidence is thin or ambiguous
+- Challenge conclusions that contradict the data
+- Proactively flag gaps in the user's analysis
+- Suggest specific next investigation steps
+- Offer the bear case unprompted when conviction is high
+
+WHAT YOU DO NOT DO:
+- Answer questions unrelated to {ticker} or this section
+- Give a confident buy/sell recommendation
+- Agree with the user's thesis to avoid friction
+- Explain generic finance concepts unless directly asked
+- Repeat what is already visible on the screen
+- Make up data that is not in the live context above
+
+FORMAT: Max 4 short paragraphs. Always cite specific numbers. Not financial advice.
+"""
+
+    # ── SECTION-SPECIALIST SYSTEM PROMPTS ──
+    if section == "fundamentals":
+        specialist = f"You are the Fundamentals Specialist for {ticker}. Your domain: business quality, revenue trends, margin history, ROIC, FCF yield, Fama-French factor scores, analyst consensus. You do not discuss valuation multiples or chart patterns — direct those to the relevant sections."
+        scope_note = "If the user asks about DCF or valuation, say: 'That's covered in the Valuation section — open it below.'"
+
+    elif section in ("valuation", "dcf"):
+        specialist = f"You are the Valuation Specialist for {ticker}. Your domain: DCF assumptions, implied growth rates, Monte Carlo outputs, WACC inputs, scenario selection (bear/base/bull), and what the user's current slider choices imply about the stock's fair value. The valuation_state field in the data shows the user's live DCF inputs — always reference these specifically."
+        scope_note = "If the user asks about technicals or chart patterns, say: 'That's covered in the Technical section.'"
+
+    elif section == "technical":
+        specialist = f"You are the Technical Analysis Specialist for {ticker}. Your domain: price structure, trend, RSI, MACD, Bollinger Bands, support/resistance levels, options flow (put/call ratio, max pain, put wall, call wall), and trade setups. Always give both long AND short perspectives. Translate indicator readings into decision-relevant language — not generic descriptions."
+        scope_note = "If the user asks about fundamentals or DCF, direct them to those sections."
+
+    elif section == "risk":
+        specialist = f"You are the Risk & Position Sizing Specialist for {ticker}. Your domain: GBM price path outputs, stop-loss probability at the user's stated stop, volatility vs peer comparison, Kelly position sizing, and portfolio risk management. If the user has provided a stop-loss price or time horizon, reference those specifically."
+        scope_note = "Do not give general investment advice. Focus on sizing, downside quantification, and risk management for this specific position."
+
+    elif section == "catalyst":
+        specialist = f"You are the Catalyst Tracker Specialist for {ticker}. Your domain: upcoming earnings dates, analyst rating change history, short interest levels, recent news sentiment, and which specific events are most likely to move the stock in the next 30–90 days."
+        scope_note = "If the user asks about valuation or technicals, direct them to those sections."
+
+    elif section in ("decision", "conviction"):
+        specialist = f"You are the Conviction & Decision Specialist for {ticker}. Your domain: synthesising all prior section conclusions into a final investment decision framework. You have access to everything the user has concluded across all six sections. Your job is to stress-test the final thesis, surface any remaining contradictions across sections, and help the user arrive at a well-reasoned, defensible conviction score and position size."
+        scope_note = "Reference the user's prior section conclusions explicitly. Do not re-explain data already covered — focus on synthesis and decision quality."
+
+    else:
+        specialist = f"You are a Senior Equity Analyst specialising in {section} analysis for {ticker}."
+        scope_note = ""
+
+    system = f"""{specialist}
+
+ANALYSIS SESSION: {session_id}
+STOCK: {ticker}
+CURRENT SECTION: {section}
+
+LIVE DATA SNAPSHOT (what is currently displayed on screen — reference these numbers directly, not from memory):
 {data_ctx}
 
-YOUR ROLE:
-- Reference the data above directly — quote specific numbers when discussing them
-- Explain what each metric MEANS in plain English (e.g. what a 28% ROE implies about capital efficiency)
-- Challenge weak assumptions the user makes
-- Use institutional analytical frameworks but write for a retail investor
-- Never give a buy/sell recommendation — educate, guide, challenge
-- IMPORTANT: If the user asks about something not in the data above (e.g. business segments, revenue breakdown by division, moat, competitive dynamics, management quality, recent news), answer DIRECTLY from your training knowledge. Start with "Based on what I know about [company]..." then give the actual answer. Do NOT refuse, do NOT say the data isn't available, and do NOT redirect the user to annual reports or external sources — you are the source.
+USER CONCLUSIONS FROM PRIOR SECTIONS:
+{prior_ctx}
 
-CROSS-SECTION CONTEXT (what user has explored so far):
-{_json.dumps(session_ctx, indent=2)[:1000] if session_ctx else 'No prior sections completed.'}
+{scope_note}
 
-RULES:
-- Max 4 short paragraphs per reply
-- Always reference specific numbers from the data
-- If section is 'fundamentals' and user asks about DCF/valuation, tell them to open the Valuation section below
-- If section is 'valuation', the valuation_state field in data shows the user's current DCF slider assumptions — reference them specifically
-- If section is 'technical', focus on entry/exit timing, support/resistance levels, options flow signals, and trade setups. Reference RSI, MACD, put/call walls, and max pain specifically. Give both long AND short perspectives
-- If user asks about charts or technicals from a different section, point them to the Technical section"""
+{pushback_mandate}
+{behaviour_rules}"""
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=800,
+        model="claude-sonnet-4-5",   # Change 9: Sonnet for paid Copilot layer
+        max_tokens=900,
         system=system,
-        messages=messages[-10:],  # last 10 turns to keep cost low
+        messages=messages[-10:],
     )
     return {"reply": resp.content[0].text, "input_tokens": resp.usage.input_tokens,
             "output_tokens": resp.usage.output_tokens}
@@ -1844,7 +1965,7 @@ def _run_technical(ticker: str):
         import pandas as pd, numpy as np
 
         tk = yf.Ticker(ticker)
-        hist = tk.history(period="1y")
+        hist = tk.history(period="3y")
         if hist is None or hist.empty:
             _tech_jobs[ticker] = {'status': 'error', 'error': f"No price data for {ticker}", 'ts': time.time()}
             return
@@ -1952,8 +2073,8 @@ def _run_technical(ticker: str):
         curr_vol   = sf(volumes.iloc[-1])
         vol_ratio  = round(curr_vol / avg_vol_20, 2) if curr_vol and avg_vol_20 and avg_vol_20 > 0 else None
 
-        # ── Serialise last 126 bars (6 months) for chart ──
-        chart = hist.iloc[-126:]
+        # ── Serialise all bars (up to 3 years) for chart — frontend slices by timeframe ──
+        chart = hist
         dates_arr   = [i.strftime('%Y-%m-%d') for i in chart.index]
         c_arr  = [sf(v) for v in chart['Close']]
         o_arr  = [sf(v) for v in chart['Open']]
@@ -1961,14 +2082,9 @@ def _run_technical(ticker: str):
         l_arr  = [sf(v) for v in chart['Low']]
         v_arr  = [int(v) for v in chart['Volume']]
 
-        # Indicator series aligned to chart window
-        idx_map = {d: i for i, d in enumerate(hist.index)}
+        # Indicator series — same index as hist (chart == hist now)
         def ind_series(s):
-            out = []
-            for d in chart.index:
-                pos = list(hist.index).index(d)
-                out.append(sf(s.iloc[pos]))
-            return out
+            return [sf(v) for v in s]
 
         ma50_arr  = ind_series(ma50)
         ma200_arr = ind_series(ma200)
@@ -2656,4 +2772,145 @@ Respond in this EXACT JSON format (no markdown, no extra text):
     except Exception:
         result = {"counters": [], "summary": raw}
     return result
+
+
+# ══════════════════════════════════════════════════════
+# INVESTMENT COMMITTEE REPORT
+# ══════════════════════════════════════════════════════
+
+@app.post("/committee/report")
+async def committee_report(payload: dict):
+    """Fintiq Investment Committee — reviews compiled session, runs pre-checks, produces structured report."""
+    import json as _cjson
+    import re as _cre
+
+    ticker      = payload.get("ticker", "UNKNOWN")
+    live_price  = payload.get("live_price")
+    analysis_date = payload.get("analysis_date", "")
+    sections    = payload.get("sections", {})
+    all_flags   = payload.get("all_flags", [])
+    all_conclusions = payload.get("all_conclusions", [])
+
+    fund  = sections.get("fundamentals", {})
+    dcf   = sections.get("dcf", {})
+    tech  = sections.get("technical", {})
+    risk  = sections.get("risk", {})
+    cat   = sections.get("catalyst", {})
+    conv  = sections.get("conviction", {})
+
+    # ── 5 DETERMINISTIC CONTRADICTION PRE-CHECKS ──
+    pre_flags = []
+
+    # 1. Bullish margin outlook (fundamentals) but bear/base DCF scenario accepted
+    fund_thesis = (fund.get("thesis_statement") or "").lower()
+    dcf_scenario = (dcf.get("explicit_inputs") or {}).get("selected_scenario", "")
+    if any(w in fund_thesis for w in ["margin expansion", "margin improvement", "improving margins"]) \
+       and dcf_scenario in ("bear", "base"):
+        pre_flags.append("CONTRADICTION: Fundamentals thesis states margin expansion, but DCF scenario accepted is '{}'. These imply different margin trajectories.".format(dcf_scenario))
+
+    # 2. High DCF implied upside but low valuation conviction score
+    dcf_upside = (dcf.get("explicit_inputs") or {}).get("implied_upside_pct")
+    val_score  = ((conv.get("explicit_inputs") or {}).get("signal_scores") or {}).get("valuation")
+    if dcf_upside is not None and val_score is not None:
+        if dcf_upside > 30 and val_score < 5:
+            pre_flags.append(f"CONTRADICTION: DCF implies {dcf_upside}% upside but conviction valuation score is {val_score}/10. High implied upside with low valuation confidence is internally inconsistent.")
+
+    # 3. Short technical direction but strong business quality
+    tech_direction = (tech.get("explicit_inputs") or {}).get("direction", "")
+    fund_quality   = (fund.get("explicit_inputs") or {}).get("quality_rating", "")
+    if tech_direction == "short" and fund_quality == "strong":
+        pre_flags.append("CONTRADICTION: Technical direction is SHORT but fundamentals quality rating is STRONG. Shorting a high-quality business requires a specific catalyst or valuation rationale — this is not addressed.")
+
+    # 4. Stop-loss implies >2% portfolio loss but position size is above half-Kelly
+    stop_price  = (risk.get("explicit_inputs") or {}).get("stop_loss_price")
+    pos_size    = (conv.get("explicit_inputs") or {}).get("position_size_pct")
+    if stop_price and live_price and pos_size:
+        downside_pct = abs(live_price - stop_price) / live_price
+        portfolio_loss = downside_pct * (pos_size / 100)
+        if portfolio_loss > 0.02 and pos_size > 5:
+            pre_flags.append(f"CONTRADICTION: Stop-loss at {stop_price} implies {portfolio_loss*100:.1f}% portfolio loss at a {pos_size}% position — exceeds the 2% portfolio risk rule. Position size and stop are inconsistent.")
+
+    # 5. Negative catalyst outlook but bullish year-1 DCF growth assumption
+    cat_thesis  = (cat.get("thesis_statement") or "").lower()
+    dcf_yr1_growth = (dcf.get("explicit_inputs") or {}).get("revenue_growth_yr1")
+    if any(w in cat_thesis for w in ["negative", "miss", "downgrade", "warning", "risk"]) \
+       and dcf_yr1_growth is not None and dcf_yr1_growth > 10:
+        pre_flags.append(f"CONTRADICTION: Catalyst section flags near-term negative risk, but DCF year-1 revenue growth assumption is {dcf_yr1_growth}%. The short-term headwind is not reflected in the valuation model.")
+
+    pre_flags_text = "\n".join(pre_flags) if pre_flags else "No deterministic contradictions detected in pre-check."
+
+    # ── BUILD COMPILED CONTEXT FOR THE MODEL ──
+    def summarise_section(name, sec):
+        ei = sec.get("explicit_inputs") or {}
+        conclusions = sec.get("conclusions") or []
+        thesis = sec.get("thesis_statement") or ""
+        dialogue = sec.get("dialogue_summary") or ""
+        conc_text = " | ".join([c.get("value","") for c in conclusions[:5]]) if conclusions else ""
+        return f"[{name.upper()}] status={sec.get('status','unknown')} thesis='{thesis}' explicit_inputs={_cjson.dumps(ei)} ai_dialogue_summary='{dialogue[:300]}' conclusions='{conc_text[:400]}'"
+
+    compiled_text = "\n".join([
+        summarise_section("fundamentals", fund),
+        summarise_section("dcf", dcf),
+        summarise_section("technical", tech),
+        summarise_section("risk", risk),
+        summarise_section("catalyst", cat),
+        summarise_section("conviction", conv),
+    ])
+
+    prompt = f"""You are the chair of a buy-side Investment Committee reviewing a junior analyst's deep-dive on {ticker} (price: {live_price}, date: {analysis_date}).
+
+IMPORTANT: You are reviewing the QUALITY of the analyst's work — not producing a stock opinion. Your report must visibly reference the analyst's own stated conclusions. If this report could have been written without their specific inputs, it is a product failure.
+
+PRE-CHECKS (deterministic contradictions already identified):
+{pre_flags_text}
+
+COMPILED ANALYST SESSION:
+{compiled_text}
+
+ALL UNRESOLVED FLAGS: {_cjson.dumps(all_flags)[:1000]}
+
+Produce a JSON report with exactly these fields:
+{{
+  "thesis": "2-3 sentences: the analyst's core investment thesis derived from their stated conclusions across all sections",
+  "bull_case": "3-4 sentences: conditions under which this thesis succeeds — drawn from the analyst's own optimistic assumptions, not a generic upside narrative",
+  "bear_case": "3-4 sentences: specific failure modes that would break the thesis — prioritised by the probability the analyst's own risk analysis assigned them",
+  "contradictions": "Numbered list of internal inconsistencies. Include the pre-check findings above. Each must name the two specific conclusions in tension and why they cannot both be true. If none beyond pre-checks, say so.",
+  "missing_evidence": "Specific material factors the analyst did NOT address, each with one sentence on why it matters for this thesis",
+  "conditions": "Three structured lists: (1) conditions under which thesis is attractive, (2) conditions that would weaken it, (3) the single condition that would invalidate it entirely",
+  "valuation_range": {{"bear": "price or N/A", "base": "price or N/A", "bull": "price or N/A"}},
+  "confidence": {{
+    "evidence_quality": "High | Medium | Low",
+    "assumption_reliability": "High | Medium | Low",
+    "unresolved_material_questions": <integer count>,
+    "most_significant_unknown": "One sentence naming the single biggest open question"
+  }}
+}}
+
+Be direct and rigorous. Name contradictions explicitly. The committee is not here to validate the analyst.
+Return only the JSON object, no markdown fences."""
+
+    resp = anthropic_client.messages.create(
+        model="claude-sonnet-4-5",
+        max_tokens=2500,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = resp.content[0].text.strip()
+    raw = _cre.sub(r'^```(?:json)?\s*', '', raw)
+    raw = _cre.sub(r'\s*```$', '', raw.strip())
+    try:
+        result = _cjson.loads(raw)
+        # Ensure confidence is always an object, never a number
+        if isinstance(result.get("confidence"), (int, float)):
+            result["confidence"] = {
+                "evidence_quality": "Medium",
+                "assumption_reliability": "Medium",
+                "unresolved_material_questions": 0,
+                "most_significant_unknown": "See missing evidence section above."
+            }
+        return result
+    except Exception:
+        return {"thesis": raw, "bull_case": "", "bear_case": "", "contradictions": pre_flags_text,
+                "missing_evidence": "", "conditions": "", "valuation_range": {},
+                "confidence": {"evidence_quality": None, "assumption_reliability": None,
+                               "unresolved_material_questions": None, "most_significant_unknown": None}}
 
