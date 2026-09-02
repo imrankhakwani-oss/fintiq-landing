@@ -1286,7 +1286,7 @@ function renderFundamentals(d) {
       <div class="opt-card"><div class="opt-label">Expiry Dates</div><div class="opt-value">${op.total_expirations || '—'}</div><div class="opt-note">Available maturities</div></div>
     </div>
     <div style="font-size:0.7rem;color:var(--muted);margin-top:8px;padding:8px 10px;background:var(--card2);border-radius:6px;border-left:2px solid var(--border)">
-      <strong style="color:var(--dim)">How to read options:</strong> <strong>PCR (OI)</strong> uses open interest across all expiries — shows cumulative positioning (1.62 = more puts open = hedging/bearish lean). The Technical section shows <strong>PCR (Volume)</strong> — today's trading activity only (0.62 = more calls traded today = bullish session). Both are valid but measure different things. ATM IV shows how much the market expects the stock to move over the next 30 days — high IV = expensive options, often near events.
+      <strong style="color:var(--dim)">How to read options:</strong> <strong>PCR (OI)</strong> uses open interest across all expiries — shows cumulative positioning for ${d.ticker||'this stock'} (${pcr != null ? `current PCR = ${pcr}, indicating ${pcr < 0.7 ? 'more calls open than puts — net bullish positioning' : pcr > 1.2 ? 'more puts open than calls — elevated hedging or bearish lean' : 'roughly balanced call/put positioning'}` : 'PCR data unavailable'}). The Technical section shows <strong>PCR (Volume)</strong> — today's trading activity only, which can differ from OI. Both are valid but measure different things. ATM IV ${op.atm_iv != null ? `of ${op.atm_iv}% ` : ''}shows how much the market expects the stock to move over the next 30 days — high IV = expensive options, often near events.
     </div>`;
   }
 
