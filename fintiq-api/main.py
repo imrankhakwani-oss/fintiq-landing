@@ -205,6 +205,40 @@ def _fetch_yield_spread() -> tuple:
         except: pass
     return None, []
 
+def _fetch_fmp_segments(ticker: str, kind: str = "product") -> list:
+    """Fetch revenue breakdown by product/segment or geography from FMP.
+    kind: 'product' -> /revenue-product-segmentation, 'geographic' -> /revenue-geographic-segmentation
+    Returns list of {name, value} dicts for the most recent fiscal year, sorted desc by value.
+    """
+    try:
+        endpoint = "revenue-product-segmentation" if kind == "product" else "revenue-geographic-segmentation"
+        r = requests.get(
+            f"{FMP_BASE}/v4/{endpoint}?symbol={ticker}&apikey={FMP_KEY}",
+            timeout=10,
+        )
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        if not data or not isinstance(data, list):
+            return []
+        # FMP returns list of {date: ..., <SegmentName>: value, ...} — take most recent entry
+        most_recent = data[0]
+        rows = []
+        for k, v in most_recent.items():
+            if k == "date":
+                continue
+            try:
+                val = float(v)
+                if val > 0:
+                    rows.append({"name": k, "value": val})
+            except (TypeError, ValueError):
+                pass
+        rows.sort(key=lambda x: x["value"], reverse=True)
+        return rows
+    except Exception:
+        return []
+
+
 def _fetch_econ_indicator(name: str) -> Optional[dict]:
     try:
         r = requests.get(f"{FMP_BASE}/v4/economic?name={name}&apikey={FMP_KEY}", timeout=10)
@@ -1642,6 +1676,8 @@ def _run_fundamentals(ticker: str):
             "subj_fpe": subj_fpe,
             "ff4": ff4,
             "tsr": tsr_data,
+            "revenue_segments": _fetch_fmp_segments(ticker, "product"),
+            "revenue_geo":      _fetch_fmp_segments(ticker, "geographic"),
             "valuation_inputs": {
                 "shares_outstanding": shares_out,
                 "ev_raw": round(ev, 0) if ev else None,
@@ -1709,73 +1745,6 @@ def fundamentals_status(ticker: str):
     return job['data']  # Full data dict
 
 
-@app.post("/fundamentals/business-snapshot")
-def fundamentals_business_snapshot(payload: dict):
-    """Generate qualitative business snapshot: moat, revenue model, growth drivers, pros/cons."""
-    import json as _json
-
-    ticker = payload.get("ticker", "").upper()
-    overview = payload.get("overview", {})
-    quality  = payload.get("quality", {})
-    growth   = payload.get("growth_table", [])
-
-    if not ticker:
-        raise HTTPException(status_code=400, detail="ticker required")
-
-    description = overview.get("description", "") or ""
-    sector      = overview.get("sector", "") or ""
-    industry    = overview.get("industry", "") or ""
-    name        = overview.get("name", ticker)
-
-    # Build compact data context
-    rev_growth = None
-    if growth:
-        grw = [r.get("revenue_growth") for r in growth if r.get("revenue_growth") is not None]
-        rev_growth = round(sum(grw) / len(grw), 1) if grw else None
-
-    data_ctx = f"""Company: {name} ({ticker})
-Sector: {sector} | Industry: {industry}
-Description: {description[:800]}
-Gross Margin: {quality.get('gross_margin')}% | Op Margin: {quality.get('op_margin')}% | Net Margin: {quality.get('net_margin')}%
-ROIC: {quality.get('roic')}% | ROE: {quality.get('roe')}% | ROA: {quality.get('roa')}%
-Avg Revenue Growth (hist): {rev_growth}%
-FCF/Share: {quality.get('fcf_per_share')} | D/E: {quality.get('debt_equity')}"""
-
-    system = """You are a business quality analyst. Given company data, return ONLY a valid JSON object — no markdown, no explanation.
-
-The JSON must have exactly these keys:
-{
-  "moat_type": "one of: Brand, Network Effects, Cost Advantage, Switching Costs, Efficient Scale, Regulatory, IP/Patents, None",
-  "moat_strength": "one of: Wide, Narrow, Uncertain, None",
-  "moat_rationale": "1 sentence explaining the moat assessment",
-  "revenue_model": "e.g. Subscription SaaS, Transaction fees, Product sales, Advertising, Licensing, Services, Mixed",
-  "revenue_model_note": "1 sentence on revenue quality / predictability",
-  "growth_drivers": ["driver 1", "driver 2", "driver 3"],
-  "factors_for": ["bull point 1", "bull point 2", "bull point 3"],
-  "factors_against": ["bear point 1", "bear point 2", "bear point 3"]
-}
-
-Be factual and concise. Each list item max 12 words. Base assessments on the provided data."""
-
-    try:
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=600,
-            system=system,
-            messages=[{"role": "user", "content": data_ctx}],
-        )
-        raw = resp.content[0].text.strip()
-        # Strip any accidental markdown fences
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        snapshot = _json.loads(raw)
-        return snapshot
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Snapshot generation failed: {str(e)[:200]}")
-
-
 @app.post("/fundamentals/chat")
 def fundamentals_chat(payload: dict):
     """Fintiq AI Copilot — section-specialist analyst with live data context."""
@@ -1828,7 +1797,20 @@ FORMAT: Max 4 short paragraphs. Always cite specific numbers. Not financial advi
 
     # ── SECTION-SPECIALIST SYSTEM PROMPTS ──
     if section == "fundamentals":
-        specialist = f"You are the Fundamentals Specialist for {ticker}. Your domain: business quality, revenue trends, margin history, ROIC, FCF yield, Fama-French factor scores, analyst consensus. You do not discuss valuation multiples or chart patterns — direct those to the relevant sections."
+        specialist = f"""You are the Fundamentals Specialist for {ticker}. Your domain: business quality, competitive positioning, revenue model, moat assessment, growth drivers, margin history, ROIC, FCF yield, Fama-French factor scores, analyst consensus.
+
+OPENING MESSAGE INSTRUCTION: If this is the user's first message (the conversation has only one user turn), open your response with a structured Business Quality Snapshot BEFORE answering their question. Format it as follows — be concise, factual, specific to {ticker}:
+
+**Business Quality Snapshot — {ticker}**
+• **Moat**: [Type: Brand / Network Effects / Cost Advantage / Switching Costs / Regulatory / IP / None] — [1 sentence rationale]
+• **Revenue Model**: [e.g. Subscription SaaS / Product sales / Advertising / Transaction fees / Mixed] — [1 sentence on revenue quality/predictability]
+• **Growth Drivers** (top 3): [brief bullet per driver]
+• **Factors For**: [top 3 bull points, ≤12 words each]
+• **Factors Against**: [top 3 bear points, ≤12 words each]
+
+Then answer the user's actual question. Do not repeat the snapshot in subsequent messages.
+
+You do not discuss valuation multiples or chart patterns — direct those to the relevant sections."""
         scope_note = "If the user asks about DCF or valuation, say: 'That's covered in the Valuation section — open it below.'"
 
     elif section in ("valuation", "dcf"):
@@ -1872,15 +1854,42 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
 {pushback_mandate}
 {behaviour_rules}"""
 
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    # Fix 5: Haiku for routine Copilot exchanges (spec + margin model)
+    # Fix 6: Prompt caching — system prompt cached, historical turns cached, only latest turn billed full
+    history = messages[-10:]
+    cached_history = history[:-1]   # all but last turn — these are stable, cache them
+    latest_turn    = history[-1] if history else {"role": "user", "content": ""}
+
     resp = client.messages.create(
-        model="claude-sonnet-4-5",   # Change 9: Sonnet for paid Copilot layer
-        max_tokens=900,
-        system=system,
-        messages=messages[-10:],
+        model="claude-haiku-4-5-20251001",
+        max_tokens=600,
+        system=[{
+            "type": "text",
+            "text": system,
+            "cache_control": {"type": "ephemeral"},   # cache the large system prompt
+        }],
+        messages=[
+            *[{**m, "cache_control": {"type": "ephemeral"}} if i == len(cached_history) - 1 else m
+              for i, m in enumerate(cached_history)],
+            latest_turn,
+        ],
+        betas=["prompt-caching-2024-07-31"],
     )
-    return {"reply": resp.content[0].text, "input_tokens": resp.usage.input_tokens,
-            "output_tokens": resp.usage.output_tokens}
+    # Fix 9: run real-time contradiction checks and return flags with reply
+    # Frontend can show these inline during the Copilot dialogue
+    realtime_flags = []
+    compiled_sections = session_ctx.get("sections") if isinstance(session_ctx, dict) else None
+    if compiled_sections and isinstance(compiled_sections, dict):
+        realtime_flags = _run_contradiction_checks(compiled_sections, section_data.get("overview", {}).get("price"))
+
+    return {
+        "reply": resp.content[0].text,
+        "input_tokens": resp.usage.input_tokens,
+        "output_tokens": resp.usage.output_tokens,
+        "cache_read_tokens": getattr(resp.usage, "cache_read_input_tokens", 0),
+        "cache_write_tokens": getattr(resp.usage, "cache_creation_input_tokens", 0),
+        "contradiction_flags": realtime_flags,
+    }
 
 
 @app.post("/valuation/ai-assumptions")
@@ -2775,6 +2784,123 @@ Respond in this EXACT JSON format (no markdown, no extra text):
 
 
 # ══════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════
+# FIX 9 — SHARED CONTRADICTION CHECK FUNCTION
+# Called both by /committee/report and returned inline during Copilot chat
+# ══════════════════════════════════════════════════════
+
+def _run_contradiction_checks(sections: dict, live_price) -> list:
+    """Run 5 deterministic contradiction checks. Returns list of flag strings (empty = no contradictions)."""
+    fund = sections.get("fundamentals", {})
+    dcf  = sections.get("dcf", {})
+    tech = sections.get("technical", {})
+    risk = sections.get("risk", {})
+    cat  = sections.get("catalyst", {})
+    conv = sections.get("conviction", {})
+    flags = []
+
+    # 1. Bullish margin outlook in fundamentals thesis but bear/base DCF scenario
+    fund_thesis  = (fund.get("thesis_statement") or "").lower()
+    dcf_scenario = (dcf.get("explicit_inputs") or {}).get("selected_scenario", "")
+    if any(w in fund_thesis for w in ["margin expansion", "margin improvement", "improving margins"]) \
+       and dcf_scenario in ("bear", "base"):
+        flags.append(f"CONTRADICTION: Fundamentals thesis states margin expansion, but DCF scenario is '{dcf_scenario}'. These imply different margin trajectories.")
+
+    # 2. High DCF implied upside but low valuation conviction score
+    dcf_upside = (dcf.get("explicit_inputs") or {}).get("implied_upside_pct")
+    val_score  = ((conv.get("explicit_inputs") or {}).get("signal_scores") or {}).get("valuation")
+    if dcf_upside is not None and val_score is not None and dcf_upside > 30 and val_score < 5:
+        flags.append(f"CONTRADICTION: DCF implies {dcf_upside}% upside but valuation conviction score is {val_score}/10. High upside with low confidence is internally inconsistent.")
+
+    # 3. Short technical direction but strong business quality rating
+    tech_dir   = (tech.get("explicit_inputs") or {}).get("direction", "")
+    fund_qual  = (fund.get("explicit_inputs") or {}).get("quality_rating", "")
+    if tech_dir == "short" and fund_qual == "strong":
+        flags.append("CONTRADICTION: Technical direction is SHORT but fundamentals quality rating is STRONG. Shorting a high-quality business requires a specific catalyst — not addressed.")
+
+    # 4. Stop-loss implies >2% portfolio loss at stated position size
+    stop_price = (risk.get("explicit_inputs") or {}).get("stop_loss_price")
+    pos_size   = (conv.get("explicit_inputs") or {}).get("position_size_pct")
+    if stop_price and live_price and pos_size:
+        try:
+            downside_pct   = abs(float(live_price) - float(stop_price)) / float(live_price)
+            portfolio_loss = downside_pct * (float(pos_size) / 100)
+            if portfolio_loss > 0.02 and float(pos_size) > 5:
+                flags.append(f"CONTRADICTION: Stop at {stop_price} implies {portfolio_loss*100:.1f}% portfolio loss at {pos_size}% position — exceeds 2% portfolio risk rule.")
+        except (TypeError, ValueError):
+            pass
+
+    # 5. Negative catalyst language but bullish year-1 DCF growth
+    cat_thesis     = (cat.get("thesis_statement") or "").lower()
+    dcf_yr1_growth = (dcf.get("explicit_inputs") or {}).get("revenue_growth_yr1")
+    if any(w in cat_thesis for w in ["negative", "miss", "downgrade", "warning", "risk"]) \
+       and dcf_yr1_growth is not None and float(dcf_yr1_growth) > 10:
+        flags.append(f"CONTRADICTION: Catalyst flags near-term negative risk, but DCF year-1 revenue growth is {dcf_yr1_growth}%. Short-term headwind not reflected in the model.")
+
+    return flags
+
+
+# ══════════════════════════════════════════════════════
+# FIX 7 — DIALOGUE SUMMARISE ENDPOINT
+# Called by frontend when user moves away from a section
+# Compresses the Copilot dialogue into a 3-5 sentence summary for the Committee
+# ══════════════════════════════════════════════════════
+
+@app.post("/session/summarise")
+def summarise_section_dialogue(payload: dict):
+    """Compress a section's Copilot dialogue into a dialogue_summary for the Committee."""
+    section_name = payload.get("section_name", "unknown")
+    ticker       = payload.get("ticker", "").upper()
+    messages     = payload.get("messages", [])
+
+    if not messages:
+        return {"dialogue_summary": ""}
+
+    transcript = "\n".join([
+        f"{m['role'].upper()}: {m['content']}"
+        for m in messages[-20:]
+    ])
+
+    summary_prompt = f"""You are summarising a research dialogue about the {section_name} section for {ticker}.
+The analyst has just finished this section. Compress the key conclusions, explicit inputs provided, and any unresolved questions into 3-5 sentences.
+Focus on what changed in the analyst's thinking, not the process. Do not repeat data already in structured section outputs.
+
+DIALOGUE:
+{transcript}"""
+
+    resp = client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=300,
+        messages=[{"role": "user", "content": summary_prompt}],
+    )
+    return {"dialogue_summary": resp.content[0].text.strip()}
+
+
+# ══════════════════════════════════════════════════════
+# FIX 10 — IN-MEMORY ENTITLEMENT TRACKING
+# Red Team and Committee are premium features with per-session limits
+# Keyed by session_id (until auth is re-enabled, then switch to user_id)
+# ══════════════════════════════════════════════════════
+
+_session_entitlements: dict = {}  # {session_id: {"red_team_remaining": int, "committee_remaining": int}}
+_SESSION_RED_TEAM_LIMIT  = 3   # Red Team uses per session
+_SESSION_COMMITTEE_LIMIT = 2   # Committee reports per session
+
+def _check_and_deduct_entitlement(session_id: str, key: str, limit: int):
+    """Raise 403 if entitlement exhausted, otherwise deduct 1."""
+    if not session_id:
+        return  # no session_id = unauthenticated, allow for now (pre-auth phase)
+    ents = _session_entitlements.setdefault(session_id, {
+        "red_team_remaining":  _SESSION_RED_TEAM_LIMIT,
+        "committee_remaining": _SESSION_COMMITTEE_LIMIT,
+    })
+    remaining = ents.get(key, limit)
+    if remaining <= 0:
+        label = key.replace("_remaining", "").replace("_", " ").title()
+        raise HTTPException(status_code=403, detail=f"No {label} uses remaining this session.")
+    ents[key] = remaining - 1
+
+
 # INVESTMENT COMMITTEE REPORT
 # ══════════════════════════════════════════════════════
 
@@ -2783,6 +2909,10 @@ async def committee_report(payload: dict):
     """Fintiq Investment Committee — reviews compiled session, runs pre-checks, produces structured report."""
     import json as _cjson
     import re as _cre
+
+    # Fix 10: entitlement check — 2 Committee reports per session
+    session_id = payload.get("session_id", "")
+    _check_and_deduct_entitlement(session_id, "committee_remaining", _SESSION_COMMITTEE_LIMIT)
 
     ticker      = payload.get("ticker", "UNKNOWN")
     live_price  = payload.get("live_price")
@@ -2798,45 +2928,8 @@ async def committee_report(payload: dict):
     cat   = sections.get("catalyst", {})
     conv  = sections.get("conviction", {})
 
-    # ── 5 DETERMINISTIC CONTRADICTION PRE-CHECKS ──
-    pre_flags = []
-
-    # 1. Bullish margin outlook (fundamentals) but bear/base DCF scenario accepted
-    fund_thesis = (fund.get("thesis_statement") or "").lower()
-    dcf_scenario = (dcf.get("explicit_inputs") or {}).get("selected_scenario", "")
-    if any(w in fund_thesis for w in ["margin expansion", "margin improvement", "improving margins"]) \
-       and dcf_scenario in ("bear", "base"):
-        pre_flags.append("CONTRADICTION: Fundamentals thesis states margin expansion, but DCF scenario accepted is '{}'. These imply different margin trajectories.".format(dcf_scenario))
-
-    # 2. High DCF implied upside but low valuation conviction score
-    dcf_upside = (dcf.get("explicit_inputs") or {}).get("implied_upside_pct")
-    val_score  = ((conv.get("explicit_inputs") or {}).get("signal_scores") or {}).get("valuation")
-    if dcf_upside is not None and val_score is not None:
-        if dcf_upside > 30 and val_score < 5:
-            pre_flags.append(f"CONTRADICTION: DCF implies {dcf_upside}% upside but conviction valuation score is {val_score}/10. High implied upside with low valuation confidence is internally inconsistent.")
-
-    # 3. Short technical direction but strong business quality
-    tech_direction = (tech.get("explicit_inputs") or {}).get("direction", "")
-    fund_quality   = (fund.get("explicit_inputs") or {}).get("quality_rating", "")
-    if tech_direction == "short" and fund_quality == "strong":
-        pre_flags.append("CONTRADICTION: Technical direction is SHORT but fundamentals quality rating is STRONG. Shorting a high-quality business requires a specific catalyst or valuation rationale — this is not addressed.")
-
-    # 4. Stop-loss implies >2% portfolio loss but position size is above half-Kelly
-    stop_price  = (risk.get("explicit_inputs") or {}).get("stop_loss_price")
-    pos_size    = (conv.get("explicit_inputs") or {}).get("position_size_pct")
-    if stop_price and live_price and pos_size:
-        downside_pct = abs(live_price - stop_price) / live_price
-        portfolio_loss = downside_pct * (pos_size / 100)
-        if portfolio_loss > 0.02 and pos_size > 5:
-            pre_flags.append(f"CONTRADICTION: Stop-loss at {stop_price} implies {portfolio_loss*100:.1f}% portfolio loss at a {pos_size}% position — exceeds the 2% portfolio risk rule. Position size and stop are inconsistent.")
-
-    # 5. Negative catalyst outlook but bullish year-1 DCF growth assumption
-    cat_thesis  = (cat.get("thesis_statement") or "").lower()
-    dcf_yr1_growth = (dcf.get("explicit_inputs") or {}).get("revenue_growth_yr1")
-    if any(w in cat_thesis for w in ["negative", "miss", "downgrade", "warning", "risk"]) \
-       and dcf_yr1_growth is not None and dcf_yr1_growth > 10:
-        pre_flags.append(f"CONTRADICTION: Catalyst section flags near-term negative risk, but DCF year-1 revenue growth assumption is {dcf_yr1_growth}%. The short-term headwind is not reflected in the valuation model.")
-
+    # ── 5 DETERMINISTIC CONTRADICTION PRE-CHECKS (shared function) ──
+    pre_flags = _run_contradiction_checks(sections, live_price)
     pre_flags_text = "\n".join(pre_flags) if pre_flags else "No deterministic contradictions detected in pre-check."
 
     # ── BUILD COMPILED CONTEXT FOR THE MODEL ──
@@ -2889,7 +2982,7 @@ Produce a JSON report with exactly these fields:
 Be direct and rigorous. Name contradictions explicitly. The committee is not here to validate the analyst.
 Return only the JSON object, no markdown fences."""
 
-    resp = anthropic_client.messages.create(
+    resp = client.messages.create(
         model="claude-sonnet-4-5",
         max_tokens=2500,
         messages=[{"role": "user", "content": prompt}],
