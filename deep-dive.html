@@ -86,11 +86,11 @@ a{color:var(--gold);text-decoration:none}
 .section-icon{font-size:1.1rem;width:28px;text-align:center}
 .section-title{font-weight:700;font-size:0.95rem}
 .section-desc{font-size:0.75rem;color:var(--muted);margin-top:1px}
-.section-status{margin-left:auto;font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
+.section-status{font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
 .ss-pending{background:rgba(100,116,139,0.12);color:var(--muted)}
 .ss-active{background:rgba(245,166,35,0.12);color:var(--gold)}
 .ss-done{background:rgba(16,185,129,0.12);color:var(--green)}
-.section-chevron{color:var(--muted);font-size:0.65rem;transition:transform .25s;flex-shrink:0}
+.section-chevron{color:var(--muted);font-size:0.65rem;transition:transform .25s;flex-shrink:0;margin-left:auto}
 .section-chevron.open{transform:rotate(180deg)}
 .section-body{display:none;border-top:1px solid var(--border)}
 .section-body.open{display:block}
@@ -1305,8 +1305,8 @@ function renderFundamentals(d) {
   html += renderTSR(d.tsr, currSym);
 
   // ── AI Chat ──
-  html += _renderCaptureBox('fundamentals');
   html += renderCopilot('fundamentals');
+  html += _renderCaptureBox('fundamentals');
 
   html += `</div>`;// /sec-pad
 
@@ -1967,8 +1967,8 @@ function _buildValHTML() {
   <div id="mc-brief" style="background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px 14px;font-size:0.75rem;color:var(--dim);line-height:1.6;margin-top:10px;margin-bottom:14px"></div>`;
 
   // ── AI Chat ──
-  html += _renderCaptureBox('valuation');
   html += renderCopilot('valuation');
+  html += _renderCaptureBox('valuation');
 
   return html;
 }
@@ -2665,8 +2665,8 @@ function renderTechnical(d) {
   html += `<div id="tech-ai-expander"></div>`;
 
   // ── Chat ──
-  html += _renderCaptureBox('technical');
   html += renderCopilot('technical');
+  html += _renderCaptureBox('technical');
 
   document.getElementById('tech-content').innerHTML = html;
   setStatus('technical', 'done');
@@ -2857,7 +2857,13 @@ function loadRisk() {
   // Small delay so loading spinner renders before heavy JS
   setTimeout(() => {
     _riskMC = {};
-    _renderRisk();
+    try {
+      _renderRisk();
+    } catch(e) {
+      document.getElementById('risk-loading').style.display = 'none';
+      document.getElementById('risk-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Error running simulation: ${e.message}</div></div>`;
+      document.getElementById('risk-content').style.display = 'block';
+    }
   }, 80);
 }
 
@@ -2968,7 +2974,8 @@ function _renderRisk() {
   // Store in session for Decision Analysis
   _session.risk = { mc, horizon: _riskHorizon };
 
-  const cs = _vs.currSym || '$';
+  // _vs may be null if Valuation section hasn't been opened — derive currency from fundamentals
+  const cs = (_vs && _vs.currSym) || (_session.fundamentals?.data?.overview?.currency === 'GBP' ? '£' : '$');
   const fmtP = v => v != null ? cs + v.toFixed(2) : '—';
   const chgPct = v => v != null ? ((v - mc.S0)/mc.S0*100).toFixed(1) : '—';
   const chgCol = v => v >= mc.S0 ? 'var(--green)' : 'var(--red)';
@@ -3120,8 +3127,8 @@ function _renderRisk() {
 
   </div>`;
 
-  html += _renderCaptureBox('risk');
   html += renderCopilot('risk');
+  html += _renderCaptureBox('risk');
 
   document.getElementById('risk-loading').style.display = 'none';
   document.getElementById('risk-content').innerHTML = html;
@@ -3581,8 +3588,8 @@ function renderCatalyst(d) {
     html += `</div>`;
   }
 
-  html += _renderCaptureBox('catalyst');
   html += renderCopilot('catalyst');
+  html += _renderCaptureBox('catalyst');
   document.getElementById('catalyst-content').innerHTML = html;
 }
 
@@ -3764,14 +3771,12 @@ function renderDecision() {
     </div>
   </div>`;
 
-  // ── Thesis Builder ──
-  html += `<div class="dec-section-title">📝 Your Investment Thesis</div>
-  <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">State your investment case. This will be captured for your Investment Committee report.</div>
+  // ── Direction toggle (kept — feeds session + conviction calibrator) ──
+  html += `<div class="dec-section-title">📋 Your Position Direction</div>
   <div class="dec-direction-toggle">
-    <button class="dec-dir-btn ${_decDirection==='long'?'active-long':''}" onclick="_setDirection('long')">📈 I'm LONG — bullish case</button>
-    <button class="dec-dir-btn ${_decDirection==='short'?'active-short':''}" onclick="_setDirection('short')">📉 I'm SHORT — bearish case</button>
-  </div>
-  <textarea class="dec-thesis-area" id="dec-thesis-input" placeholder="e.g. I believe ${ticker} will re-rate higher because revenue growth is accelerating, the valuation is undemanding relative to peers, and the upcoming earnings report should beat estimates given the track record…"></textarea>`;
+    <button class="dec-dir-btn ${_decDirection==='long'?'active-long':''}" onclick="_setDirection('long')">📈 LONG — bullish case</button>
+    <button class="dec-dir-btn ${_decDirection==='short'?'active-short':''}" onclick="_setDirection('short')">📉 SHORT — bearish case</button>
+  </div>`;
 
   // ── Verdict ──
   html += `<div class="dec-section-title">📋 Framework Verdict</div>
@@ -3831,11 +3836,11 @@ function renderDecision() {
   <button class="dec-pdf-btn" onclick="_generateReport()">📄 Download Research Report (PDF)</button>
   </div>`;
 
-  // ── Your Final Decision (capture before AI layers) ──
-  html += _renderCaptureBox('decision');
-
-  // ── Copilot ──
+  // ── Copilot (first — helps user think before forming view) ──
   html += renderCopilot('decision');
+
+  // ── Your View (after Copilot — user forms conclusion with full understanding) ──
+  html += _renderCaptureBox('decision');
 
   // ── Investment Committee (last — needs full user + copilot context) ──
   html += _renderCommitteeCard();
@@ -4661,9 +4666,13 @@ function _syncFintiqSession() {
     if (parts.length) s.sections[idx].thesis_statement = parts.join(' | ');
   });
 
-  // Decision section thesis textarea
-  const thesisEl = document.getElementById('dec-thesis-input');
-  if (thesisEl?.value?.trim()) s.sections[5].thesis_statement = thesisEl.value.trim();
+  // Decision section — thesis comes from capture box (textarea removed)
+  // capture-decision-0 = final decision, capture-decision-1 = key evidence
+  const decCap0 = document.getElementById('capture-decision-0');
+  const decCap1 = document.getElementById('capture-decision-1');
+  if (decCap0?.value?.trim() || decCap1?.value?.trim()) {
+    s.sections[5].thesis_statement = [decCap0?.value?.trim(), decCap1?.value?.trim()].filter(Boolean).join(' | ');
+  }
 
   // Overall status
   const anyComplete = s.sections.some(sec => sec.status === 'complete');
@@ -4688,10 +4697,10 @@ function _setSectionStatus(sectionName, status) {
   window._fintiqSession.updated_at = new Date().toISOString();
 }
 
-// Sync thesis textarea on input (debounced)
+// Sync capture boxes on input (debounced) — thesis textarea removed, capture boxes handled by _saveCaptureInput
 let _thesisDebounce;
 document.addEventListener('input', e => {
-  if (e.target?.id === 'dec-thesis-input') {
+  if (e.target?.classList?.contains('capture-textarea')) {
     clearTimeout(_thesisDebounce);
     _thesisDebounce = setTimeout(_syncFintiqSession, 500);
   }
