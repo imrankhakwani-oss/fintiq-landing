@@ -3051,7 +3051,7 @@ function _renderRisk() {
   else if (hv < 50) { riskLevel = 'HIGH'; riskClass = 'risk-high'; }
   else { riskLevel = 'VERY HIGH'; riskClass = 'risk-veryhigh'; }
 
-  const html = `<div class="sec-pad">
+  let html = `<div class="sec-pad">
 
     <!-- Horizon tabs -->
     <div class="risk-horizon-tabs">
