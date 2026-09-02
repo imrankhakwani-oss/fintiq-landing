@@ -956,12 +956,14 @@ function _openAIExp(id) {
 }
 
 function setStatus(name, state) {
-  // Status badges hidden — function kept for compatibility
   if (state === 'done') {
+    _setSectionStatus(name, 'complete');
     setTimeout(_syncFintiqSession, 200);
     if (typeof _captureConfig !== 'undefined' && _captureConfig[name]) {
       setTimeout(() => _injectCaptureBox(name), 300);
     }
+  } else if (state === 'active') {
+    _setSectionStatus(name, 'in_progress');
   }
 }
 
@@ -1303,6 +1305,7 @@ function renderFundamentals(d) {
   html += renderTSR(d.tsr, currSym);
 
   // ── AI Chat ──
+  html += _renderCaptureBox('fundamentals');
   html += renderCopilot('fundamentals');
 
   html += `</div>`;// /sec-pad
@@ -1448,6 +1451,11 @@ function renderCopilot(section) {
       "How does the annualised volatility compare to sector peers?",
       "What position size would a HF analyst use here?",
     ],
+    decision: [
+      "Given the signals, does my thesis hold up under scrutiny?",
+      "What is the strongest argument against my position?",
+      "How would you frame the risk/reward for this trade?",
+    ],
   };
   const chips = starters[section] || [];
 
@@ -1517,9 +1525,10 @@ async function sendChat(section) {
       body: JSON.stringify({
         ticker: _session.ticker,
         section,
+        session_id: window._fintiqSession?.session_id || null,
         section_data: section === 'valuation'
           ? { ...((_session.fundamentals && _session.fundamentals.data) || {}), valuation_state: _vs }
-          : (_session[section].data || {}),
+          : (_session[section]?.data || {}),
         messages: _chatHistory[section],
         session_ctx: buildSessionCtx(),
       })
@@ -1534,7 +1543,25 @@ async function sendChat(section) {
     msgEl.innerHTML += `<div class="chat-msg ai">${markdownToHtml(reply)}</div>`;
     msgEl.scrollTop = msgEl.scrollHeight;
 
-    // Auto-save conclusion (last AI msg) into session context
+    // Write structured Conclusion object + dialogue_summary to SectionState
+    const _secIdx = _getSectionIndex(section);
+    if (_secIdx >= 0 && window._fintiqSession?.sections) {
+      const _sec = window._fintiqSession.sections[_secIdx];
+      _sec.conclusions.push({
+        conclusion_id: _uuid(),
+        label: 'Copilot Dialogue',
+        value: reply.slice(0, 300),
+        sentiment: null,
+        confidence: 'medium',
+        source: 'dialogue',
+        created_at: new Date().toISOString(),
+      });
+      _sec.dialogue_summary = reply.slice(0, 400);
+      if (_sec.status === 'not_started' || _sec.status === 'in_progress') _sec.status = 'in_progress';
+      window._fintiqSession.updated_at = new Date().toISOString();
+    }
+    // Legacy fallback for buildSessionCtx()
+    _session[section] = _session[section] || {};
     _session[section].chat_conclusions = reply.slice(0, 400);
 
   } catch(e) {
@@ -1940,6 +1967,7 @@ function _buildValHTML() {
   <div id="mc-brief" style="background:rgba(129,140,248,0.05);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px 14px;font-size:0.75rem;color:var(--dim);line-height:1.6;margin-top:10px;margin-bottom:14px"></div>`;
 
   // ── AI Chat ──
+  html += _renderCaptureBox('valuation');
   html += renderCopilot('valuation');
 
   return html;
@@ -2637,6 +2665,7 @@ function renderTechnical(d) {
   html += `<div id="tech-ai-expander"></div>`;
 
   // ── Chat ──
+  html += _renderCaptureBox('technical');
   html += renderCopilot('technical');
 
   document.getElementById('tech-content').innerHTML = html;
@@ -3091,6 +3120,7 @@ function _renderRisk() {
 
   </div>`;
 
+  html += _renderCaptureBox('risk');
   html += renderCopilot('risk');
 
   document.getElementById('risk-loading').style.display = 'none';
@@ -3551,6 +3581,7 @@ function renderCatalyst(d) {
     html += `</div>`;
   }
 
+  html += _renderCaptureBox('catalyst');
   html += renderCopilot('catalyst');
   document.getElementById('catalyst-content').innerHTML = html;
 }
@@ -3800,11 +3831,14 @@ function renderDecision() {
   <button class="dec-pdf-btn" onclick="_generateReport()">📄 Download Research Report (PDF)</button>
   </div>`;
 
-  // ── Investment Committee ──
-  html += _renderCommitteeCard();
+  // ── Your Final Decision (capture before AI layers) ──
+  html += _renderCaptureBox('decision');
 
   // ── Copilot ──
   html += renderCopilot('decision');
+
+  // ── Investment Committee (last — needs full user + copilot context) ──
+  html += _renderCommitteeCard();
 
   document.getElementById('decision-content').innerHTML = html;
   setStatus('decision', 'done');
@@ -4387,6 +4421,18 @@ function _renderCommitteeCard() {
   </div>`;
 }
 
+function _compileSection(session, idx) {
+  const s = session.sections[idx] || {};
+  return {
+    status:          s.status,
+    thesis_statement: s.thesis_statement,
+    conclusions:     s.conclusions || [],
+    flags:           s.flags || [],
+    dialogue_summary: s.dialogue_summary,
+    explicit_inputs: s.explicit_inputs || {},
+  };
+}
+
 async function _runCommitteeReport() {
   const btn = document.getElementById('committee-btn');
   const out = document.getElementById('committee-output');
@@ -4403,10 +4449,26 @@ async function _runCommitteeReport() {
 
   try {
     const session = _syncFintiqSession();
+    // Send compiled object — never the raw session dump
+    const compiled = {
+      ticker: session.ticker,
+      live_price: _session.fundamentals?.data?.overview?.price || null,
+      analysis_date: new Date().toISOString().split('T')[0],
+      sections: {
+        fundamentals: _compileSection(session, 0),
+        dcf:          _compileSection(session, 1),
+        technical:    _compileSection(session, 2),
+        risk:         _compileSection(session, 3),
+        catalyst:     _compileSection(session, 4),
+        conviction:   _compileSection(session, 5),
+      },
+      all_flags:       session.sections.flatMap(s => s.flags || []),
+      all_conclusions: session.sections.flatMap(s => s.conclusions || []),
+    };
     const r = await fetch(`${API}/committee/report`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticker: _session.ticker, session })
+      body: JSON.stringify(compiled)
     });
     if (!r.ok) throw new Error(`API error ${r.status}`);
     const d = await r.json();
@@ -4428,8 +4490,8 @@ function _renderCommitteeOutput(r) {
       <div style="font-size:0.78rem;color:var(--dim);line-height:1.65">${content}</div>
     </div>` : '';
 
-  const conf = r.confidence;
-  const confCol = conf >= 65 ? 'var(--green)' : conf >= 45 ? '#f5a623' : 'var(--red)';
+  const conf = r.confidence || {};
+  const qualCol = c => c === 'High' ? 'var(--green)' : c === 'Medium' ? 'var(--gold)' : c === 'Low' ? 'var(--red)' : 'var(--muted)';
 
   out.innerHTML = `
     <div style="border-top:1px solid rgba(129,140,248,0.2);padding-top:16px;margin-top:4px">
@@ -4450,68 +4512,180 @@ function _renderCommitteeOutput(r) {
       <div style="margin-bottom:14px">
         <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:6px">Valuation Range</div>
         <div style="display:flex;gap:10px">
-          ${['bear','base','bull'].map(s => `<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:7px;padding:8px;text-align:center">
-            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase">${s}</div>
-            <div style="font-size:1rem;font-weight:700;color:var(--text)">${r.valuation_range[s] || '—'}</div>
+          ${['bear','base','bull'].map(sc => `<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:7px;padding:8px;text-align:center">
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase">${sc}</div>
+            <div style="font-size:1rem;font-weight:700;color:var(--text)">${r.valuation_range[sc] || '—'}</div>
           </div>`).join('')}
         </div>
       </div>` : ''}
       ${section('Investment Conditions', r.conditions)}
-      ${conf != null ? `
-      <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.2);border-radius:8px">
-        <div style="font-size:2rem;font-weight:900;color:${confCol}">${conf}%</div>
-        <div>
-          <div style="font-size:0.75rem;font-weight:700;color:var(--text)">Overall Conviction</div>
-          <div style="font-size:0.68rem;color:var(--muted)">Committee confidence in the thesis given evidence reviewed</div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);margin-bottom:8px">Committee Confidence</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px">
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Evidence Quality</div>
+            <div style="font-size:0.85rem;font-weight:700;color:${qualCol(conf.evidence_quality)}">${conf.evidence_quality || '—'}</div>
+          </div>
+          <div style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px">
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Assumption Reliability</div>
+            <div style="font-size:0.85rem;font-weight:700;color:${qualCol(conf.assumption_reliability)}">${conf.assumption_reliability || '—'}</div>
+          </div>
         </div>
-      </div>` : ''}
+        <div style="background:rgba(129,140,248,0.06);border:1px solid rgba(129,140,248,0.15);border-radius:8px;padding:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase">Unresolved Material Questions</div>
+            <div style="font-size:1rem;font-weight:800;color:${(conf.unresolved_material_questions||0) > 3 ? 'var(--red)' : 'var(--gold)'}">${conf.unresolved_material_questions ?? '—'}</div>
+          </div>
+          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;margin-bottom:4px">Most Significant Unknown</div>
+          <div style="font-size:0.75rem;color:var(--dim);line-height:1.5;font-style:italic">${conf.most_significant_unknown || '—'}</div>
+        </div>
+        <div style="font-size:0.6rem;color:var(--muted);margin-top:6px;font-style:italic">This is a research quality assessment — not a prediction of stock performance.</div>
+      </div>
     </div>`;
 }
 
 // ══════════════════════════════════════════════════════
-// window._fintiqSession — session data object for Copilot
+// window._fintiqSession — structured session schema
+// Contract between Copilot (Layer 2) and Committee (Layer 3)
 // ══════════════════════════════════════════════════════
 
+// UUID generator
+function _uuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
+// Section name → sections[] index
+function _getSectionIndex(name) {
+  const map = { fundamentals: 0, valuation: 1, dcf: 1, technical: 2, risk: 3, catalyst: 4, decision: 5, conviction: 5 };
+  return map[name] ?? -1;
+}
+
+// Build a fresh SectionState
+function _blankSection(id, name) {
+  return { section_id: id, section_name: name, status: 'not_started', completed_at: null,
+           explicit_inputs: {}, thesis_statement: null, conclusions: [], flags: [], dialogue_summary: null };
+}
+
+// Initialize session object once per page load
+function _initFintiqSession() {
+  if (window._fintiqSession?.session_id) return;
+  window._fintiqSession = {
+    session_id: _uuid(),
+    user_id: null,
+    ticker: null,
+    exchange: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    status: 'draft',
+    sections: [
+      _blankSection(1, 'fundamentals'),
+      _blankSection(2, 'dcf'),
+      _blankSection(3, 'technical'),
+      _blankSection(4, 'risk'),
+      _blankSection(5, 'catalyst'),
+      _blankSection(6, 'conviction'),
+    ],
+    committee_report: null,
+  };
+}
+
 function _syncFintiqSession() {
-  const s = window._fintiqSession || {};
+  _initFintiqSession();
+  const s = window._fintiqSession;
   s.ticker     = _session.ticker || null;
   s.updated_at = new Date().toISOString();
 
-  // Direction & thesis (Decision section)
-  s.direction = _decDirection || 'long';
-  const thesisEl = document.getElementById('dec-thesis-input');
-  if (thesisEl) s.thesis = thesisEl.value.trim() || null;
+  // Exchange from overview
+  const ov = _session.fundamentals?.data?.overview;
+  if (ov?.exchange) s.exchange = ov.exchange;
 
-  // Conviction probability from calibrator
-  s.conviction_prob = _ccProb || null;
+  // ── S1 Fundamentals — explicit_inputs ──
+  const qualEl = document.getElementById('fund-quality-rating');
+  if (qualEl) s.sections[0].explicit_inputs.quality_rating = qualEl.value || 'not_set';
 
-  // DCF assumptions (if valuation has been opened)
+  // ── S2 DCF — explicit_inputs ──
   if (_vs) {
-    s.dcf_inputs = {
-      wacc:      _vs.wacc,
-      tax_rate:  _vs.taxRate,
-      g1: _vs.g1, om1: _vs.om1, ir1: _vs.ir1,
-      g2: _vs.g2, om2: _vs.om2, ir2: _vs.ir2,
-      g3: _vs.g3, om3: _vs.om3, ir3: _vs.ir3,
-      terminal_growth: _vs.tg,
-      ronic: _vs.ronic,
-    };
+    s.sections[1].explicit_inputs.revenue_growth_yr1 = _vs.g1 ?? null;
+    s.sections[1].explicit_inputs.revenue_growth_yr2 = _vs.g2 ?? null;
+    s.sections[1].explicit_inputs.revenue_growth_yr3 = _vs.g3 ?? null;
+    s.sections[1].explicit_inputs.terminal_growth_rate = _vs.tg ?? null;
+    s.sections[1].explicit_inputs.wacc_override = _vs.wacc ?? null;
+    s.sections[1].explicit_inputs.selected_scenario = _vs.selectedScenario || null;
     const dcf = _computeDCF(_vs);
-    s.dcf_result = dcf ? {
-      equity_per_share: dcf.equity_ps,
-      upside_pct: _vs.price ? Math.round((dcf.equity_ps - _vs.price) / _vs.price * 100) : null,
-    } : null;
+    if (dcf && _vs.price) {
+      s.sections[1].explicit_inputs.implied_upside_pct = Math.round((dcf.equity_ps - _vs.price) / _vs.price * 100);
+    }
+    if (s.sections[1].status === 'not_started') s.sections[1].status = 'in_progress';
   }
 
-  // Signals from decision section
-  try { s.signals = _decSignals(); } catch(e) {}
+  // ── S3 Technical — explicit_inputs ──
+  s.sections[2].explicit_inputs.direction = _decDirection || null;
+  const entryEl = document.getElementById('tech-entry-confirmed');
+  s.sections[2].explicit_inputs.entry_zone_confirmed = entryEl ? entryEl.checked : false;
 
-  // Section completion states
-  s.sections_opened = ['fundamentals','valuation','technical','catalyst','risk','decision']
-    .filter(sec => document.getElementById(sec+'-content')?.style.display !== 'none');
+  // ── S4 Risk — explicit_inputs ──
+  const stopEl = document.getElementById('stop-price-input');
+  if (stopEl?.value) s.sections[3].explicit_inputs.stop_loss_price = parseFloat(stopEl.value) || null;
+  const horizonEl = document.getElementById('risk-horizon-select');
+  if (horizonEl?.value) s.sections[3].explicit_inputs.time_horizon_days = parseInt(horizonEl.value) || null;
+
+  // ── S6 Conviction — explicit_inputs ──
+  try {
+    const sigs = _decSignals();
+    s.sections[5].explicit_inputs.signal_scores = {
+      fundamentals:  sigs.fundamental_score  ?? null,
+      valuation:     sigs.valuation_score    ?? null,
+      technical:     sigs.technical_score    ?? null,
+      risk_reward:   sigs.risk_reward_score  ?? null,
+      catalyst:      sigs.catalyst_score     ?? null,
+      macro:         sigs.macro_score        ?? null,
+    };
+  } catch(e) {}
+  s.sections[5].explicit_inputs.final_action    = _decDirection || null;
+  s.sections[5].explicit_inputs.conviction_prob = _ccProb || null;
+  const kellyEl = document.getElementById('kelly-pct');
+  if (kellyEl) s.sections[5].explicit_inputs.position_size_pct = parseFloat(kellyEl.textContent) || null;
+
+  // ── Thesis statements from capture boxes → thesis_statement (not explicit_inputs) ──
+  const captureSecMap = { fundamentals: 0, valuation: 1, technical: 2, risk: 3, catalyst: 4, decision: 5 };
+  Object.entries(captureSecMap).forEach(([secName, idx]) => {
+    const cfg = _captureConfig[secName];
+    if (!cfg) return;
+    const parts = cfg.prompts.map((_, i) => {
+      const el = document.getElementById(`capture-${secName}-${i}`);
+      return el?.value?.trim() || '';
+    }).filter(Boolean);
+    if (parts.length) s.sections[idx].thesis_statement = parts.join(' | ');
+  });
+
+  // Decision section thesis textarea
+  const thesisEl = document.getElementById('dec-thesis-input');
+  if (thesisEl?.value?.trim()) s.sections[5].thesis_statement = thesisEl.value.trim();
+
+  // Overall status
+  const anyComplete = s.sections.some(sec => sec.status === 'complete');
+  if (anyComplete) s.status = 'in_progress';
 
   window._fintiqSession = s;
   return s;
+}
+
+// Mark a section as in_progress when opened
+function _setSectionStatus(sectionName, status) {
+  _initFintiqSession();
+  const idx = _getSectionIndex(sectionName);
+  if (idx < 0) return;
+  const sec = window._fintiqSession.sections[idx];
+  if (status === 'complete' && sec.status !== 'complete') {
+    sec.status = 'complete';
+    sec.completed_at = new Date().toISOString();
+  } else if (status === 'in_progress' && sec.status === 'not_started') {
+    sec.status = 'in_progress';
+  }
+  window._fintiqSession.updated_at = new Date().toISOString();
 }
 
 // Sync thesis textarea on input (debounced)
@@ -4523,8 +4697,8 @@ document.addEventListener('input', e => {
   }
 });
 
-// Initialize empty session object on load
-window._fintiqSession = {};
+// Initialize session on load
+_initFintiqSession();
 
 // ══════════════════════════════════════════════════════
 // Thesis Capture Boxes — scroll-triggered per section
@@ -4565,20 +4739,22 @@ const _captureConfig = {
       'At what price would you exit to cut losses?'
     ],
     keys: ['risk_view', 'risk_exit']
+  },
+  decision: {
+    prompts: [
+      'What is your final decision — Long, Short, or No Trade? Why?',
+      'What single piece of evidence most influenced your decision?'
+    ],
+    keys: ['final_decision', 'key_evidence']
   }
 };
 
-function _injectCaptureBox(sectionId) {
+// ── Render capture box as HTML (inserted inline before Copilot) ──
+function _renderCaptureBox(sectionId) {
   const cfg = _captureConfig[sectionId];
-  if (!cfg) return;
-  const content = document.getElementById(sectionId + '-content');
-  if (!content || document.getElementById('capture-' + sectionId)) return;
+  if (!cfg) return '';
 
-  const box = document.createElement('div');
-  box.id = 'capture-' + sectionId;
-  box.className = 'thesis-capture sec-pad';
-
-  let inputsHtml = cfg.prompts.map((p, i) => `
+  const inputs = cfg.prompts.map((p, i) => `
     <div style="margin-bottom:12px">
       <div class="thesis-prompt">${p}</div>
       <textarea class="thesis-input" id="capture-${sectionId}-${i}" rows="2"
@@ -4586,43 +4762,25 @@ function _injectCaptureBox(sectionId) {
         placeholder="Your view…"></textarea>
     </div>`).join('');
 
-  box.innerHTML = `
+  return `<div class="thesis-capture visible" id="capture-${sectionId}">
     <div class="thesis-capture-header">
       <span>📝 Your View</span>
-      <small>Saved to your session — used by AI Copilot</small>
+      <small>Saved to your session — feeds AI Copilot &amp; Investment Committee</small>
     </div>
     <div class="thesis-capture-body">
-      ${inputsHtml}
+      ${inputs}
       <div class="thesis-saved-note" id="capture-saved-${sectionId}">✓ Saved to session</div>
-    </div>`;
-
-  content.appendChild(box);
-
-  // Sentinel div to trigger visibility
-  const sentinel = document.createElement('div');
-  sentinel.id = 'sentinel-' + sectionId;
-  sentinel.style.height = '1px';
-  content.appendChild(sentinel);
-
-  // IntersectionObserver — show capture box when user scrolls to bottom of section
-  const obs = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        box.classList.add('visible');
-        obs.disconnect();
-      }
-    });
-  }, { threshold: 0.5 });
-  obs.observe(sentinel);
+    </div>
+  </div>`;
 }
 
+// _injectCaptureBox kept as no-op (capture boxes now rendered inline)
+function _injectCaptureBox(sectionId) {}
+
 function _saveCaptureInput(sectionId, idx, value) {
-  const cfg = _captureConfig[sectionId];
-  if (!cfg) return;
-  const key = cfg.keys[idx];
-  if (!window._fintiqSession.explicit_inputs) window._fintiqSession.explicit_inputs = {};
-  window._fintiqSession.explicit_inputs[key] = value;
-  window._fintiqSession.updated_at = new Date().toISOString();
+  // Capture box text goes to thesis_statement (not explicit_inputs)
+  // _syncFintiqSession() reads all capture boxes and compiles thesis_statement
+  _syncFintiqSession();
   const note = document.getElementById('capture-saved-' + sectionId);
   if (note) { note.style.display = 'block'; setTimeout(() => note.style.display = 'none', 1500); }
 }
