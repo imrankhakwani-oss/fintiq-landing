@@ -1552,6 +1552,15 @@ function chatKey(e, section) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(section); }
 }
 
+// Strip raw OHLCV arrays from technical data before sending to Copilot.
+// The arrays are 750+ items long and dominate the 6000-char truncation limit,
+// leaving the AI with only dates and no indicator values.
+function _techSummaryForCopilot(d) {
+  if (!d) return {};
+  const { dates, ohlcv, ma50, ma200, bb_up, bb_low, rsi, macd, macd_signal, macd_hist, ...summary } = d;
+  return summary; // keeps: ticker, trend, momentum, volume, key_levels, options
+}
+
 async function sendChat(section) {
   const input = document.getElementById('chat-in-'+section);
   const btn   = document.getElementById('chat-btn-'+section);
@@ -1578,7 +1587,9 @@ async function sendChat(section) {
         session_id: window._fintiqSession?.session_id || null,
         section_data: section === 'valuation'
           ? { ...((_session.fundamentals && _session.fundamentals.data) || {}), valuation_state: _vs }
-          : (_session[section]?.data || {}),
+          : section === 'technical'
+            ? _techSummaryForCopilot(_session.technical?.data)
+            : (_session[section]?.data || {}),
         messages: _chatHistory[section],
         session_ctx: buildSessionCtx(),
       })
@@ -2768,6 +2779,17 @@ function _buildTechCharts(d) {
   };
 
   const kl = d.key_levels || {};
+  // Clip S/R levels to ±300% of current price to avoid stale pre-split values
+  // dominating the y-axis (e.g. BULL 52W high $80 vs current price $8)
+  const currLast = allC.length ? allC[allC.length - 1] : null;
+  const klClipped = {};
+  if (currLast) {
+    Object.keys(kl).forEach(k => {
+      const v = kl[k];
+      if (typeof v === 'number' && v > 0 && v > currLast / 4 && v < currLast * 4) klClipped[k] = v;
+    });
+  }
+  const klSafe = currLast ? klClipped : kl;
 
   // Shared defaults
   const dates = allDates; // not used directly — each pane uses its slice
@@ -2817,7 +2839,7 @@ function _buildTechCharts(d) {
         { key:'resistance1', label:'R1 (3M high)', color:'rgba(239,68,68,0.5)' },
         { key:'resistance2', label:'R2 (52W high)',color:'rgba(239,68,68,0.7)' },
       ].forEach(({key,label,color}) => {
-        if (kl[key]) srDatasets.push({ label, data: Array(n).fill(kl[key]), borderColor:color, borderWidth:1, borderDash:[6,3], pointRadius:0, tension:0, fill:false, yAxisID:'y' });
+        if (klSafe[key]) srDatasets.push({ label, data: Array(n).fill(klSafe[key]), borderColor:color, borderWidth:1, borderDash:[6,3], pointRadius:0, tension:0, fill:false, yAxisID:'y' });
       });
     }
     const datasets = [
