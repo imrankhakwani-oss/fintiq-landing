@@ -4571,6 +4571,7 @@ async function _runCommitteeReport() {
         catalyst:     _compileSection(session, 4),
         conviction:   _compileSection(session, 5),
       },
+      dcf_state: (_vs && Object.keys(_vs).length > 0) ? _vs : null,  // live DCF slider state for valuation range
       all_flags:       session.sections.flatMap(s => s.flags || []),
       all_conclusions: session.sections.flatMap(s => s.conclusions || []),
     };
@@ -4627,7 +4628,7 @@ function _renderCommitteeOutput(r) {
           </div>`).join('')}
         </div>
       </div>` : ''}
-      ${section('Investment Conditions', r.conditions)}
+      ${section('Investment Conditions', typeof r.conditions === 'object' && r.conditions !== null ? Object.entries(r.conditions).map(([k,v]) => `<strong>${k}:</strong> ${Array.isArray(v) ? v.join('; ') : v}`).join('<br><br>') : r.conditions)}
       <div style="margin-bottom:14px">
         <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);margin-bottom:8px">Committee Confidence</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
