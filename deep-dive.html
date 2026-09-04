@@ -1586,7 +1586,15 @@ async function sendChat(section) {
         section,
         session_id: window._fintiqSession?.session_id || null,
         section_data: section === 'valuation'
-          ? { ...((_session.fundamentals && _session.fundamentals.data) || {}), valuation_state: _vs }
+          ? {
+              // Compact: only valuation-relevant fields — avoids 6000-char truncation cutting off valuation_state
+              valuation_inputs: _session.fundamentals?.data?.valuation_inputs || {},
+              overview: { price: _session.fundamentals?.data?.overview?.price, sector: _session.fundamentals?.data?.overview?.sector, currency: _session.fundamentals?.data?.overview?.currency },
+              quality: _session.fundamentals?.data?.quality || {},
+              growth: _session.fundamentals?.data?.growth || {},
+              analyst: _session.fundamentals?.data?.analyst || {},
+              valuation_state: _vs,
+            }
           : section === 'technical'
             ? _techSummaryForCopilot(_session.technical?.data)
             : (_session[section]?.data || {}),
@@ -3051,8 +3059,19 @@ function _renderRisk() {
     document.getElementById('risk-content').style.display = 'block';
     return;
   }
-  // Store in session for Decision Analysis
-  _session.risk = { mc, horizon: _riskHorizon };
+  // Store in session for Decision Analysis + Copilot context
+  const _atm_iv_store = opt.atm_iv || null;
+  const _hv_store = mc.annualisedVol;
+  _session.risk = { data: {
+    current_price: mc.S0,
+    horizon_days: _riskHorizon,
+    annualised_vol_pct: _hv_store,
+    atm_iv_pct: _atm_iv_store,
+    simulation_paths: 2000,
+    p10: mc.p10, p25: mc.p25, p50: mc.p50, p75: mc.p75, p90: mc.p90,
+    prob_profit_pct: mc.probProfit,
+    options: opt,
+  }};
 
   // _vs may be null if Valuation section hasn't been opened — derive currency from fundamentals
   const cs = (_vs && _vs.currSym) || (_session.fundamentals?.data?.overview?.currency === 'GBP' ? '£' : '$');
