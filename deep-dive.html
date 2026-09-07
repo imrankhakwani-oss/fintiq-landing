@@ -844,10 +844,64 @@ let _chatHistory = { fundamentals: [], valuation: [], technical: [], catalyst: [
 let _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
 
 // ── URL param on load ──
+// ── Session persistence — save/restore API data across page navigations ──
+// Saves section data to sessionStorage so navigating away and back doesn't reload everything.
+const _SS_KEY = 'dd_session_v2';
+
+function _saveSession() {
+  if (!_session.ticker) return;
+  try {
+    const snap = {
+      ticker: _session.ticker,
+      ts: Date.now(),
+      fundamentals: _session.fundamentals?.data || null,
+      technical:    _session.technical?.data    || null,
+      catalyst:     _session.catalyst?.data     || null,
+      risk:         _session.risk?.data         || null,
+      vs: (_vs && Object.keys(_vs).length) ? _vs : null,
+      chatHistory: _chatHistory,
+    };
+    sessionStorage.setItem(_SS_KEY, JSON.stringify(snap));
+  } catch(_) {}  // sessionStorage might be full or unavailable — fail silently
+}
+
+function _tryRestoreSession(ticker) {
+  try {
+    const raw = sessionStorage.getItem(_SS_KEY);
+    if (!raw) return false;
+    const snap = JSON.parse(raw);
+    // Only restore if same ticker and less than 4 hours old
+    if (snap.ticker !== ticker.toUpperCase()) return false;
+    if (Date.now() - snap.ts > 4 * 60 * 60 * 1000) return false;
+
+    // Restore _session data — the load functions check for existing data and skip fetch
+    _session.ticker = snap.ticker;
+    if (snap.fundamentals) _session.fundamentals.data = snap.fundamentals;
+    if (snap.technical)    _session.technical.data    = snap.technical;
+    if (snap.catalyst)     _session.catalyst.data     = snap.catalyst;
+    if (snap.risk)         _session.risk              = { data: snap.risk };
+    if (snap.vs)           _vs = snap.vs;
+    if (snap.chatHistory)  _chatHistory               = snap.chatHistory;
+    return true;
+  } catch(_) { return false; }
+}
+
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(window.location.search);
-  const t = params.get('ticker') || 'AAPL';
-  document.getElementById('ticker-input').value = t.toUpperCase();
+  const t = (params.get('ticker') || 'AAPL').toUpperCase();
+  document.getElementById('ticker-input').value = t;
+
+  // Restore previous session if same ticker — avoids re-fetching all sections
+  const restored = _tryRestoreSession(t);
+  if (restored) {
+    // Show a brief "session restored" toast
+    const toast = document.createElement('div');
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid rgba(99,102,241,0.3);color:#e2e8f0;padding:8px 16px;border-radius:20px;font-size:0.72rem;z-index:9999;pointer-events:none';
+    toast.textContent = '↺ Session restored — sections reloaded from cache';
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+  }
+
   startAnalysis();
 });
 
@@ -1057,6 +1111,7 @@ async function _pollFundamentals(attempt) {
     // Done — render
     _session.fundamentals.data = d;
     renderFundamentals(d);
+    _saveSession();
 
   } catch(e) {
     loadingEl.style.display = 'none';
@@ -1580,6 +1635,11 @@ async function sendChat(section) {
   try {
     const _ctrl = new AbortController();
     const _chatTimeout = setTimeout(() => _ctrl.abort(), 45000); // 45s hard timeout
+    // After 12s with no response, show a progress nudge so it doesn't look frozen
+    const _thinkingNudge = setTimeout(() => {
+      const typingEl = document.getElementById(`chat-typing-${section}`);
+      if (typingEl) typingEl.innerHTML = `<div class="chat-typing"><div class="dot-pulse"><span></span><span></span><span></span></div><span style="margin-left:6px;color:var(--muted);font-size:0.72rem">Still thinking — Railway may be cold-starting (up to 45s)…</span></div>`;
+    }, 12000);
     const r = await fetch(`${API}/fundamentals/chat`, {
       method: 'POST',
       signal: _ctrl.signal,
@@ -1597,6 +1657,9 @@ async function sendChat(section) {
               growth: _session.fundamentals?.data?.growth || {},
               analyst: _session.fundamentals?.data?.analyst || {},
               valuation_state: _vs,
+              // Computed outputs — these are what the Copilot can't derive from inputs alone
+              dcf_result: (_vs && _vs.price) ? (() => { const r = _computeDCF(_vs); return r ? { equity_ps: r.equity_ps, upside_pct: r.equity_ps ? Math.round((r.equity_ps - _vs.price) / _vs.price * 100) : null } : null; })() : null,
+              mc_results: _mcResults || null,   // p10/p50/p90 from Monte Carlo simulation
             }
           : section === 'technical'
             ? _techSummaryForCopilot(_session.technical?.data)
@@ -1606,9 +1669,11 @@ async function sendChat(section) {
       })
     });
     clearTimeout(_chatTimeout);
+    clearTimeout(_thinkingNudge);
     if (!r.ok) throw new Error(`API error ${r.status}`);
     const d = await r.json();
     const reply = d.reply || '';
+    if (!reply) throw new Error('Empty response from server — please try again');
 
     // Remove typing indicator, add reply
     document.getElementById(`chat-typing-${section}`)?.remove();
@@ -1636,9 +1701,11 @@ async function sendChat(section) {
     // Legacy fallback for buildSessionCtx()
     _session[section] = _session[section] || {};
     _session[section].chat_conclusions = reply.slice(0, 400);
+    _saveSession();
 
   } catch(e) {
     clearTimeout(_chatTimeout);
+    clearTimeout(_thinkingNudge);
     document.getElementById(`chat-typing-${section}`)?.remove();
     const errMsg = e.name === 'AbortError' ? 'Request timed out (45s) — Railway may be under load. Please try again.' : e.message;
     msgEl.innerHTML += `<div class="chat-msg system">⚠️ ${errMsg} — please try again</div>`;
@@ -1733,6 +1800,7 @@ function markdownToHtml(text) {
 
 // Global valuation state (slider values + computed WACC)
 let _vs = {};
+let _mcResults = null;  // Valuation Monte Carlo results — shared with Copilot section_data
 
 function renderValuation(d) {
   const body = document.getElementById('body-valuation');
@@ -2469,6 +2537,9 @@ function _runMC(vs, cs) {
   // Build MC brief text
   const spread = p90 - p10;
   const spreadPct = price ? (spread / price * 100).toFixed(0) : null;
+  // Store for Valuation Copilot section_data
+  _mcResults = { p10, p50, p90, pAbove: Math.round(pAbove * 10) / 10, currency: cs };
+
   const pAboveTxt = pAbove >= 50
     ? `<strong style="color:var(--green)">${pAbove.toFixed(0)}%</strong> of simulated scenarios land above the current price of ${cs}${price?.toFixed(0)} — the balance of probability favours upside.`
     : `Only <strong style="color:var(--red)">${pAbove.toFixed(0)}%</strong> of simulated scenarios land above the current price of ${cs}${price?.toFixed(0)} — the balance of probability favours downside.`;
@@ -2535,6 +2606,7 @@ async function _pollTechnical(attempt) {
     const d = await res.json();
     if (d.status === 'processing') { _pollTechnical(attempt + 1); return; }
     _session.technical = { data: d };
+    _saveSession();
     loadEl.style.display = 'none';
     contEl.style.display = 'block';
     setStatus('technical', 'done');
@@ -3078,6 +3150,7 @@ function _renderRisk() {
     prob_profit_pct: mc.probProfit,
     options: opt,
   }};
+  _saveSession();
 
   // _vs may be null if Valuation section hasn't been opened — derive currency from fundamentals
   const cs = (_vs && _vs.currSym) || (_session.fundamentals?.data?.overview?.currency === 'GBP' ? '£' : '$');
@@ -3245,6 +3318,14 @@ function _renderRisk() {
   setTimeout(() => {
     _buildRiskChart(mc, cs);
   }, 150);
+
+  // Fire AI risk summary (defined above but must be called after DOM is ready)
+  // Only fires once per section load (not on horizon tab change)
+  if (!_session.risk._aiSummaryFired) {
+    _session.risk._aiSummaryFired = true;
+    const atm_iv_pct = opt.atm_iv || null;
+    _loadRiskAI(mc, hv, atm_iv_pct, volSignal);
+  }
 }
 
 function _buildRiskChart(mc, cs) {
@@ -3473,8 +3554,11 @@ Paragraph 4: One concrete recommendation — given all this data, should they si
 Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear paragraphs.`;
 
   try {
+    const _riskCtrl = new AbortController();
+    const _riskTimeout = setTimeout(() => _riskCtrl.abort(), 45000);
     const res = await fetch(`${API}/fundamentals/chat`, {
       method: 'POST',
+      signal: _riskCtrl.signal,
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
         ticker,
@@ -3483,16 +3567,20 @@ Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear p
         section_data: _session.risk?.data || {},
       })
     });
+    clearTimeout(_riskTimeout);
     if (!res.ok) throw new Error(`API ${res.status}`);
     const r = await res.json();
     if (r.reply) {
-      el.textContent = r.reply;
+      el.innerHTML = markdownToHtml(r.reply);
       _openAIExp('risk-ai-expander');
+      // Store in session so Decision Analysis can use it
+      _session.risk._aiSummary = r.reply;
     } else {
       throw new Error('Empty response');
     }
   } catch(e) {
-    el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.message}). The simulation data above is fully usable without it.</span>`;
+    clearTimeout(typeof _riskTimeout !== 'undefined' ? _riskTimeout : null);
+    el.innerHTML = `<span style="color:var(--muted)">AI summary unavailable (${e.name === 'AbortError' ? 'timed out' : e.message}). The simulation data above is fully usable without it.</span>`;
   }
 }
 
@@ -3525,6 +3613,7 @@ async function _pollCatalyst(attempt) {
     if (d.status === 'processing') { setTimeout(() => _pollCatalyst(attempt + 1), 2000); return; }
     if (d.status === 'error') throw new Error(d.error || 'Unknown error');
     _session.catalyst = { data: d };
+    _saveSession();
     document.getElementById('catalyst-loading').style.display = 'none';
     document.getElementById('catalyst-content').style.display = 'block';
     setStatus('catalyst', 'done');
@@ -4575,11 +4664,15 @@ async function _runCommitteeReport() {
       all_flags:       session.sections.flatMap(s => s.flags || []),
       all_conclusions: session.sections.flatMap(s => s.conclusions || []),
     };
+    const _commCtrl = new AbortController();
+    const _commTimeout = setTimeout(() => _commCtrl.abort(), 120000); // 120s — Sonnet + large prompt
     const r = await fetch(`${API}/committee/report`, {
       method: 'POST',
+      signal: _commCtrl.signal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(compiled)
     });
+    clearTimeout(_commTimeout);
     if (!r.ok) throw new Error(`API error ${r.status}`);
     const d = await r.json();
     _renderCommitteeOutput(d);
