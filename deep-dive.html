@@ -780,7 +780,7 @@ a{color:var(--gold);text-decoration:none}
     <div class="section-body" id="body-catalyst">
       <div id="catalyst-loading" style="display:none;text-align:center;padding:40px 20px">
         <div class="loading-spinner"></div>
-        <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Loading catalyst data…</div>
+        <div id="catalyst-loading-label" style="color:var(--muted);font-size:0.8rem;margin-top:10px">Loading catalyst data…</div>
       </div>
       <div id="catalyst-content" style="display:none"></div>
     </div>
@@ -1632,14 +1632,16 @@ async function sendChat(section) {
   msgEl.innerHTML += `<div class="chat-msg ai" id="chat-typing-${section}"><div class="chat-typing"><div class="dot-pulse"><span></span><span></span><span></span></div><span style="margin-left:4px">Analysing…</span></div></div>`;
   msgEl.scrollTop = msgEl.scrollHeight;
 
+  // Hoist outside try-catch so catch block can access them (const is block-scoped)
+  const _ctrl = new AbortController();
+  const _chatTimeout = setTimeout(() => _ctrl.abort(), 45000); // 45s hard timeout
+  // After 12s with no response, show a progress nudge so it doesn't look frozen
+  const _thinkingNudge = setTimeout(() => {
+    const typingEl = document.getElementById(`chat-typing-${section}`);
+    if (typingEl) typingEl.innerHTML = `<div class="chat-typing"><div class="dot-pulse"><span></span><span></span><span></span></div><span style="margin-left:6px;color:var(--muted);font-size:0.72rem">Still thinking — Railway may be cold-starting (up to 45s)…</span></div>`;
+  }, 12000);
+
   try {
-    const _ctrl = new AbortController();
-    const _chatTimeout = setTimeout(() => _ctrl.abort(), 45000); // 45s hard timeout
-    // After 12s with no response, show a progress nudge so it doesn't look frozen
-    const _thinkingNudge = setTimeout(() => {
-      const typingEl = document.getElementById(`chat-typing-${section}`);
-      if (typingEl) typingEl.innerHTML = `<div class="chat-typing"><div class="dot-pulse"><span></span><span></span><span></span></div><span style="margin-left:6px;color:var(--muted);font-size:0.72rem">Still thinking — Railway may be cold-starting (up to 45s)…</span></div>`;
-    }, 12000);
     const r = await fetch(`${API}/fundamentals/chat`, {
       method: 'POST',
       signal: _ctrl.signal,
@@ -3596,18 +3598,22 @@ function loadCatalyst() {
 }
 
 async function _pollCatalyst(attempt) {
-  if (attempt > 40) {
+  if (attempt > 60) {  // 120s total (60 × 2s) — some stocks take 60-80s on cold Railway
     document.getElementById('catalyst-loading').style.display = 'none';
     document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Catalyst data timed out. <button onclick="loadCatalyst()" style="margin-left:10px;background:var(--gold);color:#050f1c;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700">Retry</button></div></div>`;
     document.getElementById('catalyst-content').style.display = 'block';
     return;
   }
   if (_session.ticker !== (document.getElementById('ticker-input')?.value || _session.ticker)) return;
+  // Show progress message after 15s (attempt 7) so user knows it's working
+  if (attempt === 7) {
+    const lbl = document.getElementById('catalyst-loading-label');
+    if (lbl) lbl.textContent = 'Still loading — catalyst analysis takes up to 60s…';
+  }
   try {
-    const url = attempt === 0
-      ? `${API}/catalyst?ticker=${_session.ticker}`
-      : `${API}/catalyst/status?ticker=${_session.ticker}`;
-    const res = await fetch(url);
+    // Always poll /catalyst (not /catalyst/status) — /catalyst has built-in restart logic
+    // if the job was lost (Railway restart, timeout). /catalyst/status would return stale state.
+    const res = await fetch(`${API}/catalyst?ticker=${_session.ticker}`);
     if (!res.ok) throw new Error(`API ${res.status}`);
     const d = await res.json();
     if (d.status === 'processing') { setTimeout(() => _pollCatalyst(attempt + 1), 2000); return; }
