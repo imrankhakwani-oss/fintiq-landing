@@ -3874,15 +3874,15 @@ function _decSignals() {
     signals.push({ label: 'Technical', signal: 'grey', status: 'Not assessed', detail: '' });
   }
 
-  // Risk
-  if (rd && rd.mc) {
-    const mc = rd.mc;
-    const vol = Math.round(mc.annualisedVol);   // already a %
-    const probUp = mc.probProfit;               // already a %
+  // Risk — _session.risk stores { data: { annualised_vol_pct, prob_profit_pct, p10/p50/p90 } }
+  if (rd && rd.data) {
+    const riskD = rd.data;
+    const vol = Math.round(riskD.annualised_vol_pct || 0);
+    const probUp = riskD.prob_profit_pct || 0;
     const sig = probUp > 60 ? 'green' : probUp > 45 ? 'amber' : 'red';
     signals.push({ label: 'Risk', signal: sig,
       status: probUp > 60 ? 'Favourable' : probUp > 45 ? 'Balanced' : 'Cautious',
-      detail: `${vol}% vol · ${probUp}% prob above entry` });
+      detail: `${vol}% vol · ${Math.round(probUp)}% prob above entry` });
   } else {
     signals.push({ label: 'Risk', signal: 'grey', status: 'Not assessed', detail: '' });
   }
@@ -4497,7 +4497,7 @@ function _doGenerateReport() {
     <tr><td>Implied Growth (Reverse DCF)</td><td>${_vs._impliedGrowth != null ? _vs._impliedGrowth+'%' : '—'}</td><td>WACC</td><td>${_vs.wacc != null ? _vs.wacc+'%' : '—'}</td></tr>
     <tr><td>Phase 1 Growth (Yrs 1-3)</td><td>${_vs.g1}%</td><td>Op Margin (used)</td><td>${_vs.om1}%</td></tr>
     <tr><td>Phase 2 Growth (Yrs 4-7)</td><td>${_vs.g2}%</td><td>Terminal Growth</td><td>${_vs.tg}%</td></tr>
-    <tr><td>MC P10 / P50 / P90</td><td colspan="3">${_session.risk?.mc ? `${cs}${_session.risk.mc.p10?.toFixed(2)||'—'} / ${cs}${_session.risk.mc.p50?.toFixed(2)||'—'} / ${cs}${_session.risk.mc.p90?.toFixed(2)||'—'}` : '—'}</td></tr>
+    <tr><td>MC P10 / P50 / P90</td><td colspan="3">${_session.risk?.data ? `${cs}${_session.risk.data.p10?.toFixed(2)||'—'} / ${cs}${_session.risk.data.p50?.toFixed(2)||'—'} / ${cs}${_session.risk.data.p90?.toFixed(2)||'—'}` : '—'}</td></tr>
   </table>` : '<p>Valuation section not opened.</p>'}
   ${chatSection('valuation', 'Valuation')}</div>
 
@@ -4514,13 +4514,13 @@ function _doGenerateReport() {
 
   <!-- PAGE 5 — RISK -->
   <div class="pg"><h2>Risk & Position Sizing</h2>
-  ${_session.risk?.mc ? `<table>
+  ${_session.risk?.data ? `<table>
     <tr><th>Metric</th><th>Value</th></tr>
-    <tr><td>Annualised Volatility</td><td>${Math.round(_session.risk.mc.annualisedVol||0)}%</td></tr>
-    <tr><td>Probability of Profit (${_session.risk.horizon||60}d)</td><td>${Math.round(_session.risk.mc.probProfit||0)}%</td></tr>
-    <tr><td>P10 Price (bear scenario)</td><td>${cs}${_session.risk.mc.p10?.toFixed(2)||'—'}</td></tr>
-    <tr><td>P50 Price (base scenario)</td><td>${cs}${_session.risk.mc.p50?.toFixed(2)||'—'}</td></tr>
-    <tr><td>P90 Price (bull scenario)</td><td>${cs}${_session.risk.mc.p90?.toFixed(2)||'—'}</td></tr>
+    <tr><td>Annualised Volatility</td><td>${Math.round(_session.risk.data.annualised_vol_pct||0)}%</td></tr>
+    <tr><td>Probability of Profit (${_session.risk.data.horizon_days||60}d)</td><td>${Math.round(_session.risk.data.prob_profit_pct||0)}%</td></tr>
+    <tr><td>P10 Price (bear scenario)</td><td>${cs}${_session.risk.data.p10?.toFixed(2)||'—'}</td></tr>
+    <tr><td>P50 Price (base scenario)</td><td>${cs}${_session.risk.data.p50?.toFixed(2)||'—'}</td></tr>
+    <tr><td>P90 Price (bull scenario)</td><td>${cs}${_session.risk.data.p90?.toFixed(2)||'—'}</td></tr>
   </table>` : '<p>Risk section not opened.</p>'}</div>
 
   <!-- PAGE 6 — CATALYST -->
