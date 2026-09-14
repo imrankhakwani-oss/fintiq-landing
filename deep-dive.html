@@ -841,7 +841,7 @@ let _session = {
 let _chatHistory = { fundamentals: [], valuation: [], technical: [], catalyst: [], risk: [], decision: [] };
 
 // Which sections have been opened (for lazy loading)
-let _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
+let _sectionOpened = { fundamentals: false, valuation: false, technical: false, risk: false, catalyst: false, decision: false };
 
 // ── URL param on load ──
 // ── Session persistence — save/restore API data across page navigations ──
@@ -927,11 +927,12 @@ function startAnalysis() {
       fundamentals: { data: null, chat_conclusions: null, completed: false },
       valuation:    { data: null, chat_conclusions: null, completed: false },
       technical:    { data: null, chat_conclusions: null, completed: false },
+      risk:         { data: null, completed: false },
       catalyst:     { data: null, chat_conclusions: null, completed: false },
       decision:     { data: null, completed: false },
     };
     _chatHistory = { fundamentals: [], valuation: [], technical: [], risk: [], catalyst: [], decision: [] };
-    _sectionOpened = { fundamentals: false, valuation: false, technical: false, catalyst: false, decision: false };
+    _sectionOpened = { fundamentals: false, valuation: false, technical: false, risk: false, catalyst: false, decision: false };
   }
 
   // Reset company header to placeholders before new fetch
@@ -1625,6 +1626,9 @@ async function sendChat(section) {
 
   input.value = '';
   btn.disabled = true;
+
+  // Guard: ensure section key exists even if session was restored from old sessionStorage snap
+  if (!_chatHistory[section]) _chatHistory[section] = [];
 
   // Add user message
   _chatHistory[section].push({ role: 'user', content: text });
