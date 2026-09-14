@@ -1854,8 +1854,10 @@ function renderValuation(d) {
   const g2d = Math.round(g1d * 0.65);
   const g3d = Math.round(g2d * 0.65);
   const om1d = Math.round(avgOM); const om2d = om1d; const om3d = om1d;
-  const ir1d = Math.round(Math.min(avgIR, 80));
-  const ir2d = ir1d; const ir3d = Math.round(Math.min(ir1d * 0.75, 60));
+  // Clamp both bounds: negative inv_rate (NOPAT near 0 makes abs(capex)/nopat explode negative)
+  // causes _solveImplied to fail, leaving historical growth defaults and a wildly wrong DCF
+  const ir1d = Math.round(Math.min(Math.max(avgIR || 0, 0), 80));
+  const ir2d = ir1d; const ir3d = Math.round(Math.min(Math.max(ir1d * 0.75, 0), 60));
   const tgd  = 2; const ronicd = Math.round(roicPct);
 
   // Init global state
@@ -3524,7 +3526,8 @@ async function _loadRiskAI(mc, hv, iv, volSignal) {
   const techData = _session.technical?.data || {};
   const tr  = techData.trend || {};
   const opt = techData.options || {};
-  const cs  = _vs.currSym || '$';
+  // _vs may be null if Valuation section hasn't been opened — must not crash before try block
+  const cs  = (_vs && _vs.currSym) || (_session.fundamentals?.data?.overview?.currency === 'GBP' ? '£' : '$');
 
   const prompt = `You are helping a retail investor understand the risk profile of ${ticker} in plain, simple English. They may not have much financial background. Explain everything clearly, like a knowledgeable friend walking them through the numbers. Do not use jargon without immediately explaining it.
 
@@ -3590,34 +3593,31 @@ Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear p
 // SECTION 5 — CATALYST TRACKER
 // ══════════════════════════════════════════════════════
 
-function loadCatalyst() {
+async function loadCatalyst() {
   if (!_session.ticker) return;
   document.getElementById('catalyst-loading').style.display = 'block';
   document.getElementById('catalyst-content').style.display = 'none';
-  _pollCatalyst(0);
-}
 
-async function _pollCatalyst(attempt) {
-  if (attempt > 60) {  // 120s total (60 × 2s) — some stocks take 60-80s on cold Railway
-    document.getElementById('catalyst-loading').style.display = 'none';
-    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Catalyst data timed out. <button onclick="loadCatalyst()" style="margin-left:10px;background:var(--gold);color:#050f1c;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700">Retry</button></div></div>`;
-    document.getElementById('catalyst-content').style.display = 'block';
-    return;
-  }
-  if (_session.ticker !== (document.getElementById('ticker-input')?.value || _session.ticker)) return;
-  // Show progress message after 15s (attempt 7) so user knows it's working
-  if (attempt === 7) {
-    const lbl = document.getElementById('catalyst-loading-label');
+  // ARCHITECTURE NOTE: Previously used background thread + polling, which failed because
+  // Railway container restarts wipe the in-memory _catalyst_jobs dict mid-job.
+  // Fix: endpoint now runs SYNCHRONOUSLY and returns result directly in one response.
+  // Railway HTTP timeout is 180s; our server deadline is 55s — safely within that.
+  // Frontend makes one request with a 70s abort timeout and shows progress at 14s.
+  const lbl = document.getElementById('catalyst-loading-label');
+  const progressTimer = setTimeout(() => {
     if (lbl) lbl.textContent = 'Still loading — catalyst analysis takes up to 60s…';
-  }
+  }, 14000);
+
+  const _catCtrl = new AbortController();
+  const _catTimer = setTimeout(() => _catCtrl.abort(), 70000); // 70s hard abort
+
   try {
-    // Always poll /catalyst (not /catalyst/status) — /catalyst has built-in restart logic
-    // if the job was lost (Railway restart, timeout). /catalyst/status would return stale state.
-    const res = await fetch(`${API}/catalyst?ticker=${_session.ticker}`);
-    if (!res.ok) throw new Error(`API ${res.status}`);
+    const res = await fetch(`${API}/catalyst?ticker=${_session.ticker}`, { signal: _catCtrl.signal });
+    clearTimeout(progressTimer);
+    clearTimeout(_catTimer);
+    if (!res.ok) throw new Error(`Server error ${res.status}`);
     const d = await res.json();
-    if (d.status === 'processing') { setTimeout(() => _pollCatalyst(attempt + 1), 2000); return; }
-    if (d.status === 'error') throw new Error(d.error || 'Unknown error');
+    if (d.status === 'error') throw new Error(d.error || 'Unknown catalyst error');
     _session.catalyst = { data: d };
     _saveSession();
     document.getElementById('catalyst-loading').style.display = 'none';
@@ -3625,8 +3625,11 @@ async function _pollCatalyst(attempt) {
     setStatus('catalyst', 'done');
     renderCatalyst(d);
   } catch(e) {
+    clearTimeout(progressTimer);
+    clearTimeout(_catTimer);
     document.getElementById('catalyst-loading').style.display = 'none';
-    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ ${e.message}</div></div>`;
+    const msg = e.name === 'AbortError' ? 'Catalyst timed out (70s) — Railway may be under load.' : e.message;
+    document.getElementById('catalyst-content').innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ ${msg} <button onclick="loadCatalyst()" style="margin-left:8px;background:var(--gold);color:#050f1c;border:none;border-radius:6px;padding:4px 12px;cursor:pointer;font-weight:700">Retry</button></div></div>`;
     document.getElementById('catalyst-content').style.display = 'block';
   }
 }
