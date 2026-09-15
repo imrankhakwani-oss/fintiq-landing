@@ -1915,9 +1915,15 @@ function renderValuation(d) {
     }
   }
 
-  // Inject HTML into section body
-  body.innerHTML = `<div class="sec-pad" id="val-content">${_buildValHTML()}</div>`;
-  setStatus('valuation', 'done');
+  // Inject HTML into section body — wrapped in try/catch so errors are visible, not silent placeholders
+  try {
+    body.innerHTML = `<div class="sec-pad" id="val-content">${_buildValHTML()}</div>`;
+    setStatus('valuation', 'done');
+  } catch(e) {
+    console.error('renderValuation crash:', e);
+    body.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Valuation render error: ${e.message}<br><small style="color:var(--muted)">${e.stack?.split('\n')[1]||''}</small></div></div>`;
+    setStatus('valuation', 'done');
+  }
 }
 
 function _buildValHTML() {
@@ -2536,9 +2542,9 @@ function _runMC(vs, cs) {
   if (!results.length) return `<div style="color:var(--muted);font-size:0.78rem">Monte Carlo could not run — revenue data unavailable.</div>`;
 
   results.sort((a,b) => a-b);
-  const p10 = results[Math.floor(N * 0.10)];
-  const p50 = results[Math.floor(N * 0.50)];
-  const p90 = results[Math.floor(N * 0.90)];
+  const p10 = results[Math.floor(results.length * 0.10)];
+  const p50 = results[Math.floor(results.length * 0.50)];
+  const p90 = results[Math.floor(Math.min(results.length * 0.90, results.length - 1))];
   const pAbove = price ? results.filter(v=>v>price).length/results.length*100 : 50;
 
   // Simple histogram (20 buckets)
