@@ -1113,6 +1113,8 @@ async function _pollFundamentals(attempt) {
     _session.fundamentals.data = d;
     renderFundamentals(d);
     _saveSession();
+    // If valuation section was opened before fundamentals loaded it got null data — re-render now
+    if (_sectionOpened.valuation) renderValuation(d);
 
   } catch(e) {
     loadingEl.style.display = 'none';
@@ -2656,8 +2658,8 @@ function renderTechnical(d) {
   const vol = d.volume || {};
   const opt = d.options || {};
   const curr = (d.ohlcv && d.ohlcv.c) ? d.ohlcv.c[d.ohlcv.c.length - 1] : null;
-  const cs   = (_session.fundamentals && _session.fundamentals.data)
-               ? ((_session.fundamentals.data.overview || {}).currency === 'GBP' ? '£' : '$') : '$';
+  const _techOvCurr = (_session.fundamentals?.data?.overview || {}).currency;
+  const cs   = _techOvCurr === 'GBP' ? '£' : _techOvCurr === 'EUR' ? '€' : '$';
 
   // Trend colour
   const tCls = tr.classification === 'Uptrend' ? 'tech-trend-up'

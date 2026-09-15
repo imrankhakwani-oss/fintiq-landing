@@ -1216,12 +1216,15 @@ def _run_fundamentals(ticker: str):
         fx_price_scale = 1.0  # multiplier to convert quote → reporting currency
         if financial_currency and financial_currency != display_currency and raw_currency != 'GBp':
             try:
-                # EURUSD=X gives USD per 1 EUR → to convert USD→EUR multiply by (1/rate)
+                # USDEUR=X: 1 USD = X EUR (e.g. 0.91) → multiply USD price by this to get EUR
                 fx_pair = f"{display_currency}{financial_currency}=X"
                 fx_tk = yf.Ticker(fx_pair)
-                fx_rate = fx_tk.fast_info.get('last_price') or fx_tk.info.get('regularMarketPrice')
-                if fx_rate and fx_rate > 0:
-                    fx_price_scale = fx_rate   # e.g. 0.91 converts USD→EUR
+                # fast_info is an object, not a dict — use attribute access
+                fx_rate = _safe(lambda: getattr(fx_tk.fast_info, 'last_price', None), timeout=5)
+                if not fx_rate:
+                    fx_rate = _safe(lambda: fx_tk.info.get('regularMarketPrice'), timeout=5)
+                if fx_rate and float(fx_rate) > 0:
+                    fx_price_scale = float(fx_rate)   # e.g. 0.91 converts USD→EUR
                     display_currency = financial_currency
             except Exception:
                 pass  # FX fetch failed — leave prices in quote currency, at least consistent label
@@ -1574,6 +1577,8 @@ def _run_fundamentals(ticker: str):
                 "market_cap": _fmt_large(mc),
                 "enterprise_value": _fmt_large(ev),
                 "currency": display_currency,
+                "quote_currency": raw_currency if raw_currency != 'GBp' else 'GBP',
+                "fx_converted": fx_price_scale != 1.0,  # true if price was converted from quote currency
                 "price": round(price,2) if price else None,
                 "fy_end": fy_end,
                 "q_end": q_end,
