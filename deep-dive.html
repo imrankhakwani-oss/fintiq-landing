@@ -3180,7 +3180,8 @@ function _renderRisk() {
   _saveSession();
 
   // _vs may be null if Valuation section hasn't been opened — derive currency from fundamentals
-  const cs = (_vs && _vs.currSym) || (_session.fundamentals?.data?.overview?.currency === 'GBP' ? '£' : '$');
+  const _pdfCurr = _session.fundamentals?.data?.overview?.currency;
+  const cs = (_vs && _vs.currSym) || (_pdfCurr === 'GBP' ? '£' : _pdfCurr === 'EUR' ? '€' : '$');
   const fmtP = v => v != null ? cs + v.toFixed(2) : '—';
   const chgPct = v => v != null ? ((v - mc.S0)/mc.S0*100).toFixed(1) : '—';
   const chgCol = v => v >= mc.S0 ? 'var(--green)' : 'var(--red)';
@@ -3550,7 +3551,8 @@ async function _loadRiskAI(mc, hv, iv, volSignal) {
   const tr  = techData.trend || {};
   const opt = techData.options || {};
   // _vs may be null if Valuation section hasn't been opened — must not crash before try block
-  const cs  = (_vs && _vs.currSym) || (_session.fundamentals?.data?.overview?.currency === 'GBP' ? '£' : '$');
+  const _ovCurr = _session.fundamentals?.data?.overview?.currency;
+  const cs  = (_vs && _vs.currSym) || (_ovCurr === 'GBP' ? '£' : _ovCurr === 'EUR' ? '€' : '$');
 
   const prompt = `You are helping a retail investor understand the risk profile of ${ticker} in plain, simple English. They may not have much financial background. Explain everything clearly, like a knowledgeable friend walking them through the numbers. Do not use jargon without immediately explaining it.
 

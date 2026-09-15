@@ -1206,12 +1206,32 @@ def _run_fundamentals(ticker: str):
         gbp_price_scale = 0.01 if raw_currency == 'GBp' else 1.0
         display_currency = 'GBP' if raw_currency == 'GBp' else raw_currency
 
+        # ── Foreign-listing FX conversion (e.g. ASML trades on NASDAQ in USD but reports in EUR) ──
+        # yfinance 'currency' = quote currency; 'financialCurrency' = reporting currency.
+        # When they differ the price is in USD but financials (revenue, EPS, etc.) are in EUR/other.
+        # We convert price-quote fields to the reporting currency so the DCF is internally consistent.
+        financial_currency = info.get('financialCurrency', raw_currency)
+        if raw_currency == 'GBp':
+            financial_currency = 'GBP'  # GBp stocks report in GBP, already handled above
+        fx_price_scale = 1.0  # multiplier to convert quote → reporting currency
+        if financial_currency and financial_currency != display_currency and raw_currency != 'GBp':
+            try:
+                # EURUSD=X gives USD per 1 EUR → to convert USD→EUR multiply by (1/rate)
+                fx_pair = f"{display_currency}{financial_currency}=X"
+                fx_tk = yf.Ticker(fx_pair)
+                fx_rate = fx_tk.fast_info.get('last_price') or fx_tk.info.get('regularMarketPrice')
+                if fx_rate and fx_rate > 0:
+                    fx_price_scale = fx_rate   # e.g. 0.91 converts USD→EUR
+                    display_currency = financial_currency
+            except Exception:
+                pass  # FX fetch failed — leave prices in quote currency, at least consistent label
+
         # ── Current price ──
         price = fv(info.get('currentPrice') or info.get('regularMarketPrice') or
                    info.get('previousClose'))
         if price is None and hist is not None and not hist.empty:
             price = float(hist['Close'].iloc[-1])
-        if price: price = round(price * gbp_price_scale, 4)
+        if price: price = round(price * gbp_price_scale * fx_price_scale, 4)
 
         # ── Analyst consensus ──
         rec_mean = fv(info.get('recommendationMean'))
@@ -1437,9 +1457,11 @@ def _run_fundamentals(ticker: str):
         dps     = fv(info.get('lastDividendValue'))  # already in reporting currency
 
         # MarketCap and EV from yfinance for GBp stocks are quote-price × shares → in pence
-        if gbp_price_scale != 1.0:
-            mc = mc * gbp_price_scale if mc is not None else None
-            ev = ev * gbp_price_scale if ev is not None else None
+        # Also convert for foreign-listing FX (e.g. ASML NASDAQ: MC/EV in USD → EUR)
+        price_scale = gbp_price_scale * fx_price_scale
+        if price_scale != 1.0:
+            mc = mc * price_scale if mc is not None else None
+            ev = ev * price_scale if ev is not None else None
 
         fcf_ps  = fcf_val / shares_out if fcf_val and shares_out else None
         beta    = fv(info.get('beta'))
@@ -1447,20 +1469,20 @@ def _run_fundamentals(ticker: str):
         short_pct = fv(info.get('shortPercentOfFloat'))
         short_ratio = fv(info.get('shortRatio'))
 
-        # 52w range position — price-quote fields, divide GBp→GBP
+        # 52w range position — price-quote fields, divide GBp→GBP or USD→reporting currency
         hi52 = fv(info.get('fiftyTwoWeekHigh'))
         lo52 = fv(info.get('fiftyTwoWeekLow'))
-        if gbp_price_scale != 1.0:
-            hi52 = hi52 * gbp_price_scale if hi52 is not None else None
-            lo52 = lo52 * gbp_price_scale if lo52 is not None else None
+        if price_scale != 1.0:
+            hi52 = hi52 * price_scale if hi52 is not None else None
+            lo52 = lo52 * price_scale if lo52 is not None else None
         range_pos = round((price - lo52) / (hi52 - lo52) * 100, 1) if price and hi52 and lo52 and hi52 != lo52 else None
 
         # MA distances — price-quote fields
         ma50  = fv(info.get('fiftyDayAverage'))
         ma200 = fv(info.get('twoHundredDayAverage'))
-        if gbp_price_scale != 1.0:
-            ma50  = ma50  * gbp_price_scale if ma50  is not None else None
-            ma200 = ma200 * gbp_price_scale if ma200 is not None else None
+        if price_scale != 1.0:
+            ma50  = ma50  * price_scale if ma50  is not None else None
+            ma200 = ma200 * price_scale if ma200 is not None else None
         vs_ma50  = round((price/ma50 - 1)*100, 1)  if price and ma50  else None
         vs_ma200 = round((price/ma200 - 1)*100, 1) if price and ma200 else None
 
@@ -1560,9 +1582,9 @@ def _run_fundamentals(ticker: str):
                 "employees": info.get('fullTimeEmployees'),
             },
             "analyst": {
-                "target_price": round(fv(info.get('targetMeanPrice')) * gbp_price_scale, 4) if fv(info.get('targetMeanPrice')) else None,
-                "target_low":   round(fv(info.get('targetLowPrice'))  * gbp_price_scale, 4) if fv(info.get('targetLowPrice'))  else None,
-                "target_high":  round(fv(info.get('targetHighPrice')) * gbp_price_scale, 4) if fv(info.get('targetHighPrice')) else None,
+                "target_price": round(fv(info.get('targetMeanPrice')) * price_scale, 4) if fv(info.get('targetMeanPrice')) else None,
+                "target_low":   round(fv(info.get('targetLowPrice'))  * price_scale, 4) if fv(info.get('targetLowPrice'))  else None,
+                "target_high":  round(fv(info.get('targetHighPrice')) * price_scale, 4) if fv(info.get('targetHighPrice')) else None,
                 "recommendation": rec_key,
                 "recommendation_mean": rec_mean,
                 "strong_buy": strong_buy, "buy": buy, "hold": hold,
