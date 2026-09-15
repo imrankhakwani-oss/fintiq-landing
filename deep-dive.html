@@ -635,7 +635,8 @@ a{color:var(--gold);text-decoration:none}
   <h1 class="hero-title">Stock <span>Deep Dive</span></h1>
   <p class="hero-sub">Institutional-grade analysis — fundamentals, valuation, technicals, catalysts and decision review, all in one place.</p>
   <div class="search-bar">
-    <input class="search-input" id="ticker-input" type="text" placeholder="Enter ticker or company name (e.g. AAPL, TSLA, SHEL.L)" maxlength="12" autocomplete="off">
+    <input class="search-input" id="ticker-input" type="text" placeholder="Enter ticker or company name (e.g. AAPL, TSLA, SHEL.L)" maxlength="12" autocomplete="off"
+      onkeydown="if(event.key==='Enter')startAnalysis()">
     <button class="search-btn" onclick="startAnalysis()">Analyse →</button>
   </div>
   <div class="search-hint">
@@ -914,6 +915,7 @@ function startAnalysis() {
   const input = document.getElementById('ticker-input');
   const ticker = input.value.trim().toUpperCase();
   if (!ticker) { input.focus(); return; }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Update URL without reload
   const url = new URL(window.location);
@@ -1042,7 +1044,9 @@ function updateSessionBadges() {
 // ── Load Fundamentals (background-task + polling) ──
 async function loadFundamentals() {
   if (!_session.ticker) return;
-  if (_session.fundamentals.data) { renderFundamentals(_session.fundamentals.data); return; }
+  // If we have cached data, render it immediately for fast display — but still re-fetch
+  // fresh data in the background so valuation always uses current numbers.
+  if (_session.fundamentals.data) { renderFundamentals(_session.fundamentals.data); }
 
   const loadingEl = document.getElementById('fund-loading');
   const contentEl = document.getElementById('fund-content');
