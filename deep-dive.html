@@ -1834,7 +1834,9 @@ let _vs = {};
 let _mcResults = null;  // Valuation Monte Carlo results — shared with Copilot section_data
 
 function renderValuation(d) {
+  console.log('[renderValuation] called, d=', d ? 'has data' : 'null', 'body-valuation=', document.getElementById('body-valuation'));
   const body = document.getElementById('body-valuation');
+  if (!body) { console.error('[renderValuation] body-valuation element NOT FOUND in DOM'); return; }
   if (!d) {
     body.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Load Fundamentals first (Section 1) before running Valuation.</div></div>`;
     return;
