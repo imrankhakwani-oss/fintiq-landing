@@ -1669,6 +1669,25 @@ async function sendChat(section) {
             }
           : section === 'technical'
             ? _techSummaryForCopilot(_session.technical?.data)
+            : section === 'risk'
+            ? (() => {
+                const rd = _session.risk?.data || {};
+                const stopEl   = document.getElementById('risk-stop-input');
+                const portEl   = document.getElementById('risk-portfolio-input');
+                const riskPctEl = document.getElementById('risk-risk-pct-input');
+                const stopResult = document.getElementById('risk-stop-result')?.innerText || null;
+                const posResult  = document.getElementById('risk-pos-result')?.innerText || null;
+                return {
+                  ...rd,
+                  user_stop_loss_price:    stopEl?.value   ? parseFloat(stopEl.value)    : null,
+                  user_stop_direction:     _stopDirection  || 'long',
+                  user_portfolio_size:     portEl?.value   ? parseFloat(portEl.value)    : null,
+                  user_risk_pct_per_trade: riskPctEl?.value ? parseFloat(riskPctEl.value) : null,
+                  stop_probability_result: stopResult,
+                  position_size_result:    posResult,
+                  active_horizon_days:     _riskHorizon || rd.horizon_days || null,
+                };
+              })()
             : (_session[section]?.data || {}),
         messages: _chatHistory[section],
         session_ctx: buildSessionCtx(),
@@ -3573,7 +3592,20 @@ Be direct. Use real numbers. Keep it simple. No bullet points — just 4 clear p
         ticker,
         section: 'risk',
         messages: [{ role: 'user', content: prompt }],
-        section_data: _session.risk?.data || {},
+        tavily_query: `${ticker} stock volatility risk analyst outlook`,
+        section_data: (() => {
+          const rd = _session.risk?.data || {};
+          return {
+            ...rd,
+            user_stop_loss_price:    document.getElementById('risk-stop-input')?.value    ? parseFloat(document.getElementById('risk-stop-input').value)    : null,
+            user_stop_direction:     _stopDirection || 'long',
+            user_portfolio_size:     document.getElementById('risk-portfolio-input')?.value ? parseFloat(document.getElementById('risk-portfolio-input').value) : null,
+            user_risk_pct_per_trade: document.getElementById('risk-risk-pct-input')?.value  ? parseFloat(document.getElementById('risk-risk-pct-input').value)  : null,
+            stop_probability_result: document.getElementById('risk-stop-result')?.innerText  || null,
+            position_size_result:    document.getElementById('risk-pos-result')?.innerText   || null,
+            active_horizon_days:     _riskHorizon || rd.horizon_days || null,
+          };
+        })(),
       })
     });
     clearTimeout(_riskTimeout);

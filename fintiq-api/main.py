@@ -31,7 +31,7 @@ app.add_middleware(
 )
 
 # ── Caches ─────────────────────────────────────────────────────────────────────
-_bulletin_cache: dict = {}; _bulletin_cached_at: float = 0.0; _BULLETIN_TTL = 6*3600
+_bulletin_cache: dict = {}; _bulletin_cached_at: float = 0.0; _BULLETIN_TTL = 12*3600  # 2× per day max (agreed 04/09)
 _bulletin_refreshing: bool = False  # True while background regeneration is in progress
 _market_cache:   dict = {}; _market_cached_at:   float = 0.0; _MARKET_TTL   = 30*60
 _earnings_cache: dict = {}; _earnings_cached_at: dict  = {};  _EARNINGS_TTL = 24*3600
@@ -1120,7 +1120,7 @@ def _run_fundamentals(ticker: str):
             try: return t.info or {}
             except: return {}
         def _get_hist():
-            try: return t.history(period="3y", auto_adjust=True)
+            try: return t.history(period="5y", auto_adjust=True)
             except: return None
         def _get_fin():
             try: return t.financials
@@ -1339,8 +1339,25 @@ def _run_fundamentals(ticker: str):
             'SHEL.L': ['BP.L','XOM','CVX'], 'BP.L': ['SHEL.L','XOM','CVX'],
             'XOM': ['CVX','SHEL.L','BP.L'], 'BRKB': ['MKL','FFH','AIG'],
             'TSM': ['INTC','ASML','AMAT'],
+            'BULL': ['HOOD','IBKR','SOFI'],
+            'HOOD': ['BULL','IBKR','SOFI'],
+            'IBKR': ['HOOD','BULL','SOFI'],
+            'SOFI': ['HOOD','BULL','IBKR'],
+            'COIN': ['HOOD','IBKR','MSTR'],
+            'PYPL': ['V','MA','SQ'],
+            'SQ':   ['PYPL','AFRM','UPST'],
         }
         peer_tickers = _PEER_MAP.get(ticker, [])
+        # Fallback: use FMP peer list for unknown tickers
+        if not peer_tickers:
+            try:
+                pr = requests.get(f"{FMP_BASE}/v4/stock_peers?symbol={ticker}&apikey={FMP_KEY}", timeout=8)
+                if pr.ok:
+                    fmp_peers = pr.json()
+                    if fmp_peers and isinstance(fmp_peers, list) and fmp_peers[0].get('peersList'):
+                        peer_tickers = fmp_peers[0]['peersList'][:3]
+            except:
+                pass
 
         def _fetch_peer(pt):
             try:
@@ -1520,87 +1537,9 @@ def _run_fundamentals(ticker: str):
             except:
                 pass
 
-        # ── FF4 AI commentary ──
-        if ff4 and not ff4.get('error') and ANTHROPIC_API_KEY:
-            try:
-                _is_proxy = ff4.get('estimated', False)
-                _cli = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
-                if _is_proxy:
-                    # Proxy path — no alpha/p-value, explain the estimation approach
-                    _1yr_ret = None
-                    if hist is not None and not hist.empty:
-                        _cl = hist['Close']
-                        _n = min(252, len(_cl) - 1)
-                        if _n > 20:
-                            _1yr_ret = round((_cl.iloc[-1] - _cl.iloc[-_n]) / _cl.iloc[-_n] * 100, 1)
-
-                    _ff_prompt = (
-                        f"You are explaining estimated Fama-French factor characteristics to a retail investor for {ticker}. "
-                        f"IMPORTANT: This is a proxy estimate derived from observable data, NOT an OLS regression. "
-                        f"No formal alpha or p-value can be computed. Be explicit about this. "
-                        f"\n\nEstimated factor profile: "
-                        f"Beta={ff4.get('beta')} (from yfinance — real figure), "
-                        f"SMB (size)={ff4.get('smb')} (estimated from market cap), "
-                        f"HML (value)={ff4.get('hml')} (estimated from P/B ratio), "
-                        f"MOM (momentum)={ff4.get('mom')} (estimated from 1yr price return). "
-                        f"1yr actual price return: {(str(_1yr_ret)+'%') if _1yr_ret is not None else 'unavailable'}. "
-                        f"Directional signal: {ff4.get('signal')}. "
-                        f"\n\nWrite exactly 4 complete sentences in plain prose — no headers, no bullet points, no markdown. "
-                        f"Sentence 1: Clearly state this is a proxy estimate (not OLS regression) — explain what that means: "
-                        f"we derive factor tilts from observable data (market cap → size, P/B → value, price return → momentum) rather than statistical regression. "
-                        f"Sentence 2: Interpret the beta and the estimated factor tilts — what do they say about {ticker}'s risk character? Use the numbers. "
-                        f"Sentence 3: What does the directional signal ({ff4.get('signal')}) suggest, and what are the key risks given the factor profile? "
-                        f"Sentence 4: Concrete takeaway — what should the investor watch for, and note that for a full OLS-based factor analysis, the stock needs to be in the Fintiq screener universe. "
-                        f"Plain prose, real numbers, complete all 4 sentences."
-                    )
-                    _max_tok = 440
-                else:
-                    # OLS path — full breakdown with alpha
-                    _actual_2yr = None
-                    _model_predicted = None
-                    if hist is not None and not hist.empty and len(hist) >= 2:
-                        _close = hist['Close']
-                        _n_days = min(504, len(_close) - 1)
-                        _p0 = float(_close.iloc[-_n_days])
-                        _p1 = float(_close.iloc[-1])
-                        if _p0 > 0:
-                            _total_2yr = (_p1 - _p0) / _p0
-                            _actual_2yr = round(((1 + _total_2yr) ** 0.5 - 1) * 100, 1)
-                    if _actual_2yr is not None and ff4.get('alpha') is not None:
-                        _model_predicted = round(_actual_2yr - float(ff4.get('alpha')), 1)
-
-                    _breakdown = ""
-                    if _actual_2yr is not None and _model_predicted is not None:
-                        _breakdown = (
-                            f"Actual 2yr annualised return: {_actual_2yr:+.1f}%/yr. "
-                            f"Model predicted: {_model_predicted:+.1f}%/yr (what beta/SMB/HML/MOM exposures explain). "
-                            f"Alpha = Actual − Model = {ff4.get('alpha'):+}%/yr. "
-                        )
-                    _ff_prompt = (
-                        f"You are explaining Fama-French 4-factor results to a retail investor for {ticker}. "
-                        f"Alpha is the annualised intercept from a 2-year OLS regression of {ticker}'s weekly returns against four risk factors. "
-                        f"Model Predicted Return = risk-free rate + (beta × market premium) + (SMB × size premium) + (HML × value premium) + (MOM × momentum premium). "
-                        f"Alpha = Actual Return − Model Predicted. It is the return unexplained by known risk factors — genuine stock-specific edge. "
-                        f"\n\nNumbers: {_breakdown}"
-                        f"Signal={ff4.get('signal')}, Alpha={ff4.get('alpha')}%pa, p-value={ff4.get('pval')}, "
-                        f"Beta={ff4.get('beta')}, SMB={ff4.get('smb')}, HML={ff4.get('hml')}, MOM={ff4.get('mom')}. "
-                        f"\n\nWrite exactly 4 complete sentences in plain prose — no headers, no bullet points, no markdown bold or asterisks. "
-                        f"Sentence 1: Walk through the alpha calculation using the actual numbers (actual return minus model predicted equals alpha). "
-                        f"Sentence 2: Interpret the dominant factor loadings and what they reveal about {ticker}'s risk character, using the actual numbers. "
-                        f"Sentence 3: Assess statistical reliability using the p-value — is this alpha genuine edge or could it be noise? "
-                        f"Sentence 4: Concrete investment takeaway — what should the investor do or watch for given the signal and this alpha/p-value. "
-                        f"Plain prose only, real numbers throughout, complete all 4 sentences fully before stopping."
-                    )
-                    _max_tok = 480
-
-                _ff_resp = _cli.messages.create(
-                    model="claude-haiku-4-5-20251001", max_tokens=_max_tok,
-                    messages=[{"role":"user","content":_ff_prompt}]
-                )
-                ff4["commentary"] = _ff_resp.content[0].text.strip()
-            except:
-                pass
+        # FF4 AI commentary removed — Layer 1 violation (auto-fires AI on section open).
+        # The raw FF4 numbers are still returned in the ff4 dict.
+        # The Fundamentals Copilot can interpret them on request.
 
         result = {
             "ticker": ticker,
@@ -1616,7 +1555,7 @@ def _run_fundamentals(ticker: str):
                 "price": round(price,2) if price else None,
                 "fy_end": fy_end,
                 "q_end": q_end,
-                "description": info.get('longBusinessSummary','')[:600] if info.get('longBusinessSummary') else '',
+                "description": info.get('longBusinessSummary','')[:1500] if info.get('longBusinessSummary') else '',
                 "website": info.get('website',''),
                 "employees": info.get('fullTimeEmployees'),
             },
@@ -1756,6 +1695,7 @@ def fundamentals_chat(payload: dict):
     messages     = payload.get("messages", [])
     session_ctx  = payload.get("session_ctx", {})   # cross-section conclusions
     session_id   = payload.get("session_id", "unknown")
+    tavily_query = payload.get("tavily_query", None)   # optional override for web search query
 
     if not ticker:
         raise HTTPException(status_code=400, detail="ticker required")
@@ -1772,6 +1712,13 @@ PUSHBACK MANDATE — NON-NEGOTIABLE:
 - Do NOT validate conclusions just to avoid friction. A Copilot that agrees with everything is worse than no Copilot.
 - If the user's conviction appears high but the data picture is mixed or weak, proactively offer: "You seem confident in this. Would you like me to argue the bear case as hard as possible?"
 - You may acknowledge the user's reasoning fairly, but you must not simply capitulate if they push back on your challenge. Intellectual honesty is the product.
+
+DATA COMPLETENESS & IMPARTIALITY — NON-NEGOTIABLE:
+- You must present ALL relevant data points for the question, not only those that support your pushback or the user's thesis. Cherry-picking data is a form of bias.
+- When citing a time series (revenue growth, margins, etc.), always cite the COMPLETE series shown in the data. Never selectively omit a year because it weakens your argument.
+- If the data is genuinely mixed — some years strong, some weak — say so explicitly: "The picture is mixed: X in year A but Y in year B."
+- Where the user's thesis is SUPPORTED by the data, say so directly — do not downplay it. Where it is CONTRADICTED, say so directly — do not soften it. Partial agreement is valid and expected.
+- The goal is truth, not to prove the user wrong. A response that agrees with the user because the data supports them is correct. A response that disagrees only because of selective data framing is a failure.
 """
 
     # ── BEHAVIOUR RULES (applies to ALL sections) ──
@@ -1854,26 +1801,41 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
 {pushback_mandate}
 {behaviour_rules}"""
 
+    # Web search via Tavily — always fires to supplement live data with current context
+    web_supplement = ""
+    try:
+        if TAVILY_API_KEY:
+            last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
+            tv = requests.post('https://api.tavily.com/search', json={
+                'api_key': TAVILY_API_KEY,
+                'query': tavily_query or f'{ticker} {last_user_msg[:150]}',
+                'search_depth': 'basic',
+                'max_results': 3,
+                'include_answer': True,
+            }, timeout=8)
+            if tv.ok:
+                tvj = tv.json()
+                snippets = []
+                if tvj.get('answer'):
+                    snippets.append(f"Web summary: {tvj['answer']}")
+                for r in tvj.get('results', [])[:3]:
+                    snippets.append(f"- {r.get('title','')}: {r.get('content','')[:250]}")
+                if snippets:
+                    web_supplement = "\n\nWEB SEARCH RESULTS (use to supplement live data gaps — cite source where relevant):\n" + "\n".join(snippets)
+    except Exception:
+        web_supplement = ""
+
     # Fix 5: Haiku for routine Copilot exchanges (spec + margin model)
-    # Fix 6: Prompt caching — system prompt cached, historical turns cached, only latest turn billed full
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     history = messages[-10:]
     cached_history = history[:-1]   # all but last turn — these are stable, cache them
     latest_turn    = history[-1] if history else {"role": "user", "content": ""}
 
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
-        max_tokens=600,
-        system=[{
-            "type": "text",
-            "text": system,
-            "cache_control": {"type": "ephemeral"},   # cache the large system prompt
-        }],
-        messages=[
-            *[{**m, "cache_control": {"type": "ephemeral"}} if i == len(cached_history) - 1 else m
-              for i, m in enumerate(cached_history)],
-            latest_turn,
-        ],
-        betas=["prompt-caching-2024-07-31"],
+        max_tokens=1500,
+        system=system + web_supplement,
+        messages=history,
     )
     # Fix 9: run real-time contradiction checks and return flags with reply
     # Frontend can show these inline during the Copilot dialogue
@@ -2345,20 +2307,26 @@ def _run_catalyst(ticker: str):
     """Background thread — collect earnings, analyst, short interest, news data."""
     import datetime, requests as _req
     from concurrent.futures import ThreadPoolExecutor, TimeoutError as _FuturesTimeout
-    def _safe(fn, timeout=12, default=None):
+    _deadline = time.time() + 55  # hard wall-clock deadline — always complete within 55s
+
+    def _safe(fn, timeout=10, default=None):
         """Run fn() with a timeout; return default if it hangs or errors.
         IMPORTANT: shutdown(wait=False) so we don't block on hung yfinance threads."""
+        if time.time() > _deadline:
+            return default  # deadline exceeded — skip this call
         ex = ThreadPoolExecutor(max_workers=1)
         try:
+            remaining = max(1, int(_deadline - time.time()))
             fut = ex.submit(fn)
-            return fut.result(timeout=timeout)
+            return fut.result(timeout=min(timeout, remaining))
         except Exception:
             return default
         finally:
             ex.shutdown(wait=False)  # never wait for a hung thread
     try:
         tk = yf.Ticker(ticker)
-        info = _safe(lambda: tk.info, timeout=20) or {}
+        # Reduced timeouts: 10s per call (was 15/10) so total job stays well within 55s deadline
+        info = _safe(lambda: tk.info, timeout=10) or {}
         curr_price = info.get('currentPrice') or info.get('regularMarketPrice')
 
         # ── 1. Earnings ──
@@ -2378,7 +2346,7 @@ def _run_catalyst(ticker: str):
                 pass
 
         # Fetch earnings_dates ONCE — reused for both future date lookup and surprise history
-        _ed_cache = _safe(lambda: tk.earnings_dates, timeout=10)
+        _ed_cache = _safe(lambda: tk.earnings_dates, timeout=8)  # was 10
 
         # If timestamp was missing/past, look in earnings_dates for next future date
         if not earnings_date:
@@ -2519,7 +2487,7 @@ def _run_catalyst(ticker: str):
 
         # ── 4. News via Tavily ──
         news_items = []
-        if TAVILY_API_KEY:
+        if TAVILY_API_KEY and time.time() < _deadline:
             try:
                 company_name = info.get('longName') or ticker
                 resp_tv = _req.post('https://api.tavily.com/search', json={
@@ -2528,7 +2496,7 @@ def _run_catalyst(ticker: str):
                     'search_depth': 'basic',
                     'max_results': 7,
                     'include_answer': False
-                }, timeout=12)
+                }, timeout=8)
                 if resp_tv.ok:
                     for r in resp_tv.json().get('results', []):
                         news_items.append({
@@ -2573,7 +2541,8 @@ def _run_catalyst(ticker: str):
                 'squeeze_signal': squeeze_signal,
             },
             'news': news_items,
-            'ts': time.time()
+            'ts': time.time(),
+            'status': 'done',  # must be present so get_catalyst() recognises completion
         }
         _catalyst_jobs[ticker] = _clean(result)
 
@@ -2583,17 +2552,29 @@ def _run_catalyst(ticker: str):
 
 @app.get("/catalyst")
 def get_catalyst(ticker: str):
+    """
+    Run catalyst analysis SYNCHRONOUSLY and return result directly.
+
+    Previous approach (background thread + polling) failed because Railway container
+    restarts wipe the in-memory _catalyst_jobs dict mid-job, causing infinite 'processing'
+    loops. Running synchronously avoids this — the HTTP response carries the result directly.
+
+    Railway HTTP timeout is 180s; _run_catalyst has a 55s wall-clock deadline, so we
+    complete well within that. Memory cache (5 min TTL) avoids re-running on repeat visits.
+    """
     ticker = ticker.upper().strip()
     now = time.time()
+    # Serve from memory cache if fresh — avoids re-running on hot requests
     job = _catalyst_jobs.get(ticker)
-    if job:
-        if job.get('status') == 'done' and now - job.get('ts', 0) < _CATALYST_TTL:
-            return job
-        if job.get('status') == 'processing' and now - job.get('ts', 0) < 90:
-            return {"status": "processing"}
-    _catalyst_jobs[ticker] = {'status': 'processing', 'data': None, 'ts': now}
-    threading.Thread(target=_run_catalyst, args=(ticker,), daemon=True).start()
-    return {"status": "processing"}
+    if job and job.get('status') == 'done' and now - job.get('ts', 0) < _CATALYST_TTL:
+        return job
+    # Run synchronously — blocks until complete (max 55s per _run_catalyst deadline)
+    _run_catalyst(ticker)
+    result = _catalyst_jobs.get(ticker)
+    if not result or result.get('status') != 'done':
+        err = (result or {}).get('error', 'Catalyst analysis failed')
+        raise HTTPException(status_code=503, detail=err)
+    return result
 
 
 @app.get("/catalyst/status")
@@ -2905,20 +2886,23 @@ def _check_and_deduct_entitlement(session_id: str, key: str, limit: int):
 # ══════════════════════════════════════════════════════
 
 @app.post("/committee/report")
-async def committee_report(payload: dict):
+def committee_report(payload: dict):
     """Fintiq Investment Committee — reviews compiled session, runs pre-checks, produces structured report."""
     import json as _cjson
     import re as _cre
+
+    _committee_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     # Fix 10: entitlement check — 2 Committee reports per session
     session_id = payload.get("session_id", "")
     _check_and_deduct_entitlement(session_id, "committee_remaining", _SESSION_COMMITTEE_LIMIT)
 
-    ticker      = payload.get("ticker", "UNKNOWN")
-    live_price  = payload.get("live_price")
+    ticker        = payload.get("ticker", "UNKNOWN")
+    live_price    = payload.get("live_price")
     analysis_date = payload.get("analysis_date", "")
-    sections    = payload.get("sections", {})
-    all_flags   = payload.get("all_flags", [])
+    sections      = payload.get("sections", {})
+    dcf_state     = payload.get("dcf_state") or {}   # live DCF slider values from frontend _vs
+    all_flags     = payload.get("all_flags", [])
     all_conclusions = payload.get("all_conclusions", [])
 
     fund  = sections.get("fundamentals", {})
@@ -2950,43 +2934,57 @@ async def committee_report(payload: dict):
         summarise_section("conviction", conv),
     ])
 
-    prompt = f"""You are the chair of a buy-side Investment Committee reviewing a junior analyst's deep-dive on {ticker} (price: {live_price}, date: {analysis_date}).
+    dcf_ctx = f"\nDCF SLIDER STATE: {_cjson.dumps(dcf_state)[:800]}" if dcf_state else ""
 
-IMPORTANT: You are reviewing the QUALITY of the analyst's work — not producing a stock opinion. Your report must visibly reference the analyst's own stated conclusions. If this report could have been written without their specific inputs, it is a product failure.
+    prompt = f"""You are the chair of a buy-side Investment Committee at a top-tier hedge fund. A junior analyst has just presented their deep-dive on {ticker} (current price: {live_price}, date: {analysis_date}). You are reviewing both the QUALITY of their work AND providing your own institutional-grade assessment.
 
-PRE-CHECKS (deterministic contradictions already identified):
+Your report must visibly reference the analyst's specific numbers, conclusions, and stated thesis. A report that could have been written without their inputs is a failure.
+
+PRE-CHECKS (deterministic contradictions already flagged by our system):
 {pre_flags_text}
 
 COMPILED ANALYST SESSION:
-{compiled_text}
+{compiled_text}{dcf_ctx}
 
-ALL UNRESOLVED FLAGS: {_cjson.dumps(all_flags)[:1000]}
+ALL UNRESOLVED FLAGS: {_cjson.dumps(all_flags)[:800]}
 
-Produce a JSON report with exactly these fields:
+Produce a JSON report with exactly these fields. Return only valid JSON, no markdown fences.
+
 {{
-  "thesis": "2-3 sentences: the analyst's core investment thesis derived from their stated conclusions across all sections",
-  "bull_case": "3-4 sentences: conditions under which this thesis succeeds — drawn from the analyst's own optimistic assumptions, not a generic upside narrative",
-  "bear_case": "3-4 sentences: specific failure modes that would break the thesis — prioritised by the probability the analyst's own risk analysis assigned them",
-  "contradictions": "Numbered list of internal inconsistencies. Include the pre-check findings above. Each must name the two specific conclusions in tension and why they cannot both be true. If none beyond pre-checks, say so.",
-  "missing_evidence": "Specific material factors the analyst did NOT address, each with one sentence on why it matters for this thesis",
-  "conditions": "Three structured lists: (1) conditions under which thesis is attractive, (2) conditions that would weaken it, (3) the single condition that would invalidate it entirely",
-  "valuation_range": {{"bear": "price or N/A", "base": "price or N/A", "bull": "price or N/A"}},
+  "thesis": "First 2 sentences: articulate the analyst's core investment thesis in your own words, synthesising their stated conclusions across all sections. Then 2-3 sentences of committee verdict: Is this thesis internally consistent? Is the conviction level appropriate given the evidence quality? Where is the argument strongest and where does it rely on assumptions that haven't been tested? Be direct — if the thesis is flawed, say so.",
+
+  "bull_case": "You are the committee chair speaking directly to the analyst. Construct the most compelling bull case for {ticker} using the 5-dimension framework — EACH dimension must reference specific numbers from their session data: (1) FUNDAMENTAL: What does the business quality, moat, and margin trajectory support for the bull? Reference actual ROIC, FCF, revenue growth figures. (2) VALUATION: If the analyst's DCF growth assumptions prove correct, what is the implied fair value and upside? Reference their stated WACC and growth inputs. (3) TECHNICAL: What does the chart structure, key support levels, and options positioning suggest about the bull entry case? Reference specific price levels. (4) RISK: What do the Monte Carlo P75/P90 simulation outcomes show for the bull scenario? How should the bull size their position? (5) CATALYST: Which specific upcoming events or fundamental improvements are the most likely positive triggers? Write 200+ words minimum. This is a senior analyst's best articulation of the bull case — not a list, not generic sentences.",
+
+  "bear_case": "Same 5-dimension framework as bull_case but the bear case. For each dimension, articulate the most credible failure mode drawing from the analyst's own session data: (1) FUNDAMENTAL: What does the revenue trajectory, margin gap, or competitive positioning suggest could go wrong? Use their actual numbers. (2) VALUATION: If growth disappoints or margin assumptions don't hold, what does the DCF imply for downside? What is the bear-case price? (3) TECHNICAL: What chart signals or options flow data point to the bear case? At what price does the technical thesis break? (4) RISK: What do the P10/P25 simulation outcomes show? How quickly could a bear scenario develop given the volatility profile? (5) CATALYST: What specific events or macro conditions would trigger the bear case? Which catalyst risk is the analyst NOT adequately pricing in? Write 200+ words minimum. Be specific and direct.",
+
+  "contradictions": "Numbered list. Each entry names two specific conclusions in the analyst's session that cannot simultaneously be true, and explains why. Include all pre-check findings. Do not soften. If none beyond pre-checks, say so explicitly.",
+
+  "missing_evidence": "Numbered list of 4-5 specific material factors the analyst did not address, each with one sentence on why it matters for this thesis. Be specific to {ticker} — not generic investment checklist items.",
+
+  "conditions": "Three sections as plain prose: THESIS HOLDS IF: [list 2-3 specific, measurable conditions drawn from the analyst's own inputs — e.g. 'Revenue growth recovers to at least X% in FY+1']. THESIS WEAKENS IF: [list 2 specific warning signs to watch]. INVALIDATION CONDITION: [one sentence — the single event or data point that, if it happens, definitively breaks this thesis and requires immediate reassessment].",
+
+  "valuation_range": {{
+    "bear": "Estimate the bear-case fair value as a price (e.g. $XX.XX) based on DCF inputs with pessimistic assumptions — lower growth, compressed margins. If WACC and growth inputs are available in the compiled data, derive a specific price. Otherwise write N/A.",
+    "base": "Estimate the base-case fair value using the analyst's stated DCF inputs as-is. If inputs are available, derive a specific price. Otherwise write N/A.",
+    "bull": "Estimate the bull-case fair value with optimistic assumptions — higher growth rates, margin expansion to upper end of stated range. If inputs are available, derive a specific price. Otherwise write N/A."
+  }},
+
   "confidence": {{
     "evidence_quality": "High | Medium | Low",
     "assumption_reliability": "High | Medium | Low",
-    "unresolved_material_questions": <integer count>,
-    "most_significant_unknown": "One sentence naming the single biggest open question"
+    "unresolved_material_questions": <integer count of genuinely material unknowns>,
+    "most_significant_unknown": "One sentence naming the single biggest open question that, if answered, would most change the investment conclusion."
   }}
-}}
+}}"""
 
-Be direct and rigorous. Name contradictions explicitly. The committee is not here to validate the analyst.
-Return only the JSON object, no markdown fences."""
-
-    resp = client.messages.create(
-        model="claude-sonnet-4-5",
-        max_tokens=2500,
-        messages=[{"role": "user", "content": prompt}],
-    )
+    try:
+        resp = _committee_client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=5000,  # was 3500 — bull+bear 200+ words each easily hits 3500 mid-JSON
+            messages=[{"role": "user", "content": prompt}],
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Committee AI error: {str(e)[:200]}")
     raw = resp.content[0].text.strip()
     raw = _cre.sub(r'^```(?:json)?\s*', '', raw)
     raw = _cre.sub(r'\s*```$', '', raw.strip())
