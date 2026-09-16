@@ -1861,9 +1861,13 @@ function renderValuation(d) {
 
   // ── 1. Compute WACC ──
   const beta   = mk.beta || 1.0;
+  // Floor beta at 0.5 for WACC: negative or very-low beta (e.g. SHEL.L β=-0.22) produces
+  // ke < risk-free rate which is economically unsound for DCF and causes terminal values to
+  // explode, making the implied-growth solver unable to converge.
+  const betaDCF = Math.max(beta, 0.5);
   const rfRate = 0.045;   // ~10yr US Treasury / UK gilt
   const erp    = 0.050;   // equity risk premium
-  const ke     = rfRate + beta * erp;
+  const ke     = rfRate + betaDCF * erp;
   // D/E ratio — cap at 2x to avoid distortion from near-zero equity (buybacks)
   const rawDE  = (q.debt_equity || 0) / 100;  // yfinance returns as ratio already
   const de     = Math.min(Math.max(rawDE, 0), 2.0);
@@ -1907,12 +1911,21 @@ function renderValuation(d) {
     tg: tgd, ronic: ronicd,
     currSym, price,
     revRaw: vi.revenue_raw, shares: vi.shares_outstanding || 1e9,
-    // Sanity-check netDebt: yfinance sometimes returns garbage EV causing net_debt > 5× MC
-    // (e.g. ASML: $33T EV → net_debt = $33T which wipes out equity). Fall back to total_debt.
-    netDebt: (vi.net_debt && vi.mc_raw && vi.net_debt > vi.mc_raw * 5)
-      ? (vi.total_debt || 0)
-      : (vi.net_debt || 0),
-    evRaw: vi.ev_raw, mcRaw: vi.mc_raw,
+    // For GBp stocks: yfinance sometimes returns mc in GBP (not GBp), making mc_raw 100× too small.
+    // Correct using price × shares as ground truth; scale ev by same factor; recompute net_debt.
+    ...(()=>{
+      let _mc = vi.mc_raw, _ev = vi.ev_raw, _nd;
+      if (price && vi.shares_outstanding && _mc && _mc < price * vi.shares_outstanding * 0.3) {
+        const _corr = (price * vi.shares_outstanding) / _mc;
+        _mc = Math.round(price * vi.shares_outstanding);
+        _ev = _ev ? Math.round(_ev * _corr) : null;
+      }
+      // Sanity-check netDebt: if > 5× MC, garbage EV data (e.g. ASML $33T bug). Use total_debt.
+      _nd = (vi.net_debt && _mc && vi.net_debt > _mc * 5)
+        ? (vi.total_debt || 0)
+        : (_ev && _mc ? _ev - _mc : (vi.net_debt || 0));
+      return { netDebt: _nd, evRaw: _ev, mcRaw: _mc };
+    })(),
     bvps: vi.book_value_ps, epsTtm: q.eps_ttm,
     pb: mu.price_book, peFwd: mu.pe_forward, sector: ov.sector,
     ticker: d.ticker, d,
