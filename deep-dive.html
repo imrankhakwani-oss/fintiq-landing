@@ -887,7 +887,11 @@ function _tryRestoreSession(ticker) {
   } catch(_) { return false; }
 }
 
+// Disable browser scroll-restoration so page always starts at top on refresh
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
 window.addEventListener('DOMContentLoaded', () => {
+  window.scrollTo(0, 0);  // immediate jump to top before any content renders
   const params = new URLSearchParams(window.location.search);
   const t = (params.get('ticker') || 'AAPL').toUpperCase();
   document.getElementById('ticker-input').value = t;
