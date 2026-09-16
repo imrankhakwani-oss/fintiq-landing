@@ -1052,14 +1052,19 @@ function updateSessionBadges() {
 // ── Load Fundamentals (background-task + polling) ──
 async function loadFundamentals() {
   if (!_session.ticker) return;
-  // If we have cached data, render it immediately for fast display — but still re-fetch
-  // fresh data in the background so valuation always uses current numbers.
-  if (_session.fundamentals.data) { renderFundamentals(_session.fundamentals.data); }
 
   const loadingEl = document.getElementById('fund-loading');
   const contentEl = document.getElementById('fund-content');
-  loadingEl.style.display = 'block';
-  contentEl.style.display = 'none';
+
+  // If we have cached data, render it immediately and silently re-fetch in background
+  // so valuation stays current — but DON'T hide content (avoids blank header on refresh)
+  const hasCached = !!_session.fundamentals.data;
+  if (hasCached) {
+    renderFundamentals(_session.fundamentals.data);
+  } else {
+    loadingEl.style.display = 'block';
+    contentEl.style.display = 'none';
+  }
 
   try {
     // Initial request — may return data immediately (cache hit) or {status:"processing"}

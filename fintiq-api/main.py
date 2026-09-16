@@ -2109,9 +2109,9 @@ def _run_technical(ticker: str):
         else: bb_sig = None
 
         # ── Key levels — support/resistance ──
-        recent63 = hist.iloc[-63:]  # 3 months
-        r3m_lo = sf(recent63['Low'].min())
-        r3m_hi = sf(recent63['High'].max())
+        # Use scaled lows/highs series (already GBp→GBP converted) for consistent units
+        r3m_lo = sf(lows.iloc[-63:].min())
+        r3m_hi = sf(highs.iloc[-63:].max())
 
         # ── Volume analysis ──
         avg_vol_20 = sf(volumes.rolling(20).mean().iloc[-1])
@@ -2119,13 +2119,13 @@ def _run_technical(ticker: str):
         vol_ratio  = round(curr_vol / avg_vol_20, 2) if curr_vol and avg_vol_20 and avg_vol_20 > 0 else None
 
         # ── Serialise all bars (up to 3 years) for chart — frontend slices by timeframe ──
-        chart = hist
-        dates_arr   = [i.strftime('%Y-%m-%d') for i in chart.index]
-        c_arr  = [sf(v) for v in chart['Close']]
-        o_arr  = [sf(v) for v in chart['Open']]
-        h_arr  = [sf(v) for v in chart['High']]
-        l_arr  = [sf(v) for v in chart['Low']]
-        v_arr  = [int(v) for v in chart['Volume']]
+        # Use scaled series (closes/highs/lows/opens_) not raw hist columns — GBp already converted
+        dates_arr = [i.strftime('%Y-%m-%d') for i in hist.index]
+        c_arr  = [sf(v) for v in closes]
+        o_arr  = [sf(v) for v in opens_]
+        h_arr  = [sf(v) for v in highs]
+        l_arr  = [sf(v) for v in lows]
+        v_arr  = [int(v) for v in volumes]
 
         # Indicator series — same index as hist (chart == hist now)
         def ind_series(s):
