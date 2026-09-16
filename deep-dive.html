@@ -935,6 +935,10 @@ function startAnalysis() {
     };
     _chatHistory = { fundamentals: [], valuation: [], technical: [], risk: [], catalyst: [], decision: [] };
     _sectionOpened = { fundamentals: false, valuation: false, technical: false, risk: false, catalyst: false, decision: false };
+    _vs = {};  // clear stale valuation state so previous ticker's DCF never bleeds through
+    // Clear rendered valuation content — without this, old ticker's DCF card stays visible
+    const _valBody = document.getElementById('body-valuation');
+    if (_valBody) _valBody.innerHTML = '';
   }
 
   // Reset company header to placeholders before new fetch
@@ -1066,6 +1070,9 @@ async function loadFundamentals() {
       // Cache hit — render immediately
       _session.fundamentals.data = first;
       renderFundamentals(first);
+      _saveSession();
+      // Re-render valuation if the section is physically open (may have stale HTML from prior ticker)
+      if (document.getElementById('body-valuation')?.classList.contains('open')) renderValuation(first);
       return;
     }
 
@@ -1117,8 +1124,8 @@ async function _pollFundamentals(attempt) {
     _session.fundamentals.data = d;
     renderFundamentals(d);
     _saveSession();
-    // If valuation section was opened before fundamentals loaded it got null data — re-render now
-    if (_sectionOpened.valuation) renderValuation(d);
+    // Re-render valuation whenever fundamentals are fresh — covers both "opened early" and "stale from prior ticker"
+    if (document.getElementById('body-valuation')?.classList.contains('open')) renderValuation(d);
 
   } catch(e) {
     loadingEl.style.display = 'none';
