@@ -1907,7 +1907,12 @@ function renderValuation(d) {
     tg: tgd, ronic: ronicd,
     currSym, price,
     revRaw: vi.revenue_raw, shares: vi.shares_outstanding || 1e9,
-    netDebt: vi.net_debt || 0, evRaw: vi.ev_raw, mcRaw: vi.mc_raw,
+    // Sanity-check netDebt: yfinance sometimes returns garbage EV causing net_debt > 5× MC
+    // (e.g. ASML: $33T EV → net_debt = $33T which wipes out equity). Fall back to total_debt.
+    netDebt: (vi.net_debt && vi.mc_raw && vi.net_debt > vi.mc_raw * 5)
+      ? (vi.total_debt || 0)
+      : (vi.net_debt || 0),
+    evRaw: vi.ev_raw, mcRaw: vi.mc_raw,
     bvps: vi.book_value_ps, epsTtm: q.eps_ttm,
     pb: mu.price_book, peFwd: mu.pe_forward, sector: ov.sector,
     ticker: d.ticker, d,

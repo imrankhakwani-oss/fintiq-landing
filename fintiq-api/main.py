@@ -1436,6 +1436,30 @@ def _run_fundamentals(ticker: str):
         # yfinance sometimes returns a garbage enterpriseValue (e.g. ASML shows $33.95T vs $611B MC).
         _net_debt_bs = round(_total_debt - _total_cash, 0) if _total_debt is not None and _total_cash is not None else None
 
+        # GBp stocks that report financials in USD (e.g. SHEL.L, BP.L): convert revenue/debt/bvps
+        # from USD → GBP so the DCF is internally consistent with the GBP-denominated price.
+        _gbp_fin_scale = 1.0
+        if raw_currency == 'GBp':
+            _fin_curr = info.get('financialCurrency') or 'GBP'
+            if _fin_curr not in ('GBP', 'GBp'):
+                try:
+                    _fin_pair = f"{_fin_curr}GBP=X"   # e.g. 'USDGBP=X'
+                    _fin_tk = yf.Ticker(_fin_pair)
+                    _fin_rate = _safe(lambda: getattr(_fin_tk.fast_info, 'last_price', None), timeout=5)
+                    if not _fin_rate:
+                        _fin_rate = _safe(lambda: _fin_tk.info.get('regularMarketPrice'), timeout=5)
+                    if _fin_rate and float(_fin_rate) > 0:
+                        _gbp_fin_scale = float(_fin_rate)   # e.g. ~0.79 for USD→GBP
+                except Exception:
+                    pass
+        if _gbp_fin_scale != 1.0:
+            if _rev_raw:    _rev_raw    = round(_rev_raw    * _gbp_fin_scale, 0)
+            if _total_debt: _total_debt = round(_total_debt * _gbp_fin_scale, 0)
+            if _total_cash: _total_cash = round(_total_cash * _gbp_fin_scale, 0)
+            if _bvps:       _bvps       = round(_bvps       * _gbp_fin_scale, 4)
+            # Recompute BS net debt in GBP
+            _net_debt_bs = round(_total_debt - _total_cash, 0) if _total_debt is not None and _total_cash is not None else None
+
         # ── TSR ──
         tsr_data = _compute_tsr(hist, info, fin, cf, bs, qfin)
 
@@ -1469,6 +1493,15 @@ def _run_fundamentals(ticker: str):
         if price_scale != 1.0:
             mc = mc * price_scale if mc is not None else None
             ev = ev * price_scale if ev is not None else None
+        # GBp stocks: yfinance inconsistently returns marketCap in GBP (not GBp) for some companies
+        # (e.g. Shell), making mc 100× too small after the ×0.01 scale. Detect by comparing mc to
+        # price×shares — if off by >70%, correct using price×shares as the definitive market cap.
+        if raw_currency == 'GBp' and mc and price and shares_out:
+            _expected_mc = price * shares_out  # price is now in GBP
+            if mc < _expected_mc * 0.3:
+                _mc_correction = _expected_mc / mc  # ≈ 100
+                mc = round(_expected_mc, 0)
+                ev = round(ev * _mc_correction, 0) if ev else None
 
         fcf_ps  = fcf_val / shares_out if fcf_val and shares_out else None
         beta    = fv(info.get('beta'))
