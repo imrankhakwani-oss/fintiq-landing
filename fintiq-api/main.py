@@ -2008,10 +2008,17 @@ def _run_technical(ticker: str):
             _tech_jobs[ticker] = {'status': 'error', 'error': f"No price data for {ticker}", 'ts': time.time()}
             return
 
-        closes  = hist['Close'].astype(float)
-        highs   = hist['High'].astype(float)
-        lows    = hist['Low'].astype(float)
-        opens_  = hist['Open'].astype(float)
+        # ── GBp→GBP conversion — LSE stocks return history in pence ──
+        try:
+            _hist_currency = getattr(tk.fast_info, 'currency', None) or (tk.info or {}).get('currency', 'USD')
+        except Exception:
+            _hist_currency = 'USD'
+        _price_scale = 0.01 if _hist_currency == 'GBp' else 1.0
+
+        closes  = hist['Close'].astype(float) * _price_scale
+        highs   = hist['High'].astype(float)  * _price_scale
+        lows    = hist['Low'].astype(float)   * _price_scale
+        opens_  = hist['Open'].astype(float)  * _price_scale
         volumes = hist['Volume'].astype(float)
 
         # ── Moving Averages ──
@@ -2185,11 +2192,11 @@ def _run_technical(ticker: str):
                     'expiry': exps[0],
                     'pcr': pcr, 'pcr_signal': pcr_sig,
                     'atm_iv': atm_iv,
-                    'max_pain': float(mp) if mp else None,
-                    'put_wall': put_wall,
-                    'call_wall': call_wall,
-                    'unusual_calls': unusual(calls),
-                    'unusual_puts':  unusual(puts),
+                    'max_pain':  round(float(mp)       * _price_scale, 4) if mp       else None,
+                    'put_wall':  round(float(put_wall)  * _price_scale, 4) if put_wall  else None,
+                    'call_wall': round(float(call_wall) * _price_scale, 4) if call_wall else None,
+                    'unusual_calls': [dict(r, strike=round(r['strike']*_price_scale,4)) for r in unusual(calls)],
+                    'unusual_puts':  [dict(r, strike=round(r['strike']*_price_scale,4)) for r in unusual(puts)],
                 }
         except Exception as oe:
             opts = {'error': str(oe)[:200]}
@@ -2396,6 +2403,12 @@ def _run_catalyst(ticker: str):
         info = _safe(lambda: tk.info, timeout=10) or {}
         curr_price = info.get('currentPrice') or info.get('regularMarketPrice')
 
+        # ── GBp→GBP: analyst targets from yfinance info are in pence for LSE stocks ──
+        _cat_currency = info.get('currency', 'USD')
+        _cat_price_scale = 0.01 if _cat_currency == 'GBp' else 1.0
+        if _cat_price_scale != 1.0 and curr_price:
+            curr_price = round(float(curr_price) * _cat_price_scale, 4)
+
         # ── 1. Earnings ──
         # Try earningsTimestamp first — but validate it's in the future
         earnings_ts = info.get('earningsTimestamp') or info.get('earningsTimestampStart')
@@ -2501,6 +2514,10 @@ def _run_catalyst(ticker: str):
         target_mean = info.get('targetMeanPrice')
         target_high = info.get('targetHighPrice')
         target_low  = info.get('targetLowPrice')
+        if _cat_price_scale != 1.0:
+            if target_mean: target_mean = round(float(target_mean) * _cat_price_scale, 4)
+            if target_high: target_high = round(float(target_high) * _cat_price_scale, 4)
+            if target_low:  target_low  = round(float(target_low)  * _cat_price_scale, 4)
         num_analysts = info.get('numberOfAnalystOpinions')
         rec_key  = (info.get('recommendationKey') or '').lower()
         rec_mean = info.get('recommendationMean')  # 1.0=Strong Buy … 5.0=Strong Sell
