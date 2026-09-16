@@ -1426,11 +1426,15 @@ def _run_fundamentals(ticker: str):
         _tax_prov = col_val(fin, 'Tax Provision', 'Income Tax Expense')
         _int_exp  = col_val(fin, 'Interest Expense', 'Net Interest Income')
         _total_debt = fv(info.get('totalDebt'))
+        _total_cash = fv(info.get('totalCash'))
         _eff_tax  = abs(_tax_prov) / abs(_pretax) if _pretax and _tax_prov and _pretax != 0 else None
         _eff_tax  = max(0.05, min(0.45, _eff_tax)) if _eff_tax else None  # clamp to sensible range
         _kd_raw   = abs(_int_exp) / _total_debt if _int_exp and _total_debt and _total_debt > 0 else None
         _bvps     = fv(info.get('bookValue'))
         _rev_raw  = fv(info.get('totalRevenue'))
+        # Net debt from balance sheet (total_debt − cash) is more reliable than EV − MC because
+        # yfinance sometimes returns a garbage enterpriseValue (e.g. ASML shows $33.95T vs $611B MC).
+        _net_debt_bs = round(_total_debt - _total_cash, 0) if _total_debt is not None and _total_cash is not None else None
 
         # ── TSR ──
         tsr_data = _compute_tsr(hist, info, fin, cf, bs, qfin)
@@ -1646,9 +1650,12 @@ def _run_fundamentals(ticker: str):
             "revenue_geo":      _fetch_fmp_segments(ticker, "geographic"),
             "valuation_inputs": {
                 "shares_outstanding": shares_out,
-                "ev_raw": round(ev, 0) if ev else None,
+                # Sanity-check EV: yfinance sometimes returns garbage EV (e.g. ASML $33T vs $611B MC)
+                # If EV > 5× MC it is almost certainly wrong — fall back to MC + BS net debt
+                "ev_raw": round(ev, 0) if ev and mc and ev <= mc * 5 else (round(mc + (_net_debt_bs or 0), 0) if mc else None),
                 "mc_raw": round(mc, 0) if mc else None,
-                "net_debt": round(ev - mc, 0) if ev and mc else None,
+                # Prefer balance-sheet net debt (total_debt − cash); fall back to EV − MC only when BS unavailable
+                "net_debt": _net_debt_bs if _net_debt_bs is not None else (round(ev - mc, 0) if ev and mc and ev <= mc * 5 else None),
                 "revenue_raw": _rev_raw,
                 "tax_rate": round(_eff_tax * 100, 1) if _eff_tax else None,
                 "kd": round(_kd_raw * 100, 1) if _kd_raw else None,
