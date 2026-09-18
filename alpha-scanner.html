@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alpha Scanner — Fintiq</title>
+<style>
+  :root {
+    --bg:       #0F1923;
+    --card:     #162032;
+    --card2:    #1C2B3F;
+    --gold:     #F59E0B;
+    --green:    #10B981;
+    --red:      #EF4444;
+    --blue:     #38BDF8;
+    --purple:   #A78BFA;
+    --text:     #F1F5F9;
+    --muted:    #94A3B8;
+    --dim:      #64748B;
+    --border:   #1E3148;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .logo-mark {
+    width: 32px; height: 32px;
+    background: var(--gold);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 16px; color: #000;
+  }
+  .logo-text { font-weight: 700; font-size: 18px; color: var(--text); }
+  .nav { display: flex; gap: 24px; }
+  .nav a {
+    color: var(--muted); text-decoration: none; font-size: 14px;
+    transition: color .2s;
+  }
+  .nav a:hover, .nav a.active { color: var(--text); }
+
+  /* ── Page layout ── */
+  .page { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* ── Page title ── */
+  .page-title {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 12px;
+    flex-wrap: wrap; gap: 16px;
+  }
+  .page-title h1 { font-size: 26px; font-weight: 700; }
+  .page-title h1 span { color: var(--gold); }
+  .status-bar {
+    display: flex; gap: 20px; align-items: center;
+    font-size: 13px; color: var(--muted);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green); display: inline-block;
+    margin-right: 6px; animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: .4; }
+  }
+
+  /* ── Disclaimer banner ── */
+  .disclaimer {
+    background: #1a2535;
+    border: 1px solid #2a3a50;
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+  .disclaimer strong { color: var(--text); }
+
+  /* ── Filter bar ── */
+  .filter-bar {
+    display: flex; gap: 8px; flex-wrap: wrap;
+    margin-bottom: 24px;
+  }
+  .filter-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+  .filter-btn.active { background: var(--blue); border-color: var(--blue); color: #000; font-weight: 600; }
+  .filter-btn.long.active  { background: var(--green); border-color: var(--green); }
+  .filter-btn.short.active { background: var(--red);   border-color: var(--red); }
+  .filter-btn.risk.active  { background: var(--gold);  border-color: var(--gold); }
+
+  /* ── Stats row ── */
+  .stats-row {
+    display: flex; gap: 16px; margin-bottom: 28px; flex-wrap: wrap;
+  }
+  .stat-chip {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+  .stat-chip .val { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-chip .lbl { color: var(--muted); margin-top: 2px; }
+
+  /* ── Signal card ── */
+  .signal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .signal-card:hover { border-color: #2a3f5a; }
+  .signal-card.long  { border-left: 3px solid var(--green); }
+  .signal-card.short { border-left: 3px solid var(--red); }
+  .signal-card.risk  { border-left: 3px solid var(--gold); }
+
+  /* Collapsed header (always visible) */
+  .card-header {
+    padding: 14px 18px;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+    user-select: none;
+  }
+  .card-header:hover { background: rgba(255,255,255,.02); }
+
+  .card-left { display: flex; flex-direction: column; gap: 6px; }
+
+  .card-top-row {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .ticker-badge {
+    font-weight: 700; font-size: 15px;
+    color: var(--text);
+    background: var(--card2);
+    padding: 2px 10px;
+    border-radius: 6px;
+    letter-spacing: .5px;
+  }
+  .company-name { font-size: 14px; color: var(--muted); }
+
+  .badge-new {
+    font-size: 10px; font-weight: 700;
+    background: var(--green); color: #000;
+    padding: 2px 7px; border-radius: 4px;
+    letter-spacing: .5px;
+  }
+  .badge-updated {
+    font-size: 10px; font-weight: 700;
+    background: var(--blue); color: #000;
+    padding: 2px 7px; border-radius: 4px;
+    letter-spacing: .5px;
+  }
+
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+  .card-meta {
+    display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap;
+  }
+  .signal-type-tag {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .5px;
+    padding: 2px 8px; border-radius: 4px;
+    font-weight: 600;
+  }
+  .tag-language_drift  { background: rgba(167,139,250,.15); color: var(--purple); }
+  .tag-going_concern   { background: rgba(239,68,68,.15);   color: var(--red); }
+  .tag-insider_buy     { background: rgba(16,185,129,.15);  color: var(--green); }
+  .tag-insider_sell    { background: rgba(245,158,11,.15);  color: var(--gold); }
+  .tag-contract_win    { background: rgba(56,189,248,.15);  color: var(--blue); }
+  .tag-dilution_risk   { background: rgba(239,68,68,.15);   color: var(--red); }
+  .tag-short_squeeze   { background: rgba(167,139,250,.15); color: var(--purple); }
+
+  .mc-tag {
+    font-size: 12px; color: var(--dim);
+    background: rgba(255,255,255,.04);
+    padding: 2px 8px; border-radius: 4px;
+  }
+
+  /* Right side of card header */
+  .card-right {
+    display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
+  }
+  .conviction-bar {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .conviction-label { font-size: 11px; color: var(--dim); }
+  .conviction-dots {
+    display: flex; gap: 3px;
+  }
+  .cdot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border);
+  }
+  .cdot.filled.long  { background: var(--green); }
+  .cdot.filled.short { background: var(--red); }
+  .cdot.filled.risk  { background: var(--gold); }
+
+  .direction-pill {
+    font-size: 11px; font-weight: 700;
+    padding: 3px 10px; border-radius: 12px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  .direction-pill.long  { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
+  .direction-pill.short { background: rgba(239,68,68,.15);  color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
+  .direction-pill.risk  { background: rgba(245,158,11,.15); color: var(--gold);  border: 1px solid rgba(245,158,11,.3); }
+
+  .expand-icon { color: var(--dim); font-size: 18px; transition: transform .2s; }
+  .signal-card.expanded .expand-icon { transform: rotate(180deg); }
+
+  /* Expanded body */
+  .card-body {
+    display: none;
+    padding: 0 18px 18px;
+    border-top: 1px solid var(--border);
+  }
+  .signal-card.expanded .card-body { display: block; }
+
+  .thesis-text {
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--muted);
+    padding: 16px 0 14px;
+  }
+
+  .raw-signals { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+  .raw-signal-item {
+    background: var(--card2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .raw-signal-item span { color: var(--text); font-weight: 600; }
+
+  .card-actions {
+    display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .btn-deep-dive {
+    background: var(--gold);
+    color: #000;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 18px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: opacity .2s;
+  }
+  .btn-deep-dive:hover { opacity: .85; }
+  .signal-date { font-size: 12px; color: var(--dim); margin-left: auto; }
+
+  /* ── Loading / empty states ── */
+  .loading-state, .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+  }
+  .loading-spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 18px; margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; max-width: 360px; margin: 0 auto; }
+
+  /* ── Seed data note ── */
+  .seed-note {
+    background: rgba(56,189,248,.08);
+    border: 1px solid rgba(56,189,248,.2);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 24px;
+    display: none;
+  }
+
+  @media (max-width: 600px) {
+    .card-header { grid-template-columns: 1fr; }
+    .card-right { flex-direction: row; align-items: center; }
+    .stats-row { gap: 10px; }
+    .stat-chip .val { font-size: 18px; }
+    .nav { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <a class="logo" href="https://fintiq.uk">
+    <div class="logo-mark">F</div>
+    <span class="logo-text">Fintiq</span>
+  </a>
+  <nav class="nav">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
+    <a href="/alpha-scanner.html" class="active">Alpha Scanner</a>
+  </nav>
+</header>
+
+<!-- ── Page ── -->
+<main class="page">
+
+  <!-- Title -->
+  <div class="page-title">
+    <div>
+      <h1>Alpha <span>Scanner</span></h1>
+      <p style="color:var(--muted);font-size:14px;margin-top:6px;">
+        Daily intelligence feed — US micro &amp; nano-cap stocks
+      </p>
+    </div>
+    <div class="status-bar">
+      <span><span class="status-dot"></span>Live</span>
+      <span id="last-run">Checking...</span>
+    </div>
+  </div>
+
+  <!-- Disclaimer -->
+  <div class="disclaimer">
+    <strong>Important:</strong> Alpha Scanner covers US-listed micro and nano-cap companies
+    ($10M–$300M market cap) only. These are small, often illiquid companies.
+    Signals are based on public data analysis and are <strong>not investment advice</strong>.
+    Small-cap investing carries significantly higher risk than mainstream markets.
+    Always do your own research before investing.
+  </div>
+
+  <!-- Seed note (shown when DB is empty / first run) -->
+  <div class="seed-note" id="seed-note">
+    ⚡ <strong>First run:</strong> The scanner is building its universe and scanning for signals.
+    This takes ~10 minutes on first boot. Check back shortly — signals will appear here automatically.
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row">
+    <div class="stat-chip">
+      <div class="val" id="stat-universe">—</div>
+      <div class="lbl">Companies monitored</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="stat-active">—</div>
+      <div class="lbl">Active signals</div>
+    </div>
+    <div class="stat-chip">
+      <div class="val" id="stat-new">—</div>
+      <div class="lbl">New last 24h</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">All Signals</button>
+    <button class="filter-btn long"  data-filter="long"  onclick="setFilter('long',this)">🟢 Long</button>
+    <button class="filter-btn short" data-filter="short" onclick="setFilter('short',this)">🔴 Short</button>
+    <button class="filter-btn risk"  data-filter="risk"  onclick="setFilter('risk',this)">⚠️ Risk</button>
+    <button class="filter-btn"       data-filter="new"   onclick="setFilter('new',this)">🟡 New only</button>
+  </div>
+
+  <!-- Feed -->
+  <div id="feed">
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <p>Loading signals...</p>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const API = 'https://api.fintiq.uk';
+let _allSignals = [];
+let _activeFilter = 'all';
+
+// ── Format helpers ──────────────────────────────────────────────────────────
+function fmtMC(mc) {
+  if (!mc) return '';
+  if (mc >= 1e9) return '$' + (mc / 1e9).toFixed(1) + 'B';
+  if (mc >= 1e6) return '$' + (mc / 1e6).toFixed(0) + 'M';
+  return '$' + mc.toFixed(0);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const now = new Date();
+  const diff = (now - d) / 1000;
+  if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+
+function signalTypeLabel(t) {
+  const labels = {
+    language_drift: 'Filing language shift',
+    going_concern:  'Going concern warning',
+    insider_buy:    'Insider buying',
+    insider_sell:   'Insider selling',
+    contract_win:   'Federal contract',
+    dilution_risk:  'Dilution risk',
+    short_squeeze:  'Short squeeze setup',
+  };
+  return labels[t] || t;
+}
+
+function rawDataItems(rd, signalType) {
+  if (!rd) return [];
+  const items = [];
+  if (signalType === 'insider_buy' || signalType === 'insider_sell') {
+    if (rd.insider_count) items.push({ label: 'Insiders', val: rd.insider_count });
+    if (rd.total_value)   items.push({ label: 'Total value', val: '$' + Number(rd.total_value).toLocaleString() });
+    if (rd.names?.length) items.push({ label: 'Names', val: rd.names.slice(0,2).join(', ') });
+  }
+  if (signalType === 'contract_win') {
+    if (rd.award_amount)      items.push({ label: 'Award', val: '$' + (rd.award_amount / 1e6).toFixed(1) + 'M' });
+    if (rd.pct_of_market_cap) items.push({ label: '% of MC', val: rd.pct_of_market_cap + '%' });
+  }
+  if (signalType === 'language_drift') {
+    if (rd.filing_date) items.push({ label: 'Filing date', val: rd.filing_date });
+    if (rd.going_concern) items.push({ label: 'Going concern', val: 'YES ⚠️' });
+    if (rd.key_changes?.length) {
+      rd.key_changes.slice(0, 2).forEach(c => items.push({ label: 'Change', val: c }));
+    }
+  }
+  return items;
+}
+
+// ── Build conviction dots ────────────────────────────────────────────────────
+function buildDots(conviction, direction) {
+  let html = '';
+  for (let i = 1; i <= 10; i++) {
+    const filled = i <= conviction ? `filled ${direction}` : '';
+    html += `<div class="cdot ${filled}"></div>`;
+  }
+  return html;
+}
+
+// ── Render a single card ─────────────────────────────────────────────────────
+function renderCard(s) {
+  const badgeHTML = s.badge === 'NEW'
+    ? '<span class="badge-new">NEW</span>'
+    : s.badge === 'UPDATED'
+      ? '<span class="badge-updated">UPDATED</span>'
+      : '';
+
+  const rawItems = rawDataItems(s.raw_data, s.signal_type);
+  const rawHTML  = rawItems.map(it =>
+    `<div class="raw-signal-item">${it.label}: <span>${it.val}</span></div>`
+  ).join('');
+
+  const deepDiveUrl = `deep-dive.html?ticker=${encodeURIComponent(s.ticker)}`;
+
+  return `
+    <div class="signal-card ${s.direction}" data-id="${s.id}" data-direction="${s.direction}" data-badge="${s.badge||''}">
+      <div class="card-header" onclick="toggleCard('${s.id}')">
+        <div class="card-left">
+          <div class="card-top-row">
+            <span class="ticker-badge">${s.ticker}</span>
+            <span class="company-name">${s.name}</span>
+            ${badgeHTML}
+          </div>
+          <div class="card-title">${s.title}</div>
+          <div class="card-meta">
+            <span class="signal-type-tag tag-${s.signal_type}">${signalTypeLabel(s.signal_type)}</span>
+            ${s.market_cap ? `<span class="mc-tag">${fmtMC(s.market_cap)}</span>` : ''}
+            ${s.sector ? `<span class="mc-tag">${s.sector}</span>` : ''}
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="direction-pill ${s.direction}">${s.direction === 'risk' ? '⚠️ Risk' : s.direction === 'long' ? '▲ Long' : '▼ Short'}</span>
+          <div class="conviction-bar">
+            <span class="conviction-label">Conviction</span>
+            <div class="conviction-dots">${buildDots(s.conviction, s.direction)}</div>
+            <span class="conviction-label">${s.conviction}/10</span>
+          </div>
+          <div class="expand-icon">⌄</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="thesis-text">${s.thesis}</p>
+        ${rawHTML ? `<div class="raw-signals">${rawHTML}</div>` : ''}
+        <div class="card-actions">
+          <a class="btn-deep-dive" href="${deepDiveUrl}">Open Deep Dive →</a>
+          <span class="signal-date">Signal detected ${fmtDate(s.first_seen)}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ── Filter + render feed ─────────────────────────────────────────────────────
+function setFilter(f, btn) {
+  _activeFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFeed();
+}
+
+function renderFeed() {
+  let signals = _allSignals;
+
+  if (_activeFilter === 'long')    signals = signals.filter(s => s.direction === 'long');
+  else if (_activeFilter === 'short') signals = signals.filter(s => s.direction === 'short');
+  else if (_activeFilter === 'risk')  signals = signals.filter(s => s.direction === 'risk');
+  else if (_activeFilter === 'new')   signals = signals.filter(s => s.badge === 'NEW');
+
+  const feed = document.getElementById('feed');
+
+  if (!signals.length) {
+    feed.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">🔍</div>
+        <h3>No signals yet</h3>
+        <p>The scanner runs daily at 6am UTC. Signals will appear here as they are detected across the micro-cap universe.</p>
+      </div>
+    `;
+    return;
+  }
+
+  feed.innerHTML = signals.map(renderCard).join('');
+}
+
+// ── Toggle card expand ───────────────────────────────────────────────────────
+function toggleCard(id) {
+  const card = document.querySelector(`.signal-card[data-id="${id}"]`);
+  if (card) card.classList.toggle('expanded');
+}
+
+// ── Load status ──────────────────────────────────────────────────────────────
+async function loadStatus() {
+  try {
+    const r = await fetch(`${API}/alpha-scanner/status`, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('stat-universe').textContent = (d.universe_size || 0).toLocaleString();
+    document.getElementById('stat-active').textContent   = (d.active_signals || 0).toLocaleString();
+    document.getElementById('stat-new').textContent      = (d.new_last_24h || 0).toLocaleString();
+
+    if ((d.universe_size || 0) === 0) {
+      document.getElementById('seed-note').style.display = 'block';
+    }
+  } catch (e) {
+    console.warn('Status fetch failed', e);
+  }
+}
+
+// ── Load signals ─────────────────────────────────────────────────────────────
+async function loadSignals() {
+  try {
+    const r = await fetch(`${API}/alpha-scanner/signals?limit=100`, { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    _allSignals = d.signals || [];
+
+    const lastEl = document.getElementById('last-run');
+    if (_allSignals.length) {
+      const latest = _allSignals[0]?.last_updated;
+      lastEl.textContent = latest ? 'Updated ' + fmtDate(latest) : 'Live';
+    } else {
+      lastEl.textContent = 'Awaiting first run';
+    }
+
+    renderFeed();
+  } catch (e) {
+    document.getElementById('feed').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon">⚡</div>
+        <h3>Scanner starting up</h3>
+        <p>The API is initialising. Refresh in a moment — signals will appear automatically once the daily run completes.</p>
+      </div>
+    `;
+    document.getElementById('last-run').textContent = 'Connecting...';
+  }
+}
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+loadStatus();
+loadSignals();
+</script>
+</body>
+</html>

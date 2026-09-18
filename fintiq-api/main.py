@@ -3089,3 +3089,822 @@ Produce a JSON report with exactly these fields. Return only valid JSON, no mark
                 "confidence": {"evidence_quality": None, "assumption_reliability": None,
                                "unresolved_material_questions": None, "most_significant_unknown": None}}
 
+
+# ════════════════════════════════════════════════════════════════════════════════
+#  SECTION 7 — ALPHA SCANNER
+#  Daily intelligence feed for US micro/nano-cap stocks ($10M–$300M market cap)
+#  Data sources: OpenBB (screener, insider trades, short interest, financials)
+#                SEC EDGAR full-text API (MD&A language drift)
+#                SAM.gov API (federal contract awards)
+#  Runs: daily cron at 06:00 UTC via /alpha-scanner/run (REFRESH_TOKEN protected)
+#  Storage: SQLite at /tmp/alpha_scanner.db (Railway ephemeral — rebuilt on restart)
+# ════════════════════════════════════════════════════════════════════════════════
+
+import sqlite3, re, hashlib
+from datetime import date, timezone
+
+# ── SQLite setup ───────────────────────────────────────────────────────────────
+_AS_DB = "/tmp/alpha_scanner.db"
+
+def _as_db():
+    """Return a connection to the Alpha Scanner SQLite DB, creating tables if needed."""
+    conn = sqlite3.connect(_AS_DB)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS universe (
+            ticker      TEXT PRIMARY KEY,
+            name        TEXT,
+            market_cap  REAL,
+            avg_volume  REAL,
+            inst_own    REAL,
+            sector      TEXT,
+            updated_at  TEXT
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS signals (
+            id            TEXT PRIMARY KEY,
+            ticker        TEXT NOT NULL,
+            signal_type   TEXT NOT NULL,   -- 'language_drift' | 'insider_buy' | 'insider_sell' | 'contract_win' | 'short_squeeze' | 'going_concern' | 'dilution_risk'
+            direction     TEXT NOT NULL,   -- 'long' | 'short' | 'risk'
+            conviction    INTEGER NOT NULL, -- 1-10
+            title         TEXT,
+            thesis        TEXT,
+            raw_data      TEXT,            -- JSON blob of source data
+            status        TEXT DEFAULT 'active',  -- 'active' | 'archived' | 'resolved'
+            first_seen    TEXT NOT NULL,
+            last_updated  TEXT NOT NULL,
+            price_at_signal REAL,
+            resolved_at   TEXT,
+            resolution    TEXT            -- 'price_moved_25pct' | 'stale_45d' | 'invalidated'
+        )
+    """)
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_ticker ON signals(ticker)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status)")
+    conn.commit()
+    return conn
+
+
+# ── Universe screener ──────────────────────────────────────────────────────────
+def _run_universe_screener():
+    """
+    Filter US-listed stocks to micro/nano-cap universe (~600 companies).
+    Criteria: MC $10M–$300M, 30d avg volume < 150k, institutional ownership < 25%.
+    Uses OpenBB equity screener. Falls back to yfinance if OpenBB unavailable.
+    """
+    import json as _json
+    results = []
+
+    try:
+        from openbb import obb
+
+        # OpenBB screener — US equities, market cap range
+        # Returns standardised dataframe with ticker, market_cap, avg_volume, inst_own, sector
+        screen = obb.equity.screener(
+            market_cap_min=10_000_000,
+            market_cap_max=300_000_000,
+            country="US",
+            provider="finviz",   # finviz has reliable small-cap coverage
+        ).to_df()
+
+        for _, row in screen.iterrows():
+            ticker    = str(row.get("symbol") or row.get("ticker") or "").upper().strip()
+            mc        = float(row.get("market_cap") or 0)
+            avg_vol   = float(row.get("avg_volume") or row.get("volume_avg") or 0)
+            inst_own  = float(row.get("inst_own") or row.get("institutional_ownership") or 0)
+            name      = str(row.get("name") or row.get("company") or ticker)
+            sector    = str(row.get("sector") or "")
+
+            # Apply filters
+            if mc < 10_000_000 or mc > 300_000_000:
+                continue
+            if avg_vol > 150_000:
+                continue
+            if inst_own > 0.25:  # OpenBB returns as fraction (0.0–1.0)
+                continue
+            if not ticker or len(ticker) > 6:
+                continue
+
+            results.append({
+                "ticker": ticker, "name": name, "market_cap": mc,
+                "avg_volume": avg_vol, "inst_own": inst_own, "sector": sector,
+            })
+
+    except Exception as e:
+        # Fallback: use a curated seed list approach via yfinance batch
+        # Pull Russell 2000 micro-cap ETF (IWC) holdings as proxy universe
+        print(f"[Alpha Scanner] OpenBB screener failed ({e}), using yfinance fallback")
+        try:
+            import yfinance as _yf
+            # IWC = iShares Micro-Cap ETF — top holdings as seed universe
+            iwc = _yf.download(
+                ["IWC"], period="1d", auto_adjust=True, progress=False
+            )
+            # Direct yfinance batch for micro-cap proxies
+            # We use a hardcoded list of 50 representative micro/nano-caps as fallback seed
+            seed_tickers = [
+                "SINT","MITI","IVAC","MLGO","TBLT","SOND","CMAX","GHRS",
+                "HIMS","VZIO","KPTI","MNMD","ALBT","TPVG","PBYI","AEHL",
+                "AEYE","SIGA","SPWH","ATXI","GBOX","SFIX","JBSS","UONE",
+                "GIFI","CUEN","WAVS","NXGL","SYBT","HAFC","MFIN","CZWI",
+                "SENB","LKFN","OVBC","FBIZ","TCBK","HMNF","MCBC","CHMG",
+                "BSVN","CHMG","FWWW","GFED","ESSA","BCML","MVBF","NBTB",
+                "PFIS","CASS",
+            ]
+            for tk in seed_tickers:
+                try:
+                    info = _yf.Ticker(tk).fast_info
+                    mc = getattr(info, "market_cap", None)
+                    if mc and 10_000_000 <= mc <= 300_000_000:
+                        results.append({
+                            "ticker": tk, "name": tk, "market_cap": float(mc),
+                            "avg_volume": 0, "inst_own": 0, "sector": "",
+                        })
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
+    # Persist to DB
+    now = datetime.now(timezone.utc).isoformat()
+    conn = _as_db()
+    for r in results:
+        conn.execute("""
+            INSERT OR REPLACE INTO universe
+              (ticker, name, market_cap, avg_volume, inst_own, sector, updated_at)
+            VALUES (?,?,?,?,?,?,?)
+        """, (r["ticker"], r["name"], r["market_cap"], r["avg_volume"],
+              r["inst_own"], r["sector"], now))
+    conn.commit()
+    conn.close()
+    print(f"[Alpha Scanner] Universe updated: {len(results)} companies")
+    return results
+
+
+# ── EDGAR filing detector + Claude language drift ──────────────────────────────
+def _fetch_edgar_cik(ticker: str) -> str | None:
+    """Resolve ticker → CIK from SEC EDGAR company search."""
+    try:
+        url = f"https://efts.sec.gov/LATEST/search-index?q=%22{ticker}%22&dateRange=custom&startdt=2020-01-01&forms=10-K"
+        r = requests.get(url, timeout=10, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        # Try the tickers.json mapping instead (more reliable)
+        tickers_url = "https://www.sec.gov/files/company_tickers.json"
+        tr = requests.get(tickers_url, timeout=15, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        if tr.ok:
+            mapping = tr.json()
+            for entry in mapping.values():
+                if entry.get("ticker", "").upper() == ticker.upper():
+                    return str(entry["cik_str"]).zfill(10)
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_edgar_filings(cik: str, form_type: str = "10-K", count: int = 5) -> list:
+    """Fetch recent filings of given type for a CIK. Returns list of {accession, date, url}."""
+    try:
+        url = f"https://data.sec.gov/submissions/CIK{cik}.json"
+        r = requests.get(url, timeout=15, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        if not r.ok:
+            return []
+        data = r.json()
+        filings = data.get("filings", {}).get("recent", {})
+        forms   = filings.get("form", [])
+        dates   = filings.get("filingDate", [])
+        accessions = filings.get("accessionNumber", [])
+        results = []
+        for i, f in enumerate(forms):
+            if f == form_type and len(results) < count:
+                acc = accessions[i].replace("-", "")
+                results.append({
+                    "accession": accessions[i],
+                    "date": dates[i],
+                    "url": f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc}/",
+                })
+        return results
+    except Exception:
+        return []
+
+
+def _fetch_filing_text(cik: str, accession: str, section: str = "mda") -> str:
+    """
+    Fetch MD&A or Risk Factors text from an EDGAR filing.
+    Uses SEC full-text search API to find the section.
+    Returns up to 8000 chars of the relevant section.
+    """
+    try:
+        acc_clean = accession.replace("-", "")
+        # First get the filing index to find the main document
+        idx_url = f"https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK={cik}&type={accession}&dateb=&owner=include&count=1&search_text="
+        # Use the direct filing index URL
+        index_url = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc_clean}/{accession}-index.htm"
+        r = requests.get(index_url, timeout=15, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        if not r.ok:
+            return ""
+
+        # Find the main .htm document link
+        doc_match = re.search(r'href="(/Archives/edgar/data/\d+/\d+/[^"]+\.htm)"', r.text, re.IGNORECASE)
+        if not doc_match:
+            return ""
+
+        doc_url = "https://www.sec.gov" + doc_match.group(1)
+        doc_r = requests.get(doc_url, timeout=20, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        if not doc_r.ok:
+            return ""
+
+        # Strip HTML tags
+        text = re.sub(r'<[^>]+>', ' ', doc_r.text)
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # Find MD&A section
+        if section == "mda":
+            patterns = [
+                r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION",
+                r"MANAGEMENT.S DISCUSSION AND ANALYSIS",
+                r"MD&A",
+            ]
+        else:  # risk factors
+            patterns = [
+                r"ITEM\s+1A[.\s]+RISK FACTORS",
+                r"RISK FACTORS",
+            ]
+
+        start_idx = -1
+        for pat in patterns:
+            m = re.search(pat, text.upper())
+            if m:
+                start_idx = m.start()
+                break
+
+        if start_idx == -1:
+            return text[:8000]  # fallback: return start of doc
+
+        # Find the next major section header to delimit end
+        end_text = text[start_idx + 100:]
+        end_match = re.search(r'ITEM\s+\d+[A-Z]?[.\s]', end_text.upper())
+        end_idx = start_idx + 100 + end_match.start() if end_match else start_idx + 10000
+
+        return text[start_idx:end_idx][:8000]
+
+    except Exception:
+        return ""
+
+
+def _run_language_drift_analysis(ticker: str) -> dict | None:
+    """
+    Compare current 10-K/10-Q MD&A against prior 4 quarters using Claude.
+    Returns signal dict if meaningful drift detected, else None.
+    """
+    if not ANTHROPIC_API_KEY:
+        return None
+
+    cik = _fetch_edgar_cik(ticker)
+    if not cik:
+        return None
+
+    filings = _fetch_edgar_filings(cik, form_type="10-K", count=5)
+    if len(filings) < 2:
+        filings = _fetch_edgar_filings(cik, form_type="10-Q", count=5)
+    if len(filings) < 2:
+        return None
+
+    # Latest filing
+    current_text = _fetch_filing_text(cik, filings[0]["accession"])
+    if not current_text:
+        return None
+
+    # Prior filings (up to 4)
+    prior_texts = []
+    for f in filings[1:5]:
+        t = _fetch_filing_text(cik, f["accession"])
+        if t:
+            prior_texts.append({"date": f["date"], "text": t[:3000]})
+
+    if not prior_texts:
+        return None
+
+    prior_summary = "\n\n---\n\n".join(
+        [f"[Filing {i+1}, {p['date']}]:\n{p['text']}" for i, p in enumerate(prior_texts)]
+    )
+
+    prompt = f"""You are a financial analyst specialising in SEC filing language analysis for micro-cap companies.
+
+CURRENT FILING ({filings[0]['date']}) — MD&A section:
+{current_text[:4000]}
+
+PRIOR FILINGS (for comparison):
+{prior_summary[:4000]}
+
+Analyse the language shift between the current filing and prior filings. Focus on:
+1. New disclosures not present before (new risks, new customers, new partnerships, strategic pivots)
+2. Removed language (previously disclosed risks now absent — resolution or concealment?)
+3. Tone shift (more confident vs more cautious)
+4. Going concern language: does the current filing contain "substantial doubt about the company's ability to continue as a going concern"?
+5. Revenue/margin language change (more specific commitments vs vague hedging)
+
+Return a JSON object with this exact structure:
+{{
+  "drift_detected": true/false,
+  "direction": "positive" | "negative" | "neutral",
+  "conviction": 1-10,
+  "title": "One-line description of the key change",
+  "thesis": "2-3 sentence plain English explanation of what changed and why it matters for investors",
+  "going_concern": true/false,
+  "key_changes": ["change 1", "change 2", "change 3"],
+  "signal_type": "language_drift" | "going_concern"
+}}
+
+Only return the JSON, no other text."""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=800,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = resp.content[0].text.strip()
+        raw = re.sub(r'^```(?:json)?\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw.strip())
+        result = json.loads(raw)
+
+        if not result.get("drift_detected"):
+            return None
+
+        direction = result.get("direction", "neutral")
+        signal_direction = "long" if direction == "positive" else ("short" if direction == "negative" else "risk")
+        if result.get("going_concern"):
+            signal_direction = "short"
+
+        return {
+            "signal_type": result.get("signal_type", "language_drift"),
+            "direction": signal_direction,
+            "conviction": int(result.get("conviction", 5)),
+            "title": result.get("title", "Filing language shift detected"),
+            "thesis": result.get("thesis", ""),
+            "raw_data": json.dumps({
+                "filing_date": filings[0]["date"],
+                "key_changes": result.get("key_changes", []),
+                "going_concern": result.get("going_concern", False),
+            }),
+        }
+    except Exception as e:
+        print(f"[Alpha Scanner] Language drift Claude error for {ticker}: {e}")
+        return None
+
+
+# ── Form 4 insider monitor ─────────────────────────────────────────────────────
+def _run_insider_scan(tickers: list) -> list:
+    """
+    Fetch recent Form 4 insider transactions for universe tickers via OpenBB.
+    Returns list of signal dicts for significant insider activity.
+    """
+    signals = []
+    try:
+        from openbb import obb
+        for ticker in tickers[:50]:  # batch limit — process 50 per run cycle
+            try:
+                df = obb.equity.ownership.insider_trading(
+                    symbol=ticker, provider="sec", limit=20
+                ).to_df()
+
+                if df.empty:
+                    continue
+
+                # Filter last 30 days
+                df["filing_date"] = pd.to_datetime(df.get("filing_date") or df.index, errors="coerce")
+                cutoff = pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=30)
+                df = df[df["filing_date"] >= cutoff]
+
+                if df.empty:
+                    continue
+
+                # Separate buys and sells
+                buy_col  = [c for c in df.columns if "acquisition" in c.lower() or c.lower() in ("is_buy","transaction_type")]
+                val_col  = [c for c in df.columns if "value" in c.lower() or "amount" in c.lower()]
+
+                buys  = df[df[buy_col[0]] == True] if buy_col else pd.DataFrame()
+                sells = df[df[buy_col[0]] == False] if buy_col else pd.DataFrame()
+
+                # Multiple insiders buying simultaneously = strong signal
+                if len(buys) >= 2:
+                    total_val = buys[val_col[0]].sum() if val_col else 0
+                    names = buys.get("reporting_name", buys.get("filer_name", pd.Series())).tolist()[:3]
+                    signals.append({
+                        "ticker": ticker,
+                        "signal_type": "insider_buy",
+                        "direction": "long",
+                        "conviction": min(5 + len(buys), 9),
+                        "title": f"{len(buys)} insiders buying — {', '.join(str(n) for n in names[:2])}",
+                        "thesis": f"{len(buys)} company insiders purchased shares in the last 30 days "
+                                  f"with a combined value of ${total_val:,.0f}. Multiple simultaneous "
+                                  f"insider purchases are among the most reliable long signals in academic "
+                                  f"literature for small-cap companies — insiders have direct knowledge "
+                                  f"of upcoming catalysts and rarely buy simultaneously by coincidence.",
+                        "raw_data": json.dumps({"insider_count": len(buys), "total_value": float(total_val),
+                                                 "names": names}),
+                    })
+
+                # Mass insider selling = risk signal
+                if len(sells) >= 3:
+                    signals.append({
+                        "ticker": ticker,
+                        "signal_type": "insider_sell",
+                        "direction": "risk",
+                        "conviction": min(4 + len(sells), 8),
+                        "title": f"{len(sells)} insiders selling in last 30 days",
+                        "thesis": f"{len(sells)} insiders have sold shares in the past 30 days. "
+                                  f"Mass insider selling at small-cap companies often precedes "
+                                  f"earnings disappointments or strategic pivots. Combined with "
+                                  f"other negative signals, this warrants caution.",
+                        "raw_data": json.dumps({"sell_count": len(sells)}),
+                    })
+
+            except Exception as e:
+                print(f"[Alpha Scanner] Insider scan error for {ticker}: {e}")
+                continue
+
+    except ImportError:
+        print("[Alpha Scanner] OpenBB not available for insider scan")
+
+    return signals
+
+
+# ── SAM.gov contract detector ──────────────────────────────────────────────────
+def _run_contract_scan(universe: list) -> list:
+    """
+    Fetch recent federal contract awards from SAM.gov.
+    Cross-reference against universe company names.
+    Flag when award is material relative to market cap (>5% of MC).
+    """
+    signals = []
+    try:
+        today = date.today()
+        from_date = (today - timedelta(days=7)).strftime("%Y%m%d")
+        to_date   = today.strftime("%Y%m%d")
+
+        # SAM.gov Opportunities API — public, no auth needed for basic search
+        url = "https://api.sam.gov/opportunities/v2/search"
+        params = {
+            "api_key": "DEMO_KEY",   # public rate-limited key — replace with real key for production
+            "postedFrom": from_date,
+            "postedTo":   to_date,
+            "limit": 100,
+            "offset": 0,
+        }
+
+        r = requests.get(url, params=params, timeout=15)
+        if not r.ok:
+            # Try the awards endpoint instead
+            url2 = "https://api.usaspending.gov/api/v2/awards/?"
+            params2 = {
+                "award_type_codes": ["A","B","C","D"],
+                "time_period": [{"start_date": (today - timedelta(days=7)).strftime("%Y-%m-%d"),
+                                 "end_date": today.strftime("%Y-%m-%d")}],
+                "limit": 100,
+            }
+            r2 = requests.post(
+                "https://api.usaspending.gov/api/v2/search/spending_by_award/",
+                json={"filters": params2, "fields": ["Recipient Name","Award Amount","Awarding Agency Name"],
+                      "limit": 100, "page": 1},
+                timeout=15
+            )
+            if not r2.ok:
+                return signals
+            awards = r2.json().get("results", [])
+            recipient_key = "Recipient Name"
+            amount_key = "Award Amount"
+        else:
+            awards = r.json().get("opportunitiesData", [])
+            recipient_key = "organizationName"
+            amount_key = "baseAndAllOptionsValue"
+
+        # Build name → ticker+MC lookup
+        name_map = {}
+        for company in universe:
+            name_lower = company["name"].lower()
+            # Use first two words of company name for fuzzy match
+            key_words = " ".join(name_lower.split()[:2])
+            name_map[key_words] = company
+
+        for award in awards:
+            recipient = str(award.get(recipient_key, "")).lower()
+            amount    = float(award.get(amount_key) or 0)
+
+            if amount < 100_000:  # ignore trivial awards
+                continue
+
+            # Check if recipient matches any universe company
+            for key_words, company in name_map.items():
+                if len(key_words) > 4 and key_words in recipient:
+                    mc = company["market_cap"]
+                    pct_of_mc = (amount / mc * 100) if mc else 0
+
+                    if pct_of_mc < 5:  # only flag if material (>5% of market cap)
+                        continue
+
+                    signals.append({
+                        "ticker": company["ticker"],
+                        "signal_type": "contract_win",
+                        "direction": "long",
+                        "conviction": min(int(pct_of_mc / 5) + 4, 9),
+                        "title": f"Federal contract: ${amount/1e6:.1f}M award ({pct_of_mc:.0f}% of market cap)",
+                        "thesis": f"{company['name']} has been awarded a federal contract worth "
+                                  f"${amount/1e6:.1f}M — equivalent to {pct_of_mc:.0f}% of the company's "
+                                  f"current market cap. For a company this size, a single government "
+                                  f"contract of this magnitude is a material revenue event. Federal "
+                                  f"contracts provide predictable, recurring revenue with low default risk. "
+                                  f"This type of contract win at micro-cap scale rarely appears in "
+                                  f"mainstream financial media.",
+                        "raw_data": json.dumps({
+                            "award_amount": amount,
+                            "pct_of_market_cap": round(pct_of_mc, 1),
+                            "recipient": award.get(recipient_key, ""),
+                        }),
+                    })
+                    break
+
+    except Exception as e:
+        print(f"[Alpha Scanner] Contract scan error: {e}")
+
+    return signals
+
+
+# ── Signal persistence ─────────────────────────────────────────────────────────
+def _save_signal(ticker: str, signal: dict, price: float | None):
+    """Insert or update a signal in the DB. Returns 'new' | 'updated' | 'existing'."""
+    import json as _json
+    now = datetime.now(timezone.utc).isoformat()
+    sig_id = hashlib.md5(f"{ticker}:{signal['signal_type']}".encode()).hexdigest()
+
+    conn = _as_db()
+    existing = conn.execute("SELECT * FROM signals WHERE id=?", (sig_id,)).fetchone()
+
+    if existing:
+        if existing["status"] == "active":
+            conn.execute(
+                "UPDATE signals SET conviction=?, thesis=?, raw_data=?, last_updated=? WHERE id=?",
+                (signal["conviction"], signal["thesis"], signal["raw_data"], now, sig_id)
+            )
+            conn.commit(); conn.close()
+            return "updated"
+        conn.close()
+        return "existing"
+
+    conn.execute("""
+        INSERT INTO signals
+          (id, ticker, signal_type, direction, conviction, title, thesis, raw_data,
+           status, first_seen, last_updated, price_at_signal)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (sig_id, ticker, signal["signal_type"], signal["direction"],
+          signal["conviction"], signal["title"], signal["thesis"],
+          signal["raw_data"], "active", now, now, price))
+    conn.commit(); conn.close()
+    return "new"
+
+
+def _resolve_stale_signals():
+    """Archive signals older than 45 days or where price moved >25%."""
+    import json as _json
+    now = datetime.now(timezone.utc)
+    cutoff = (now - timedelta(days=45)).isoformat()
+    conn = _as_db()
+    active = conn.execute(
+        "SELECT * FROM signals WHERE status='active'"
+    ).fetchall()
+
+    for sig in active:
+        # Archive if stale (45 days)
+        if sig["first_seen"] < cutoff:
+            conn.execute(
+                "UPDATE signals SET status='archived', resolved_at=?, resolution=? WHERE id=?",
+                (now.isoformat(), "stale_45d", sig["id"])
+            )
+            continue
+
+        # Check if price has moved >25% since signal
+        try:
+            price_at = sig["price_at_signal"]
+            if price_at:
+                import yfinance as _yf
+                curr = _yf.Ticker(sig["ticker"]).fast_info.last_price
+                if curr and abs((curr - price_at) / price_at) > 0.25:
+                    conn.execute(
+                        "UPDATE signals SET status='resolved', resolved_at=?, resolution=? WHERE id=?",
+                        (now.isoformat(), "price_moved_25pct", sig["id"])
+                    )
+        except Exception:
+            pass
+
+    conn.commit(); conn.close()
+
+
+# ── Main daily run ─────────────────────────────────────────────────────────────
+def _run_alpha_scanner():
+    """
+    Full daily Alpha Scanner run. Called by cron endpoint.
+    1. Refresh universe
+    2. Resolve stale signals
+    3. Language drift scan (new filings only)
+    4. Insider transaction scan
+    5. SAM.gov contract scan
+    """
+    import json as _json
+    print("[Alpha Scanner] Daily run starting...")
+
+    # 1. Refresh universe
+    universe = _run_universe_screener()
+    if not universe:
+        # Load from DB if screener returned nothing
+        conn = _as_db()
+        rows = conn.execute("SELECT * FROM universe").fetchall()
+        universe = [dict(r) for r in rows]
+        conn.close()
+
+    tickers = [u["ticker"] for u in universe]
+    ticker_info = {u["ticker"]: u for u in universe}
+    print(f"[Alpha Scanner] Universe: {len(tickers)} tickers")
+
+    # 2. Resolve stale signals
+    _resolve_stale_signals()
+
+    new_signals = 0
+
+    # 3. Language drift — check for new filings today (rate-limited: 10 tickers per run)
+    # In production, rotate through universe over multiple days
+    import random
+    sample = random.sample(tickers, min(10, len(tickers)))
+    for ticker in sample:
+        try:
+            signal = _run_language_drift_analysis(ticker)
+            if signal:
+                price = None
+                try:
+                    import yfinance as _yf
+                    price = _yf.Ticker(ticker).fast_info.last_price
+                except Exception:
+                    pass
+                result = _save_signal(ticker, signal, price)
+                if result == "new":
+                    new_signals += 1
+                    print(f"[Alpha Scanner] NEW signal: {ticker} — {signal['title']}")
+        except Exception as e:
+            print(f"[Alpha Scanner] Language drift error {ticker}: {e}")
+
+    # 4. Insider scan
+    insider_signals = _run_insider_scan(tickers)
+    for sig in insider_signals:
+        ticker = sig.pop("ticker")
+        info = ticker_info.get(ticker, {})
+        price = None
+        try:
+            import yfinance as _yf
+            price = _yf.Ticker(ticker).fast_info.last_price
+        except Exception:
+            pass
+        result = _save_signal(ticker, sig, price)
+        if result == "new":
+            new_signals += 1
+
+    # 5. Contract scan
+    contract_signals = _run_contract_scan(universe)
+    for sig in contract_signals:
+        ticker = sig.pop("ticker")
+        price = None
+        try:
+            import yfinance as _yf
+            price = _yf.Ticker(ticker).fast_info.last_price
+        except Exception:
+            pass
+        result = _save_signal(ticker, sig, price)
+        if result == "new":
+            new_signals += 1
+
+    print(f"[Alpha Scanner] Daily run complete. {new_signals} new signals.")
+    return {
+        "universe_size": len(tickers),
+        "new_signals": new_signals,
+        "run_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+# ── Alpha Scanner API endpoints ────────────────────────────────────────────────
+
+@app.get("/alpha-scanner/run")
+def alpha_scanner_run(token: str = ""):
+    """Trigger daily Alpha Scanner run. Protected by REFRESH_TOKEN."""
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+    result = _run_alpha_scanner()
+    return result
+
+
+@app.get("/alpha-scanner/signals")
+def alpha_scanner_signals(status: str = "active", limit: int = 50):
+    """
+    Return active signal cards for the Alpha Scanner feed.
+    Each card includes: ticker, name, mc, signals, conviction, direction, thesis.
+    Sorted: NEW (last 24h) first, then UPDATED (last 48h), then by conviction desc.
+    """
+    import json as _json
+    conn = _as_db()
+    rows = conn.execute("""
+        SELECT s.*, u.name, u.market_cap, u.sector
+        FROM signals s
+        LEFT JOIN universe u ON s.ticker = u.ticker
+        WHERE s.status = ?
+        ORDER BY s.last_updated DESC
+        LIMIT ?
+    """, (status, limit)).fetchall()
+    conn.close()
+
+    now = datetime.now(timezone.utc)
+    cards = []
+    for r in rows:
+        first_seen_dt = datetime.fromisoformat(r["first_seen"].replace("Z", "+00:00"))
+        last_upd_dt   = datetime.fromisoformat(r["last_updated"].replace("Z", "+00:00"))
+        hours_since_first = (now - first_seen_dt).total_seconds() / 3600
+        hours_since_update = (now - last_upd_dt).total_seconds() / 3600
+
+        badge = None
+        if hours_since_first <= 24:
+            badge = "NEW"
+        elif hours_since_update <= 48:
+            badge = "UPDATED"
+
+        raw_data = {}
+        try:
+            raw_data = _json.loads(r["raw_data"] or "{}")
+        except Exception:
+            pass
+
+        cards.append({
+            "id": r["id"],
+            "ticker": r["ticker"],
+            "name": r["name"] or r["ticker"],
+            "market_cap": r["market_cap"],
+            "sector": r["sector"] or "",
+            "signal_type": r["signal_type"],
+            "direction": r["direction"],
+            "conviction": r["conviction"],
+            "title": r["title"],
+            "thesis": r["thesis"],
+            "badge": badge,
+            "first_seen": r["first_seen"],
+            "last_updated": r["last_updated"],
+            "price_at_signal": r["price_at_signal"],
+            "raw_data": raw_data,
+        })
+
+    # Sort: NEW first, then UPDATED, then by conviction
+    def sort_key(c):
+        badge_order = {"NEW": 0, "UPDATED": 1, None: 2}
+        return (badge_order.get(c["badge"], 2), -c["conviction"])
+
+    cards.sort(key=sort_key)
+    return {"signals": cards, "total": len(cards)}
+
+
+@app.get("/alpha-scanner/ticker/{ticker}")
+def alpha_scanner_ticker(ticker: str):
+    """Return all signals for a specific ticker."""
+    import json as _json
+    ticker = ticker.upper().strip()
+    conn = _as_db()
+    rows = conn.execute("""
+        SELECT s.*, u.name, u.market_cap, u.sector
+        FROM signals s
+        LEFT JOIN universe u ON s.ticker = u.ticker
+        WHERE s.ticker = ?
+        ORDER BY s.last_updated DESC
+    """, (ticker,)).fetchall()
+    conn.close()
+
+    signals = []
+    for r in rows:
+        raw_data = {}
+        try:
+            raw_data = _json.loads(r["raw_data"] or "{}")
+        except Exception:
+            pass
+        signals.append({**dict(r), "raw_data": raw_data})
+
+    return {"ticker": ticker, "signals": signals}
+
+
+@app.get("/alpha-scanner/status")
+def alpha_scanner_status():
+    """Return universe size, signal counts, last run info."""
+    conn = _as_db()
+    universe_count = conn.execute("SELECT COUNT(*) FROM universe").fetchone()[0]
+    active_signals = conn.execute("SELECT COUNT(*) FROM signals WHERE status='active'").fetchone()[0]
+    new_24h = conn.execute(
+        "SELECT COUNT(*) FROM signals WHERE status='active' AND first_seen >= datetime('now','-1 day')"
+    ).fetchone()[0]
+    conn.close()
+    return {
+        "universe_size": universe_count,
+        "active_signals": active_signals,
+        "new_last_24h": new_24h,
+    }
