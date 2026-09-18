@@ -4363,10 +4363,17 @@ def _run_alpha_scanner():
 
     new_signals = 0
 
-    # 3. Language drift — check for new filings today (rate-limited: 10 tickers per run)
-    # In production, rotate through universe over multiple days
+    # 3. Language drift — first run scans all; subsequent runs rotate 30/day (~20-day cycle)
     import random
-    sample = random.sample(tickers, min(10, len(tickers)))
+    conn_ld = _as_db()
+    existing_ld_signals = conn_ld.execute(
+        "SELECT COUNT(*) FROM signals WHERE signal_type='language_drift'"
+    ).fetchone()[0]
+    conn_ld.close()
+    is_first_ld_run = (existing_ld_signals == 0)
+    sample = tickers if is_first_ld_run else random.sample(tickers, min(30, len(tickers)))
+    if is_first_ld_run:
+        print(f"[Alpha Scanner] First language drift run — scanning all {len(tickers)} companies")
     for ticker in sample:
         try:
             signal = _run_language_drift_analysis(ticker)
@@ -4385,8 +4392,19 @@ def _run_alpha_scanner():
             print(f"[Alpha Scanner] Language drift error {ticker}: {e}")
 
     # 4. Financial intelligence scan (5-module dual timeframe)
-    # Sample 8 tickers per daily run to manage API/LLM cost
-    fin_sample = random.sample(tickers, min(8, len(tickers)))
+    # First run (no existing financial_quality signals): scan ALL companies
+    # Subsequent runs: 30/day = ~20-day cycle through full universe
+    conn_check = _as_db()
+    existing_fin_signals = conn_check.execute(
+        "SELECT COUNT(*) FROM signals WHERE signal_type='financial_quality'"
+    ).fetchone()[0]
+    conn_check.close()
+
+    is_first_fin_run = (existing_fin_signals == 0)
+    fin_batch_size   = len(tickers) if is_first_fin_run else 30
+    fin_sample       = tickers if is_first_fin_run else random.sample(tickers, min(30, len(tickers)))
+    if is_first_fin_run:
+        print(f"[Alpha Scanner] First financial intelligence run — scanning all {len(tickers)} companies")
     for ticker in fin_sample:
         try:
             signal = _run_financial_intelligence(ticker)
