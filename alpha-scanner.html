@@ -200,7 +200,8 @@
   .tag-insider_sell    { background: rgba(245,158,11,.15);  color: var(--gold); }
   .tag-contract_win    { background: rgba(56,189,248,.15);  color: var(--blue); }
   .tag-dilution_risk   { background: rgba(239,68,68,.15);   color: var(--red); }
-  .tag-short_squeeze   { background: rgba(167,139,250,.15); color: var(--purple); }
+  .tag-short_squeeze      { background: rgba(167,139,250,.15); color: var(--purple); }
+  .tag-financial_quality  { background: rgba(56,189,248,.12);  color: var(--blue); }
 
   .mc-tag {
     font-size: 12px; color: var(--dim);
@@ -436,7 +437,8 @@ function signalTypeLabel(t) {
     insider_sell:   'Insider selling',
     contract_win:   'Federal contract',
     dilution_risk:  'Dilution risk',
-    short_squeeze:  'Short squeeze setup',
+    short_squeeze:     'Short squeeze setup',
+    financial_quality: '5-module financial analysis',
   };
   return labels[t] || t;
 }
@@ -452,6 +454,16 @@ function rawDataItems(rd, signalType) {
   if (signalType === 'contract_win') {
     if (rd.award_amount)      items.push({ label: 'Award', val: '$' + (rd.award_amount / 1e6).toFixed(1) + 'M' });
     if (rd.pct_of_market_cap) items.push({ label: '% of MC', val: rd.pct_of_market_cap + '%' });
+  }
+  if (signalType === 'financial_quality') {
+    const km = rd.key_metrics || {};
+    if (km.latest_piotroski != null) items.push({ label: 'Piotroski F-Score', val: km.latest_piotroski + '/9' });
+    if (km.latest_z_score   != null) items.push({ label: 'Altman Z-Score',    val: km.latest_z_score });
+    if (km.latest_m_score   != null) items.push({ label: 'Beneish M-Score',   val: km.latest_m_score });
+    if (km.piotroski_trend)          items.push({ label: 'F-Score trend',      val: km.piotroski_trend });
+    if (km.z_score_trend)            items.push({ label: 'Z-Score trend',      val: km.z_score_trend });
+    if (rd.annual_verdict)           items.push({ label: '4-year trend',       val: rd.annual_verdict });
+    if (rd.quarterly_verdict)        items.push({ label: 'Quarterly signal',   val: rd.quarterly_verdict });
   }
   if (signalType === 'language_drift') {
     if (rd.filing_date) items.push({ label: 'Filing date', val: rd.filing_date });

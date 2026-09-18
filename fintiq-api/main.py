@@ -3147,6 +3147,627 @@ def _as_db():
 
 
 # ── Universe screener ──────────────────────────────────────────────────────────
+# ── XBRL financial data fetcher ───────────────────────────────────────────────
+def _fetch_xbrl_facts(cik: str) -> dict:
+    """
+    Fetch all XBRL reported facts for a company from SEC EDGAR.
+    Returns the full companyfacts JSON (cached in memory for 24h per CIK).
+    """
+    url = f"https://data.sec.gov/api/xbrl/companyfacts/CIK{cik}.json"
+    try:
+        r = requests.get(url, timeout=20, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        if r.ok:
+            return r.json()
+    except Exception:
+        pass
+    return {}
+
+
+def _xbrl_series(facts: dict, concept: str, form: str = "10-K", n: int = 4) -> list:
+    """
+    Extract the last n reported values for a GAAP concept from XBRL facts.
+    form: '10-K' for annual, '10-Q' for quarterly.
+    Returns list of {val, period_end, filed} dicts, most recent first.
+    Tries multiple common concept name variants.
+    """
+    gaap = facts.get("facts", {}).get("us-gaap", {})
+
+    # Try concept variants (SEC uses different names across companies/years)
+    variants = {
+        "Revenue":           ["Revenues","RevenueFromContractWithCustomerExcludingAssessedTax",
+                               "RevenueFromContractWithCustomerIncludingAssessedTax","SalesRevenueNet",
+                               "SalesRevenueGoodsNet","RevenuesNetOfInterestExpense"],
+        "NetIncome":         ["NetIncomeLoss","NetIncomeLossAvailableToCommonStockholdersBasic",
+                               "ProfitLoss","NetIncomeLossAttributableToParentEntity"],
+        "OperatingIncome":   ["OperatingIncomeLoss","IncomeLossFromContinuingOperationsBeforeIncomeTaxes"],
+        "GrossProfit":       ["GrossProfit"],
+        "COGS":              ["CostOfRevenue","CostOfGoodsAndServicesSold","CostOfGoodsSold",
+                               "CostOfGoodsAndServiceExcludingDepreciationDepletionAndAmortization"],
+        "TotalAssets":       ["Assets"],
+        "CurrentAssets":     ["AssetsCurrent"],
+        "CurrentLiabilities":["LiabilitiesCurrent"],
+        "TotalLiabilities":  ["Liabilities"],
+        "LongTermDebt":      ["LongTermDebt","LongTermDebtNoncurrent","LongTermNotesPayable",
+                               "SeniorLongTermNotes"],
+        "Cash":              ["CashAndCashEquivalentsAtCarryingValue","CashCashEquivalentsAndShortTermInvestments",
+                               "CashAndCashEquivalentsPeriodIncreaseDecrease"],
+        "OperatingCF":       ["NetCashProvidedByUsedInOperatingActivities"],
+        "RetainedEarnings":  ["RetainedEarningsAccumulatedDeficit"],
+        "SharesOutstanding": ["CommonStockSharesOutstanding","CommonStockSharesIssued"],
+        "InterestExpense":   ["InterestExpense","InterestAndDebtExpense","InterestExpenseDebt"],
+        "SGA":               ["SellingGeneralAndAdministrativeExpense","GeneralAndAdministrativeExpense"],
+        "Depreciation":      ["DepreciationDepletionAndAmortization","DepreciationAndAmortization",
+                               "Depreciation"],
+        "AccountsReceivable":["AccountsReceivableNetCurrent","ReceivablesNetCurrent",
+                               "AccountsAndNotesReceivableNet"],
+        "Inventory":         ["InventoryNet","InventoryGross"],
+        "WorkingCapital":    ["WorkingCapitalNet"],
+        "CapEx":             ["PaymentsToAcquirePropertyPlantAndEquipment",
+                               "PaymentsForCapitalImprovements"],
+        "Dividends":         ["PaymentsOfDividends","PaymentsOfDividendsCommonStock"],
+        "StockIssuance":     ["ProceedsFromIssuanceOfCommonStock",
+                               "ProceedsFromIssuanceOfSharesUnderIncentiveAndShareBasedCompensationPlans"],
+        "BookValue":         ["StockholdersEquity","StockholdersEquityAttributableToParent"],
+    }
+
+    names_to_try = variants.get(concept, [concept])
+
+    for name in names_to_try:
+        node = gaap.get(name)
+        if not node:
+            continue
+        units = node.get("units", {})
+        # Try USD units first, then shares
+        data = units.get("USD") or units.get("shares") or units.get("pure") or []
+        if not data:
+            continue
+
+        # Filter to the right form type
+        filtered = [
+            d for d in data
+            if d.get("form") == form
+            and d.get("val") is not None
+            and d.get("end")
+        ]
+
+        # For 10-K: prefer annual periods (start to end ~365 days)
+        # For 10-Q: prefer quarterly periods
+        if form == "10-K":
+            filtered = [d for d in filtered if d.get("start") and
+                        abs((datetime.strptime(d["end"],"%Y-%m-%d") -
+                             datetime.strptime(d["start"],"%Y-%m-%d")).days - 365) < 60]
+        elif form == "10-Q":
+            filtered = [d for d in filtered if d.get("start") and
+                        abs((datetime.strptime(d["end"],"%Y-%m-%d") -
+                             datetime.strptime(d["start"],"%Y-%m-%d")).days - 91) < 30]
+
+        # Sort by period end, most recent first; deduplicate by end date
+        seen = set()
+        results = []
+        for d in sorted(filtered, key=lambda x: x["end"], reverse=True):
+            if d["end"] not in seen:
+                seen.add(d["end"])
+                results.append({"val": float(d["val"]), "period": d["end"], "filed": d.get("filed","")})
+            if len(results) >= n:
+                break
+
+        if results:
+            return results
+
+    return []
+
+
+def _xbrl_point(facts: dict, concept: str, form: str = "10-K") -> list:
+    """
+    Extract balance sheet point-in-time values (instant, not period).
+    Used for Assets, Liabilities, Cash, Shares.
+    """
+    gaap = facts.get("facts", {}).get("us-gaap", {})
+
+    variants = {
+        "TotalAssets":        ["Assets"],
+        "CurrentAssets":      ["AssetsCurrent"],
+        "CurrentLiabilities": ["LiabilitiesCurrent"],
+        "TotalLiabilities":   ["Liabilities"],
+        "LongTermDebt":       ["LongTermDebt","LongTermDebtNoncurrent"],
+        "Cash":               ["CashAndCashEquivalentsAtCarryingValue",
+                                "CashCashEquivalentsAndShortTermInvestments"],
+        "RetainedEarnings":   ["RetainedEarningsAccumulatedDeficit"],
+        "SharesOutstanding":  ["CommonStockSharesOutstanding","CommonStockSharesIssued"],
+        "BookValue":          ["StockholdersEquity","StockholdersEquityAttributableToParent"],
+        "AccountsReceivable": ["AccountsReceivableNetCurrent","ReceivablesNetCurrent"],
+        "Inventory":          ["InventoryNet"],
+    }
+
+    names_to_try = variants.get(concept, [concept])
+    n = 5  # fetch 5 to cover 4 periods
+
+    for name in names_to_try:
+        node = gaap.get(name)
+        if not node:
+            continue
+        units = node.get("units", {})
+        data = units.get("USD") or units.get("shares") or []
+        if not data:
+            continue
+
+        # Instant values (balance sheet) — filter by form type via filed date proximity
+        instant = [d for d in data if not d.get("start") and d.get("end") and d.get("val") is not None]
+        if not instant:
+            # Some companies report as period — fall back
+            instant = [d for d in data if d.get("end") and d.get("val") is not None]
+
+        # Deduplicate by end date, most recent first
+        seen = set()
+        results = []
+        for d in sorted(instant, key=lambda x: x["end"], reverse=True):
+            if d["end"] not in seen:
+                seen.add(d["end"])
+                results.append({"val": float(d["val"]), "period": d["end"], "filed": d.get("filed","")})
+            if len(results) >= n:
+                break
+
+        if results:
+            return results
+
+    return []
+
+
+def _safe_div(a, b):
+    """Safe division — returns None if denominator is zero or either is None."""
+    if a is None or b is None or b == 0:
+        return None
+    return a / b
+
+
+def _pct_change(new, old):
+    """Percentage change from old to new. Returns None if inputs invalid."""
+    if old is None or new is None or old == 0:
+        return None
+    return (new - old) / abs(old)
+
+
+# ── Five-module financial intelligence calculator ─────────────────────────────
+def _compute_financial_modules(facts: dict, form: str = "10-K", n: int = 4) -> dict:
+    """
+    Run all 5 financial intelligence modules on XBRL data.
+    form: '10-K' (annual) or '10-Q' (quarterly)
+    Returns dict of computed metrics per period, ready for Claude.
+    """
+    def get(concept):
+        if concept in ["TotalAssets","CurrentAssets","CurrentLiabilities","TotalLiabilities",
+                       "LongTermDebt","Cash","RetainedEarnings","SharesOutstanding",
+                       "BookValue","AccountsReceivable","Inventory"]:
+            return _xbrl_point(facts, concept)
+        return _xbrl_series(facts, concept, form=form, n=n)
+
+    # ── Fetch all raw series ──
+    revenue        = get("Revenue")
+    net_income     = get("NetIncome")
+    op_income      = get("OperatingIncome")
+    gross_profit   = get("GrossProfit")
+    cogs           = get("COGS")
+    total_assets   = get("TotalAssets")
+    curr_assets    = get("CurrentAssets")
+    curr_liab      = get("CurrentLiabilities")
+    total_liab     = get("TotalLiabilities")
+    lt_debt        = get("LongTermDebt")
+    cash           = get("Cash")
+    op_cf          = get("OperatingCF")
+    retained_earn  = get("RetainedEarnings")
+    shares         = get("SharesOutstanding")
+    interest_exp   = get("InterestExpense")
+    sga            = get("SGA")
+    depreciation   = get("Depreciation")
+    ar             = get("AccountsReceivable")
+    inventory      = get("Inventory")
+    book_value     = get("BookValue")
+    capex          = get("CapEx")
+    dividends      = get("Dividends")
+
+    def v(series, i=0):
+        """Get value at index i from a series, or None."""
+        if series and len(series) > i:
+            return series[i]["val"]
+        return None
+
+    def p(series, i=0):
+        """Get period label at index i from a series, or None."""
+        if series and len(series) > i:
+            return series[i]["period"]
+        return None
+
+    periods = []
+    period_count = max(len(revenue), len(net_income), len(total_assets), 1)
+    period_count = min(period_count, n)
+
+    results = []
+
+    for i in range(period_count):
+        period_label = (p(revenue, i) or p(total_assets, i) or p(net_income, i) or f"Period-{i}")
+
+        rev_i    = v(revenue, i)
+        rev_prev = v(revenue, i+1)
+        ni_i     = v(net_income, i)
+        oi_i     = v(op_income, i)
+        gp_i     = v(gross_profit, i)
+        cogs_i   = v(cogs, i)
+        ta_i     = v(total_assets, i)
+        ta_prev  = v(total_assets, i+1)
+        ca_i     = v(curr_assets, i)
+        cl_i     = v(curr_liab, i)
+        tl_i     = v(total_liab, i)
+        ltd_i    = v(lt_debt, i)
+        ltd_prev = v(lt_debt, i+1)
+        cash_i   = v(cash, i)
+        ocf_i    = v(op_cf, i)
+        re_i     = v(retained_earn, i)
+        sh_i     = v(shares, i)
+        sh_prev  = v(shares, i+1)
+        int_i    = v(interest_exp, i)
+        sga_i    = v(sga, i)
+        sga_prev = v(sga, i+1)
+        dep_i    = v(depreciation, i)
+        dep_prev = v(depreciation, i+1)
+        ar_i     = v(ar, i)
+        ar_prev  = v(ar, i+1)
+        inv_i    = v(inventory, i)
+        bv_i     = v(book_value, i)
+        capex_i  = v(capex, i)
+        div_i    = v(dividends, i)
+
+        # ── MODULE 1: Earnings Quality (Beneish M-Score components) ──
+        # Days Sales Receivable Index (DSRI) — receivables growing faster than revenue?
+        dso_curr = _safe_div(ar_i, rev_i) * 365 if ar_i and rev_i else None
+        dso_prev = _safe_div(ar_prev, rev_prev) * 365 if ar_prev and rev_prev else None
+        dsri = _safe_div(dso_curr, dso_prev)
+
+        # Gross Margin Index (GMI) — margins deteriorating?
+        gm_curr = _safe_div(gp_i, rev_i) if gp_i and rev_i else (
+            _safe_div((rev_i - cogs_i), rev_i) if rev_i and cogs_i else None
+        )
+        gm_prev = _safe_div(v(gross_profit, i+1), rev_prev) if v(gross_profit, i+1) and rev_prev else (
+            _safe_div((rev_prev - v(cogs, i+1)), rev_prev) if rev_prev and v(cogs, i+1) else None
+        )
+        gmi = _safe_div(gm_prev, gm_curr)  # >1 = margins deteriorating
+
+        # SGA Index — overhead growing faster than revenue?
+        sgai = _safe_div(
+            _safe_div(sga_i, rev_i),
+            _safe_div(sga_prev, rev_prev)
+        ) if sga_i and rev_i and sga_prev and rev_prev else None
+
+        # Depreciation Index — slowing depreciation (hiding asset deterioration)?
+        dep_rate_curr = _safe_div(dep_i, (dep_i + (ta_i or 0)))
+        dep_rate_prev = _safe_div(dep_prev, (dep_prev + (ta_prev or 0)))
+        depi = _safe_div(dep_rate_prev, dep_rate_curr)  # >1 = slowing depreciation
+
+        # Total Accruals to Total Assets
+        accruals_ratio = _safe_div((ni_i - ocf_i) if ni_i and ocf_i else None, ta_i)
+
+        # Asset Quality Index
+        nca_curr = (ta_i - ca_i) if ta_i and ca_i else None
+        nca_prev = (ta_prev - v(curr_assets, i+1)) if ta_prev and v(curr_assets, i+1) else None
+        aqi = _safe_div(
+            _safe_div(nca_curr, ta_i),
+            _safe_div(nca_prev, ta_prev)
+        ) if nca_curr and ta_i and nca_prev and ta_prev else None
+
+        # Revenue Growth Index
+        rev_growth = _pct_change(rev_i, rev_prev)
+        sgi = _safe_div(rev_i, rev_prev)  # >1 = growing (not itself manipulation, but context)
+
+        # Leverage Index
+        lev_curr = _safe_div(tl_i, ta_i)
+        lev_prev = _safe_div(v(total_liab, i+1), ta_prev)
+        lvgi = _safe_div(lev_curr, lev_prev)  # >1 = leverage increasing
+
+        # Beneish M-Score (simplified 5-variable version)
+        m_score = None
+        if all(x is not None for x in [dsri, gmi, aqi, sgai, accruals_ratio]):
+            m_score = round(
+                -4.84
+                + 0.920 * dsri
+                + 0.528 * gmi
+                + 0.404 * aqi
+                + 0.892 * sgi if sgi else 0
+                + 0.115 * depi if depi else 0
+                - 0.172 * sgai
+                - 0.327 * lvgi if lvgi else 0
+                + 4.679 * accruals_ratio,
+                3
+            )
+
+        # ── MODULE 2: Financial Health (Altman Z-Score) ──
+        working_capital = (ca_i - cl_i) if ca_i and cl_i else None
+        ebit = oi_i  # EBIT proxy = operating income
+
+        # Market cap proxy from book value × P/B (we don't have live price in XBRL)
+        # Use book value as proxy for equity market value (conservative)
+        equity_proxy = bv_i if bv_i and bv_i > 0 else None
+
+        z_score = None
+        if all(x is not None for x in [working_capital, ta_i, re_i, ebit, equity_proxy, tl_i, rev_i]):
+            if ta_i > 0 and tl_i > 0:
+                z_score = round(
+                    1.2 * _safe_div(working_capital, ta_i)
+                    + 1.4 * _safe_div(re_i, ta_i)
+                    + 3.3 * _safe_div(ebit, ta_i)
+                    + 0.6 * _safe_div(equity_proxy, tl_i)
+                    + 1.0 * _safe_div(rev_i, ta_i),
+                    3
+                )
+
+        # Current ratio
+        current_ratio = _safe_div(ca_i, cl_i)
+
+        # Interest coverage
+        interest_coverage = _safe_div(ebit, int_i) if ebit and int_i else None
+
+        # Cash runway (quarters of operating cash burn)
+        quarterly_burn = None
+        cash_runway_qtrs = None
+        if ocf_i and ocf_i < 0 and cash_i:
+            if form == "10-Q":
+                quarterly_burn = abs(ocf_i)
+            else:
+                quarterly_burn = abs(ocf_i) / 4
+            cash_runway_qtrs = _safe_div(cash_i, quarterly_burn)
+
+        # Debt growth
+        debt_growth = _pct_change(ltd_i, ltd_prev)
+
+        # ── MODULE 3: Business Quality (Piotroski F-Score) ──
+        roa_curr = _safe_div(ni_i, ta_i)
+        roa_prev_val = _safe_div(v(net_income, i+1), ta_prev) if v(net_income, i+1) and ta_prev else None
+
+        f_roa_positive     = 1 if (roa_curr and roa_curr > 0) else 0
+        f_ocf_positive     = 1 if (ocf_i and ocf_i > 0) else 0
+        f_roa_improving    = 1 if (roa_curr and roa_prev_val and roa_curr > roa_prev_val) else 0
+        f_accruals_ok      = 1 if (ocf_i and ni_i and ocf_i > ni_i) else 0
+        f_debt_lower       = 1 if (ltd_i is not None and ltd_prev is not None and ltd_i <= ltd_prev) else 0
+        f_current_ratio_ok = 1 if (current_ratio and current_ratio >= 1.0) else 0
+        f_no_dilution      = 1 if (sh_i is not None and sh_prev is not None and sh_i <= sh_prev * 1.02) else 0
+        f_margin_improving = 1 if (gm_curr and gm_prev and gm_curr > gm_prev) else 0
+        asset_turn_curr    = _safe_div(rev_i, ta_i)
+        asset_turn_prev    = _safe_div(rev_prev, ta_prev)
+        f_asset_turn_ok    = 1 if (asset_turn_curr and asset_turn_prev and asset_turn_curr > asset_turn_prev) else 0
+
+        piotroski = (f_roa_positive + f_ocf_positive + f_roa_improving + f_accruals_ok
+                     + f_debt_lower + f_current_ratio_ok + f_no_dilution
+                     + f_margin_improving + f_asset_turn_ok)
+
+        # ── MODULE 4: Capital Allocation (Buffett) ──
+        # Return on incremental capital
+        ebit_prev    = v(op_income, i+1)
+        capital_curr = (bv_i + ltd_i) if bv_i and ltd_i else bv_i
+        capital_prev_val = v(book_value, i+1)
+        ltd_prev_val = v(lt_debt, i+1)
+        capital_prev = (capital_prev_val + ltd_prev_val) if capital_prev_val and ltd_prev_val else capital_prev_val
+        roic = None
+        if ebit and ebit_prev is not None and capital_curr and capital_prev and capital_curr != capital_prev:
+            delta_ebit    = ebit - ebit_prev
+            delta_capital = capital_curr - capital_prev
+            roic = _safe_div(delta_ebit, abs(delta_capital))
+
+        # Dilution rate
+        dilution = _pct_change(sh_i, sh_prev) if sh_i and sh_prev else None
+
+        # Dividend sustainability
+        div_sustainability = None
+        fcf_i = (ocf_i - abs(capex_i)) if ocf_i and capex_i else None
+        if div_i and fcf_i and fcf_i != 0:
+            div_sustainability = abs(div_i) / abs(fcf_i)  # >1 = unsustainable
+
+        # ── MODULE 5: Efficiency & Operating Leverage ──
+        # Revenue growth
+        # Operating leverage: if revenue grows X%, operating income grows Y%
+        op_leverage = None
+        if rev_growth and ebit and ebit_prev and ebit_prev != 0:
+            oi_growth = _pct_change(ebit, ebit_prev)
+            if oi_growth and rev_growth and rev_growth != 0:
+                op_leverage = round(oi_growth / rev_growth, 2)
+
+        # Asset turnover trend
+        asset_turnover = asset_turn_curr
+
+        # SG&A as % of revenue
+        sga_pct = _safe_div(sga_i, rev_i) if sga_i and rev_i else None
+
+        results.append({
+            "period": period_label,
+            "form": form,
+            # Raw key figures
+            "revenue":        round(rev_i / 1e6, 2) if rev_i else None,   # $M
+            "revenue_growth": round(rev_growth * 100, 1) if rev_growth else None,  # %
+            "gross_margin":   round(gm_curr * 100, 1) if gm_curr else None,
+            "op_margin":      round(_safe_div(oi_i, rev_i) * 100, 1) if oi_i and rev_i else None,
+            "net_margin":     round(_safe_div(ni_i, rev_i) * 100, 1) if ni_i and rev_i else None,
+            "roa":            round(roa_curr * 100, 2) if roa_curr else None,
+            "current_ratio":  round(current_ratio, 2) if current_ratio else None,
+            "cash_m":         round(cash_i / 1e6, 2) if cash_i else None,
+            "lt_debt_m":      round(ltd_i / 1e6, 2) if ltd_i else None,
+            "ocf_m":          round(ocf_i / 1e6, 2) if ocf_i else None,
+            "fcf_m":          round(fcf_i / 1e6, 2) if fcf_i else None,
+            # Module 1 — Earnings quality
+            "beneish_m_score":   m_score,
+            "accruals_ratio":    round(accruals_ratio * 100, 2) if accruals_ratio else None,
+            "dsri":              round(dsri, 3) if dsri else None,
+            "gmi":               round(gmi, 3) if gmi else None,
+            "sgai":              round(sgai, 3) if sgai else None,
+            # Module 2 — Financial health
+            "altman_z_score":    z_score,
+            "interest_coverage": round(interest_coverage, 2) if interest_coverage else None,
+            "cash_runway_qtrs":  round(cash_runway_qtrs, 1) if cash_runway_qtrs else None,
+            "debt_growth_pct":   round(debt_growth * 100, 1) if debt_growth else None,
+            # Module 3 — Piotroski
+            "piotroski_score":   piotroski,
+            "piotroski_detail": {
+                "roa_positive": f_roa_positive, "ocf_positive": f_ocf_positive,
+                "roa_improving": f_roa_improving, "accruals_ok": f_accruals_ok,
+                "debt_lower": f_debt_lower, "current_ratio_ok": f_current_ratio_ok,
+                "no_dilution": f_no_dilution, "margin_improving": f_margin_improving,
+                "asset_turn_ok": f_asset_turn_ok,
+            },
+            # Module 4 — Capital allocation
+            "roic":                roic,
+            "dilution_pct":        round(dilution * 100, 1) if dilution else None,
+            "div_sustainability":  round(div_sustainability, 2) if div_sustainability else None,
+            # Module 5 — Operating leverage / efficiency
+            "operating_leverage":  op_leverage,
+            "asset_turnover":      round(asset_turnover, 3) if asset_turnover else None,
+            "sga_pct_revenue":     round(sga_pct * 100, 1) if sga_pct else None,
+        })
+
+    return results
+
+
+# ── Main financial intelligence function ─────────────────────────────────────
+def _run_financial_intelligence(ticker: str) -> dict | None:
+    """
+    Full financial intelligence analysis — dual timeframe.
+    Annual (4 FY): structural trend across 5 modules.
+    Quarterly (4 Q): current inflection signal across 5 modules.
+    Claude synthesises both into a directional thesis with conviction score.
+    Returns signal dict or None if no significant finding.
+    """
+    if not ANTHROPIC_API_KEY:
+        return None
+
+    cik = _fetch_edgar_cik(ticker)
+    if not cik:
+        return None
+
+    facts = _fetch_xbrl_facts(cik)
+    if not facts:
+        return None
+
+    # Compute both timeframes
+    annual_data    = _compute_financial_modules(facts, form="10-K", n=4)
+    quarterly_data = _compute_financial_modules(facts, form="10-Q", n=4)
+
+    if not annual_data and not quarterly_data:
+        return None
+
+    # Need at least 2 periods to have a trend
+    if len(annual_data) < 2 and len(quarterly_data) < 2:
+        return None
+
+    import json as _json
+
+    prompt = f"""You are a senior investment analyst combining the disciplines of a forensic accountant, CFA charterholder, and fundamental value investor in the style of Warren Buffett.
+
+You are analysing {ticker}, a US micro or nano-cap company ($10M–$300M market cap).
+
+You have been given two timeframes of financial data:
+
+ANNUAL DATA (last {len(annual_data)} financial years — use this to identify STRUCTURAL TRENDS):
+{_json.dumps(annual_data, indent=2)}
+
+QUARTERLY DATA (last {len(quarterly_data)} quarters — use this to identify CURRENT INFLECTION SIGNALS):
+{_json.dumps(quarterly_data, indent=2)}
+
+Your job is to identify whether this company deserves a LONG signal, SHORT signal, RISK flag, or NO SIGNAL (if nothing material is happening).
+
+Apply the following analytical framework:
+
+MODULE 1 — EARNINGS QUALITY (Accountant lens):
+- Beneish M-Score: below -1.78 = probable manipulator → SHORT
+- Accruals ratio >5% for 2+ periods = earnings not backed by cash → SHORT
+- DSRI >1.2 = receivables growing faster than revenue → risk
+- GMI >1.1 = gross margins deteriorating → negative trend
+- SGAI >1.1 = overhead growing faster than revenue → negative
+
+MODULE 2 — FINANCIAL HEALTH (CFA lens):
+- Altman Z-Score: <1.81 = distress zone → SHORT/RISK. Trend matters more than absolute
+- Current ratio <1.0 or declining trend → RISK
+- Interest coverage <2.0 → RISK. <1.0 → SHORT
+- Cash runway <6 quarters → RISK/SHORT
+- Debt growing >20% per year → negative flag
+
+MODULE 3 — BUSINESS QUALITY — PIOTROSKI F-SCORE (Buffett lens):
+- Score 8-9 = strong quality business → LONG signal
+- Score 0-2 = deteriorating business → SHORT signal
+- Score trending UP across annual periods = improving quality → LONG
+- Score trending DOWN = deteriorating → SHORT
+
+MODULE 4 — CAPITAL ALLOCATION (Buffett lens):
+- Positive ROIC = management creating value with reinvestment → LONG
+- Negative ROIC = destroying capital → SHORT
+- Dilution >10% per year = management enriching themselves → SHORT
+- Operating leverage >2.0 = scalable business model → LONG
+
+MODULE 5 — TREND SYNTHESIS:
+- Annual trend: is the business getting structurally stronger or weaker?
+- Quarterly inflection: is something changing RIGHT NOW before it shows in annual data?
+- Divergence between annual trend and quarterly signal = highest conviction flag
+
+SIGNAL RULES:
+- Only return a signal if there is a genuine, material finding — not noise
+- High conviction (8-10): multiple modules align in same direction, quarterly confirms annual trend
+- Medium conviction (5-7): 2-3 modules align, some conflicting data
+- Low conviction (3-4): one module only, or mixed signals — flag as RISK not directional
+- NO SIGNAL: insufficient data, or findings are immaterial
+
+Return ONLY a JSON object with this exact structure:
+{{
+  "signal_found": true/false,
+  "direction": "long" | "short" | "risk",
+  "conviction": 1-10,
+  "signal_type": "financial_quality",
+  "title": "One precise headline — what is the key finding",
+  "thesis": "3-4 sentences. Annual trend in plain English. Quarterly inflection in plain English. Why this matters for the stock price. Be specific with numbers.",
+  "annual_verdict": "One sentence summary of 4-year structural trend",
+  "quarterly_verdict": "One sentence summary of last 4 quarters inflection",
+  "key_metrics": {{
+    "latest_piotroski": <number or null>,
+    "latest_z_score": <number or null>,
+    "latest_m_score": <number or null>,
+    "piotroski_trend": "improving" | "deteriorating" | "stable" | "unknown",
+    "z_score_trend": "improving" | "deteriorating" | "stable" | "unknown",
+    "strongest_signal": "Which single metric most drives the conclusion"
+  }},
+  "risks_to_thesis": "One sentence on what would invalidate this signal"
+}}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1200,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = resp.content[0].text.strip()
+        raw = re.sub(r'^```(?:json)?\s*', '', raw)
+        raw = re.sub(r'\s*```$', '', raw.strip())
+        result = json.loads(raw)
+
+        if not result.get("signal_found"):
+            return None
+        if result.get("conviction", 0) < 4:
+            return None  # Too low to surface
+
+        return {
+            "signal_type":  "financial_quality",
+            "direction":    result.get("direction", "risk"),
+            "conviction":   int(result.get("conviction", 5)),
+            "title":        result.get("title", "Financial quality signal"),
+            "thesis":       result.get("thesis", ""),
+            "raw_data": json.dumps({
+                "annual_verdict":    result.get("annual_verdict"),
+                "quarterly_verdict": result.get("quarterly_verdict"),
+                "key_metrics":       result.get("key_metrics", {}),
+                "risks_to_thesis":   result.get("risks_to_thesis"),
+                "annual_periods":    len(annual_data),
+                "quarterly_periods": len(quarterly_data),
+            }),
+        }
+
+    except Exception as e:
+        print(f"[Alpha Scanner] Financial intelligence Claude error for {ticker}: {e}")
+        return None
+
+
 def _run_universe_screener():
     """
     Filter US-listed stocks to micro/nano-cap universe (~600 companies).
@@ -3763,7 +4384,27 @@ def _run_alpha_scanner():
         except Exception as e:
             print(f"[Alpha Scanner] Language drift error {ticker}: {e}")
 
-    # 4. Insider scan
+    # 4. Financial intelligence scan (5-module dual timeframe)
+    # Sample 8 tickers per daily run to manage API/LLM cost
+    fin_sample = random.sample(tickers, min(8, len(tickers)))
+    for ticker in fin_sample:
+        try:
+            signal = _run_financial_intelligence(ticker)
+            if signal:
+                price = None
+                try:
+                    import yfinance as _yf
+                    price = _yf.Ticker(ticker).fast_info.last_price
+                except Exception:
+                    pass
+                result = _save_signal(ticker, signal, price)
+                if result == "new":
+                    new_signals += 1
+                    print(f"[Alpha Scanner] NEW financial signal: {ticker} — {signal['title']}")
+        except Exception as e:
+            print(f"[Alpha Scanner] Financial intelligence error {ticker}: {e}")
+
+    # 5. Insider scan
     insider_signals = _run_insider_scan(tickers)
     for sig in insider_signals:
         ticker = sig.pop("ticker")
