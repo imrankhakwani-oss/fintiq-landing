@@ -12,6 +12,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import anthropic
 
+# ── OpenBB — must import in main thread before FastAPI worker threads start ────
+try:
+    from openbb import obb as _obb
+    _OBB_AVAILABLE = True
+except Exception as _obb_err:
+    _obb = None
+    _OBB_AVAILABLE = False
+
 # ── Config ─────────────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 FMP_KEY           = os.environ.get("FMP_KEY", "c3gRy6dPp8uETaNIYoFJj83J7hm998bB")
@@ -3438,8 +3446,8 @@ def _compute_financial_modules(facts: dict, form: str = "10-K", n: int = 4) -> d
         ) if sga_i and rev_i and sga_prev and rev_prev else None
 
         # Depreciation Index — slowing depreciation (hiding asset deterioration)?
-        dep_rate_curr = _safe_div(dep_i, (dep_i + (ta_i or 0)))
-        dep_rate_prev = _safe_div(dep_prev, (dep_prev + (ta_prev or 0)))
+        dep_rate_curr = _safe_div(dep_i, ((dep_i or 0) + (ta_i or 0))) if dep_i is not None else None
+        dep_rate_prev = _safe_div(dep_prev, ((dep_prev or 0) + (ta_prev or 0))) if dep_prev is not None else None
         depi = _safe_div(dep_rate_prev, dep_rate_curr)  # >1 = slowing depreciation
 
         # Total Accruals to Total Assets
@@ -3782,7 +3790,9 @@ def _run_universe_screener():
     results = []
 
     try:
-        from openbb import obb
+        if not _OBB_AVAILABLE:
+            raise RuntimeError("OpenBB not available")
+        obb = _obb
 
         # OpenBB screener — US equities, market cap range
         # Returns standardised dataframe with ticker, market_cap, avg_volume, inst_own, sector
@@ -4098,7 +4108,9 @@ def _run_insider_scan(tickers: list) -> list:
     """
     signals = []
     try:
-        from openbb import obb
+        if not _OBB_AVAILABLE:
+            raise RuntimeError("OpenBB not available")
+        obb = _obb
         for ticker in tickers[:50]:  # batch limit — process 50 per run cycle
             try:
                 df = obb.equity.ownership.insider_trading(
