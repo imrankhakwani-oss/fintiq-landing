@@ -3369,6 +3369,17 @@ def _run_language_drift_analysis(ticker: str) -> dict | None:
     if len(filings) < 2:
         return None
 
+    # ── Only surface signals from recent filings (within 90 days) ──
+    # Prevents flagging ancient structural changes as new signals
+    from datetime import date as _date
+    try:
+        filing_date = datetime.strptime(filings[0]["date"], "%Y-%m-%d").date()
+        days_old = (_date.today() - filing_date).days
+        if days_old > 90:
+            return None   # Most recent filing is stale — skip
+    except Exception:
+        pass
+
     # Latest filing
     current_text = _fetch_filing_text(cik, filings[0]["accession"])
     if not current_text:
