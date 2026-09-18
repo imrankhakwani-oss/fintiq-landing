@@ -3463,17 +3463,21 @@ def _compute_financial_modules(facts: dict, form: str = "10-K", n: int = 4) -> d
         lvgi = _safe_div(lev_curr, lev_prev)  # >1 = leverage increasing
 
         # Beneish M-Score (simplified 5-variable version)
+        # Pre-compute optional terms to avoid Python inline-ternary precedence bug
         m_score = None
         if all(x is not None for x in [dsri, gmi, aqi, sgai, accruals_ratio]):
+            _sgi_term  = 0.892 * sgi  if sgi  is not None else 0.0
+            _depi_term = 0.115 * depi if depi is not None else 0.0
+            _lvgi_term = 0.327 * lvgi if lvgi is not None else 0.0
             m_score = round(
                 -4.84
                 + 0.920 * dsri
                 + 0.528 * gmi
                 + 0.404 * aqi
-                + 0.892 * sgi if sgi else 0
-                + 0.115 * depi if depi else 0
+                + _sgi_term
+                + _depi_term
                 - 0.172 * sgai
-                - 0.327 * lvgi if lvgi else 0
+                - _lvgi_term
                 + 4.679 * accruals_ratio,
                 3
             )
