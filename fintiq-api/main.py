@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 import yfinance as yf
+import pandas as pd
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import anthropic
@@ -3750,9 +3751,12 @@ Return ONLY a JSON object with this exact structure:
             messages=[{"role": "user", "content": prompt}],
         )
         raw = resp.content[0].text.strip()
-        raw = re.sub(r'^```(?:json)?\s*', '', raw)
-        raw = re.sub(r'\s*```$', '', raw.strip())
-        result = json.loads(raw)
+        # Extract JSON object robustly — ignore any text before/after the braces
+        start = raw.find('{')
+        end   = raw.rfind('}')
+        if start == -1 or end == -1:
+            raise ValueError("No JSON object found in Claude response")
+        result = json.loads(raw[start:end+1])
 
         if not result.get("signal_found"):
             return None
