@@ -224,18 +224,16 @@
     width: 6px; height: 6px; border-radius: 50%;
     background: var(--border);
   }
-  .cdot.filled.long  { background: var(--green); }
-  .cdot.filled.short { background: var(--red); }
-  .cdot.filled.risk  { background: var(--gold); }
+  .cdot.filled.buy   { background: var(--green); }
+  .cdot.filled.watch { background: var(--gold); }
 
   .direction-pill {
     font-size: 11px; font-weight: 700;
     padding: 3px 10px; border-radius: 12px;
     text-transform: uppercase; letter-spacing: .5px;
   }
-  .direction-pill.long  { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
-  .direction-pill.short { background: rgba(239,68,68,.15);  color: var(--red);   border: 1px solid rgba(239,68,68,.3); }
-  .direction-pill.risk  { background: rgba(245,158,11,.15); color: var(--gold);  border: 1px solid rgba(245,158,11,.3); }
+  .direction-pill.buy   { background: rgba(16,185,129,.15); color: var(--green); border: 1px solid rgba(16,185,129,.3); }
+  .direction-pill.watch { background: rgba(245,158,11,.15); color: var(--gold);  border: 1px solid rgba(245,158,11,.3); }
 
   .expand-icon { color: var(--dim); font-size: 18px; transition: transform .2s; }
   .signal-card.expanded .expand-icon { transform: rotate(180deg); }
@@ -389,11 +387,10 @@
 
   <!-- Filters -->
   <div class="filter-bar">
-    <button class="filter-btn active" data-filter="all" onclick="setFilter('all',this)">All Signals</button>
-    <button class="filter-btn long"  data-filter="long"  onclick="setFilter('long',this)">🟢 Long</button>
-    <button class="filter-btn short" data-filter="short" onclick="setFilter('short',this)">🔴 Short</button>
-    <button class="filter-btn risk"  data-filter="risk"  onclick="setFilter('risk',this)">⚠️ Risk</button>
-    <button class="filter-btn"       data-filter="new"   onclick="setFilter('new',this)">🟡 New only</button>
+    <button class="filter-btn active" data-filter="all"   onclick="setFilter('all',this)">All Signals</button>
+    <button class="filter-btn buy"   data-filter="buy"   onclick="setFilter('buy',this)">🟢 Buy</button>
+    <button class="filter-btn watch" data-filter="watch" onclick="setFilter('watch',this)">🟡 Watch</button>
+    <button class="filter-btn"       data-filter="new"   onclick="setFilter('new',this)">⚡ New only</button>
   </div>
 
   <!-- Feed -->
@@ -517,7 +514,7 @@ function renderCard(s) {
           </div>
         </div>
         <div class="card-right">
-          <span class="direction-pill ${s.direction}">${s.direction === 'risk' ? '⚠️ Risk' : s.direction === 'long' ? '▲ Long' : '▼ Short'}</span>
+          <span class="direction-pill ${s.direction}">${s.direction === 'buy' ? '▲ Buy' : '◎ Watch'}</span>
           <div class="conviction-bar">
             <span class="conviction-label">Conviction</span>
             <div class="conviction-dots">${buildDots(s.conviction, s.direction)}</div>
@@ -549,9 +546,8 @@ function setFilter(f, btn) {
 function renderFeed() {
   let signals = _allSignals;
 
-  if (_activeFilter === 'long')    signals = signals.filter(s => s.direction === 'long');
-  else if (_activeFilter === 'short') signals = signals.filter(s => s.direction === 'short');
-  else if (_activeFilter === 'risk')  signals = signals.filter(s => s.direction === 'risk');
+  if (_activeFilter === 'buy')     signals = signals.filter(s => s.direction === 'buy');
+  else if (_activeFilter === 'watch') signals = signals.filter(s => s.direction === 'watch');
   else if (_activeFilter === 'new')   signals = signals.filter(s => s.badge === 'NEW');
 
   const feed = document.getElementById('feed');

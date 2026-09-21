@@ -3680,67 +3680,67 @@ ANNUAL DATA (last {len(annual_data)} financial years — use this to identify ST
 QUARTERLY DATA (last {len(quarterly_data)} quarters — use this to identify CURRENT INFLECTION SIGNALS):
 {_json.dumps(quarterly_data, indent=2)}
 
-Your job is to identify whether this company deserves a LONG signal, SHORT signal, RISK flag, or NO SIGNAL (if nothing material is happening).
+Your ONLY job is to identify whether this company deserves a BUY signal or a WATCH signal for a LONG position.
+You must NEVER recommend shorting. If the financial picture is negative, distressed, or deteriorating — return signal_found: false. We are only looking for companies worth BUYING.
 
-Apply the following analytical framework:
+Apply the following analytical framework to find BUY opportunities:
 
 MODULE 1 — EARNINGS QUALITY (Accountant lens):
-- Beneish M-Score: below -1.78 = probable manipulator → SHORT
-- Accruals ratio >5% for 2+ periods = earnings not backed by cash → SHORT
-- DSRI >1.2 = receivables growing faster than revenue → risk
-- GMI >1.1 = gross margins deteriorating → negative trend
-- SGAI >1.1 = overhead growing faster than revenue → negative
+- Clean accruals ratio (negative or near-zero) = earnings backed by real cash → positive
+- DSRI near 1.0 = receivables growing in line with revenue → clean
+- Stable or improving gross margins → positive
+- Beneish M-Score below -1.78 = accounting looks clean → positive signal for quality
 
 MODULE 2 — FINANCIAL HEALTH (CFA lens):
-- Altman Z-Score: <1.81 = distress zone → SHORT/RISK. Trend matters more than absolute
-- Current ratio <1.0 or declining trend → RISK
-- Interest coverage <2.0 → RISK. <1.0 → SHORT
-- Cash runway <6 quarters → RISK/SHORT
-- Debt growing >20% per year → negative flag
+- Altman Z-Score >2.99 = safe zone → strong positive
+- Altman Z-Score 1.81–2.99 = grey zone but improving trend → cautious positive
+- Current ratio >1.5 or improving → positive
+- Interest coverage >3.0 → comfortable
+- Cash runway >8 quarters → no near-term dilution risk
+- Debt declining or flat → positive capital discipline
 
 MODULE 3 — BUSINESS QUALITY — PIOTROSKI F-SCORE (Buffett lens):
-- Score 8-9 = strong quality business → LONG signal
-- Score 0-2 = deteriorating business → SHORT signal
-- Score trending UP across annual periods = improving quality → LONG
-- Score trending DOWN = deteriorating → SHORT
+- Score 7-9 = high quality business → BUY signal
+- Score 5-6 with improving trend across quarters → WATCH signal
+- Score trending UP across annual periods = quality improving → positive
+- Piotroski improving quarterly while annual lags = early inflection → highest conviction BUY
 
 MODULE 4 — CAPITAL ALLOCATION (Buffett lens):
-- Positive ROIC = management creating value with reinvestment → LONG
-- Negative ROIC = destroying capital → SHORT
-- Dilution >10% per year = management enriching themselves → SHORT
-- Operating leverage >2.0 = scalable business model → LONG
+- Positive and improving ROIC = management creating value → BUY
+- No or minimal share dilution = shareholder-friendly management → positive
+- FCF positive and growing → strong buy signal
+- Operating leverage >1.5 with revenue growth = scalable model → positive
 
 MODULE 5 — TREND SYNTHESIS:
-- Annual trend: is the business getting structurally stronger or weaker?
-- Quarterly inflection: is something changing RIGHT NOW before it shows in annual data?
-- Divergence between annual trend and quarterly signal = highest conviction flag
+- Annual trend: is the business getting structurally stronger?
+- Quarterly inflection: is quality improving RIGHT NOW before it shows in annual data?
+- Best signal: weak annual but strong improving quarterly = early turnaround = BUY
 
 SIGNAL RULES:
-- Only return a signal if there is a genuine, material finding — not noise
-- High conviction (8-10): multiple modules align in same direction, quarterly confirms annual trend
-- Medium conviction (5-7): 2-3 modules align, some conflicting data
-- Low conviction (3-4): one module only, or mixed signals — flag as RISK not directional
-- NO SIGNAL: insufficient data, or findings are immaterial
+- Only return a signal if there is a genuine, material BUY case — not noise
+- BUY (conviction 7-10): multiple modules align positively, quarterly confirms improvement trend, Piotroski 7+
+- WATCH (conviction 4-6): 2-3 positive modules, improving trend but not yet confirmed, Piotroski 5-6 improving
+- NO SIGNAL (signal_found: false): distressed company, deteriorating metrics, negative OCF trend, Altman Z in distress with no improvement, any company you would not want to own
 
 Return ONLY a JSON object with this exact structure:
 {{
   "signal_found": true/false,
-  "direction": "long" | "short" | "risk",
+  "direction": "buy" | "watch",
   "conviction": 1-10,
   "signal_type": "financial_quality",
-  "title": "One precise headline — what is the key finding",
-  "thesis": "3-4 sentences. Annual trend in plain English. Quarterly inflection in plain English. Why this matters for the stock price. Be specific with numbers.",
-  "annual_verdict": "One sentence summary of 4-year structural trend",
-  "quarterly_verdict": "One sentence summary of last 4 quarters inflection",
+  "title": "One precise headline — what is the key positive finding",
+  "thesis": "3-4 sentences. Annual quality trend in plain English. Quarterly inflection in plain English. Why this represents a buying opportunity. Be specific with numbers.",
+  "annual_verdict": "One sentence summary of 4-year structural quality trend",
+  "quarterly_verdict": "One sentence summary of last 4 quarters improvement signal",
   "key_metrics": {{
     "latest_piotroski": <number or null>,
     "latest_z_score": <number or null>,
     "latest_m_score": <number or null>,
     "piotroski_trend": "improving" | "deteriorating" | "stable" | "unknown",
     "z_score_trend": "improving" | "deteriorating" | "stable" | "unknown",
-    "strongest_signal": "Which single metric most drives the conclusion"
+    "strongest_signal": "Which single metric most drives the buy case"
   }},
-  "risks_to_thesis": "One sentence on what would invalidate this signal"
+  "risks_to_thesis": "One sentence on what would invalidate this buy signal"
 }}"""
 
     try:
@@ -3760,12 +3760,15 @@ Return ONLY a JSON object with this exact structure:
 
         if not result.get("signal_found"):
             return None
+        direction = result.get("direction", "")
+        if direction not in ("buy", "watch"):
+            return None  # Suppress short/risk — only publish buy opportunities
         if result.get("conviction", 0) < 4:
             return None  # Too low to surface
 
         return {
             "signal_type":  "financial_quality",
-            "direction":    result.get("direction", "risk"),
+            "direction":    direction,
             "conviction":   int(result.get("conviction", 5)),
             "title":        result.get("title", "Financial quality signal"),
             "thesis":       result.get("thesis", ""),
@@ -3801,11 +3804,14 @@ def _run_universe_screener():
         # OpenBB screener — US equities, market cap range
         # Returns standardised dataframe with ticker, market_cap, avg_volume, inst_own, sector
         screen = obb.equity.screener(
-            market_cap_min=10_000_000,
-            market_cap_max=300_000_000,
-            country="US",
-            provider="finviz",   # finviz has reliable small-cap coverage
+            provider="yfinance",  # yfinance is supported; finviz is not available
         ).to_df()
+        # Filter to US micro/nano-cap after fetch
+        if "market_cap" in screen.columns:
+            screen = screen[
+                (screen["market_cap"] >= 10_000_000) &
+                (screen["market_cap"] <= 300_000_000)
+            ]
 
         for _, row in screen.iterrows():
             ticker    = str(row.get("symbol") or row.get("ticker") or "").upper().strip()
@@ -3843,13 +3849,120 @@ def _run_universe_screener():
             # Direct yfinance batch for micro-cap proxies
             # We use a hardcoded list of 50 representative micro/nano-caps as fallback seed
             seed_tickers = [
-                "SINT","MITI","IVAC","MLGO","TBLT","SOND","CMAX","GHRS",
-                "HIMS","VZIO","KPTI","MNMD","ALBT","TPVG","PBYI","AEHL",
-                "AEYE","SIGA","SPWH","ATXI","GBOX","SFIX","JBSS","UONE",
-                "GIFI","CUEN","WAVS","NXGL","SYBT","HAFC","MFIN","CZWI",
-                "SENB","LKFN","OVBC","FBIZ","TCBK","HMNF","MCBC","CHMG",
-                "BSVN","CHMG","FWWW","GFED","ESSA","BCML","MVBF","NBTB",
-                "PFIS","CASS",
+                # Micro/nano-cap industrials & energy
+                "ACMR","AEHR","AIOT","ALRS","ALTO","AMMO","AMPX","ANGI","ANTE","ARKO",
+                "ARQT","ARRY","ASRT","ASTI","ATEC","ATEX","ATNI","ATOM","AULT","AVAV",
+                "AVNW","AXDX","AXSM","AYTU","AZEK","BAND","BARK","BBCP","BFAM","BGFV",
+                "BIOX","BLBD","BLCM","BLIN","BLMN","BLUE","BMEA","BNED","BNGO","BNTC",
+                "BOLT","BOOM","BOWL","BRCC","BRDG","BRSH","BTBT","BYFC","BYRN","CADL",
+                "CALX","CAMP","CANF","CANN","CARE","CASH","CASI","CATO","CBNK","CCAP",
+                "CCNC","CCRN","CDMO","CDNA","CDXS","CELC","CEMI","CERE","CGBD","CGEM",
+                "CHGG","CHMA","CHRS","CITE","CLFD","CLNN","CLPT","CLSK","CLVT","CMCO",
+                "CMLS","CMPO","CNDT","CNFR","CNSL","CODA","COIN","COMS","CONN","COOP",
+                "CORR","COUP","CPAY","CPRT","CRDF","CRIS","CRMD","CRNX","CRSP","CRVS",
+                "CSII","CSIQ","CSSE","CSTA","CTBI","CTIB","CTXR","CUEN","CURI","CZWI",
+                "DATS","DAVE","DBVT","DCFC","DCOM","DCTH","DENN","DFIN","DGII","DKNG",
+                "DLHC","DLPN","DMRC","DNAD","DNUT","DOMO","DOOR","DPCM","DPSI","DRNA",
+                "DSGX","DSKE","DSWL","DTIL","DTRT","DXLG","EAST","EBON","ECIA","ECPG",
+                "EDIT","EFTS","EGRX","ELOX","ELVN","EMCG","EMKR","EMLD","EMTK","ENOB",
+                "ENPH","ENTG","ENVX","EPIQ","EPOW","EPSN","EQBK","EQNR","ERAS","ESAB",
+                "ESEA","ESRT","ESSA","ESTA","ESTC","EVBG","EVGO","EVLV","EVTC","EWBC",
+                "EXFY","EXLS","EXPI","EXPR","EZFL","FATH","FBIZ","FBMS","FBSS","FCNCA",
+                "FCPT","FCRX","FDMT","FDUS","FEMY","FEYE","FFIV","FGBI","FGEN","FGNV",
+                "FISI","FIVN","FIXD","FKWL","FLGT","FLIC","FLNC","FLNT","FLXS","FMAO",
+                "FMBI","FMNB","FMST","FNAM","FNWB","FOLD","FONR","FORD","FORR","FPAY",
+                "FRAF","FRBK","FREE","FRGE","FRPH","FRST","FSBW","FSFG","FTEK","FTIV",
+                "FULT","FUNC","FUSB","FWWW","GALT","GENC","GEOS","GERN","GHRS","GIFI",
+                "GILT","GLAD","GLNG","GLRE","GLTO","GMBL","GMGI","GNLN","GNPX","GNSS",
+                "GOOD","GOSS","GOTU","GPMT","GPRE","GPRO","GREE","GRFS","GRND","GRPN",
+                "GRTS","GSAT","GSBC","GSHD","GSIT","GSLD","GTHX","GURE","GUTS","GWRS",
+                "HALO","HAFC","HBAN","HCKT","HCSG","HDSN","HEAR","HECLA","HELE","HEPA",
+                "HFWA","HGTY","HIMS","HLIT","HLNE","HLTH","HMNF","HMST","HOFT","HOLI",
+                "HOLX","HOOD","HOPE","HOTH","HOUS","HPKK","HROW","HRMY","HRTX","HSII",
+                "HTBK","HTLD","HURN","HWBK","HWKN","HYLN","HYRE","IART","IBCP","IBEX",
+                "IBOC","ICAD","ICFI","ICHR","ICLR","ICMB","IDAI","IDEV","IDEX","IDGT",
+                "IDRA","IESC","IFIN","IFRX","IGMS","IHRT","IIIN","IIVI","ILPT","IMAB",
+                "IMAQ","IMBI","IMGN","IMKTA","IMMP","IMNN","IMRA","IMRX","IMTX","IMVT",
+                "INAB","INBK","INBX","INFU","INKT","INMD","INNT","INOD","INPX","INSE",
+                "INSW","INTF","INTZ","INVA","INVE","INVH","IOVA","IPIX","IPSC","IRIX",
+                "IRMD","IROQ","IRWD","ISBA","ISEE","ISIG","ISLE","ISNS","ISPC","ISPR",
+                "ISTR","ISUN","ITCB","ITCI","ITIC","ITRI","IVAC","IVDA","IVVD","JAGX",
+                "JAKK","JAMF","JBSS","JFIN","JILL","JJSF","JNCE","JOUT","JRSH","JSPR",
+                "JWSM","KALA","KCAP","KDNY","KERN","KFRC","KGRN","KIDS","KINS","KLIC",
+                "KLXE","KMDA","KNDI","KNSA","KNSL","KNWN","KOSS","KPTI","KRNT","KRUS",
+                "KTRA","KURA","KVHI","LALT","LAND","LANV","LASR","LBAI","LBPH","LCNB",
+                "LCUT","LDOS","LEAF","LECO","LEGH","LESL","LGND","LHAI","LHCG","LIQT",
+                "LKFN","LLIT","LLNW","LMAT","LMDX","LMFA","LMND","LMPX","LNSR","LNTH",
+                "LOOP","LPCN","LPSN","LQDT","LQWC","LRCX","LRMR","LSAQ","LSCC","LSTR",
+                "LTBR","LTHM","LTRN","LUCD","LUNG","LWAY","MACK","MAQC","MARA","MARPS",
+                "MCBC","MCBS","MCFT","MCHX","MCLD","MCRB","MCRI","MCVT","MDGL","MDNA",
+                "MDVX","MEIP","METC","MFIN","MFON","MGAM","MGNX","MGPI","MGRC","MGTA",
+                "MGYR","MHLD","MICT","MIDD","MIGI","MIND","MINDP","MIST","MITK","MITI",
+                "MJCO","MKFG","MKLV","MKTW","MLGO","MLTX","MMAC","MMSI","MMYT","MNDO",
+                "MNSB","MNST","MNTS","MOFG","MOGO","MOLN","MOSY","MOTS","MPAA","MPAC",
+                "MRAM","MRCC","MRCY","MREO","MRIN","MRNA","MRSN","MRTX","MRUS","MRVL",
+                "MSGE","MSRT","MSVB","MTCN","MTLS","MTRN","MTSI","MVEN","MVST","MXCT",
+                "MYFW","MYGN","MYMD","MYNA","MYND","MYPS","NBTB","NCNA","NCSM","NDLS",
+                "NEON","NERV","NETI","NEWT","NEXT","NFBK","NFYS","NGMS","NGVC","NHIC",
+                "NIDB","NLSP","NMIH","NMKI","NMRD","NMRK","NNBR","NOMD","NORD","NOTE",
+                "NOVN","NPKI","NRBO","NREF","NRXP","NSEC","NSIT","NSLM","NSYS","NTCT",
+                "NTGR","NTLA","NTST","NUAN","NURO","NUVA","NVAX","NVEI","NVNO","NVST",
+                "NWBI","NWFL","NWIN","NXRT","NXTC","NYMT","NYMX","OABI","OBNK","OCFC",
+                "OCGN","OCUL","OCUP","ODFL","OFIX","OFLX","OGEN","OMGA","OMQS","ONCS",
+                "ONCT","ONTF","OPBK","OPCH","OPFI","OPNT","OPRX","OPTN","OPTT","ORCL",
+                "ORGO","ORMP","ORRF","OSBC","OSEA","OSMT","OSPN","OSTK","OTLK","OVBC",
+                "OVID","OVIS","OXBR","OXLC","OXSQ","PASG","PAYA","PBFS","PBHC","PBIP",
+                "PBPB","PBTS","PCBC","PCSA","PCSB","PCTK","PDCO","PDFS","PDLB","PDSB",
+                "PEBO","PFIS","PFMT","PFSI","PGEN","PGNY","PHIO","PHUN","PIPE","PIRS",
+                "PKBK","PKOH","PLAB","PLBY","PLCM","PLNHF","PLPC","PLRX","PLSE","PLXP",
+                "PMVP","PNTG","POAI","POCI","POLA","POOL","POWI","PPBT","PPSI","PRAA",
+                "PRAX","PRCH","PRDO","PRFT","PRLD","PRME","PRMS","PRTK","PRTS","PRVA",
+                "PRXL","PRYO","PSFE","PSHG","PSNL","PSTV","PTCT","PTGX","PTLO","PTPI",
+                "PTSI","PUBM","PUCK","PULM","PUMP","PVBC","PVEH","PWFL","PWOD","PWSC",
+                "PXLW","PYCR","PYPL","QNST","QQQX","QLGN","QLYS","QNRX","QRHC","QSIIG",
+                "QTWO","QUAD","QUBT","QUIK","QURE","RAVE","RBCAA","RBKB","RCFA","RCKT",
+                "RCKY","RCPI","RDBX","RDNT","REAL","REAX","RECT","REFR","REKR","RELI",
+                "RELY","REPL","RETO","RFAC","RFIL","RGCO","RGLD","RGRX","RGSE","RHPX",
+                "RICK","RIGL","RILN","RIOT","RISR","RIVN","RKLY","RLAY","RLMD","RMBL",
+                "RMCF","RMED","RMNI","RMTI","RNAZ","RNET","RNLX","RNST","RNWK","ROAD",
+                "ROBB","ROCK","ROCL","RODI","ROIC","ROLP","ROMN","RONI","RSVR","RTLR",
+                "RUBY","RVMD","RVNC","RXDX","RXRX","RZLT","SAFE","SAFT","SAGE","SAIA",
+                "SALT","SAMA","SANA","SANW","SASR","SBCF","SBFG","SBGI","SBIO","SBOW",
+                "SBRA","SBSI","SCHL","SCKT","SCNX","SCPE","SCPH","SCSC","SCVL","SDGR",
+                "SDVK","SEED","SEIC","SELB","SELF","SENB","SENS","SESG","SFIX","SFNC",
+                "SFST","SFTW","SGBX","SGEN","SGMO","SGMT","SGRY","SGSI","SHBI","SHCR",
+                "SHLS","SHOO","SHPW","SIFY","SIGA","SIGI","SINT","SIOX","SIRE","SISI",
+                "SITM","SITU","SKYE","SKYW","SLDB","SLNG","SLNX","SLQT","SLRX","SMBC",
+                "SMCI","SMFL","SMHI","SMID","SMMT","SMMF","SMPL","SMSI","SMTC","SNBR",
+                "SNCA","SNCE","SNCR","SNCY","SNDE","SNDX","SNEX","SNFCA","SNOA","SNPO",
+                "SNPX","SNSE","SNSR","SNSS","SNTG","SNTW","SOND","SONX","SOTK","SPFI",
+                "SPGX","SPHL","SPOK","SPPI","SPRC","SPRT","SPWH","SQFT","SRDX","SRGA",
+                "SREV","SRTX","SSBI","SSFI","SSFN","SSRM","SSSS","STAA","STAF","STBA",
+                "STCN","STGW","STHO","STKL","STKS","STLD","STNE","STOK","STRA","STRS",
+                "STRW","STSS","STTK","STVN","SUBZ","SUGP","SUMO","SUPN","SURF","SVRA",
+                "SWKH","SWKP","SWVL","SXTC","SYBX","SYBT","SYKE","SYRS","TAST","TBCP",
+                "TBIO","TBNK","TBPH","TCBK","TCFC","TCMD","TCOA","TCOM","TCPC","TCRT",
+                "TDOC","TDUP","TECX","TELA","TENB","TENX","TGTX","THCA","THMO","THTX",
+                "TILE","TILS","TMBR","TMDX","TMST","TNON","TNYA","TORN","TORO","TPVG",
+                "TPVX","TPWX","TRDA","TREE","TREX","TRMK","TRMR","TRNX","TROW","TRST",
+                "TRTN","TRTX","TRVI","TRVN","TSLA","TSVT","TTEC","TTGT","TTNP","TTOO",
+                "TUSK","TVTX","TWKS","TWLO","TZOO","UAVS","UBCP","UBFO","UBOH","UBSI",
+                "UCBI","UCBX","UCTT","UDMY","UEIC","UFCS","UFPI","UHAL","ULBI","ULCC",
+                "ULTA","UMBF","UMRX","UNAM","UNIT","UNTY","UONE","UPST","URBN","USCB",
+                "USEA","USEG","USHA","USIO","USLM","USPH","UTMD","UUUU","UVSP","VALE",
+                "VAPO","VBFC","VBIV","VBLT","VBTX","VCNX","VCYT","VECO","VERI","VERB",
+                "VERO","VERS","VERY","VIAV","VICP","VIGL","VIRC","VIRT","VISL","VISN",
+                "VISI","VITL","VIVO","VIZN","VJCR","VNDA","VNRX","VOCL","VOXX","VRAR",
+                "VRDN","VREX","VRNA","VRNS","VRNT","VRPX","VRSK","VRTX","VSAT","VSCO",
+                "VSEC","VSPR","VSTM","VTGN","VTIL","VTRS","VVNT","VVPR","VWAY","VXRT",
+                "VYGR","WABC","WATT","WAVS","WBAI","WBHC","WBIO","WDAY","WETF","WEYS",
+                "WFCL","WFRD","WGBS","WHLM","WHLR","WIFI","WILC","WIMI","WINT","WIRE",
+                "WISA","WISH","WKHS","WLFC","WLTW","WMGI","WNEB","WOLF","WOOF","WORX",
+                "WPCB","WPRT","WREE","WRLD","WSBF","WSFX","WTBA","WTFC","WTRG","WULA",
+                "WVVI","XCUR","XELB","XENE","XERS","XFOR","XMTR","XNCR","XOMA","XPAX",
+                "XPEL","XPER","XRAY","XTLB","XXII","XYLD","XYLF","YELL","YMTX","YNVX",
+                "YRCW","YSAC","YTFD","YTEN","YTRA","ZAGG","ZEAL","ZETA","ZGNX","ZHFC",
+                "ZIMV","ZION","ZIVO","ZJYL","ZLAB","ZMTP","ZNGA","ZNTL","ZSAN","ZTLK",
             ]
             for tk in seed_tickers:
                 try:
@@ -4480,6 +4593,19 @@ def _run_alpha_scanner():
 
 
 # ── Alpha Scanner API endpoints ────────────────────────────────────────────────
+
+@app.get("/alpha-scanner/reset")
+def alpha_scanner_reset(token: str = ""):
+    """Clear all signals and universe — forces a full first-run on next /run call."""
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+    conn = _as_db()
+    conn.execute("DELETE FROM signals")
+    conn.execute("DELETE FROM universe")
+    conn.commit()
+    conn.close()
+    return {"status": "reset", "message": "All signals and universe cleared. Next /run will be a full first-run scan."}
+
 
 @app.get("/alpha-scanner/run")
 def alpha_scanner_run(token: str = ""):
