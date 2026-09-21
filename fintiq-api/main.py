@@ -3968,9 +3968,18 @@ def _run_universe_screener():
                 try:
                     info = _yf.Ticker(tk).fast_info
                     mc = getattr(info, "market_cap", None)
-                    if mc and 10_000_000 <= mc <= 300_000_000:
+                    # Accept any ticker with a valid MC up to $1B — seed list is already
+                    # curated as small/micro caps; strict $10M-$300M filter is too aggressive
+                    # for fallback mode where many tickers may have stale/missing MC data
+                    if mc and mc > 0 and mc <= 1_000_000_000:
                         results.append({
                             "ticker": tk, "name": tk, "market_cap": float(mc),
+                            "avg_volume": 0, "inst_own": 0, "sector": "",
+                        })
+                    elif mc is None:
+                        # Include tickers with no MC data — EDGAR will validate them
+                        results.append({
+                            "ticker": tk, "name": tk, "market_cap": 0,
                             "avg_volume": 0, "inst_own": 0, "sector": "",
                         })
                 except Exception:
