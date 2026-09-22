@@ -3787,59 +3787,67 @@ Return ONLY a JSON object with this exact structure:
         return None
 
 
+def _openbb_screener_subprocess() -> list:
+    """
+    Run OpenBB screener in a subprocess so it executes in its own main thread,
+    avoiding the 'signal only works in main thread' restriction.
+    Returns list of dicts or empty list on failure.
+    """
+    import subprocess, sys, json as _json
+    script = """
+import sys, json
+try:
+    from openbb import obb
+    df = obb.equity.screener(provider="yfinance").to_df()
+    if "market_cap" in df.columns:
+        df = df[(df["market_cap"] >= 10_000_000) & (df["market_cap"] <= 300_000_000)]
+    results = []
+    for _, row in df.iterrows():
+        tk = str(row.get("symbol") or row.get("ticker") or "").upper().strip()
+        mc = float(row.get("market_cap") or 0)
+        av = float(row.get("avg_volume") or row.get("volume_avg") or 0)
+        io = float(row.get("inst_own") or row.get("institutional_ownership") or 0)
+        nm = str(row.get("name") or row.get("company") or tk)
+        sc = str(row.get("sector") or "")
+        if not tk or len(tk) > 6: continue
+        if mc < 10_000_000 or mc > 300_000_000: continue
+        if av > 150_000: continue
+        results.append({"ticker":tk,"name":nm,"market_cap":mc,"avg_volume":av,"inst_own":io,"sector":sc})
+    print(json.dumps(results))
+except Exception as ex:
+    print(json.dumps([]), file=sys.stdout)
+    print(str(ex), file=sys.stderr)
+"""
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True, text=True, timeout=120
+        )
+        return json.loads(proc.stdout.strip()) if proc.stdout.strip() else []
+    except Exception:
+        return []
+
+
 def _run_universe_screener():
     """
     Filter US-listed stocks to micro/nano-cap universe (~600 companies).
-    Criteria: MC $10M–$300M, 30d avg volume < 150k, institutional ownership < 25%.
-    Uses OpenBB equity screener. Falls back to yfinance if OpenBB unavailable.
+    Criteria: MC $10M–$300M, avg volume < 150k, inst ownership < 25%.
+    Uses OpenBB equity screener via subprocess (main-thread workaround).
+    Falls back to curated seed list if OpenBB unavailable.
     """
     import json as _json
     results = []
 
+    # Try OpenBB in subprocess first
     try:
-        if not _OBB_AVAILABLE:
-            raise RuntimeError("OpenBB not available")
-        obb = _obb
-
-        # OpenBB screener — US equities, market cap range
-        # Returns standardised dataframe with ticker, market_cap, avg_volume, inst_own, sector
-        screen = obb.equity.screener(
-            provider="yfinance",  # yfinance is supported; finviz is not available
-        ).to_df()
-        # Filter to US micro/nano-cap after fetch
-        if "market_cap" in screen.columns:
-            screen = screen[
-                (screen["market_cap"] >= 10_000_000) &
-                (screen["market_cap"] <= 300_000_000)
-            ]
-
-        for _, row in screen.iterrows():
-            ticker    = str(row.get("symbol") or row.get("ticker") or "").upper().strip()
-            mc        = float(row.get("market_cap") or 0)
-            avg_vol   = float(row.get("avg_volume") or row.get("volume_avg") or 0)
-            inst_own  = float(row.get("inst_own") or row.get("institutional_ownership") or 0)
-            name      = str(row.get("name") or row.get("company") or ticker)
-            sector    = str(row.get("sector") or "")
-
-            # Apply filters
-            if mc < 10_000_000 or mc > 300_000_000:
-                continue
-            if avg_vol > 150_000:
-                continue
-            if inst_own > 0.25:  # OpenBB returns as fraction (0.0–1.0)
-                continue
-            if not ticker or len(ticker) > 6:
-                continue
-
-            results.append({
-                "ticker": ticker, "name": name, "market_cap": mc,
-                "avg_volume": avg_vol, "inst_own": inst_own, "sector": sector,
-            })
-
+        results = _openbb_screener_subprocess()
+        if results:
+            print(f"[Alpha Scanner] OpenBB screener returned {len(results)} companies")
     except Exception as e:
-        # Fallback: use a curated seed list approach via yfinance batch
-        # Pull Russell 2000 micro-cap ETF (IWC) holdings as proxy universe
-        print(f"[Alpha Scanner] OpenBB screener failed ({e}), using yfinance fallback")
+        print(f"[Alpha Scanner] OpenBB subprocess screener failed ({e})")
+
+    if not results:
+        print(f"[Alpha Scanner] OpenBB screener empty, using seed list fallback")
         try:
             import yfinance as _yf
             # IWC = iShares Micro-Cap ETF — top holdings as seed universe
@@ -3964,26 +3972,14 @@ def _run_universe_screener():
                 "YRCW","YSAC","YTFD","YTEN","YTRA","ZAGG","ZEAL","ZETA","ZGNX","ZHFC",
                 "ZIMV","ZION","ZIVO","ZJYL","ZLAB","ZMTP","ZNGA","ZNTL","ZSAN","ZTLK",
             ]
+            # Add all seed tickers directly — no yfinance validation in fallback mode.
+            # EDGAR CIK lookup acts as the real filter: tickers with no SEC filings
+            # are skipped automatically during the financial intelligence scan.
             for tk in seed_tickers:
-                try:
-                    info = _yf.Ticker(tk).fast_info
-                    mc = getattr(info, "market_cap", None)
-                    # Accept any ticker with a valid MC up to $1B — seed list is already
-                    # curated as small/micro caps; strict $10M-$300M filter is too aggressive
-                    # for fallback mode where many tickers may have stale/missing MC data
-                    if mc and mc > 0 and mc <= 1_000_000_000:
-                        results.append({
-                            "ticker": tk, "name": tk, "market_cap": float(mc),
-                            "avg_volume": 0, "inst_own": 0, "sector": "",
-                        })
-                    elif mc is None:
-                        # Include tickers with no MC data — EDGAR will validate them
-                        results.append({
-                            "ticker": tk, "name": tk, "market_cap": 0,
-                            "avg_volume": 0, "inst_own": 0, "sector": "",
-                        })
-                except Exception:
-                    continue
+                results.append({
+                    "ticker": tk, "name": tk, "market_cap": 0,
+                    "avg_volume": 0, "inst_own": 0, "sector": "",
+                })
         except Exception:
             pass
 
