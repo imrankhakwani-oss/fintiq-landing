@@ -4173,19 +4173,28 @@ Analyse the language shift between the current filing and prior filings. Focus o
 6. Specific commitments added (vs vague hedging language removed or added)
 
 Your job is to identify filing language changes that signal a BUY or WATCH opportunity for a long investor.
-- BUY signals: management tone significantly more confident, new partnerships/contracts disclosed, risks removed that previously suppressed the stock, share buybacks announced/evidenced, auditor upgraded, going concern language removed
-- WATCH signals: interesting structural change that needs monitoring — auditor change (could be positive or negative), share count anomaly requiring explanation, new strategic pivot not yet confirmed by numbers
-- NO SIGNAL: if the change is negative (going concern added, risks added, tone more cautious, dilution announced) — return drift_detected: false. We only publish buy opportunities.
+
+STRICT RULES — read carefully:
+- BUY signals: management tone significantly more confident, new partnerships/contracts disclosed, risks REMOVED that previously suppressed the stock, share buybacks announced, auditor upgraded, going concern language REMOVED
+- WATCH signals: structural change needing monitoring — auditor change, share count anomaly, new strategic pivot not yet confirmed by numbers, structural cleanup (e.g. poison pill removal) that could attract buyers
+- NO SIGNAL (drift_detected: false + signal_polarity: "negative"): asset loss, product termination, contract termination, revenue decline disclosed, going concern ADDED, new risks added, dilution announced, management tone more cautious, any change that is NET NEGATIVE for the company's operations or financial position
+
+Examples of NO SIGNAL:
+- Company returns an NDA/product back to a licensor → operational contraction → NO SIGNAL
+- Going concern language appears for first time → NO SIGNAL
+- Company announces layoffs or facility closure → NO SIGNAL
+- New litigation or regulatory investigation disclosed → NO SIGNAL
 
 Return ONLY a JSON object with this exact structure:
 {{
   "drift_detected": true/false,
+  "signal_polarity": "positive" | "negative",
   "signal_strength": "buy" | "watch",
   "conviction": 1-10,
   "title": "One precise headline — what changed in the filing",
   "what_changed": "2-3 sentences describing exactly what language changed between current and prior filings. Be specific with quotes or numbers where possible.",
   "investment_implication": "2-3 sentences explaining what this change means for a long investor — why is this bullish, what is the potential upside catalyst, and why does conviction warrant a buy or watch rating.",
-  "conviction_justification": "One sentence explaining why you chose this specific conviction score (e.g. 'Conviction 7 because the change is material and unambiguous but financial confirmation is still needed').",
+  "conviction_justification": "One sentence explaining why you chose this specific conviction score.",
   "going_concern": true/false,
   "key_changes": ["specific change 1", "specific change 2", "specific change 3"],
   "signal_type": "language_drift"
@@ -4209,12 +4218,24 @@ Return ONLY a JSON object with this exact structure:
         if not result.get("drift_detected"):
             return None
 
+        # Hard filter: suppress negative signals regardless of drift_detected
+        if result.get("signal_polarity") == "negative":
+            return None
+
         signal_direction = result.get("signal_strength", "watch")
         if signal_direction not in ("buy", "watch"):
             signal_direction = "watch"
 
         conviction = int(result.get("conviction", 5))
         if conviction < 4:
+            return None
+
+        # Secondary safety: suppress if implication text contains negative indicators
+        implication_check = (result.get("investment_implication", "") + result.get("what_changed", "")).lower()
+        negative_phrases = ["negative signal", "revenue contraction", "asset loss", "product termination",
+                            "operational contraction", "raises questions about execution capability",
+                            "loss of a commercialized", "transferred back", "reversion"]
+        if any(phrase in implication_check for phrase in negative_phrases):
             return None
 
         # Build thesis from what_changed + investment_implication
