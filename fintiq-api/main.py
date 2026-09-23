@@ -4236,7 +4236,7 @@ Return ONLY a JSON object with this exact structure:
             signal_direction = "watch"
 
         conviction = int(result.get("conviction", 5))
-        if conviction < 4:
+        if conviction < 5:  # Raised from 4 — filters routine housekeeping signals
             return None
 
         # Secondary safety: suppress if implication text contains negative indicators
@@ -4576,15 +4576,19 @@ def _run_alpha_scanner():
             if signal:
                 info = ticker_info.get(ticker, {})
                 price = None
+                mc    = info.get("market_cap", 0.0) or 0.0
+                name  = info.get("name", ticker) or ticker
+                sector = info.get("sector", "") or ""
                 try:
                     import yfinance as _yf
-                    price = _yf.Ticker(ticker).fast_info.last_price
+                    fi = _yf.Ticker(ticker).fast_info
+                    price = fi.last_price
+                    if not mc:
+                        mc = getattr(fi, "market_cap", 0.0) or 0.0
                 except Exception:
                     pass
                 result = _save_signal(ticker, signal, price,
-                                      name=info.get("name", ticker),
-                                      market_cap=info.get("market_cap", 0.0),
-                                      sector=info.get("sector", ""))
+                                      name=name, market_cap=mc, sector=sector)
                 if result == "new":
                     new_signals += 1
                     print(f"[Alpha Scanner] NEW signal: {ticker} — {signal['title']}")
@@ -4611,15 +4615,19 @@ def _run_alpha_scanner():
             if signal:
                 info = ticker_info.get(ticker, {})
                 price = None
+                mc    = info.get("market_cap", 0.0) or 0.0
+                name  = info.get("name", ticker) or ticker
+                sector = info.get("sector", "") or ""
                 try:
                     import yfinance as _yf
-                    price = _yf.Ticker(ticker).fast_info.last_price
+                    fi = _yf.Ticker(ticker).fast_info
+                    price = fi.last_price
+                    if not mc:
+                        mc = getattr(fi, "market_cap", 0.0) or 0.0
                 except Exception:
                     pass
                 result = _save_signal(ticker, signal, price,
-                                      name=info.get("name", ticker),
-                                      market_cap=info.get("market_cap", 0.0),
-                                      sector=info.get("sector", ""))
+                                      name=name, market_cap=mc, sector=sector)
                 if result == "new":
                     new_signals += 1
                     print(f"[Alpha Scanner] NEW financial signal: {ticker} — {signal['title']}")
