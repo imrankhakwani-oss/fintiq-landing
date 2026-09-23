@@ -3135,20 +3135,29 @@ def _as_db():
         CREATE TABLE IF NOT EXISTS signals (
             id            TEXT PRIMARY KEY,
             ticker        TEXT NOT NULL,
-            signal_type   TEXT NOT NULL,   -- 'language_drift' | 'insider_buy' | 'insider_sell' | 'contract_win' | 'short_squeeze' | 'going_concern' | 'dilution_risk'
-            direction     TEXT NOT NULL,   -- 'long' | 'short' | 'risk'
-            conviction    INTEGER NOT NULL, -- 1-10
+            name          TEXT DEFAULT '',
+            market_cap    REAL DEFAULT 0,
+            sector        TEXT DEFAULT '',
+            signal_type   TEXT NOT NULL,
+            direction     TEXT NOT NULL,
+            conviction    INTEGER NOT NULL,
             title         TEXT,
             thesis        TEXT,
-            raw_data      TEXT,            -- JSON blob of source data
-            status        TEXT DEFAULT 'active',  -- 'active' | 'archived' | 'resolved'
+            raw_data      TEXT,
+            status        TEXT DEFAULT 'active',
             first_seen    TEXT NOT NULL,
             last_updated  TEXT NOT NULL,
             price_at_signal REAL,
             resolved_at   TEXT,
-            resolution    TEXT            -- 'price_moved_25pct' | 'stale_45d' | 'invalidated'
+            resolution    TEXT
         )
     """)
+    # Add new columns to existing DBs that predate this schema
+    for col, typedef in [("name","TEXT DEFAULT ''"), ("market_cap","REAL DEFAULT 0"), ("sector","TEXT DEFAULT ''")]:
+        try:
+            conn.execute(f"ALTER TABLE signals ADD COLUMN {col} {typedef}")
+        except Exception:
+            pass  # Column already exists
     conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_ticker ON signals(ticker)")
     conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_status ON signals(status)")
     conn.commit()
@@ -4443,7 +4452,8 @@ def _run_contract_scan(universe: list) -> list:
 
 
 # ── Signal persistence ─────────────────────────────────────────────────────────
-def _save_signal(ticker: str, signal: dict, price: float | None):
+def _save_signal(ticker: str, signal: dict, price: float | None,
+                 name: str = "", market_cap: float = 0.0, sector: str = ""):
     """Insert or update a signal in the DB. Returns 'new' | 'updated' | 'existing'."""
     import json as _json
     now = datetime.now(timezone.utc).isoformat()
@@ -4455,8 +4465,13 @@ def _save_signal(ticker: str, signal: dict, price: float | None):
     if existing:
         if existing["status"] == "active":
             conn.execute(
-                "UPDATE signals SET conviction=?, thesis=?, raw_data=?, last_updated=? WHERE id=?",
-                (signal["conviction"], signal["thesis"], signal["raw_data"], now, sig_id)
+                """UPDATE signals SET conviction=?, thesis=?, raw_data=?, last_updated=?,
+                   name=COALESCE(NULLIF(?,\"\"), name),
+                   market_cap=CASE WHEN ?>0 THEN ? ELSE market_cap END,
+                   sector=COALESCE(NULLIF(?,\"\"), sector)
+                   WHERE id=?""",
+                (signal["conviction"], signal["thesis"], signal["raw_data"], now,
+                 name, market_cap, market_cap, sector, sig_id)
             )
             conn.commit(); conn.close()
             return "updated"
@@ -4465,10 +4480,12 @@ def _save_signal(ticker: str, signal: dict, price: float | None):
 
     conn.execute("""
         INSERT INTO signals
-          (id, ticker, signal_type, direction, conviction, title, thesis, raw_data,
+          (id, ticker, name, market_cap, sector,
+           signal_type, direction, conviction, title, thesis, raw_data,
            status, first_seen, last_updated, price_at_signal)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-    """, (sig_id, ticker, signal["signal_type"], signal["direction"],
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (sig_id, ticker, name or ticker, market_cap, sector,
+          signal["signal_type"], signal["direction"],
           signal["conviction"], signal["title"], signal["thesis"],
           signal["raw_data"], "active", now, now, price))
     conn.commit(); conn.close()
@@ -4557,13 +4574,17 @@ def _run_alpha_scanner():
         try:
             signal = _run_language_drift_analysis(ticker)
             if signal:
+                info = ticker_info.get(ticker, {})
                 price = None
                 try:
                     import yfinance as _yf
                     price = _yf.Ticker(ticker).fast_info.last_price
                 except Exception:
                     pass
-                result = _save_signal(ticker, signal, price)
+                result = _save_signal(ticker, signal, price,
+                                      name=info.get("name", ticker),
+                                      market_cap=info.get("market_cap", 0.0),
+                                      sector=info.get("sector", ""))
                 if result == "new":
                     new_signals += 1
                     print(f"[Alpha Scanner] NEW signal: {ticker} — {signal['title']}")
@@ -4588,13 +4609,17 @@ def _run_alpha_scanner():
         try:
             signal = _run_financial_intelligence(ticker)
             if signal:
+                info = ticker_info.get(ticker, {})
                 price = None
                 try:
                     import yfinance as _yf
                     price = _yf.Ticker(ticker).fast_info.last_price
                 except Exception:
                     pass
-                result = _save_signal(ticker, signal, price)
+                result = _save_signal(ticker, signal, price,
+                                      name=info.get("name", ticker),
+                                      market_cap=info.get("market_cap", 0.0),
+                                      sector=info.get("sector", ""))
                 if result == "new":
                     new_signals += 1
                     print(f"[Alpha Scanner] NEW financial signal: {ticker} — {signal['title']}")
@@ -4684,7 +4709,10 @@ def alpha_scanner_signals(status: str = "active", limit: int = 50):
     import json as _json
     conn = _as_db()
     rows = conn.execute("""
-        SELECT s.*, u.name, u.market_cap, u.sector
+        SELECT s.*,
+               COALESCE(NULLIF(s.name,''), u.name, s.ticker)   AS name,
+               COALESCE(NULLIF(s.market_cap,0), u.market_cap, 0) AS market_cap,
+               COALESCE(NULLIF(s.sector,''), u.sector, '')       AS sector
         FROM signals s
         LEFT JOIN universe u ON s.ticker = u.ticker
         WHERE s.status = ?
