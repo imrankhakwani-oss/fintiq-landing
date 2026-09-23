@@ -253,6 +253,35 @@
     padding: 16px 0 14px;
   }
 
+  /* Investment implication block — language drift */
+  .implication-block {
+    background: rgba(167,139,250,.08);
+    border: 1px solid rgba(167,139,250,.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .implication-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--purple);
+    margin-bottom: 6px;
+  }
+  .implication-text {
+    font-size: 13px;
+    line-height: 1.65;
+    color: var(--text);
+    margin: 0 0 6px;
+  }
+  .conviction-why-text {
+    font-size: 12px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 6px;
+  }
+
   .raw-signals { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
   .raw-signal-item {
     background: var(--card2);
@@ -466,7 +495,7 @@ function rawDataItems(rd, signalType) {
     if (rd.filing_date) items.push({ label: 'Filing date', val: rd.filing_date });
     if (rd.going_concern) items.push({ label: 'Going concern', val: 'YES ⚠️' });
     if (rd.key_changes?.length) {
-      rd.key_changes.slice(0, 2).forEach(c => items.push({ label: 'Change', val: c }));
+      rd.key_changes.forEach(c => items.push({ label: 'Key change', val: c }));
     }
   }
   return items;
@@ -525,6 +554,16 @@ function renderCard(s) {
       </div>
       <div class="card-body">
         <p class="thesis-text">${s.thesis}</p>
+        ${(()=>{
+          if (s.signal_type === 'language_drift') {
+            const rd2 = (() => { try { return JSON.parse(s.raw_data||'{}'); } catch(e){ return {}; } })();
+            const impl = rd2.investment_implication;
+            const why  = rd2.conviction_why;
+            if (!impl && !why) return '';
+            return `<div class="implication-block">${impl ? `<div class="implication-label">Why this matters</div><p class="implication-text">${impl}</p>` : ''}${why ? `<div class="conviction-why-text">📊 ${why}</div>` : ''}</div>`;
+          }
+          return '';
+        })()}
         ${rawHTML ? `<div class="raw-signals">${rawHTML}</div>` : ''}
         <div class="card-actions">
           <a class="btn-deep-dive" href="${deepDiveUrl}">Open Deep Dive →</a>

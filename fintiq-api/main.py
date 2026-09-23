@@ -4166,55 +4166,75 @@ PRIOR FILINGS (for comparison):
 
 Analyse the language shift between the current filing and prior filings. Focus on:
 1. New disclosures not present before (new risks, new customers, new partnerships, strategic pivots)
-2. Removed language (previously disclosed risks now absent — resolution or concealment?)
-3. Tone shift (more confident vs more cautious)
+2. Removed language (previously disclosed risks now absent — resolution or genuine improvement?)
+3. Tone shift (more confident vs more cautious language from CEO/management)
 4. Going concern language: does the current filing contain "substantial doubt about the company's ability to continue as a going concern"?
-5. Revenue/margin language change (more specific commitments vs vague hedging)
+5. Share count changes, auditor changes, executive changes, revenue/margin language shifts
+6. Specific commitments added (vs vague hedging language removed or added)
 
-Return a JSON object with this exact structure:
+Your job is to identify filing language changes that signal a BUY or WATCH opportunity for a long investor.
+- BUY signals: management tone significantly more confident, new partnerships/contracts disclosed, risks removed that previously suppressed the stock, share buybacks announced/evidenced, auditor upgraded, going concern language removed
+- WATCH signals: interesting structural change that needs monitoring — auditor change (could be positive or negative), share count anomaly requiring explanation, new strategic pivot not yet confirmed by numbers
+- NO SIGNAL: if the change is negative (going concern added, risks added, tone more cautious, dilution announced) — return drift_detected: false. We only publish buy opportunities.
+
+Return ONLY a JSON object with this exact structure:
 {{
   "drift_detected": true/false,
-  "direction": "positive" | "negative" | "neutral",
+  "signal_strength": "buy" | "watch",
   "conviction": 1-10,
-  "title": "One-line description of the key change",
-  "thesis": "2-3 sentence plain English explanation of what changed and why it matters for investors",
+  "title": "One precise headline — what changed in the filing",
+  "what_changed": "2-3 sentences describing exactly what language changed between current and prior filings. Be specific with quotes or numbers where possible.",
+  "investment_implication": "2-3 sentences explaining what this change means for a long investor — why is this bullish, what is the potential upside catalyst, and why does conviction warrant a buy or watch rating.",
+  "conviction_justification": "One sentence explaining why you chose this specific conviction score (e.g. 'Conviction 7 because the change is material and unambiguous but financial confirmation is still needed').",
   "going_concern": true/false,
-  "key_changes": ["change 1", "change 2", "change 3"],
-  "signal_type": "language_drift" | "going_concern"
-}}
-
-Only return the JSON, no other text."""
+  "key_changes": ["specific change 1", "specific change 2", "specific change 3"],
+  "signal_type": "language_drift"
+}}"""
 
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         resp = client.messages.create(
             model="claude-haiku-4-5-20251001",
-            max_tokens=800,
+            max_tokens=1000,
             messages=[{"role": "user", "content": prompt}],
         )
         raw = resp.content[0].text.strip()
-        raw = re.sub(r'^```(?:json)?\s*', '', raw)
-        raw = re.sub(r'\s*```$', '', raw.strip())
-        result = json.loads(raw)
+        # Robust JSON extraction
+        start = raw.find('{')
+        end   = raw.rfind('}')
+        if start == -1 or end == -1:
+            raise ValueError("No JSON in Claude response")
+        result = json.loads(raw[start:end+1])
 
         if not result.get("drift_detected"):
             return None
 
-        direction = result.get("direction", "neutral")
-        signal_direction = "long" if direction == "positive" else ("short" if direction == "negative" else "risk")
-        if result.get("going_concern"):
-            signal_direction = "short"
+        signal_direction = result.get("signal_strength", "watch")
+        if signal_direction not in ("buy", "watch"):
+            signal_direction = "watch"
+
+        conviction = int(result.get("conviction", 5))
+        if conviction < 4:
+            return None
+
+        # Build thesis from what_changed + investment_implication
+        what_changed   = result.get("what_changed", "")
+        implication    = result.get("investment_implication", "")
+        conviction_why = result.get("conviction_justification", "")
+        thesis = f"{what_changed} {implication}".strip()
 
         return {
-            "signal_type": result.get("signal_type", "language_drift"),
+            "signal_type": "language_drift",
             "direction": signal_direction,
-            "conviction": int(result.get("conviction", 5)),
+            "conviction": conviction,
             "title": result.get("title", "Filing language shift detected"),
-            "thesis": result.get("thesis", ""),
+            "thesis": thesis,
             "raw_data": json.dumps({
-                "filing_date": filings[0]["date"],
-                "key_changes": result.get("key_changes", []),
-                "going_concern": result.get("going_concern", False),
+                "filing_date":            filings[0]["date"],
+                "key_changes":            result.get("key_changes", []),
+                "going_concern":          result.get("going_concern", False),
+                "investment_implication": implication,
+                "conviction_why":         conviction_why,
             }),
         }
     except Exception as e:
