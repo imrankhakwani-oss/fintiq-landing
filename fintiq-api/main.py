@@ -3248,6 +3248,11 @@ def _xbrl_series(facts: dict, concept: str, form: str = "10-K", n: int = 4) -> l
             and d.get("end")
         ]
 
+        # Only use data from the last 6 years — prevents stale concept mixing
+        # when a company switches XBRL concept names (e.g. pre/post ASC 606)
+        cutoff_year = str(datetime.now().year - 6)
+        filtered = [d for d in filtered if d.get("end","") >= cutoff_year]
+
         # For 10-K: prefer annual periods (start to end ~365 days)
         # For 10-Q: prefer quarterly periods
         if form == "10-K":
@@ -4457,6 +4462,12 @@ def _save_signal(ticker: str, signal: dict, price: float | None,
     """Insert or update a signal in the DB. Returns 'new' | 'updated' | 'existing'."""
     import json as _json
     now = datetime.now(timezone.utc).isoformat()
+
+    # Hard ceiling: skip any company above $1B market cap — these are mid/large cap
+    # and were never in scope. Guards against seed-list fallback leaking large caps.
+    if market_cap and market_cap > 1_000_000_000:
+        print(f"[Alpha Scanner] Skipping {ticker} — market cap ${market_cap/1e9:.1f}B exceeds $1B ceiling")
+        return "skipped"
     sig_id = hashlib.md5(f"{ticker}:{signal['signal_type']}".encode()).hexdigest()
 
     conn = _as_db()
@@ -4559,7 +4570,7 @@ def _run_alpha_scanner():
 
     new_signals = 0
 
-    # 3. Language drift — first run scans all; subsequent runs rotate 30/day (~20-day cycle)
+    # 3. Language drift — first run: 100/day batches; subsequent runs: 30/day rotation
     import random
     conn_ld = _as_db()
     existing_ld_signals = conn_ld.execute(
@@ -4567,9 +4578,10 @@ def _run_alpha_scanner():
     ).fetchone()[0]
     conn_ld.close()
     is_first_ld_run = (existing_ld_signals == 0)
-    sample = tickers if is_first_ld_run else random.sample(tickers, min(30, len(tickers)))
-    if is_first_ld_run:
-        print(f"[Alpha Scanner] First language drift run — scanning all {len(tickers)} companies")
+    # Cap first run at 100 to control cost — full universe covered in ~11 daily runs
+    batch_size = 100 if is_first_ld_run else 30
+    sample = random.sample(tickers, min(batch_size, len(tickers)))
+    print(f"[Alpha Scanner] Language drift batch: {len(sample)} tickers (first_run={is_first_ld_run})")
     for ticker in sample:
         try:
             signal = _run_language_drift_analysis(ticker)
@@ -4596,8 +4608,7 @@ def _run_alpha_scanner():
             print(f"[Alpha Scanner] Language drift error {ticker}: {e}")
 
     # 4. Financial intelligence scan (5-module dual timeframe)
-    # First run (no existing financial_quality signals): scan ALL companies
-    # Subsequent runs: 30/day = ~20-day cycle through full universe
+    # First run: 100/day batches to control cost; subsequent runs: 30/day rotation
     conn_check = _as_db()
     existing_fin_signals = conn_check.execute(
         "SELECT COUNT(*) FROM signals WHERE signal_type='financial_quality'"
@@ -4605,10 +4616,8 @@ def _run_alpha_scanner():
     conn_check.close()
 
     is_first_fin_run = (existing_fin_signals == 0)
-    fin_batch_size   = len(tickers) if is_first_fin_run else 30
-    fin_sample       = tickers if is_first_fin_run else random.sample(tickers, min(30, len(tickers)))
-    if is_first_fin_run:
-        print(f"[Alpha Scanner] First financial intelligence run — scanning all {len(tickers)} companies")
+    fin_sample = random.sample(tickers, min(100 if is_first_fin_run else 30, len(tickers)))
+    print(f"[Alpha Scanner] Financial intelligence batch: {len(fin_sample)} tickers (first_run={is_first_fin_run})")
     for ticker in fin_sample:
         try:
             signal = _run_financial_intelligence(ticker)
