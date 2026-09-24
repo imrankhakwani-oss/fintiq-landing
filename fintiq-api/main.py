@@ -3106,14 +3106,15 @@ Produce a JSON report with exactly these fields. Return only valid JSON, no mark
 #                SEC EDGAR full-text API (MD&A language drift)
 #                SAM.gov API (federal contract awards)
 #  Runs: daily cron at 06:00 UTC via /alpha-scanner/run (REFRESH_TOKEN protected)
-#  Storage: SQLite at /tmp/alpha_scanner.db (Railway ephemeral — rebuilt on restart)
+#  Storage: SQLite at /data/alpha_scanner.db (Railway persistent volume — survives redeploy)
+#           Falls back to /tmp if /data not mounted (local dev)
 # ════════════════════════════════════════════════════════════════════════════════
 
 import sqlite3, re, hashlib
 from datetime import date, timezone
 
 # ── SQLite setup ───────────────────────────────────────────────────────────────
-_AS_DB = "/tmp/alpha_scanner.db"
+_AS_DB = "/data/alpha_scanner.db" if os.path.isdir("/data") else "/tmp/alpha_scanner.db"
 
 def _as_db():
     """Return a connection to the Alpha Scanner SQLite DB, creating tables if needed."""
