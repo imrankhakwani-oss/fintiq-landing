@@ -3123,15 +3123,23 @@ def _as_db():
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("""
         CREATE TABLE IF NOT EXISTS universe (
-            ticker      TEXT PRIMARY KEY,
-            name        TEXT,
-            market_cap  REAL,
-            avg_volume  REAL,
-            inst_own    REAL,
-            sector      TEXT,
-            updated_at  TEXT
+            ticker           TEXT PRIMARY KEY,
+            name             TEXT,
+            market_cap       REAL,
+            avg_volume       REAL,
+            inst_own         REAL,
+            sector           TEXT,
+            updated_at       TEXT,
+            last_scanned_ld  TEXT,
+            last_scanned_fin TEXT
         )
     """)
+    # Add scan-tracking columns to existing DBs
+    for col in ["last_scanned_ld TEXT", "last_scanned_fin TEXT"]:
+        try:
+            conn.execute(f"ALTER TABLE universe ADD COLUMN {col}")
+        except Exception:
+            pass
     conn.execute("""
         CREATE TABLE IF NOT EXISTS signals (
             id            TEXT PRIMARY KEY,
@@ -4133,21 +4141,29 @@ def _run_language_drift_analysis(ticker: str) -> dict | None:
 
     cik = _fetch_edgar_cik(ticker)
     if not cik:
+        print(f"[Alpha Scanner] LD {ticker}: no EDGAR CIK found — skipping")
         return None
 
     filings = _fetch_edgar_filings(cik, form_type="10-K", count=5)
     if len(filings) < 2:
+        print(f"[Alpha Scanner] LD {ticker}: <2 10-K filings, trying 10-Q")
         filings = _fetch_edgar_filings(cik, form_type="10-Q", count=5)
     if len(filings) < 2:
+        print(f"[Alpha Scanner] LD {ticker}: <2 filings found — skipping")
         return None
+    print(f"[Alpha Scanner] LD {ticker}: found {len(filings)} filings (CIK={cik})")
 
-    # ── Only surface signals from recent filings (within 90 days) ──
-    # Prevents flagging ancient structural changes as new signals
+    # ── Only surface signals from recent filings (within 180 days) ──
+    # 180 days covers: 10-Qs (filed ~45 days after quarter end) and 10-Ks
+    # (smaller companies often file 90-120 days after fiscal year end, so a
+    # December FY2025 annual could be filed in April 2026, i.e. ~150 days ago in Sept).
     from datetime import date as _date
     try:
         filing_date = datetime.strptime(filings[0]["date"], "%Y-%m-%d").date()
         days_old = (_date.today() - filing_date).days
-        if days_old > 90:
+        print(f"[Alpha Scanner] LD {ticker}: most recent filing {filings[0]['date']} ({days_old}d old)")
+        if days_old > 180:
+            print(f"[Alpha Scanner] LD {ticker}: skipping — filing too old ({days_old}d > 180d)")
             return None   # Most recent filing is stale — skip
     except Exception:
         pass
@@ -4572,20 +4588,35 @@ def _run_alpha_scanner():
     new_signals = 0
 
     # 3. Language drift — first run: 100/day batches; subsequent runs: 30/day rotation
-    import random
+    # Rotation: always picks the tickers least-recently scanned (NULL first = never scanned)
     conn_ld = _as_db()
     existing_ld_signals = conn_ld.execute(
         "SELECT COUNT(*) FROM signals WHERE signal_type='language_drift'"
     ).fetchone()[0]
-    conn_ld.close()
     is_first_ld_run = (existing_ld_signals == 0)
     # Cap first run at 100 to control cost — full universe covered in ~11 daily runs
     batch_size = 100 if is_first_ld_run else 30
-    sample = random.sample(tickers, min(batch_size, len(tickers)))
+    # Least-recently-scanned rotation: NULL last_scanned_ld comes first
+    ld_rows = conn_ld.execute(
+        "SELECT ticker FROM universe ORDER BY last_scanned_ld ASC NULLS FIRST LIMIT ?",
+        (batch_size,)
+    ).fetchall()
+    conn_ld.close()
+    sample = [r[0] for r in ld_rows] if ld_rows else tickers[:batch_size]
     print(f"[Alpha Scanner] Language drift batch: {len(sample)} tickers (first_run={is_first_ld_run})")
     for ticker in sample:
         try:
             signal = _run_language_drift_analysis(ticker)
+            # Mark scanned regardless of whether a signal was found
+            try:
+                _conn = _as_db()
+                _conn.execute(
+                    "UPDATE universe SET last_scanned_ld=? WHERE ticker=?",
+                    (datetime.now(timezone.utc).isoformat(), ticker)
+                )
+                _conn.commit(); _conn.close()
+            except Exception:
+                pass
             if signal:
                 info = ticker_info.get(ticker, {})
                 price = None
@@ -4609,19 +4640,34 @@ def _run_alpha_scanner():
             print(f"[Alpha Scanner] Language drift error {ticker}: {e}")
 
     # 4. Financial intelligence scan (5-module dual timeframe)
-    # First run: 100/day batches to control cost; subsequent runs: 30/day rotation
+    # Rotation: always picks the tickers least-recently scanned (NULL first = never scanned)
     conn_check = _as_db()
     existing_fin_signals = conn_check.execute(
         "SELECT COUNT(*) FROM signals WHERE signal_type='financial_quality'"
     ).fetchone()[0]
-    conn_check.close()
-
     is_first_fin_run = (existing_fin_signals == 0)
-    fin_sample = random.sample(tickers, min(100 if is_first_fin_run else 30, len(tickers)))
+    fin_batch_size = 100 if is_first_fin_run else 30
+    # Least-recently-scanned rotation: NULL last_scanned_fin comes first
+    fin_rows = conn_check.execute(
+        "SELECT ticker FROM universe ORDER BY last_scanned_fin ASC NULLS FIRST LIMIT ?",
+        (fin_batch_size,)
+    ).fetchall()
+    conn_check.close()
+    fin_sample = [r[0] for r in fin_rows] if fin_rows else tickers[:fin_batch_size]
     print(f"[Alpha Scanner] Financial intelligence batch: {len(fin_sample)} tickers (first_run={is_first_fin_run})")
     for ticker in fin_sample:
         try:
             signal = _run_financial_intelligence(ticker)
+            # Mark scanned regardless of whether a signal was found
+            try:
+                _conn = _as_db()
+                _conn.execute(
+                    "UPDATE universe SET last_scanned_fin=? WHERE ticker=?",
+                    (datetime.now(timezone.utc).isoformat(), ticker)
+                )
+                _conn.commit(); _conn.close()
+            except Exception:
+                pass
             if signal:
                 info = ticker_info.get(ticker, {})
                 price = None
