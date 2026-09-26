@@ -374,7 +374,7 @@
     <div>
       <h1>Alpha <span>Scanner</span></h1>
       <p style="color:var(--muted);font-size:14px;margin-top:6px;">
-        Daily intelligence feed — US micro &amp; nano-cap stocks
+        Daily intelligence feed — US small &amp; micro-cap stocks
       </p>
     </div>
     <div class="status-bar">
@@ -385,8 +385,8 @@
 
   <!-- Disclaimer -->
   <div class="disclaimer">
-    <strong>Important:</strong> Alpha Scanner covers US-listed micro and nano-cap companies
-    ($10M–$300M market cap) only. These are small, often illiquid companies.
+    <strong>Important:</strong> Alpha Scanner covers US-listed small and micro-cap companies
+    (up to $1B market cap) only. These are small, often illiquid companies.
     Signals are based on public data analysis and are <strong>not investment advice</strong>.
     Small-cap investing carries significantly higher risk than mainstream markets.
     Always do your own research before investing.
@@ -494,6 +494,16 @@ function rawDataItems(rd, signalType) {
   if (signalType === 'language_drift') {
     if (rd.filing_date) items.push({ label: 'Filing date', val: rd.filing_date });
     if (rd.going_concern) items.push({ label: 'Going concern', val: 'YES ⚠️' });
+    // Financial snapshot — always shown when available
+    const fs = rd.financial_snapshot || {};
+    if (fs.piotroski      != null) items.push({ label: 'Piotroski F-Score', val: fs.piotroski + '/9' });
+    if (fs.altman_z       != null) items.push({ label: 'Altman Z-Score',    val: fs.altman_z });
+    if (fs.beneish_m      != null) items.push({ label: 'Beneish M-Score',   val: fs.beneish_m });
+    if (fs.gross_margin   != null) items.push({ label: 'Gross Margin',      val: fs.gross_margin + '%' });
+    if (fs.op_margin      != null) items.push({ label: 'Op Margin',         val: fs.op_margin + '%' });
+    if (fs.ocf_m          != null) items.push({ label: 'OCF ($M)',          val: '$' + fs.ocf_m + 'M' });
+    if (fs.revenue_growth != null) items.push({ label: 'Rev Growth',        val: fs.revenue_growth + '%' });
+    if (fs.current_ratio  != null) items.push({ label: 'Current Ratio',     val: fs.current_ratio });
     if (rd.key_changes?.length) {
       rd.key_changes.forEach(c => items.push({ label: 'Key change', val: c }));
     }

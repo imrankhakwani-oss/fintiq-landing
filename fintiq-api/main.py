@@ -4275,6 +4275,32 @@ Return ONLY a JSON object with this exact structure:
         conviction_why = result.get("conviction_justification", "")
         thesis = f"{what_changed} {implication}".strip()
 
+        # Compute financial snapshot — always attached to LD signals so the frontend
+        # can show Piotroski / Z-Score / M-Score even when no financial_quality signal exists
+        financial_snapshot = None
+        try:
+            facts = _fetch_xbrl_facts(cik)
+            if facts:
+                annual    = _compute_financial_modules(facts, form="10-K", n=2)
+                quarterly = _compute_financial_modules(facts, form="10-Q", n=2)
+                la = annual[0]    if annual    else {}
+                lq = quarterly[0] if quarterly else {}
+                def _pick(key):
+                    return la.get(key) if la.get(key) is not None else lq.get(key)
+                financial_snapshot = {
+                    "piotroski":     _pick("piotroski_score"),
+                    "altman_z":      _pick("altman_z_score"),
+                    "beneish_m":     _pick("beneish_m_score"),
+                    "gross_margin":  _pick("gross_margin"),
+                    "op_margin":     _pick("op_margin"),
+                    "ocf_m":         _pick("ocf_m"),
+                    "revenue_growth": _pick("revenue_growth"),
+                    "current_ratio": _pick("current_ratio"),
+                    "period":        _pick("period"),
+                }
+        except Exception as _fe:
+            print(f"[Alpha Scanner] LD {ticker}: financial snapshot failed — {_fe}")
+
         return {
             "signal_type": "language_drift",
             "direction": signal_direction,
@@ -4287,6 +4313,7 @@ Return ONLY a JSON object with this exact structure:
                 "going_concern":          result.get("going_concern", False),
                 "investment_implication": implication,
                 "conviction_why":         conviction_why,
+                "financial_snapshot":     financial_snapshot,
             }),
         }
     except Exception as e:
