@@ -4010,12 +4010,23 @@ def _run_universe_screener():
     now = datetime.now(timezone.utc).isoformat()
     conn = _as_db()
     for r in results:
+        # INSERT OR IGNORE preserves last_scanned_ld/last_scanned_fin for existing tickers.
+        # INSERT OR REPLACE would reset those columns to NULL (deletes+reinserts the row),
+        # causing the rotation to always pick the same first-30 alphabetical tickers.
         conn.execute("""
-            INSERT OR REPLACE INTO universe
+            INSERT OR IGNORE INTO universe
               (ticker, name, market_cap, avg_volume, inst_own, sector, updated_at)
             VALUES (?,?,?,?,?,?,?)
         """, (r["ticker"], r["name"], r["market_cap"], r["avg_volume"],
               r["inst_own"], r["sector"], now))
+        # For existing rows, only refresh the non-scan-tracking fields
+        conn.execute("""
+            UPDATE universe SET name=?, market_cap=?, avg_volume=?, inst_own=?,
+              sector=COALESCE(NULLIF(sector,''), ?), updated_at=?
+            WHERE ticker=?
+              AND (last_scanned_ld IS NOT NULL OR last_scanned_fin IS NOT NULL)
+        """, (r["name"], r["market_cap"], r["avg_volume"], r["inst_own"],
+              r["sector"], now, r["ticker"]))
     conn.commit()
     conn.close()
     print(f"[Alpha Scanner] Universe updated: {len(results)} companies")
@@ -4527,17 +4538,22 @@ def _save_signal(ticker: str, signal: dict, price: float | None,
 
     if existing:
         if existing["status"] == "active":
+            # Only bump last_updated (which drives the UPDATED badge) if conviction changed.
+            # Routine rescans with the same conviction keep last_updated as-is so the badge
+            # doesn't fire on every rotation cycle.
+            conviction_changed = (existing["conviction"] != signal["conviction"])
+            new_last_updated = now if conviction_changed else existing["last_updated"]
             conn.execute(
                 """UPDATE signals SET conviction=?, thesis=?, raw_data=?, last_updated=?,
                    name=COALESCE(NULLIF(?,\"\"), name),
                    market_cap=CASE WHEN ?>0 THEN ? ELSE market_cap END,
                    sector=COALESCE(NULLIF(?,\"\"), sector)
                    WHERE id=?""",
-                (signal["conviction"], signal["thesis"], signal["raw_data"], now,
+                (signal["conviction"], signal["thesis"], signal["raw_data"], new_last_updated,
                  name, market_cap, market_cap, sector, sig_id)
             )
             conn.commit(); conn.close()
-            return "updated"
+            return "updated" if conviction_changed else "existing"
         conn.close()
         return "existing"
 
