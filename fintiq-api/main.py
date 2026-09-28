@@ -3617,7 +3617,7 @@ def _compute_financial_modules(facts: dict, form: str = "10-K", n: int = 4) -> d
             "revenue":        round(rev_i / 1e6, 2) if rev_i else None,   # $M
             "revenue_growth": round(rev_growth * 100, 1) if rev_growth else None,  # %
             "gross_margin":   round(gm_curr * 100, 1) if gm_curr else None,
-            "op_margin":      round(_safe_div(oi_i, rev_i) * 100, 1) if oi_i and rev_i else None,
+            "op_margin":      round(max(-500, min(500, _safe_div(oi_i, rev_i) * 100)), 1) if oi_i and rev_i else None,
             "net_margin":     round(_safe_div(ni_i, rev_i) * 100, 1) if ni_i and rev_i else None,
             "roa":            round(roa_curr * 100, 2) if roa_curr else None,
             "current_ratio":  round(current_ratio, 2) if current_ratio else None,
@@ -4512,6 +4512,14 @@ def _save_signal(ticker: str, signal: dict, price: float | None,
     if market_cap and market_cap > 1_000_000_000:
         print(f"[Alpha Scanner] Skipping {ticker} — market cap ${market_cap/1e9:.1f}B exceeds $1B ceiling")
         return "skipped"
+    # Fill in missing sector via yfinance when not provided
+    if not sector:
+        try:
+            import yfinance as _yf
+            sector = _yf.Ticker(ticker).info.get("sector", "") or ""
+        except Exception:
+            sector = ""
+
     sig_id = hashlib.md5(f"{ticker}:{signal['signal_type']}".encode()).hexdigest()
 
     conn = _as_db()
@@ -4584,6 +4592,68 @@ def _resolve_stale_signals():
 
 
 # ── Main daily run ─────────────────────────────────────────────────────────────
+def _patch_ld_financial_snapshots():
+    """
+    Retroactively add financial_snapshot to any language_drift signals that were
+    saved before the financial_snapshot feature was introduced (Sept 26 2026).
+    Safe to run on every scan — skips signals that already have the snapshot.
+    """
+    import json as _json
+    conn = _as_db()
+    ld_signals = conn.execute(
+        "SELECT id, ticker, raw_data FROM signals WHERE signal_type='language_drift' AND status='active'"
+    ).fetchall()
+    conn.close()
+
+    patched = 0
+    for row in ld_signals:
+        try:
+            rd = _json.loads(row["raw_data"] or "{}")
+            if rd.get("financial_snapshot") is not None:
+                continue  # Already has snapshot — skip
+
+            ticker = row["ticker"]
+            cik = _fetch_edgar_cik(ticker)
+            if not cik:
+                continue
+            facts = _fetch_xbrl_facts(cik)
+            if not facts:
+                continue
+
+            annual    = _compute_financial_modules(facts, form="10-K", n=2)
+            quarterly = _compute_financial_modules(facts, form="10-Q", n=2)
+            la = annual[0]    if annual    else {}
+            lq = quarterly[0] if quarterly else {}
+            def _pick(key):
+                return la.get(key) if la.get(key) is not None else lq.get(key)
+
+            rd["financial_snapshot"] = {
+                "piotroski":      _pick("piotroski_score"),
+                "altman_z":       _pick("altman_z_score"),
+                "beneish_m":      _pick("beneish_m_score"),
+                "gross_margin":   _pick("gross_margin"),
+                "op_margin":      _pick("op_margin"),
+                "ocf_m":          _pick("ocf_m"),
+                "revenue_growth": _pick("revenue_growth"),
+                "current_ratio":  _pick("current_ratio"),
+                "period":         _pick("period"),
+            }
+
+            _conn = _as_db()
+            _conn.execute(
+                "UPDATE signals SET raw_data=? WHERE id=?",
+                (_json.dumps(rd), row["id"])
+            )
+            _conn.commit(); _conn.close()
+            patched += 1
+            print(f"[Alpha Scanner] Patched financial_snapshot for {ticker}")
+        except Exception as e:
+            print(f"[Alpha Scanner] Snapshot patch failed for {row['ticker']}: {e}")
+
+    if patched:
+        print(f"[Alpha Scanner] Financial snapshot patch complete: {patched} signals updated")
+
+
 def _run_alpha_scanner():
     """
     Full daily Alpha Scanner run. Called by cron endpoint.
@@ -4611,6 +4681,14 @@ def _run_alpha_scanner():
 
     # 2. Resolve stale signals
     _resolve_stale_signals()
+
+    # 2b. Retroactive financial snapshot patch — fills in any language_drift signals
+    # that were saved before the financial_snapshot feature was added (Sept 26 2026).
+    # Runs at scan start; skips signals that already have financial_snapshot.
+    try:
+        _patch_ld_financial_snapshots()
+    except Exception as _pe:
+        print(f"[Alpha Scanner] Financial snapshot patch error: {_pe}")
 
     new_signals = 0
 
