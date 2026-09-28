@@ -4654,6 +4654,89 @@ def _patch_ld_financial_snapshots():
         print(f"[Alpha Scanner] Financial snapshot patch complete: {patched} signals updated")
 
 
+def _patch_signal_sectors():
+    """
+    Retroactively fill sector on any active signal where sector is empty.
+    Uses yfinance. Safe to run on every scan — skips signals that already
+    have a sector value.
+    """
+    import json as _json
+    conn = _as_db()
+    rows = conn.execute(
+        "SELECT id, ticker, sector FROM signals WHERE status='active' AND (sector IS NULL OR sector='')"
+    ).fetchall()
+    conn.close()
+
+    patched = 0
+    for row in rows:
+        try:
+            ticker = row["ticker"]
+            sector = ""
+            try:
+                import yfinance as _yf
+                sector = _yf.Ticker(ticker).info.get("sector", "") or ""
+            except Exception:
+                pass
+            if not sector:
+                continue
+            _conn = _as_db()
+            _conn.execute("UPDATE signals SET sector=? WHERE id=?", (sector, row["id"]))
+            _conn.commit(); _conn.close()
+            patched += 1
+            print(f"[Alpha Scanner] Patched sector '{sector}' for {ticker}")
+        except Exception as e:
+            print(f"[Alpha Scanner] Sector patch failed for {row['ticker']}: {e}")
+
+    if patched:
+        print(f"[Alpha Scanner] Sector patch complete: {patched} signals updated")
+
+
+def _patch_signal_op_margins():
+    """
+    Retroactively cap op_margin values that are outside -500..500 range in
+    stored financial_quality signal raw_data. Also patches language_drift
+    financial_snapshot.op_margin.
+    Safe to run on every scan.
+    """
+    import json as _json
+    conn = _as_db()
+    rows = conn.execute(
+        "SELECT id, ticker, signal_type, raw_data FROM signals WHERE status='active'"
+    ).fetchall()
+    conn.close()
+
+    patched = 0
+    for row in rows:
+        try:
+            rd = _json.loads(row["raw_data"] or "{}")
+            changed = False
+
+            # financial_quality: key_metrics.latest_z_score / op_margin fields in thesis (text — skip)
+            # For financial_quality the op_margin isn't directly stored as a top-level key,
+            # it lives in the thesis text. We can't safely rewrite prose, so skip those.
+
+            # language_drift: financial_snapshot.op_margin
+            if row["signal_type"] == "language_drift":
+                fs = rd.get("financial_snapshot") or {}
+                om = fs.get("op_margin")
+                if om is not None and (om < -500 or om > 500):
+                    fs["op_margin"] = round(max(-500.0, min(500.0, om)), 1)
+                    rd["financial_snapshot"] = fs
+                    changed = True
+
+            if changed:
+                _conn = _as_db()
+                _conn.execute("UPDATE signals SET raw_data=? WHERE id=?", (_json.dumps(rd), row["id"]))
+                _conn.commit(); _conn.close()
+                patched += 1
+                print(f"[Alpha Scanner] Patched op_margin for {row['ticker']}")
+        except Exception as e:
+            print(f"[Alpha Scanner] Op-margin patch failed for {row['ticker']}: {e}")
+
+    if patched:
+        print(f"[Alpha Scanner] Op-margin patch complete: {patched} signals updated")
+
+
 def _run_alpha_scanner():
     """
     Full daily Alpha Scanner run. Called by cron endpoint.
@@ -4689,6 +4772,16 @@ def _run_alpha_scanner():
         _patch_ld_financial_snapshots()
     except Exception as _pe:
         print(f"[Alpha Scanner] Financial snapshot patch error: {_pe}")
+
+    try:
+        _patch_signal_sectors()
+    except Exception as _pe:
+        print(f"[Alpha Scanner] Sector patch error: {_pe}")
+
+    try:
+        _patch_signal_op_margins()
+    except Exception as _pe:
+        print(f"[Alpha Scanner] Op-margin patch error: {_pe}")
 
     new_signals = 0
 
