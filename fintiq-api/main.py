@@ -752,6 +752,33 @@ def _load_bulletin_from_disk() -> dict | None:
 def health():
     return {"status":"ok","service":"fintiq-api","time":datetime.now().isoformat(),"web_search":bool(TAVILY_API_KEY)}
 
+@app.get("/prices/{ticker}")
+def get_prices(ticker: str, period: str = "1y"):
+    """
+    Return daily OHLCV closing prices for a ticker via yfinance.
+    Used by the Pairs Trading tool on fintiq.uk.
+    period accepts: 6mo, 1y, 2y, 5y
+    """
+    import yfinance as yf
+    allowed_periods = {"6mo","1y","2y","3y","5y"}
+    if period not in allowed_periods:
+        period = "1y"
+    try:
+        t = yf.Ticker(ticker.upper().strip())
+        hist = t.history(period=period, interval="1d", auto_adjust=True)
+        if hist is None or hist.empty:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail=f"No price data found for ticker '{ticker}'")
+        prices = [
+            {"date": idx.strftime("%Y-%m-%d"), "close": round(float(row["Close"]), 4)}
+            for idx, row in hist.iterrows()
+            if row["Close"] > 0
+        ]
+        return {"ticker": ticker.upper().strip(), "count": len(prices), "prices": prices}
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=str(e))
+
 def _bg_regenerate():
     """Background thread: regenerate bulletin and update cache. Called when cache is stale."""
     global _bulletin_cache, _bulletin_cached_at, _bulletin_refreshing
