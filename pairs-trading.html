@@ -4,19 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Pairs Trading & Statistical Arbitrage Tool — Z-Score Analysis | Fintiq</title>
-<meta name="description" content="Free pairs trading and statistical arbitrage tool. Calculate the Z-score spread between two correlated assets, identify entry and exit signals, and model mean-reversion strategies. No sign-up required.">
+<meta name="description" content="Free pairs trading and statistical arbitrage tool. Calculate the Z-score spread between two correlated assets using real price data, identify entry and exit signals, and model mean-reversion strategies. No sign-up required.">
 <meta name="robots" content="index, follow">
 <meta name="author" content="Fintiq">
 <link rel="canonical" href="https://fintiq.uk/pairs-trading.html" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://fintiq.uk/pairs-trading.html" />
 <meta property="og:title" content="Pairs Trading & Statistical Arbitrage — Z-Score Tool | Fintiq" />
-<meta property="og:description" content="Visualise the Z-score spread between any two correlated stocks. Identify statistical arbitrage entry and exit points. Free, no sign-up." />
+<meta property="og:description" content="Visualise the Z-score spread between any two correlated stocks using real price data. Identify statistical arbitrage entry and exit points. Free, no sign-up." />
 <meta property="og:image" content="https://fintiq.uk/og-image.png" />
 <meta property="og:site_name" content="Fintiq" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Pairs Trading Z-Score Tool | Fintiq" />
-<meta name="twitter:description" content="Calculate the Z-score spread between correlated stocks. Identify mean-reversion entry/exit signals. Free pairs trading analysis." />
+<meta name="twitter:description" content="Calculate the Z-score spread between correlated stocks using real market data. Identify mean-reversion entry/exit signals." />
 <meta name="twitter:image" content="https://fintiq.uk/og-image.png" />
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
@@ -45,11 +45,12 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:24px;margin-bottom:20px}
 .card-title{font-size:0.78rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px}
 
-/* Pair selector */
+/* Tabs */
 .pair-mode-tabs{display:flex;gap:6px;margin-bottom:18px}
-.pmt{background:rgba(255,255,255,0.05);border:none;border-radius:8px;padding:8px 16px;color:#64748B;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit}
-.pmt.active{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);color:#F59E0B}
+.pmt{background:rgba(255,255,255,0.05);border:1px solid transparent;border-radius:8px;padding:8px 18px;color:#64748B;cursor:pointer;font-size:0.82rem;font-weight:600;font-family:inherit;transition:all 0.2s}
+.pmt.active{background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#F59E0B}
 
+/* Preset grid */
 .preset-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:16px}
 .preset-card{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:12px;cursor:pointer;transition:all 0.2s}
 .preset-card:hover,.preset-card.selected{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06)}
@@ -58,27 +59,37 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .preset-corr{font-size:0.72rem;color:#22c55e;margin-top:4px}
 
 /* Custom pair inputs */
-.custom-inputs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.custom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
 .field label{display:block;font-size:0.78rem;font-weight:600;color:#94A3B8;margin-bottom:6px}
-.field input,.field select{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#F1F5F9;font-size:0.9rem;font-family:inherit;outline:none;transition:border-color 0.2s}
+.field input,.field select{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#F1F5F9;font-size:0.9rem;font-family:inherit;outline:none;transition:border-color 0.2s;text-transform:uppercase}
+.field input::placeholder{text-transform:none;color:#475569}
 .field input:focus,.field select:focus{border-color:rgba(245,158,11,0.5)}
 .hint{font-size:0.72rem;color:#475569;margin-top:4px}
-.field textarea{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#F1F5F9;font-size:0.82rem;font-family:'Courier New',monospace;outline:none;resize:vertical;min-height:72px;transition:border-color 0.2s}
-.field textarea:focus{border-color:rgba(245,158,11,0.5)}
 
-.params-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:4px}
-.field-sm{min-width:150px}
+/* Params row */
+.params-row{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;margin-top:6px}
+.field-sm{min-width:140px}
 .field-sm label{display:block;font-size:0.78rem;font-weight:600;color:#94A3B8;margin-bottom:6px}
-.field-sm input{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.2s}
-.field-sm input:focus{border-color:rgba(245,158,11,0.5)}
-.run-btn{background:#F59E0B;color:#0A1628;border:none;border-radius:10px;padding:12px 32px;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;transition:opacity 0.2s}
+.field-sm input,.field-sm select{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:0.88rem;font-family:inherit;outline:none;transition:border-color 0.2s}
+.field-sm input:focus,.field-sm select:focus{border-color:rgba(245,158,11,0.5)}
+.run-btn{background:#F59E0B;color:#0A1628;border:none;border-radius:10px;padding:12px 32px;font-size:0.95rem;font-weight:800;cursor:pointer;font-family:inherit;transition:opacity 0.2s;flex-shrink:0}
 .run-btn:hover{opacity:0.88}
+.run-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+/* Loading */
+.loading-bar{background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:20px 24px;display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.spinner{width:20px;height:20px;border:2px solid rgba(245,158,11,0.2);border-top-color:#F59E0B;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:0.88rem;color:#94A3B8}
+
+/* Error bar */
+.error-bar{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:16px 20px;color:#f87171;font-size:0.88rem;margin-bottom:20px;display:none}
 
 /* Charts */
 .chart-wrap{position:relative;height:220px}
 .chart-wrap.tall{height:260px}
 
-/* Signals */
+/* Signal stats */
 .signal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
 .sig-card{background:#060F1A;border-radius:10px;padding:16px;text-align:center}
 .sig-val{font-size:1.5rem;font-weight:900;margin-bottom:4px}
@@ -90,19 +101,23 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .trade-signal.long-a{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3)}
 .trade-signal.long-b{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2)}
 .trade-signal.neutral{background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.2)}
-.trade-signal.exit{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2)}
 .signal-icon{font-size:1.8rem;flex-shrink:0}
 .signal-body h3{font-size:0.95rem;font-weight:700;margin-bottom:3px}
 .signal-body p{font-size:0.82rem;color:#94A3B8}
 
-/* Recent signals table */
+/* Signals table */
 .sigtable{width:100%;border-collapse:collapse}
 .sigtable th{background:#060F1A;color:#F59E0B;padding:10px 14px;text-align:left;font-size:0.75rem;border-bottom:1px solid rgba(245,158,11,0.2)}
 .sigtable td{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.85rem;color:#CBD5E1}
+.sigtable tr:last-child td{border:none}
 .badge{border-radius:6px;padding:3px 8px;font-size:0.72rem;font-weight:700}
 .badge-long-a{background:rgba(34,197,94,0.15);color:#22c55e}
 .badge-long-b{background:rgba(239,68,68,0.12);color:#f87171}
 .badge-exit{background:rgba(245,158,11,0.12);color:#F59E0B}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 24px;color:#475569}
+.empty p{font-size:0.9rem;margin-top:12px}
 
 /* How it works */
 .how{max-width:1200px;margin:0 auto 80px;padding:0 24px}
@@ -115,10 +130,6 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .section-h2{font-size:1.35rem;font-weight:800;color:#F1F5F9;margin-bottom:6px}
 .section-sub{color:#64748B;font-size:0.88rem}
 
-/* Empty state */
-.empty{text-align:center;padding:60px 24px;color:#475569}
-.empty p{font-size:0.9rem;margin-top:12px}
-
 footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
 .f-logo{display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
 .f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
@@ -127,14 +138,14 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 .f-copy{color:#334155;font-size:0.72rem}
 .mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#08121f;border-top:1px solid rgba(245,158,11,0.25);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
 .mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
-.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;font-size:0.65rem;font-weight:600;padding:4px 10px;border-radius:8px;letter-spacing:0.3px;text-transform:uppercase}
+.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;font-size:0.65rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase}
 .mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
 .mobile-bottom-nav li a.nav-app-btn{background:#F59E0B;color:#0A1628;padding:6px 14px;border-radius:20px;font-size:0.7rem}
 
-@media(max-width:900px){.how-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.how-grid{grid-template-columns:1fr}.signal-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){
   .hero h1{font-size:1.7rem}
-  .custom-inputs{grid-template-columns:1fr}
+  .custom-row{grid-template-columns:1fr}
   .signal-grid{grid-template-columns:repeat(2,1fr)}
   .mobile-bottom-nav{display:block}
   body{padding-bottom:68px}
@@ -173,32 +184,31 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   </div>
 </nav>
 <script>
-(function(){var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks'),i=document.getElementById('hamburgerIcon');if(!h)return;h.addEventListener('click',function(){var o=n.classList.toggle('mobile-open');h.setAttribute('aria-expanded',o);i.innerHTML=o?'<line x1="3" y1="3" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="3" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('mobile-open');h.setAttribute('aria-expanded','false');i.innerHTML='<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});});})();
+(function(){var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks'),i=document.getElementById('hamburgerIcon');if(!h)return;h.addEventListener('click',function(){var o=n.classList.toggle('mobile-open');i.innerHTML=o?'<line x1="3" y1="3" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="3" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('mobile-open');i.innerHTML='<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});});})();
 </script>
 
 <div class="hero">
-  <div class="hero-tag">📐 FREE TOOL · NO SIGN-UP</div>
+  <div class="hero-tag">📐 REAL MARKET DATA · NO SIGN-UP</div>
   <h1>Statistical <span>Pairs Trading</span></h1>
-  <p>Identify mean-reversion opportunities between two correlated assets using Z-score analysis — the mathematical foundation of quantitative hedge fund strategies. When the spread diverges beyond its historical norm, the statistical edge is on your side.</p>
+  <p>Identify mean-reversion opportunities between two correlated assets using Z-score analysis and real historical price data. The mathematical foundation of quantitative hedge fund market-neutral strategies — when the spread diverges beyond its historical norm, the statistical edge is on your side.</p>
   <div class="hero-features">
+    <span class="hf">Real price data via yfinance</span>
     <span class="hf">Z-Score spread analysis</span>
     <span class="hf">Entry & exit signal detection</span>
-    <span class="hf">Price ratio normalisation</span>
-    <span class="hf">Preset classic pairs</span>
-    <span class="hf">Custom data input</span>
-    <span class="hf">100% free · runs in browser</span>
+    <span class="hf">Stocks, ETFs, commodities, FX</span>
+    <span class="hf">6 classic preset pairs</span>
+    <span class="hf">Custom ticker lookup</span>
   </div>
 </div>
 
 <div class="main">
 
-  <!-- Controls card -->
   <div class="card">
     <div class="card-title">🔗 Select Your Pair</div>
 
     <div class="pair-mode-tabs">
       <button class="pmt active" id="modePreset" onclick="setMode('preset')">📂 Classic Pairs</button>
-      <button class="pmt" id="modeCustom" onclick="setMode('custom')">✏️ Custom Data</button>
+      <button class="pmt" id="modeCustom" onclick="setMode('custom')">✏️ Custom Pair</button>
     </div>
 
     <!-- Preset pairs -->
@@ -207,56 +217,48 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
         <div class="preset-card selected" id="pair_0" onclick="selectPreset(0)">
           <div class="preset-pair">KO / PEP</div>
           <div class="preset-desc">Coca-Cola vs Pepsi</div>
-          <div class="preset-corr">★ Classic pair · ρ ≈ 0.82</div>
+          <div class="preset-corr">★ Classic pair</div>
         </div>
         <div class="preset-card" id="pair_1" onclick="selectPreset(1)">
           <div class="preset-pair">JPM / BAC</div>
           <div class="preset-desc">JP Morgan vs Bank of America</div>
-          <div class="preset-corr">★ Banking sector · ρ ≈ 0.91</div>
+          <div class="preset-corr">★ Banking sector</div>
         </div>
         <div class="preset-card" id="pair_2" onclick="selectPreset(2)">
           <div class="preset-pair">XOM / CVX</div>
           <div class="preset-desc">ExxonMobil vs Chevron</div>
-          <div class="preset-corr">★ Oil majors · ρ ≈ 0.88</div>
+          <div class="preset-corr">★ Oil majors</div>
         </div>
         <div class="preset-card" id="pair_3" onclick="selectPreset(3)">
           <div class="preset-pair">AAPL / MSFT</div>
           <div class="preset-desc">Apple vs Microsoft</div>
-          <div class="preset-corr">★ Big Tech · ρ ≈ 0.79</div>
+          <div class="preset-corr">★ Big Tech</div>
         </div>
         <div class="preset-card" id="pair_4" onclick="selectPreset(4)">
           <div class="preset-pair">GLD / SLV</div>
           <div class="preset-desc">Gold vs Silver ETF</div>
-          <div class="preset-corr">★ Precious metals · ρ ≈ 0.85</div>
+          <div class="preset-corr">★ Precious metals</div>
         </div>
         <div class="preset-card" id="pair_5" onclick="selectPreset(5)">
-          <div class="preset-pair">AMD / NVDA</div>
-          <div class="preset-desc">AMD vs Nvidia</div>
-          <div class="preset-corr">★ Semiconductors · ρ ≈ 0.77</div>
+          <div class="preset-pair">SPY / GLD</div>
+          <div class="preset-desc">S&amp;P 500 vs Gold</div>
+          <div class="preset-corr">★ Risk-on/off hedge</div>
         </div>
       </div>
     </div>
 
     <!-- Custom pair mode -->
     <div id="customSection" style="display:none">
-      <div class="custom-inputs">
+      <div class="custom-row">
         <div class="field">
-          <label>Asset A Name</label>
-          <input type="text" id="assetAName" value="Asset A">
+          <label>Asset A — Ticker Symbol</label>
+          <input type="text" id="customTickerA" placeholder="e.g. AAPL, GLD, EURUSD=X, CL=F" maxlength="20">
+          <div class="hint">Stocks, ETFs, FX (EURUSD=X), Futures (CL=F for Oil)</div>
         </div>
         <div class="field">
-          <label>Asset B Name</label>
-          <input type="text" id="assetBName" value="Asset B">
-        </div>
-        <div class="field">
-          <label>Asset A — Daily Prices (comma-separated)</label>
-          <textarea id="pricesA" placeholder="100, 101.2, 99.8, 102.1, ..."></textarea>
-          <div class="hint">Paste daily closing prices, most recent last</div>
-        </div>
-        <div class="field">
-          <label>Asset B — Daily Prices (comma-separated)</label>
-          <textarea id="pricesB" placeholder="98, 99.5, 97.2, 100.8, ..."></textarea>
-          <div class="hint">Must be same length as Asset A</div>
+          <label>Asset B — Ticker Symbol</label>
+          <input type="text" id="customTickerB" placeholder="e.g. MSFT, SLV, GC=F" maxlength="20">
+          <div class="hint">Must be tradeable and have price history on Yahoo Finance</div>
         </div>
       </div>
     </div>
@@ -264,30 +266,38 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <div class="params-row">
       <div class="field-sm">
         <label>Lookback Window (days)</label>
-        <input type="number" id="lookback" value="60" min="20" max="252" step="5">
+        <input type="number" id="lookback" value="60" min="20" max="500" step="5">
       </div>
       <div class="field-sm">
-        <label>Entry Z-Score Threshold</label>
+        <label>History to Fetch</label>
+        <select id="period">
+          <option value="6mo">6 Months</option>
+          <option value="1y" selected>1 Year</option>
+          <option value="2y">2 Years</option>
+          <option value="5y">5 Years</option>
+        </select>
+      </div>
+      <div class="field-sm">
+        <label>Entry Z-Score</label>
         <input type="number" id="entryZ" value="2.00" min="0.5" max="4" step="0.25">
       </div>
       <div class="field-sm">
-        <label>Exit Z-Score (mean revert)</label>
+        <label>Exit Z-Score</label>
         <input type="number" id="exitZ" value="0.50" min="0" max="2" step="0.25">
       </div>
-      <button class="run-btn" onclick="analyse()">⚡ Analyse Pair</button>
+      <button class="run-btn" id="runBtn" onclick="analyse()">⚡ Analyse Pair</button>
     </div>
   </div>
 
-  <!-- Results -->
+  <div id="errorBar" class="error-bar"></div>
   <div id="resultsArea">
     <div class="card">
       <div class="empty">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-        <p>Select a classic pair or enter custom prices<br>and click <strong style="color:#F59E0B">Analyse Pair</strong></p>
+        <p>Select a classic pair or enter custom tickers<br>and click <strong style="color:#F59E0B">Analyse Pair</strong></p>
       </div>
     </div>
   </div>
-
 </div>
 
 <!-- How it works -->
@@ -299,17 +309,17 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <div class="how-card">
       <div class="how-icon">🔗</div>
       <h3>Cointegration & Mean Reversion</h3>
-      <p>Two stocks can be cointegrated even if individually non-stationary — meaning their price ratio tends to revert to a long-run equilibrium. Classic examples include Coca-Cola/Pepsi (same market, same consumer), JPM/BAC (identical interest rate exposure), or XOM/CVX (oil price-driven). The key is shared economic drivers, not just historical correlation.</p>
+      <p>Two assets can be cointegrated even if individually non-stationary — their price ratio tends to revert to a long-run equilibrium. Classic examples: Coca-Cola/Pepsi (same market, same consumer), JPM/BAC (identical interest rate exposure). The key is shared economic drivers, not just historical correlation.</p>
     </div>
     <div class="how-card">
       <div class="how-icon">📏</div>
       <h3>Z-Score & Entry Signals</h3>
-      <p>The spread Z-score = (current ratio − rolling mean) / rolling standard deviation. When Z &gt; +2, Asset A is relatively expensive vs Asset B — the trade is: short A, long B. When Z &lt; −2, the reverse. The position is closed when Z reverts toward 0. A ±2 threshold means the spread is beyond 2 standard deviations from its mean — historically a high-probability mean-reversion setup.</p>
+      <p>Spread Z-score = (current ratio − rolling mean) / rolling std deviation. When Z &gt; +2, Asset A is relatively expensive vs B — short A, long B. When Z &lt; −2, the reverse. Close when Z reverts toward 0. ±2 means the spread is beyond 2 standard deviations from its mean — a historically high-probability mean-reversion setup.</p>
     </div>
     <div class="how-card">
       <div class="how-icon">⚠️</div>
-      <h3>Risk Factors to Watch</h3>
-      <p>Pairs trades carry regime-change risk: the relationship can permanently break (e.g. one company changes its business model, gets acquired, or faces sector-specific regulatory shock). Stop losses are essential. Lookback period matters — too short creates noise, too long misses recent structural shifts. This tool uses simulated data for demonstration; always validate with real historical prices.</p>
+      <h3>What Can Go Wrong</h3>
+      <p>Regime-change risk: the relationship can break permanently (acquisition, sector-specific regulatory shock, business model change). Stop losses are essential. Lookback too short = noisy signals; too long = misses recent structural shifts. This tool uses real Yahoo Finance data — always validate with your own research.</p>
     </div>
   </div>
 </div>
@@ -330,13 +340,13 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   <div class="f-sub">Professional investing tools for retail investors</div>
   <div class="f-links">
     <a href="https://fintiq.uk">Home</a>
-    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/tools.html">Tools</a>
     <a href="https://fintiq.uk/alpha-scanner.html">Alpha Scanner</a>
     <a href="https://fintiq.uk/deep-dive.html">Stock Deep Dive</a>
     <a href="https://fintiq.uk/bulletin.html">Market Bulletin</a>
     <a href="https://fintiq.uk/learn.html">Learn</a>
   </div>
-  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice. Preset data is simulated for illustration.</div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
 </footer>
 
 <div class="mobile-bottom-nav">
@@ -349,281 +359,354 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 </div>
 
 <script>
-// ── Preset data ───────────────────────────────────────────────────────────────
+const YF_API = 'https://query2.finance.yahoo.com/v8/finance/chart';
+
 const PRESETS = [
-  { nameA:'KO', nameB:'PEP', corrTarget:0.82, driftA:0.00025, driftB:0.00022, volA:0.012, volB:0.011 },
-  { nameA:'JPM', nameB:'BAC', corrTarget:0.91, driftA:0.0003, driftB:0.00028, volA:0.016, volB:0.018 },
-  { nameA:'XOM', nameB:'CVX', corrTarget:0.88, driftA:0.00022, driftB:0.00020, volA:0.014, volB:0.013 },
-  { nameA:'AAPL', nameB:'MSFT', corrTarget:0.79, driftA:0.0004, driftB:0.00035, volA:0.018, volB:0.016 },
-  { nameA:'GLD', nameB:'SLV', corrTarget:0.85, driftA:0.00015, driftB:0.00012, volA:0.010, volB:0.019 },
-  { nameA:'AMD', nameB:'NVDA', corrTarget:0.77, driftA:0.0005, driftB:0.0007, volA:0.030, volB:0.033 },
+  { tickerA:'KO',  tickerB:'PEP'  },
+  { tickerA:'JPM', tickerB:'BAC'  },
+  { tickerA:'XOM', tickerB:'CVX'  },
+  { tickerA:'AAPL',tickerB:'MSFT' },
+  { tickerA:'GLD', tickerB:'SLV'  },
+  { tickerA:'SPY', tickerB:'GLD'  },
 ];
 
-let currentPreset = 0;
 let mode = 'preset';
+let currentPreset = 0;
 let chartInstances = {};
 
+// ── UI helpers ────────────────────────────────────────────────────────────────
 function setMode(m) {
   mode = m;
   document.getElementById('presetSection').style.display = m === 'preset' ? '' : 'none';
   document.getElementById('customSection').style.display  = m === 'custom' ? '' : 'none';
   document.querySelectorAll('.pmt').forEach(b => b.classList.remove('active'));
-  document.getElementById('mode'+m.charAt(0).toUpperCase()+m.slice(1)).classList.add('active');
+  document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1)).classList.add('active');
 }
 
 function selectPreset(i) {
   document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('pair_'+i).classList.add('selected');
+  document.getElementById('pair_' + i).classList.add('selected');
   currentPreset = i;
 }
 
-// ── Random normal ─────────────────────────────────────────────────────────────
-function randn() {
-  let u=0,v=0;
-  while(u===0)u=Math.random();
-  while(v===0)v=Math.random();
-  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+function showError(msg) {
+  const el = document.getElementById('errorBar');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+function clearError() {
+  document.getElementById('errorBar').style.display = 'none';
 }
 
-// ── Generate correlated price series ─────────────────────────────────────────
-function generateCorrelatedPrices(n, driftA, driftB, volA, volB, rho, s0A=100, s0B=100) {
-  const pA=[s0A], pB=[s0B];
-  for (let t=0;t<n-1;t++) {
-    const z1 = randn();
-    const z2 = rho*z1 + Math.sqrt(1-rho*rho)*randn();
-    pA.push(pA[t]*Math.exp(driftA + volA*z1));
-    pB.push(pB[t]*Math.exp(driftB + volB*z2));
-  }
-  // Add a visible mean-reversion event mid-series for illustration
-  const mid = Math.floor(n * 0.6);
-  for (let t=mid; t<mid+20 && t<n; t++) {
-    pA[t] *= (1 + 0.008*(t-mid)); // temporary divergence
-  }
-  return { pA, pB };
+function showLoading(tickerA, tickerB) {
+  document.getElementById('resultsArea').innerHTML = `
+    <div class="loading-bar">
+      <div class="spinner"></div>
+      <div class="loading-text">Fetching historical prices for <strong>${tickerA}</strong> and <strong>${tickerB}</strong> directly from Yahoo Finance…</div>
+    </div>`;
 }
 
-// ── Rolling stats ─────────────────────────────────────────────────────────────
-function rollingMeanStd(arr, w) {
-  const means=[], stds=[];
-  for (let i=0;i<arr.length;i++) {
-    if (i<w-1) { means.push(null); stds.push(null); continue; }
-    const slice = arr.slice(i-w+1, i+1);
-    const m = slice.reduce((a,b)=>a+b,0)/w;
-    const s = Math.sqrt(slice.reduce((a,b)=>a+(b-m)**2,0)/w);
-    means.push(m);
-    stds.push(s || 0.0001);
+// ── Data fetch — direct from Yahoo Finance chart API ─────────────────────────
+async function fetchPrices(ticker, period) {
+  // Yahoo Finance v8 chart endpoint — works directly from the browser (CORS open)
+  const url = `${YF_API}/${encodeURIComponent(ticker.toUpperCase())}?range=${period}&interval=1d&includePrePost=false&events=history`;
+  let resp;
+  try {
+    resp = await fetch(url);
+  } catch (e) {
+    throw new Error(`Network error fetching ${ticker}. Check your internet connection.`);
   }
-  return { means, stds };
+  if (!resp.ok) throw new Error(`No data for '${ticker}' (HTTP ${resp.status}). Is the ticker valid on Yahoo Finance?`);
+
+  const json = await resp.json();
+  const result = json?.chart?.result?.[0];
+  if (!result) {
+    const detail = json?.chart?.error?.description || `No price history found for '${ticker}'`;
+    throw new Error(detail);
+  }
+
+  const timestamps = result.timestamp || [];
+  // Prefer adjusted close; fall back to regular close
+  const closes = result.indicators?.adjclose?.[0]?.adjclose
+               || result.indicators?.quote?.[0]?.close
+               || [];
+
+  const prices = timestamps.map((ts, i) => ({
+    date:  new Date(ts * 1000).toISOString().slice(0, 10),
+    close: closes[i],
+  })).filter(p => p.close != null && p.close > 0);
+
+  if (!prices.length) throw new Error(`Price data came back empty for '${ticker}'. Try a different period.`);
+
+  return { ticker: ticker.toUpperCase(), count: prices.length, prices };
+}
+
+// ── Align two price series on matching dates ──────────────────────────────────
+function alignSeries(seriesA, seriesB) {
+  const mapB = {};
+  seriesB.forEach(p => { mapB[p.date] = p.close; });
+  const aligned = [];
+  seriesA.forEach(p => {
+    if (mapB[p.date] !== undefined) {
+      aligned.push({ date: p.date, a: p.close, b: mapB[p.date] });
+    }
+  });
+  return aligned; // [{date, a, b}]
+}
+
+// ── Rolling mean and std ──────────────────────────────────────────────────────
+function rollingStats(arr, w) {
+  return arr.map((_, i) => {
+    if (i < w - 1) return { mean: null, std: null };
+    const slice = arr.slice(i - w + 1, i + 1);
+    const mean  = slice.reduce((s, v) => s + v, 0) / w;
+    const std   = Math.sqrt(slice.reduce((s, v) => s + (v - mean) ** 2, 0) / w) || 0.0001;
+    return { mean, std };
+  });
+}
+
+// ── Pearson correlation ───────────────────────────────────────────────────────
+function pearson(xs, ys) {
+  const n  = xs.length;
+  const mx = xs.reduce((s, v) => s + v, 0) / n;
+  const my = ys.reduce((s, v) => s + v, 0) / n;
+  const num = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0);
+  const den = Math.sqrt(xs.reduce((s, v) => s + (v - mx) ** 2, 0) * ys.reduce((s, v) => s + (v - my) ** 2, 0));
+  return den ? num / den : 0;
+}
+
+// ── Format date nicely ────────────────────────────────────────────────────────
+function fmtDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
 }
 
 // ── Main analysis ─────────────────────────────────────────────────────────────
-function analyse() {
-  const lookback = parseInt(document.getElementById('lookback').value) || 60;
-  const entryZ   = parseFloat(document.getElementById('entryZ').value) || 2.0;
-  const exitZ    = parseFloat(document.getElementById('exitZ').value) || 0.5;
+async function analyse() {
+  clearError();
 
-  let pA, pB, nameA, nameB;
-
+  let tickerA, tickerB;
   if (mode === 'preset') {
-    const p = PRESETS[currentPreset];
-    nameA = p.nameA; nameB = p.nameB;
-    const days = Math.max(lookback + 30, 120);
-    const gen = generateCorrelatedPrices(days, p.driftA, p.driftB, p.volA, p.volB, p.corrTarget);
-    pA = gen.pA; pB = gen.pB;
+    tickerA = PRESETS[currentPreset].tickerA;
+    tickerB = PRESETS[currentPreset].tickerB;
   } else {
-    nameA = document.getElementById('assetAName').value || 'Asset A';
-    nameB = document.getElementById('assetBName').value || 'Asset B';
-    const rawA = document.getElementById('pricesA').value.split(',').map(x=>parseFloat(x.trim())).filter(x=>!isNaN(x));
-    const rawB = document.getElementById('pricesB').value.split(',').map(x=>parseFloat(x.trim())).filter(x=>!isNaN(x));
-    if (rawA.length < 10 || rawB.length < 10) return alert('Please enter at least 10 prices for each asset');
-    if (rawA.length !== rawB.length) return alert(`Price series lengths don't match: ${rawA.length} vs ${rawB.length}`);
-    pA = rawA; pB = rawB;
+    tickerA = (document.getElementById('customTickerA').value || '').trim().toUpperCase();
+    tickerB = (document.getElementById('customTickerB').value || '').trim().toUpperCase();
+    if (!tickerA || !tickerB) return showError('Please enter both ticker symbols.');
+    if (tickerA === tickerB)  return showError('Asset A and Asset B must be different tickers.');
   }
 
-  const n = pA.length;
+  const lookback = parseInt(document.getElementById('lookback').value) || 60;
+  const period   = document.getElementById('period').value || '1y';
+  const entryZ   = parseFloat(document.getElementById('entryZ').value) || 2.0;
+  const exitZ    = parseFloat(document.getElementById('exitZ').value)  || 0.5;
 
-  // Price ratio (spread)
-  const ratio = pA.map((a, i) => a / pB[i]);
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading…';
+  showLoading(tickerA, tickerB);
 
-  // Rolling Z-score
-  const { means, stds } = rollingMeanStd(ratio, lookback);
-  const zScores = ratio.map((r, i) => means[i] !== null ? (r - means[i]) / stds[i] : null);
+  try {
+    // Fetch both series in parallel
+    const [dataA, dataB] = await Promise.all([
+      fetchPrices(tickerA, period),
+      fetchPrices(tickerB, period),
+    ]);
 
-  // Current stats
-  const currentZ = zScores[n-1];
-  const mean60   = means[n-1];
-  const std60    = stds[n-1];
+    // Align on matching trading dates
+    const aligned = alignSeries(dataA.prices, dataB.prices);
 
-  // Correlation estimate
-  const retA = pA.slice(1).map((v,i) => Math.log(v/pA[i]));
-  const retB = pB.slice(1).map((v,i) => Math.log(v/pB[i]));
-  const mA = retA.reduce((a,b)=>a+b,0)/retA.length;
-  const mB = retB.reduce((a,b)=>a+b,0)/retB.length;
-  const cov = retA.reduce((s,v,i)=>s+(v-mA)*(retB[i]-mB),0)/retA.length;
-  const sdA = Math.sqrt(retA.reduce((s,v)=>s+(v-mA)**2,0)/retA.length);
-  const sdB = Math.sqrt(retB.reduce((s,v)=>s+(v-mB)**2,0)/retB.length);
-  const corr = (sdA && sdB) ? (cov/(sdA*sdB)).toFixed(3) : 'N/A';
+    if (aligned.length < lookback + 10) {
+      throw new Error(
+        `Only ${aligned.length} matching trading days found. Reduce the lookback window to ${Math.max(20, aligned.length - 10)} or fewer, or choose a longer history period.`
+      );
+    }
 
-  // Identify signal events
-  const signals = [];
-  let inTrade = null;
-  for (let i=lookback; i<n; i++) {
-    const z = zScores[i];
-    if (z === null) continue;
-    const label = `Day ${i+1}`;
-    if (!inTrade) {
-      if (z > entryZ) {
-        signals.push({ day:i, z:z.toFixed(2), type:'long-b', label: `Long ${nameB}, Short ${nameA}`, dayLabel:label });
-        inTrade = 'long-b';
-      } else if (z < -entryZ) {
-        signals.push({ day:i, z:z.toFixed(2), type:'long-a', label: `Long ${nameA}, Short ${nameB}`, dayLabel:label });
-        inTrade = 'long-a';
-      }
-    } else {
-      if (Math.abs(z) < exitZ) {
-        signals.push({ day:i, z:z.toFixed(2), type:'exit', label:'Exit trade — spread reverted', dayLabel:label });
-        inTrade = null;
+    // Trim to the date range where we have enough for the rolling window
+    // Show all data but Z-scores only from index lookback-1 onwards
+    const dates  = aligned.map(p => p.date);
+    const pA     = aligned.map(p => p.a);
+    const pB     = aligned.map(p => p.b);
+    const ratio  = pA.map((a, i) => a / pB[i]);
+
+    const stats   = rollingStats(ratio, lookback);
+    const zScores = ratio.map((r, i) => stats[i].mean !== null ? (r - stats[i].mean) / stats[i].std : null);
+
+    // Valid window — trim display to where Z-scores exist
+    const trimStart = lookback - 1;
+    const dDates  = dates.slice(trimStart);
+    const dZ      = zScores.slice(trimStart);
+    const dRatio  = ratio.slice(trimStart);
+    const dNormA  = pA.map(v => (v / pA[0]) * 100);
+    const dNormB  = pB.map(v => (v / pB[0]) * 100);
+
+    // Current state
+    const currentZ   = zScores[zScores.length - 1];
+    const corrVal    = pearson(pA, pB);
+
+    // X-axis labels: show date every ~20 points, sparse for readability
+    const labelEvery = Math.max(1, Math.floor(dDates.length / 12));
+    const xLabels    = dDates.map((d, i) => i % labelEvery === 0 ? fmtDate(d) : '');
+    const xLabelsAll = dates.map((d, i) => i % Math.max(1, Math.floor(dates.length / 12)) === 0 ? fmtDate(d) : '');
+
+    // ── Signal detection ──────────────────────────────────────────────────────
+    const signals = [];
+    let inTrade = null;
+
+    for (let i = trimStart; i < aligned.length; i++) {
+      const z    = zScores[i];
+      const date = dates[i];
+      if (z === null) continue;
+
+      if (!inTrade) {
+        if (z > entryZ) {
+          signals.push({ date, z: +z.toFixed(2), type: 'long-b', action: `Short ${tickerA}, Long ${tickerB}` });
+          inTrade = 'long-b';
+        } else if (z < -entryZ) {
+          signals.push({ date, z: +z.toFixed(2), type: 'long-a', action: `Long ${tickerA}, Short ${tickerB}` });
+          inTrade = 'long-a';
+        }
+      } else {
+        if (Math.abs(z) < exitZ) {
+          signals.push({ date, z: +z.toFixed(2), type: 'exit', action: 'Close position — spread reverted to mean' });
+          inTrade = null;
+        }
       }
     }
-  }
 
-  // Current signal
-  let signalHTML;
-  if (currentZ !== null) {
-    if (Math.abs(currentZ) < exitZ) {
-      signalHTML = `<div class="trade-signal neutral"><div class="signal-icon">⏸️</div><div class="signal-body"><h3 style="color:#94A3B8">No Active Signal</h3><p>Z-score (${currentZ.toFixed(2)}) is within the neutral zone. No statistical edge currently. Wait for the spread to diverge beyond ±${entryZ}.</p></div></div>`;
+    // ── Current signal banner ─────────────────────────────────────────────────
+    let signalHTML;
+    const zDisp = currentZ !== null ? currentZ.toFixed(2) : 'N/A';
+    if (currentZ === null) {
+      signalHTML = `<div class="trade-signal neutral"><div class="signal-icon">⏳</div><div class="signal-body"><h3>Insufficient data</h3><p>Not enough history to compute Z-score with current lookback window.</p></div></div>`;
+    } else if (Math.abs(currentZ) < exitZ) {
+      signalHTML = `<div class="trade-signal neutral"><div class="signal-icon">⏸️</div><div class="signal-body"><h3 style="color:#94A3B8">No Active Signal — Z = ${zDisp}</h3><p>Spread is within the neutral zone. No statistical edge today. Wait for divergence beyond ±${entryZ}.</p></div></div>`;
     } else if (currentZ > entryZ) {
-      signalHTML = `<div class="trade-signal long-b"><div class="signal-icon">📉📈</div><div class="signal-body"><h3 class="red">Short ${nameA} / Long ${nameB}</h3><p>${nameA} is statistically expensive relative to ${nameB} (Z = ${currentZ.toFixed(2)}). The spread favours mean reversion toward ${nameB}. Exit when Z reverts below ±${exitZ}.</p></div></div>`;
+      signalHTML = `<div class="trade-signal long-b"><div class="signal-icon">📉📈</div><div class="signal-body"><h3 class="red">Short ${tickerA} / Long ${tickerB} — Z = ${zDisp}</h3><p>${tickerA} is statistically expensive relative to ${tickerB}. The spread favours mean reversion toward ${tickerB}. Exit when |Z| reverts below ${exitZ}.</p></div></div>`;
     } else if (currentZ < -entryZ) {
-      signalHTML = `<div class="trade-signal long-a"><div class="signal-icon">📈📉</div><div class="signal-body"><h3 class="green">Long ${nameA} / Short ${nameB}</h3><p>${nameA} is statistically cheap relative to ${nameB} (Z = ${currentZ.toFixed(2)}). The spread favours mean reversion toward ${nameA}. Exit when Z reverts above −${exitZ}.</p></div></div>`;
+      signalHTML = `<div class="trade-signal long-a"><div class="signal-icon">📈📉</div><div class="signal-body"><h3 class="green">Long ${tickerA} / Short ${tickerB} — Z = ${zDisp}</h3><p>${tickerA} is statistically cheap relative to ${tickerB}. The spread favours mean reversion toward ${tickerA}. Exit when |Z| reverts below ${exitZ}.</p></div></div>`;
     } else {
-      signalHTML = `<div class="trade-signal exit"><div class="signal-icon">🔔</div><div class="signal-body"><h3 class="gold">Approaching Signal Zone</h3><p>Z-score is ${currentZ.toFixed(2)} — approaching the ±${entryZ} threshold. No entry yet, but monitor for an emerging divergence.</p></div></div>`;
+      signalHTML = `<div class="trade-signal neutral" style="border-color:rgba(245,158,11,0.25)"><div class="signal-icon">🔔</div><div class="signal-body"><h3 class="gold">Approaching Signal Zone — Z = ${zDisp}</h3><p>Spread is within the ±${entryZ} zone. Monitor for further divergence.</p></div></div>`;
     }
-  } else {
-    signalHTML = `<div class="trade-signal neutral"><div class="signal-icon">⏳</div><div class="signal-body"><h3>Building Lookback Window</h3><p>Not enough data to compute rolling statistics yet. Need at least ${lookback} data points.</p></div></div>`;
-  }
 
-  // Build recent signals table
-  const recentSigs = signals.slice(-8).reverse();
-  const sigRows = recentSigs.map(s => `
-    <tr>
-      <td>${s.dayLabel}</td>
-      <td>${s.z}</td>
-      <td><span class="badge badge-${s.type}">${s.type==='long-a'?`↑ Long ${nameA}`:s.type==='long-b'?`↑ Long ${nameB}`:'Exit'}</span></td>
-      <td>${s.label}</td>
-    </tr>
-  `).join('') || '<tr><td colspan="4" style="color:#475569;text-align:center;padding:20px">No trade signals in this window</td></tr>';
+    // ── Signal rows table ─────────────────────────────────────────────────────
+    const sigRows = signals.length
+      ? [...signals].reverse().slice(0, 15).map(s => `
+          <tr>
+            <td>${fmtDate(s.date)}</td>
+            <td>${s.z > 0 ? '+' : ''}${s.z}</td>
+            <td><span class="badge badge-${s.type}">${s.type === 'long-a' ? `↑ ${tickerA}` : s.type === 'long-b' ? `↑ ${tickerB}` : '✕ Exit'}</span></td>
+            <td>${s.action}</td>
+          </tr>`).join('')
+      : `<tr><td colspan="4" style="color:#475569;text-align:center;padding:20px">No signals triggered in this period with Z threshold ±${entryZ}. Try reducing the entry Z-score.</td></tr>`;
 
-  // Labels
-  const labels = pA.map((_,i) => i%10===0 ? `D${i+1}` : '');
-
-  // Normalised prices
-  const normA = pA.map(v => (v/pA[0])*100);
-  const normB = pB.map(v => (v/pB[0])*100);
-
-  const resultsArea = document.getElementById('resultsArea');
-  resultsArea.innerHTML = `
-    ${signalHTML}
-
-    <div class="card">
-      <div class="card-title">📊 Key Statistics</div>
-      <div class="signal-grid">
-        <div class="sig-card">
-          <div class="sig-val ${currentZ!==null && Math.abs(currentZ)>=entryZ ? (currentZ>0?'red':'green') : 'gold'}">${currentZ !== null ? currentZ.toFixed(2) : 'N/A'}</div>
-          <div class="sig-lbl">Current Z-Score</div>
-        </div>
-        <div class="sig-card">
-          <div class="sig-val blue">${corr}</div>
-          <div class="sig-lbl">Correlation (${n} days)</div>
-        </div>
-        <div class="sig-card">
-          <div class="sig-val gold">${mean60 ? mean60.toFixed(4) : 'N/A'}</div>
-          <div class="sig-lbl">Rolling Mean Ratio</div>
-        </div>
-        <div class="sig-card">
-          <div class="sig-val purple">${signals.filter(s=>s.type!=='exit').length}</div>
-          <div class="sig-lbl">Trade Signals Found</div>
+    // ── Build HTML ────────────────────────────────────────────────────────────
+    document.getElementById('resultsArea').innerHTML = `
+      ${signalHTML}
+      <div class="card">
+        <div class="card-title">📊 Key Statistics — ${tickerA} / ${tickerB}</div>
+        <div class="signal-grid">
+          <div class="sig-card">
+            <div class="sig-val ${currentZ !== null && Math.abs(currentZ) >= entryZ ? (currentZ > 0 ? 'red' : 'green') : 'gold'}">${zDisp}</div>
+            <div class="sig-lbl">Current Z-Score</div>
+          </div>
+          <div class="sig-card">
+            <div class="sig-val blue">${corrVal.toFixed(3)}</div>
+            <div class="sig-lbl">Correlation (${aligned.length}d)</div>
+          </div>
+          <div class="sig-card">
+            <div class="sig-val gold">${ratio[ratio.length - 1].toFixed(4)}</div>
+            <div class="sig-lbl">Current Ratio A/B</div>
+          </div>
+          <div class="sig-card">
+            <div class="sig-val purple">${signals.filter(s => s.type !== 'exit').length}</div>
+            <div class="sig-lbl">Trade Signals (period)</div>
+          </div>
         </div>
       </div>
-    </div>
+      <div class="card">
+        <div class="card-title">📈 Normalised Price — ${tickerA} vs ${tickerB} (base 100)</div>
+        <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📉 Z-Score Spread — ${lookback}-day rolling window</div>
+        <div class="chart-wrap tall"><canvas id="zChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 All Trade Signals — ${fmtDate(dDates[0])} to ${fmtDate(dDates[dDates.length - 1])}</div>
+        <table class="sigtable">
+          <thead><tr><th>Date</th><th>Z-Score</th><th>Signal</th><th>Action</th></tr></thead>
+          <tbody>${sigRows}</tbody>
+        </table>
+        <p style="margin-top:12px;font-size:0.75rem;color:#475569">Entry at |Z| ≥ ${entryZ} · Exit at |Z| ≤ ${exitZ} · Showing up to 15 most recent signals. Data: Yahoo Finance.</p>
+      </div>`;
 
-    <div class="card">
-      <div class="card-title">📈 Normalised Price — ${nameA} vs ${nameB} (base 100)</div>
-      <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
-    </div>
+    // ── Destroy old charts ────────────────────────────────────────────────────
+    Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+    chartInstances = {};
 
-    <div class="card">
-      <div class="card-title">📉 Z-Score Spread (${lookback}-day rolling)</div>
-      <div class="chart-wrap tall"><canvas id="zChart"></canvas></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">📋 Recent Trade Signals</div>
-      <table class="sigtable">
-        <thead><tr><th>Day</th><th>Z-Score</th><th>Signal</th><th>Action</th></tr></thead>
-        <tbody>${sigRows}</tbody>
-      </table>
-      <p style="margin-top:12px;font-size:0.75rem;color:#475569">Preset pair data is simulated for educational purposes. Entry signals triggered at Z = ±${entryZ}, exits at |Z| &lt; ${exitZ}.</p>
-    </div>
-  `;
-
-  // Destroy old charts
-  Object.values(chartInstances).forEach(c => c.destroy());
-  chartInstances = {};
-
-  // Price chart
-  chartInstances.price = new Chart(document.getElementById('priceChart').getContext('2d'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: nameA, data: normA, borderColor: '#F59E0B', borderWidth: 2, pointRadius: 0, tension: 0.2 },
-        { label: nameB, data: normB, borderColor: '#22c55e', borderWidth: 2, pointRadius: 0, tension: 0.2 },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false, animation:{duration:300},
-      plugins:{ legend:{labels:{color:'#94A3B8',font:{size:11}}} },
-      scales:{
-        x:{ticks:{color:'#475569',maxTicksLimit:12},grid:{color:'rgba(255,255,255,0.03)'}},
-        y:{ticks:{color:'#475569',callback:v=>v.toFixed(0)},grid:{color:'rgba(255,255,255,0.03)'}}
+    // ── Price chart ───────────────────────────────────────────────────────────
+    chartInstances.price = new Chart(document.getElementById('priceChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: xLabelsAll,
+        datasets: [
+          { label: tickerA, data: dNormA, borderColor: '#F59E0B', borderWidth: 2, pointRadius: 0, tension: 0.2 },
+          { label: tickerB, data: dNormB, borderColor: '#22c55e', borderWidth: 2, pointRadius: 0, tension: 0.2 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { labels: { color: '#94A3B8', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#475569', maxTicksLimit: 12, maxRotation: 0 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+          y: { ticks: { color: '#475569', callback: v => v.toFixed(0) }, grid: { color: 'rgba(255,255,255,0.03)' } }
+        }
       }
-    }
-  });
+    });
 
-  // Z-score chart
-  const entryZLine   = Array(n).fill(entryZ);
-  const negEntryZLine= Array(n).fill(-entryZ);
-  const exitZLine    = Array(n).fill(exitZ);
-  const negExitZLine = Array(n).fill(-exitZ);
-  const zeroLine     = Array(n).fill(0);
+    // ── Z-score chart ─────────────────────────────────────────────────────────
+    const entryLine    = Array(dDates.length).fill(entryZ);
+    const negEntryLine = Array(dDates.length).fill(-entryZ);
+    const zeroLine     = Array(dDates.length).fill(0);
 
-  const validZ = zScores.map((z, i) => z !== null ? z : null);
+    // Determine sensible Y-axis range: ±max(abs(z), entry+1), capped at ±6
+    const validZs = dZ.filter(z => z !== null).map(Math.abs);
+    const maxZ    = validZs.length ? Math.min(Math.max(...validZs, entryZ + 0.5) + 0.3, 6) : entryZ + 1;
 
-  chartInstances.z = new Chart(document.getElementById('zChart').getContext('2d'), {
-    type: 'line',
-    data: {
-      labels,
-      datasets: [
-        { label: 'Z-Score', data: validZ, borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-        { label: `+${entryZ} Entry`, data: entryZLine, borderColor: '#ef4444', borderWidth: 1.5, borderDash:[6,3], pointRadius: 0 },
-        { label: `-${entryZ} Entry`, data: negEntryZLine, borderColor: '#22c55e', borderWidth: 1.5, borderDash:[6,3], pointRadius: 0 },
-        { label: '0', data: zeroLine, borderColor: 'rgba(255,255,255,0.15)', borderWidth: 1, pointRadius: 0 },
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false, animation:{duration:300},
-      plugins:{ legend:{labels:{color:'#94A3B8',font:{size:11}}} },
-      scales:{
-        x:{ticks:{color:'#475569',maxTicksLimit:12},grid:{color:'rgba(255,255,255,0.03)'}},
-        y:{ticks:{color:'#475569',callback:v=>v.toFixed(1)},grid:{color:'rgba(255,255,255,0.03)'}}
+    chartInstances.z = new Chart(document.getElementById('zChart').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: xLabels,
+        datasets: [
+          { label: 'Z-Score', data: dZ, borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: false },
+          { label: `+${entryZ} Entry`, data: entryLine,    borderColor: '#ef4444', borderWidth: 1.5, borderDash: [6,3], pointRadius: 0 },
+          { label: `-${entryZ} Entry`, data: negEntryLine, borderColor: '#22c55e', borderWidth: 1.5, borderDash: [6,3], pointRadius: 0 },
+          { label: 'Mean (0)',          data: zeroLine,      borderColor: 'rgba(255,255,255,0.12)', borderWidth: 1, pointRadius: 0 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { labels: { color: '#94A3B8', font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: '#475569', maxTicksLimit: 12, maxRotation: 0 }, grid: { color: 'rgba(255,255,255,0.03)' } },
+          y: {
+            min: -maxZ, max: maxZ,
+            ticks: { color: '#475569', callback: v => v.toFixed(1) },
+            grid: { color: 'rgba(255,255,255,0.03)' }
+          }
+        }
       }
-    }
-  });
+    });
+
+  } catch (err) {
+    showError(err.message || 'Failed to fetch data. Please try again.');
+    document.getElementById('resultsArea').innerHTML = `<div class="card"><div class="empty"><p style="color:#f87171">${err.message}</p></div></div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⚡ Analyse Pair';
+  }
 }
-
-// Auto-run on load with default preset
-window.addEventListener('load', () => analyse());
 </script>
 </body>
 </html>
