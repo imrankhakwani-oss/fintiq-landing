@@ -251,14 +251,14 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <div id="customSection" style="display:none">
       <div class="custom-row">
         <div class="field">
-          <label>Asset A — Ticker Symbol</label>
-          <input type="text" id="customTickerA" placeholder="e.g. AAPL, GLD, EURUSD=X, CL=F" maxlength="20">
-          <div class="hint">Stocks, ETFs, FX (EURUSD=X), Futures (CL=F for Oil)</div>
+          <label>Asset A — Ticker or Company Name</label>
+          <input type="text" id="customTickerA" placeholder="e.g. Apple, Gold, S&P 500, AAPL, GC=F" maxlength="60" oninput="clearResolve('A')">
+          <div class="hint" id="resolveHintA">Stocks, ETFs, commodities, FX — type a name or ticker symbol</div>
         </div>
         <div class="field">
-          <label>Asset B — Ticker Symbol</label>
-          <input type="text" id="customTickerB" placeholder="e.g. MSFT, SLV, GC=F" maxlength="20">
-          <div class="hint">Must be tradeable and have price history on Yahoo Finance</div>
+          <label>Asset B — Ticker or Company Name</label>
+          <input type="text" id="customTickerB" placeholder="e.g. Microsoft, Silver, Oil, MSFT, CL=F" maxlength="60" oninput="clearResolve('B')">
+          <div class="hint" id="resolveHintB">Must have price history on Yahoo Finance</div>
         </div>
       </div>
     </div>
@@ -267,15 +267,6 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
       <div class="field-sm">
         <label>Lookback Window (days)</label>
         <input type="number" id="lookback" value="60" min="20" max="500" step="5">
-      </div>
-      <div class="field-sm">
-        <label>History to Fetch</label>
-        <select id="period">
-          <option value="6mo">6 Months</option>
-          <option value="1y" selected>1 Year</option>
-          <option value="2y">2 Years</option>
-          <option value="5y">5 Years</option>
-        </select>
       </div>
       <div class="field-sm">
         <label>Entry Z-Score</label>
@@ -287,6 +278,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
       </div>
       <button class="run-btn" id="runBtn" onclick="analyse()">⚡ Analyse Pair</button>
     </div>
+    <p style="margin-top:10px;font-size:0.75rem;color:#475569">History fetched automatically based on lookback window — no manual selection needed.</p>
   </div>
 
   <div id="errorBar" class="error-bar"></div>
@@ -410,6 +402,54 @@ function showLoading(tickerA, tickerB) {
     </div>`;
 }
 
+// ── Auto-period: fetch enough history to cover lookback + meaningful chart ────
+function autoPeriod(lookback) {
+  // Always fetch at least 3× the lookback so the chart has context beyond the Z-score window
+  const days = Math.max(lookback * 3, 252); // minimum 1 year
+  if (days <= 180) return '6mo';
+  if (days <= 365) return '1y';
+  if (days <= 730) return '2y';
+  return '5y';
+}
+
+// ── Resolve company name → ticker via Yahoo Finance search ───────────────────
+const SEARCH_API = 'https://query2.finance.yahoo.com/v1/finance/search';
+// Looks like a raw ticker: short, no spaces, only legal ticker chars
+const TICKER_RE  = /^[A-Z0-9^=\-\.]{1,10}$/i;
+
+async function resolveTicker(query) {
+  const q = query.trim();
+  if (!q) return null;
+  if (TICKER_RE.test(q)) return { symbol: q.toUpperCase(), name: null }; // already a ticker
+
+  // Try Yahoo Finance name search
+  try {
+    const resp = await fetch(`${SEARCH_API}?q=${encodeURIComponent(q)}&quotesCount=5&newsCount=0&enableFuzzyQuery=true`);
+    if (!resp.ok) throw new Error('search failed');
+    const json = await resp.json();
+    const quotes = (json?.quotes || []).filter(r => r.symbol && ['EQUITY','ETF','MUTUALFUND','INDEX','CURRENCY','FUTURE'].includes(r.quoteType));
+    if (quotes.length) {
+      const hit = quotes[0];
+      return { symbol: hit.symbol, name: hit.longname || hit.shortname || null };
+    }
+  } catch (_) { /* fall through */ }
+
+  // Fallback: use input as-is (let backend return 404 with a clear message)
+  return { symbol: q.toUpperCase(), name: null };
+}
+
+function clearResolve(ab) {
+  const el = document.getElementById('resolveHint' + ab);
+  if (el) { el.style.color = ''; el.textContent = ab === 'A' ? 'Stocks, ETFs, commodities, FX — type a name or ticker symbol' : 'Must have price history on Yahoo Finance'; }
+}
+
+function showResolve(ab, symbol, name) {
+  const el = document.getElementById('resolveHint' + ab);
+  if (!el) return;
+  if (name) { el.style.color = '#22c55e'; el.textContent = `✓ Resolved: ${name} → ${symbol}`; }
+  else       { el.style.color = '#94A3B8'; el.textContent = `Using ticker: ${symbol}`; }
+}
+
 // ── Data fetch ────────────────────────────────────────────────────────────────
 async function fetchPrices(ticker, period) {
   const url = `${PRICES_API}/prices/${encodeURIComponent(ticker.toUpperCase())}?period=${period}`;
@@ -470,24 +510,33 @@ function fmtDate(dateStr) {
 async function analyse() {
   clearError();
 
+  const lookback = parseInt(document.getElementById('lookback').value) || 60;
+  const entryZ   = parseFloat(document.getElementById('entryZ').value) || 2.0;
+  const exitZ    = parseFloat(document.getElementById('exitZ').value)  || 0.5;
+  const period   = autoPeriod(lookback);
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Resolving…';
+
   let tickerA, tickerB;
   if (mode === 'preset') {
     tickerA = PRESETS[currentPreset].tickerA;
     tickerB = PRESETS[currentPreset].tickerB;
   } else {
-    tickerA = (document.getElementById('customTickerA').value || '').trim().toUpperCase();
-    tickerB = (document.getElementById('customTickerB').value || '').trim().toUpperCase();
-    if (!tickerA || !tickerB) return showError('Please enter both ticker symbols.');
-    if (tickerA === tickerB)  return showError('Asset A and Asset B must be different tickers.');
+    const rawA = (document.getElementById('customTickerA').value || '').trim();
+    const rawB = (document.getElementById('customTickerB').value || '').trim();
+    if (!rawA || !rawB) { btn.disabled = false; btn.textContent = '⚡ Analyse Pair'; return showError('Please enter both ticker symbols or company names.'); }
+
+    // Resolve names → tickers (in parallel)
+    let [resA, resB] = await Promise.all([resolveTicker(rawA), resolveTicker(rawB)]);
+    tickerA = resA.symbol;
+    tickerB = resB.symbol;
+    showResolve('A', tickerA, resA.name);
+    showResolve('B', tickerB, resB.name);
+    if (tickerA === tickerB) { btn.disabled = false; btn.textContent = '⚡ Analyse Pair'; return showError('Asset A and Asset B resolved to the same ticker. Please enter two different assets.'); }
   }
 
-  const lookback = parseInt(document.getElementById('lookback').value) || 60;
-  const period   = document.getElementById('period').value || '1y';
-  const entryZ   = parseFloat(document.getElementById('entryZ').value) || 2.0;
-  const exitZ    = parseFloat(document.getElementById('exitZ').value)  || 0.5;
-
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
   btn.textContent = 'Loading…';
   showLoading(tickerA, tickerB);
 
@@ -503,7 +552,7 @@ async function analyse() {
 
     if (aligned.length < lookback + 10) {
       throw new Error(
-        `Only ${aligned.length} matching trading days found. Reduce the lookback window to ${Math.max(20, aligned.length - 10)} or fewer, or choose a longer history period.`
+        `Only ${aligned.length} matching trading days found where both assets traded. Reduce the lookback window to ${Math.max(20, aligned.length - 10)} or fewer.`
       );
     }
 
