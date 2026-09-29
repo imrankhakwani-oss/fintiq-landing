@@ -490,14 +490,20 @@ function rollingStats(arr, w) {
   });
 }
 
-// ── Pearson correlation ───────────────────────────────────────────────────────
-function pearson(xs, ys) {
+// ── OLS regression: y = α + β·x ──────────────────────────────────────────────
+// Returns hedge ratio β, intercept α, R², and Pearson correlation
+function ols(xs, ys) {
   const n  = xs.length;
   const mx = xs.reduce((s, v) => s + v, 0) / n;
   const my = ys.reduce((s, v) => s + v, 0) / n;
-  const num = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0);
-  const den = Math.sqrt(xs.reduce((s, v) => s + (v - mx) ** 2, 0) * ys.reduce((s, v) => s + (v - my) ** 2, 0));
-  return den ? num / den : 0;
+  const cov  = xs.reduce((s, v, i) => s + (v - mx) * (ys[i] - my), 0);
+  const varX = xs.reduce((s, v) => s + (v - mx) ** 2, 0);
+  const varY = ys.reduce((s, v) => s + (v - my) ** 2, 0);
+  const beta  = varX ? cov / varX : 1;
+  const alpha = my - beta * mx;
+  const r2    = (varX && varY) ? (cov ** 2) / (varX * varY) : 0;
+  const corr  = Math.sqrt(r2) * (cov >= 0 ? 1 : -1);
+  return { alpha, beta, r2, corr };
 }
 
 // ── Format date nicely ────────────────────────────────────────────────────────
@@ -561,52 +567,101 @@ async function analyse() {
     const dates  = aligned.map(p => p.date);
     const pA     = aligned.map(p => p.a);
     const pB     = aligned.map(p => p.b);
-    const ratio  = pA.map((a, i) => a / pB[i]);
 
-    const stats   = rollingStats(ratio, lookback);
-    const zScores = ratio.map((r, i) => stats[i].mean !== null ? (r - stats[i].mean) / stats[i].std : null);
+    // ── OLS hedge ratio: regress pA on pB → spread = pA - β·pB ──────────────
+    // β tells us: for every $1 move in B, A moves $β — use β shares of B per share of A
+    const reg    = ols(pB, pA);   // pA = α + β·pB
+    const beta   = reg.beta;
+    const alpha  = reg.alpha;
+    const r2     = reg.r2;
+    const corrVal = reg.corr;
+    // OLS spread: should be stationary around mean α (the long-run equilibrium)
+    const spread  = pA.map((a, i) => a - beta * pB[i]);
+    const spreadMean = spread.reduce((s, v) => s + v, 0) / spread.length;
+
+    const stats   = rollingStats(spread, lookback);
+    const zScores = spread.map((s, i) => stats[i].mean !== null ? (s - stats[i].mean) / stats[i].std : null);
 
     // Valid window — trim display to where Z-scores exist
     const trimStart = lookback - 1;
     const dDates  = dates.slice(trimStart);
     const dZ      = zScores.slice(trimStart);
-    const dRatio  = ratio.slice(trimStart);
+    const dSpread = spread.slice(trimStart);
     const dNormA  = pA.map(v => (v / pA[0]) * 100);
     const dNormB  = pB.map(v => (v / pB[0]) * 100);
 
     // Current state
-    const currentZ   = zScores[zScores.length - 1];
-    const corrVal    = pearson(pA, pB);
+    const currentZ    = zScores[zScores.length - 1];
+    const currentSpread = spread[spread.length - 1];
 
     // X-axis labels: show date every ~20 points, sparse for readability
     const labelEvery = Math.max(1, Math.floor(dDates.length / 12));
     const xLabels    = dDates.map((d, i) => i % labelEvery === 0 ? fmtDate(d) : '');
     const xLabelsAll = dates.map((d, i) => i % Math.max(1, Math.floor(dates.length / 12)) === 0 ? fmtDate(d) : '');
 
-    // ── Signal detection ──────────────────────────────────────────────────────
-    const signals = [];
-    let inTrade = null;
+    // ── Signal detection — build completed trades with P&L ───────────────────
+    // Each completed trade: { entryDate, exitDate, entryZ, exitZ, entryRatio, exitRatio, direction, pnl }
+    const trades   = [];
+    const signals  = []; // flat list for display (includes open trades)
+    let inTrade    = null;
+    let entrySignal = null;
 
     for (let i = trimStart; i < aligned.length; i++) {
-      const z    = zScores[i];
+      const z   = zScores[i];
       const date = dates[i];
+      const sp  = spread[i];   // OLS spread at this point
+      const aP  = pA[i];       // Price of A (used as capital basis for % P&L)
       if (z === null) continue;
 
       if (!inTrade) {
         if (z > entryZ) {
-          signals.push({ date, z: +z.toFixed(2), type: 'long-b', action: `Short ${tickerA}, Long ${tickerB}` });
+          // Spread is high → A overpriced vs B → short A, long B (short the spread)
+          entrySignal = { date, z: +z.toFixed(2), spread: sp, priceA: aP, type: 'long-b', action: `Short ${tickerA}, Long ${tickerB}` };
           inTrade = 'long-b';
         } else if (z < -entryZ) {
-          signals.push({ date, z: +z.toFixed(2), type: 'long-a', action: `Long ${tickerA}, Short ${tickerB}` });
+          // Spread is low → A underpriced vs B → long A, short B (long the spread)
+          entrySignal = { date, z: +z.toFixed(2), spread: sp, priceA: aP, type: 'long-a', action: `Long ${tickerA}, Short ${tickerB}` };
           inTrade = 'long-a';
         }
       } else {
         if (Math.abs(z) < exitZ) {
-          signals.push({ date, z: +z.toFixed(2), type: 'exit', action: 'Close position — spread reverted to mean' });
-          inTrade = null;
+          // P&L on OLS spread, as % of entry price of A (the capital reference leg)
+          // Long spread (long-a): profit when spread rises back to mean
+          // Short spread (long-b): profit when spread falls back to mean
+          const pnlRaw = inTrade === 'long-a'
+            ? (sp - entrySignal.spread) / Math.abs(entrySignal.priceA) * 100
+            : (entrySignal.spread - sp) / Math.abs(entrySignal.priceA) * 100;
+          const pnl = +pnlRaw.toFixed(2);
+
+          trades.push({
+            entryDate:   entrySignal.date,
+            exitDate:    date,
+            entryZ:      entrySignal.z,
+            exitZ:       +z.toFixed(2),
+            entrySpread: +entrySignal.spread.toFixed(4),
+            exitSpread:  +sp.toFixed(4),
+            direction:   entrySignal.type,
+            action:      entrySignal.action,
+            pnl,
+            won: pnl > 0,
+          });
+          signals.push(entrySignal);
+          signals.push({ date, z: +z.toFixed(2), type: 'exit', action: 'Close position — spread reverted', pnl });
+          inTrade     = null;
+          entrySignal = null;
         }
       }
     }
+    // If still in a trade at end of data, record as open
+    if (inTrade && entrySignal) {
+      signals.push(entrySignal);
+      signals.push({ date: dates[dates.length - 1], z: +(zScores[zScores.length-1]||0).toFixed(2), type: 'open', action: 'Position still open — not yet exited', pnl: null });
+    }
+
+    const winCount  = trades.filter(t => t.won).length;
+    const lossCount = trades.filter(t => !t.won).length;
+    const winRate   = trades.length ? Math.round(winCount / trades.length * 100) : null;
+    const avgPnl    = trades.length ? +(trades.reduce((s, t) => s + t.pnl, 0) / trades.length).toFixed(2) : null;
 
     // ── Current signal banner ─────────────────────────────────────────────────
     let signalHTML;
@@ -623,16 +678,38 @@ async function analyse() {
       signalHTML = `<div class="trade-signal neutral" style="border-color:rgba(245,158,11,0.25)"><div class="signal-icon">🔔</div><div class="signal-body"><h3 class="gold">Approaching Signal Zone — Z = ${zDisp}</h3><p>Spread is within the ±${entryZ} zone. Monitor for further divergence.</p></div></div>`;
     }
 
-    // ── Signal rows table ─────────────────────────────────────────────────────
-    const sigRows = signals.length
-      ? [...signals].reverse().slice(0, 15).map(s => `
-          <tr>
-            <td>${fmtDate(s.date)}</td>
-            <td>${s.z > 0 ? '+' : ''}${s.z}</td>
-            <td><span class="badge badge-${s.type}">${s.type === 'long-a' ? `↑ ${tickerA}` : s.type === 'long-b' ? `↑ ${tickerB}` : '✕ Exit'}</span></td>
-            <td>${s.action}</td>
-          </tr>`).join('')
-      : `<tr><td colspan="4" style="color:#475569;text-align:center;padding:20px">No signals triggered in this period with Z threshold ±${entryZ}. Try reducing the entry Z-score.</td></tr>`;
+    // ── Trade rows: show completed trades with P&L ────────────────────────────
+    const tradeRows = trades.length
+      ? [...trades].reverse().slice(0, 12).map(t => {
+          const pnlCol  = t.pnl > 0
+            ? `<span style="color:#22c55e;font-weight:700">+${t.pnl}% ✓</span>`
+            : `<span style="color:#f87171;font-weight:700">${t.pnl}% ✗</span>`;
+          const dirBadge = t.direction === 'long-a'
+            ? `<span class="badge badge-long-a">↑ ${tickerA}</span>`
+            : `<span class="badge badge-long-b">↑ ${tickerB}</span>`;
+          return `<tr>
+            <td>${fmtDate(t.entryDate)}</td>
+            <td>${fmtDate(t.exitDate)}</td>
+            <td>${dirBadge}</td>
+            <td style="font-size:0.8rem;color:#64748B">${t.action}</td>
+            <td style="text-align:right">${pnlCol}</td>
+          </tr>`;
+        }).join('')
+      : `<tr><td colspan="5" style="color:#475569;text-align:center;padding:20px">No completed trades in this period with Z threshold ±${entryZ}. Try reducing the entry Z-score or increasing the lookback window.</td></tr>`;
+
+    // Open trade row (if any)
+    const openRow = (inTrade && entrySignal)
+      ? `<tr style="opacity:0.6"><td>${fmtDate(entrySignal.date)}</td><td>—</td><td>${entrySignal.type === 'long-a' ? `<span class="badge badge-long-a">↑ ${tickerA}</span>` : `<span class="badge badge-long-b">↑ ${tickerB}</span>`}</td><td style="font-size:0.8rem;color:#F59E0B">${entrySignal.action}</td><td style="text-align:right;color:#F59E0B;font-size:0.78rem">Open</td></tr>`
+      : '';
+
+    // Win rate summary
+    const winRateSummary = trades.length
+      ? `<div style="display:flex;gap:24px;flex-wrap:wrap;padding:14px 0 6px">
+           <span style="font-size:0.82rem;color:#94A3B8">Completed trades: <strong style="color:#F1F5F9">${trades.length}</strong></span>
+           <span style="font-size:0.82rem;color:#94A3B8">Win rate: <strong style="color:${winRate>=50?'#22c55e':'#f87171'}">${winRate}%</strong> (${winCount}W / ${lossCount}L)</span>
+           <span style="font-size:0.82rem;color:#94A3B8">Avg P&amp;L per trade: <strong style="color:${avgPnl>=0?'#22c55e':'#f87171'}">${avgPnl>=0?'+':''}${avgPnl}%</strong></span>
+         </div>`
+      : '';
 
     // ── Build HTML ────────────────────────────────────────────────────────────
     document.getElementById('resultsArea').innerHTML = `
@@ -649,12 +726,47 @@ async function analyse() {
             <div class="sig-lbl">Correlation (${aligned.length}d)</div>
           </div>
           <div class="sig-card">
-            <div class="sig-val gold">${ratio[ratio.length - 1].toFixed(4)}</div>
-            <div class="sig-lbl">Current Ratio A/B</div>
+            <div class="sig-val ${winRate === null ? 'purple' : winRate >= 50 ? 'green' : 'red'}">${winRate !== null ? winRate + '%' : '—'}</div>
+            <div class="sig-lbl">Win Rate (${trades.length} trades)</div>
           </div>
           <div class="sig-card">
-            <div class="sig-val purple">${signals.filter(s => s.type !== 'exit').length}</div>
-            <div class="sig-lbl">Trade Signals (period)</div>
+            <div class="sig-val gold">${avgPnl !== null ? (avgPnl >= 0 ? '+' : '') + avgPnl + '%' : '—'}</div>
+            <div class="sig-lbl">Avg P&amp;L / Trade</div>
+          </div>
+        </div>
+
+        <!-- OLS Hedge Ratio Info Panel -->
+        <div style="background:#060F1A;border:1px solid rgba(245,158,11,0.15);border-radius:12px;padding:18px;margin-top:4px">
+          <div style="font-size:0.72rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">📐 OLS Hedge Ratio — How to Size the Trade</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:14px">
+            <div>
+              <div style="font-size:1.25rem;font-weight:900;color:#38bdf8">β = ${beta.toFixed(4)}</div>
+              <div style="font-size:0.7rem;color:#64748B;margin-top:2px">Hedge Ratio</div>
+            </div>
+            <div>
+              <div style="font-size:1.25rem;font-weight:900;color:#a78bfa">R² = ${(r2*100).toFixed(1)}%</div>
+              <div style="font-size:0.7rem;color:#64748B;margin-top:2px">Relationship Strength</div>
+            </div>
+            <div>
+              <div style="font-size:1.25rem;font-weight:900;color:#94A3B8">${currentSpread.toFixed(2)}</div>
+              <div style="font-size:0.7rem;color:#64748B;margin-top:2px">Current Spread (mean: ${spreadMean.toFixed(2)})</div>
+            </div>
+          </div>
+          <div style="font-size:0.8rem;color:#94A3B8;line-height:1.65;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
+            <strong style="color:#F1F5F9">What β = ${beta.toFixed(2)} means:</strong>
+            For every $1 move in <strong>${tickerB}</strong>, <strong>${tickerA}</strong> historically moves $${beta.toFixed(2)}.
+            To be market-neutral, trade <strong>1 share of ${tickerA} against ${beta.toFixed(2)} shares of ${tickerB}</strong>
+            (or in round lots: 10 shares of ${tickerA} vs ${Math.round(beta*10)} shares of ${tickerB}).
+            <br><br>
+            <strong style="color:#F1F5F9">What the spread is:</strong>
+            Spread = Price(${tickerA}) − ${beta.toFixed(4)} × Price(${tickerB}).
+            This OLS-derived spread is stationary — it should hover around its mean of <strong>${spreadMean.toFixed(2)}</strong> and revert there after divergences.
+            The Z-score measures how many standard deviations the spread is from that mean over your ${lookback}-day lookback window.
+            <br><br>
+            <strong style="color:#F1F5F9">R² = ${(r2*100).toFixed(1)}%</strong> —
+            ${r2 >= 0.7 ? '✅ Strong relationship: the linear model explains most of the price co-movement. This pair is a good statistical arbitrage candidate.' :
+              r2 >= 0.4 ? '⚠️ Moderate relationship: the pair moves together reasonably well but other factors are at play. Signals are valid but treat with care.' :
+              '❌ Weak relationship: prices are not strongly co-moving. Mean-reversion signals may be unreliable — consider a different pair.'}
           </div>
         </div>
       </div>
@@ -663,16 +775,17 @@ async function analyse() {
         <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">📉 Z-Score Spread — ${lookback}-day rolling window</div>
+        <div class="card-title">📉 Z-Score of OLS Spread — ${lookback}-day rolling window · Spread = ${tickerA} − ${beta.toFixed(2)}×${tickerB}</div>
         <div class="chart-wrap tall"><canvas id="zChart"></canvas></div>
       </div>
       <div class="card">
-        <div class="card-title">📋 All Trade Signals — ${fmtDate(dDates[0])} to ${fmtDate(dDates[dDates.length - 1])}</div>
-        <table class="sigtable">
-          <thead><tr><th>Date</th><th>Z-Score</th><th>Signal</th><th>Action</th></tr></thead>
-          <tbody>${sigRows}</tbody>
+        <div class="card-title">📋 Completed Trades — ${fmtDate(dDates[0])} to ${fmtDate(dDates[dDates.length - 1])}</div>
+        ${winRateSummary}
+        <table class="sigtable" style="margin-top:10px">
+          <thead><tr><th>Entry Date</th><th>Exit Date</th><th>Direction</th><th>Action</th><th style="text-align:right">Spread P&amp;L</th></tr></thead>
+          <tbody>${openRow}${tradeRows}</tbody>
         </table>
-        <p style="margin-top:12px;font-size:0.75rem;color:#475569">Entry at |Z| ≥ ${entryZ} · Exit at |Z| ≤ ${exitZ} · Showing up to 15 most recent signals. Data: Yahoo Finance.</p>
+        <p style="margin-top:12px;font-size:0.75rem;color:#475569">Entry at |Z| ≥ ${entryZ} · Exit at |Z| ≤ ${exitZ} · P&amp;L = change in OLS spread (${tickerA} − ${beta.toFixed(2)}×${tickerB}) as % of ${tickerA} entry price · Excludes transaction costs &amp; borrowing costs · Data: Yahoo Finance.</p>
       </div>`;
 
     // ── Destroy old charts ────────────────────────────────────────────────────
