@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Monte Carlo Stock Risk Simulator — Free Price Path Analysis | Fintiq</title>
+<meta name="description" content="Free Monte Carlo stock risk simulator using Geometric Brownian Motion. Model thousands of future price paths for any stock, find probability of hitting your target, and understand your true downside risk. No sign-up needed.">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Fintiq">
+<link rel="canonical" href="https://fintiq.uk/monte-carlo.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://fintiq.uk/monte-carlo.html" />
+<meta property="og:title" content="Monte Carlo Stock Risk Simulator — Free Price Path Analysis | Fintiq" />
+<meta property="og:description" content="Model thousands of future stock price paths using Geometric Brownian Motion. Find the probability your stock hits your target price. Free, no sign-up." />
+<meta property="og:image" content="https://fintiq.uk/og-image.png" />
+<meta property="og:site_name" content="Fintiq" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Monte Carlo Stock Risk Simulator | Fintiq" />
+<meta name="twitter:description" content="Simulate thousands of price paths for any stock using Geometric Brownian Motion. Free probability analysis, no sign-up." />
+<meta name="twitter:image" content="https://fintiq.uk/og-image.png" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6}
+a{color:#F59E0B;text-decoration:none}
+
+/* Nav */
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.88rem}
+.nav-links a:hover{color:#F59E0B}
+.nav-links a.active{color:#F59E0B}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#F1F5F9;line-height:1}
+
+/* Hero */
+.hero{text-align:center;padding:48px 24px 32px;max-width:760px;margin:0 auto}
+.hero-tag{display:inline-block;background:rgba(245,158,11,0.12);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.72rem;font-weight:700;margin-bottom:14px}
+.hero h1{font-size:2.2rem;font-weight:900;line-height:1.15;margin-bottom:14px}
+.hero h1 span{color:#F59E0B}
+.hero p{color:#94A3B8;font-size:0.95rem;max-width:620px;margin:0 auto 20px}
+.hero-features{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.hf{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.18);border-radius:20px;padding:5px 14px;font-size:0.75rem;color:#94A3B8}
+
+/* Main layout */
+.main{max-width:1200px;margin:0 auto;padding:0 24px 80px;display:grid;grid-template-columns:320px 1fr;gap:28px;align-items:start}
+
+/* Input panel */
+.panel{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:24px;position:sticky;top:80px}
+.panel-title{font-size:0.78rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid rgba(245,158,11,0.15)}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:0.78rem;font-weight:600;color:#94A3B8;margin-bottom:6px}
+.field input{width:100%;background:#060F1A;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:10px 14px;color:#F1F5F9;font-size:0.9rem;font-family:inherit;outline:none;transition:border-color 0.2s}
+.field input:focus{border-color:rgba(245,158,11,0.5)}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hint{font-size:0.72rem;color:#475569;margin-top:4px}
+.divider{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:16px 0}
+.run-btn{width:100%;background:#F59E0B;color:#0A1628;border:none;border-radius:10px;padding:14px;font-size:0.95rem;font-weight:800;cursor:pointer;transition:opacity 0.2s;font-family:inherit}
+.run-btn:hover{opacity:0.88}
+
+/* Results panel */
+.results{display:flex;flex-direction:column;gap:20px}
+.card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:24px}
+.card-title{font-size:0.78rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px}
+.chart-wrap{position:relative;height:340px}
+
+/* Stats grid */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.stat{background:#060F1A;border-radius:10px;padding:16px;text-align:center}
+.stat-val{font-size:1.6rem;font-weight:900;margin-bottom:4px}
+.stat-lbl{font-size:0.72rem;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.green{color:#22c55e}.red{color:#ef4444}.gold{color:#F59E0B}.blue{color:#38bdf8}
+
+/* Percentile table */
+.ptable{width:100%;border-collapse:collapse}
+.ptable th{background:#060F1A;color:#F59E0B;padding:10px 14px;text-align:left;font-size:0.78rem;border-bottom:1px solid rgba(245,158,11,0.2)}
+.ptable td{padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.88rem;color:#CBD5E1}
+.ptable tr:last-child td{border:none}
+
+/* Empty state */
+.empty{text-align:center;padding:60px 24px;color:#475569}
+.empty svg{margin-bottom:16px;opacity:0.4}
+.empty p{font-size:0.9rem}
+
+/* How it works */
+.how{max-width:1200px;margin:0 auto 80px;padding:0 24px}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}
+.how-card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:22px}
+.how-icon{font-size:1.8rem;margin-bottom:10px}
+.how-card h3{font-size:0.92rem;font-weight:700;color:#F1F5F9;margin-bottom:8px}
+.how-card p{font-size:0.8rem;color:#64748B;line-height:1.6}
+.section-label{font-size:0.72rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px}
+.section-h2{font-size:1.35rem;font-weight:800;color:#F1F5F9;margin-bottom:6px}
+.section-sub{color:#64748B;font-size:0.88rem}
+
+/* Footer */
+footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
+.f-logo{display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
+.f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
+.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.f-links a{color:#94A3B8;font-size:0.82rem}
+.f-copy{color:#334155;font-size:0.72rem}
+
+/* Mobile bottom nav */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#08121f;border-top:1px solid rgba(245,158,11,0.25);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
+.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;font-size:0.65rem;font-weight:600;padding:4px 10px;border-radius:8px;letter-spacing:0.3px;text-transform:uppercase}
+.mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
+.mobile-bottom-nav li a.nav-app-btn{background:#F59E0B;color:#0A1628;padding:6px 14px;border-radius:20px;font-size:0.7rem}
+
+@media(max-width:900px){
+  .main{grid-template-columns:1fr;padding:0 16px 60px}
+  .panel{position:static}
+  .stats{grid-template-columns:repeat(3,1fr)}
+  .how-grid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .hero h1{font-size:1.7rem}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .mobile-bottom-nav{display:block}
+  body{padding-bottom:68px}
+  .nav-links{display:none;position:absolute;top:56px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2)}
+  .nav-links.mobile-open{display:flex}
+  .nav-links a{padding:12px 24px;border-bottom:1px solid rgba(255,255,255,0.05)}
+  .nav-hamburger{display:block}
+  nav{padding:10px 16px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="https://fintiq.uk" class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </a>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+    <svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none"><rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/></svg>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
+    <a href="/tools.html" class="active">Tools</a>
+    <a href="/learn.html">Learn</a>
+  </div>
+</nav>
+<script>
+(function(){var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks'),i=document.getElementById('hamburgerIcon');if(!h)return;h.addEventListener('click',function(){var o=n.classList.toggle('mobile-open');h.setAttribute('aria-expanded',o);i.innerHTML=o?'<line x1="3" y1="3" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="3" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('mobile-open');h.setAttribute('aria-expanded','false');i.innerHTML='<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});});})();
+</script>
+
+<div class="hero">
+  <div class="hero-tag">🎲 FREE TOOL · NO SIGN-UP</div>
+  <h1>Monte Carlo <span>Risk Simulator</span></h1>
+  <p>Run thousands of future price path simulations using Geometric Brownian Motion — the same model used by investment banks. Understand your real probability of hitting your target, not just a single misleading forecast.</p>
+  <div class="hero-features">
+    <span class="hf">Geometric Brownian Motion</span>
+    <span class="hf">1,000 simulated price paths</span>
+    <span class="hf">Probability of profit</span>
+    <span class="hf">Target & stop-loss analysis</span>
+    <span class="hf">Percentile distribution</span>
+    <span class="hf">100% free · runs in browser</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Input panel -->
+  <div class="panel">
+    <div class="panel-title">Simulation Parameters</div>
+
+    <div class="field">
+      <label>Current Price (any currency)</label>
+      <input type="number" id="startPrice" value="100" min="0.01" step="0.01">
+      <div class="hint">e.g. 150.50 for AAPL at $150.50</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Expected Annual Return (%)</label>
+        <input type="number" id="expReturn" value="12" step="0.5">
+        <div class="hint">Historical ~10% for S&amp;P</div>
+      </div>
+      <div class="field">
+        <label>Annual Volatility (%)</label>
+        <input type="number" id="volatility" value="30" min="1" step="0.5">
+        <div class="hint">Large-cap ~20–30%</div>
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Time Horizon (months)</label>
+        <input type="number" id="timeMonths" value="12" min="1" max="120" step="1">
+      </div>
+      <div class="field">
+        <label>Simulations</label>
+        <input type="number" id="numSims" value="500" min="100" max="2000" step="100">
+        <div class="hint">100–2,000</div>
+      </div>
+    </div>
+
+    <hr class="divider">
+
+    <div class="field-row">
+      <div class="field">
+        <label>Target Price (optional)</label>
+        <input type="number" id="targetPrice" value="" placeholder="e.g. 180">
+      </div>
+      <div class="field">
+        <label>Stop-Loss Price (optional)</label>
+        <input type="number" id="stopLoss" value="" placeholder="e.g. 90">
+      </div>
+    </div>
+
+    <button class="run-btn" onclick="runSimulation()">⚡ Run Simulation</button>
+  </div>
+
+  <!-- Results -->
+  <div class="results" id="results">
+    <div class="card">
+      <div class="empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <p>Set your parameters and click<br><strong style="color:#F59E0B">Run Simulation</strong> to see price paths</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- How it works -->
+<div class="how">
+  <div class="section-label">Methodology</div>
+  <div class="section-h2">How Monte Carlo Simulation Works</div>
+  <div class="section-sub">The same mathematics used by Goldman Sachs, Morgan Stanley and every major derivatives desk.</div>
+  <div class="how-grid">
+    <div class="how-card">
+      <div class="how-icon">📐</div>
+      <h3>Geometric Brownian Motion</h3>
+      <p>Each simulated path follows GBM: S(t+dt) = S(t) × exp((μ − σ²/2)dt + σ√dt × Z), where Z is a random draw from a standard normal distribution. This models the random walk of stock prices while preserving the statistical properties observed in real markets.</p>
+    </div>
+    <div class="how-card">
+      <div class="how-icon">🎯</div>
+      <h3>Why One Forecast Is Dangerous</h3>
+      <p>A single "expected" price projection hides enormous uncertainty. Monte Carlo maps the full distribution of possible outcomes — the 5th percentile shows your realistic downside, and the 95th shows your upside. Retail investors who only see one number routinely underestimate risk.</p>
+    </div>
+    <div class="how-card">
+      <div class="how-icon">⚙️</div>
+      <h3>Choosing Your Inputs</h3>
+      <p>Expected return: use the stock's historical annual return or your DCF-derived target. Volatility: use the stock's historical 1-year volatility or implied volatility from options. Higher volatility = wider the distribution of outcomes. For UK stocks, FTSE 100 averages ~15% volatility, individual stocks 20–40%.</p>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-logo">
+    <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </div>
+  <div class="f-sub">Professional investing tools for retail investors</div>
+  <div class="f-links">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="https://fintiq.uk/tools.html">Free Tools</a>
+    <a href="https://fintiq.uk/alpha-scanner.html">Alpha Scanner</a>
+    <a href="https://fintiq.uk/deep-dive.html">Stock Deep Dive</a>
+    <a href="https://fintiq.uk/bulletin.html">Market Bulletin</a>
+    <a href="https://fintiq.uk/learn.html">Learn</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+
+<div class="mobile-bottom-nav" role="navigation" aria-label="Mobile navigation">
+  <ul>
+    <li><a href="https://fintiq.uk"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home</a></li>
+    <li><a href="https://fintiq.uk/tools.html" class="active"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>Tools</a></li>
+    <li><a href="https://fintiq.uk/learn.html"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>Learn</a></li>
+    <li><a href="https://fintiq.uk/alpha-scanner.html" class="nav-app-btn">Alpha Scanner →</a></li>
+  </ul>
+</div>
+
+<script>
+// ── Simulation engine ──────────────────────────────────────────────────────────
+function randn() {
+  // Box-Muller transform for standard normal random variable
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+function runSimulation() {
+  const S0      = parseFloat(document.getElementById('startPrice').value) || 100;
+  const mu      = parseFloat(document.getElementById('expReturn').value) / 100 || 0.10;
+  const sigma   = parseFloat(document.getElementById('volatility').value) / 100 || 0.25;
+  const months  = parseInt(document.getElementById('timeMonths').value) || 12;
+  const numSims = Math.min(parseInt(document.getElementById('numSims').value) || 500, 2000);
+  const target  = parseFloat(document.getElementById('targetPrice').value) || null;
+  const stop    = parseFloat(document.getElementById('stopLoss').value) || null;
+
+  const steps = months * 21; // ~21 trading days per month
+  const dt    = 1 / 252;
+
+  // Run simulations
+  const allPaths = [];
+  for (let s = 0; s < numSims; s++) {
+    const path = [S0];
+    let price = S0;
+    for (let t = 0; t < steps; t++) {
+      const drift = (mu - 0.5 * sigma * sigma) * dt;
+      const shock = sigma * Math.sqrt(dt) * randn();
+      price = price * Math.exp(drift + shock);
+      path.push(price);
+    }
+    allPaths.push(path);
+  }
+
+  // Calculate percentiles at each step
+  const p5 = [], p25 = [], p50 = [], p75 = [], p95 = [];
+  for (let t = 0; t <= steps; t++) {
+    const vals = allPaths.map(p => p[t]).sort((a, b) => a - b);
+    const n = vals.length;
+    p5.push(vals[Math.floor(n * 0.05)]);
+    p25.push(vals[Math.floor(n * 0.25)]);
+    p50.push(vals[Math.floor(n * 0.50)]);
+    p75.push(vals[Math.floor(n * 0.75)]);
+    p95.push(vals[Math.floor(n * 0.95)]);
+  }
+
+  // Terminal values
+  const terminals = allPaths.map(p => p[p.length - 1]).sort((a, b) => a - b);
+  const n = terminals.length;
+  const medianFinal   = terminals[Math.floor(n * 0.50)];
+  const p5Final       = terminals[Math.floor(n * 0.05)];
+  const p95Final      = terminals[Math.floor(n * 0.95)];
+  const probProfit    = terminals.filter(v => v > S0).length / n;
+  const probTarget    = target ? terminals.filter(v => v >= target).length / n : null;
+  const probStop      = stop   ? terminals.filter(v => v <= stop).length / n   : null;
+  const expReturn     = (medianFinal / S0 - 1) * 100;
+
+  // X-axis labels (months)
+  const labels = [];
+  const stepsPerMonth = Math.floor(steps / months);
+  for (let t = 0; t <= steps; t++) {
+    if (t % stepsPerMonth === 0) labels.push(`M${Math.round(t / stepsPerMonth)}`);
+    else labels.push('');
+  }
+
+  // Build results HTML
+  const resultsEl = document.getElementById('results');
+  resultsEl.innerHTML = `
+    <div class="card">
+      <div class="card-title">📈 Price Path Distribution — ${numSims.toLocaleString()} Simulations</div>
+      <div class="chart-wrap"><canvas id="pathChart"></canvas></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Outcome Statistics</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-val ${expReturn >= 0 ? 'green' : 'red'}">${expReturn >= 0 ? '+' : ''}${expReturn.toFixed(1)}%</div>
+          <div class="stat-lbl">Median Return</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val gold">${(probProfit * 100).toFixed(1)}%</div>
+          <div class="stat-lbl">Probability of Profit</div>
+        </div>
+        <div class="stat">
+          <div class="stat-val blue">${months}m</div>
+          <div class="stat-lbl">Time Horizon</div>
+        </div>
+        ${probTarget !== null ? `
+        <div class="stat">
+          <div class="stat-val green">${(probTarget * 100).toFixed(1)}%</div>
+          <div class="stat-lbl">Reach Target (${target})</div>
+        </div>` : ''}
+        ${probStop !== null ? `
+        <div class="stat">
+          <div class="stat-val red">${(probStop * 100).toFixed(1)}%</div>
+          <div class="stat-lbl">Hit Stop-Loss (${stop})</div>
+        </div>` : ''}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📋 Percentile Outcomes at ${months} Months</div>
+      <table class="ptable">
+        <thead><tr><th>Percentile</th><th>Terminal Price</th><th>Return vs Today</th><th>Scenario</th></tr></thead>
+        <tbody>
+          <tr><td>95th (Bull case)</td><td>${p95Final.toFixed(2)}</td><td class="green">+${((p95Final/S0-1)*100).toFixed(1)}%</td><td>Best 5% of outcomes</td></tr>
+          <tr><td>75th</td><td>${terminals[Math.floor(n*0.75)].toFixed(2)}</td><td class="${terminals[Math.floor(n*0.75)]>S0?'green':'red'}">${((terminals[Math.floor(n*0.75)]/S0-1)*100).toFixed(1)}%</td><td>Better than 75% of paths</td></tr>
+          <tr><td>50th (Median)</td><td>${medianFinal.toFixed(2)}</td><td class="${medianFinal>S0?'green':'red'}">${((medianFinal/S0-1)*100).toFixed(1)}%</td><td>Middle outcome</td></tr>
+          <tr><td>25th</td><td>${terminals[Math.floor(n*0.25)].toFixed(2)}</td><td class="${terminals[Math.floor(n*0.25)]>S0?'green':'red'}">${((terminals[Math.floor(n*0.25)]/S0-1)*100).toFixed(1)}%</td><td>Worse than 75% of paths</td></tr>
+          <tr><td>5th (Bear case)</td><td>${p5Final.toFixed(2)}</td><td class="red">${((p5Final/S0-1)*100).toFixed(1)}%</td><td>Worst 5% of outcomes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  // Draw chart
+  const ctx = document.getElementById('pathChart').getContext('2d');
+
+  // Sample ~50 paths for display
+  const displayPaths = [];
+  const step = Math.max(1, Math.floor(numSims / 50));
+  for (let s = 0; s < numSims; s += step) {
+    displayPaths.push({
+      data: allPaths[s],
+      borderColor: 'rgba(245,158,11,0.12)',
+      borderWidth: 1,
+      pointRadius: 0,
+      tension: 0.2,
+    });
+  }
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        ...displayPaths,
+        { label: '95th %ile', data: p95, borderColor: '#22c55e', borderWidth: 2, borderDash: [5,3], pointRadius: 0, tension: 0.3 },
+        { label: 'Median',   data: p50, borderColor: '#F59E0B',  borderWidth: 2.5,               pointRadius: 0, tension: 0.3 },
+        { label: '5th %ile', data: p5,  borderColor: '#ef4444',  borderWidth: 2, borderDash: [5,3], pointRadius: 0, tension: 0.3 },
+        ...(target ? [{ label: 'Target', data: Array(steps+1).fill(target), borderColor: '#818cf8', borderWidth: 1.5, borderDash: [8,4], pointRadius: 0 }] : []),
+        ...(stop   ? [{ label: 'Stop',   data: Array(steps+1).fill(stop),   borderColor: '#f87171', borderWidth: 1.5, borderDash: [8,4], pointRadius: 0 }] : []),
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
+      plugins: {
+        legend: {
+          labels: { color: '#94A3B8', font: { size: 11 }, filter: i => !i.text.startsWith('undefined') && !i.datasetIndex || i.datasetIndex >= displayPaths.length },
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#475569', maxTicksLimit: 13 }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#475569', callback: v => v.toFixed(0) }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+}
+
+// Auto-run on load
+window.addEventListener('load', runSimulation);
+</script>
+</body>
+</html>

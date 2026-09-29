@@ -14,6 +14,24 @@
   </url>
 
   <url>
+    <loc>https://fintiq.uk/monte-carlo.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://fintiq.uk/portfolio-optimiser.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://fintiq.uk/pairs-trading.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
     <loc>https://fintiq.uk/alpha-scanner.html</loc>
     <changefreq>daily</changefreq>
     <priority>0.9</priority>

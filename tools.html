@@ -4,15 +4,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Free Investing Tools for UK &amp; US Investors — Fintiq</title>
-<meta name="description" content="Free professional-grade investing tools: Alpha Scanner for US small-cap signals, Monte Carlo retirement planner, Fama-French factor screener, DCF calculator and portfolio optimiser. No sign-up needed.">
+<title>Professional Investing Tools for UK &amp; US Investors — Fintiq</title>
+<meta name="description" content="Professional-grade investing tools for retail investors: Alpha Scanner daily signal feed, Monte Carlo risk simulator, portfolio optimiser (Efficient Frontier), statistical pairs trading, Fama-French factor screener, and retirement lifecycle planner.">
 <meta name="robots" content="index, follow">
 <meta name="author" content="Fintiq">
 <link rel="canonical" href="https://fintiq.uk/tools.html" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://fintiq.uk/tools.html" />
-<meta property="og:title" content="Free Investing Tools for UK &amp; US Investors — Fintiq" />
-<meta property="og:description" content="Free professional-grade investing tools: Alpha Scanner for US small-cap signals, Monte Carlo retirement planner, Fama-French factor screener, DCF calculator and portfolio optimiser. No sign-up needed." />
+<meta property="og:title" content="Professional Investing Tools for UK &amp; US Investors — Fintiq" />
+<meta property="og:description" content="Institutional-grade investing tools for retail investors: Alpha Scanner daily signals, Monte Carlo simulator, Efficient Frontier portfolio optimiser, pairs trading Z-score, and Fama-French factor screener." />
 <meta property="og:image" content="https://fintiq.uk/og-image.png" />
 <meta property="og:site_name" content="Fintiq" />
 <meta name="twitter:card" content="summary_large_image" />
@@ -90,8 +90,41 @@
       "item": {
         "@type": "SoftwareApplication",
         "name": "Stock Deep Dive — Fundamental & Technical Analysis",
-        "description": "Free in-depth stock analysis tool covering fundamentals, technicals, DCF valuation and financial health for any US or UK stock.",
+        "description": "In-depth stock analysis tool covering fundamentals, technicals, DCF valuation and financial health for any US or UK stock.",
         "url": "https://fintiq.uk/deep-dive.html",
+        "applicationCategory": "FinanceApplication",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+      }
+    },
+    {
+      "@type": "ListItem", "position": 5,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Monte Carlo Risk Simulator",
+        "description": "Simulate thousands of future stock price paths using Geometric Brownian Motion. Calculate probability of hitting your target price or stop-loss across any time horizon.",
+        "url": "https://fintiq.uk/monte-carlo.html",
+        "applicationCategory": "FinanceApplication",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+      }
+    },
+    {
+      "@type": "ListItem", "position": 6,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Portfolio Optimiser — Efficient Frontier",
+        "description": "Modern Portfolio Theory portfolio optimiser. Find the maximum Sharpe ratio, minimum variance, and efficient frontier for up to 10 assets.",
+        "url": "https://fintiq.uk/portfolio-optimiser.html",
+        "applicationCategory": "FinanceApplication",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+      }
+    },
+    {
+      "@type": "ListItem", "position": 7,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "Statistical Pairs Trading — Z-Score Analysis",
+        "description": "Calculate Z-score spread between two correlated assets. Identify mean-reversion entry and exit signals for statistical arbitrage strategies.",
+        "url": "https://fintiq.uk/pairs-trading.html",
         "applicationCategory": "FinanceApplication",
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
       }
@@ -220,7 +253,18 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 <body>
 
 <nav>
-  <a href="https://fintiq.uk" class="logo">📊 Fintiq</a>
+  <a href="https://fintiq.uk" class="logo" style="display:flex;align-items:center;gap:8px">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </a>
   <div style="display:flex;align-items:center;gap:10px">
     <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
       <svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -252,9 +296,9 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 </script>
 
 <div class="hero">
-  <div class="hero-tag">FREE TOOLS</div>
-  <h1>Hedge Fund Tools. <span>Zero Cost.</span></h1>
-  <p>Professional-grade investing tools — Monte Carlo simulation, retirement planning, stock screening — built for retail investors. No sign-up, no paywall on the essentials.</p>
+  <div class="hero-tag">INVESTING TOOLS</div>
+  <h1>Institutional Tools. <span>Built for You.</span></h1>
+  <p>Professional-grade investing tools built for retail investors — the same quantitative methods used by hedge funds and investment banks, made accessible. From Monte Carlo simulation and portfolio optimisation to daily stock screening and statistical arbitrage.</p>
 </div>
 
 <div class="section">
@@ -324,95 +368,81 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <div class="tool-icon-big">🔬</div>
   </div>
 
-  <!-- APP TOOLS -->
-  <div class="section-title">In the Free App</div>
-  <div class="tools-grid">
+  <!-- QUANTITATIVE TOOLS -->
+  <div class="section-title">Quantitative Analysis Tools</div>
+  <div class="tools-grid" style="margin-bottom:40px">
 
     <div class="tool-card">
-      <span class="tool-card-tag tag-app">FREE APP</span>
-      <div class="tool-card-icon">🔍</div>
-      <h3>Multi-Factor Stock Screener</h3>
-      <p>Screen FTSE 100, NASDAQ, NYSE and global markets using quality, value and momentum signals simultaneously. Filter 10,000+ stocks in seconds.</p>
-      <a href="https://app.fintiq.uk" class="tool-card-link">Open Screener →</a>
+      <span class="tool-card-tag tag-free">🎲 FREE · BROWSER TOOL</span>
+      <div class="tool-card-icon">📈</div>
+      <h3>Monte Carlo Risk Simulator</h3>
+      <p>Run thousands of future price path simulations using Geometric Brownian Motion — the same model used by derivatives desks worldwide. Understand your real probability of hitting a target, not just a single misleading forecast.</p>
+      <a href="/monte-carlo.html" class="tool-card-link">Open Simulator →</a>
     </div>
 
     <div class="tool-card">
-      <span class="tool-card-tag tag-app">FREE APP</span>
-      <div class="tool-card-icon">🎰</div>
-      <h3>Monte Carlo — Stock Risk Analysis</h3>
-      <p>Run thousands of simulations on any stock or portfolio to understand the realistic range of outcomes — not a single misleading forecast.</p>
-      <a href="https://app.fintiq.uk" class="tool-card-link">Open Tool →</a>
-    </div>
-
-    <div class="tool-card">
-      <span class="tool-card-tag tag-app">FREE APP</span>
+      <span class="tool-card-tag tag-free">📊 FREE · BROWSER TOOL</span>
       <div class="tool-card-icon">⚖️</div>
-      <h3>Portfolio Optimiser (Efficient Frontier)</h3>
-      <p>Find the mathematically optimal allocation for your stocks using Nobel Prize-winning Modern Portfolio Theory. Maximise return per unit of risk.</p>
-      <a href="https://app.fintiq.uk" class="tool-card-link">Open Optimiser →</a>
+      <h3>Portfolio Optimiser — Efficient Frontier</h3>
+      <p>Find the mathematically optimal asset allocation using Modern Portfolio Theory. Generate the Efficient Frontier from up to 10 assets and find the portfolio that maximises your Sharpe ratio, minimises volatility, or targets a specific return.</p>
+      <a href="/portfolio-optimiser.html" class="tool-card-link">Open Optimiser →</a>
     </div>
 
     <div class="tool-card">
-      <span class="tool-card-tag tag-app">FREE APP</span>
+      <span class="tool-card-tag tag-free">📐 FREE · BROWSER TOOL</span>
       <div class="tool-card-icon">🔗</div>
       <h3>Statistical Pairs Trading</h3>
-      <p>Find cointegrated stock pairs and calculate real-time Z-scores, half-lives, and entry signals. The market-neutral strategy used by hedge funds.</p>
-      <a href="https://app.fintiq.uk" class="tool-card-link">Open Pairs Tool →</a>
+      <p>Calculate the Z-score spread between two correlated assets and identify mean-reversion entry and exit signals. Six classic pairs pre-loaded (KO/PEP, JPM/BAC, XOM/CVX), or paste your own price data. The strategy behind quantitative hedge funds.</p>
+      <a href="/pairs-trading.html" class="tool-card-link">Open Pairs Tool →</a>
     </div>
 
     <div class="tool-card">
-      <span class="tool-card-tag tag-app">FREE APP</span>
-      <div class="tool-card-icon">💰</div>
-      <h3>DCF Valuation Model</h3>
-      <p>Value any company using Discounted Cash Flow analysis. Every assumption explained — WACC, terminal growth, free cash flow — step by step.</p>
-      <a href="https://app.fintiq.uk" class="tool-card-link">Open DCF Tool →</a>
+      <span class="tool-card-tag tag-free">🔬 FREE · ALPHA SIGNALS</span>
+      <div class="tool-card-icon">🔬</div>
+      <h3>Factor Screener — Fama-French Alpha</h3>
+      <p>Fama-French 4-factor regression on 500+ US stocks. Identifies genuine outperformance beyond market, size, value and momentum exposures. Know if a stock is truly generating alpha — or just riding market tailwinds.</p>
+      <a href="https://fintiq.uk/factor-screener.html" class="tool-card-link">Open Factor Screener →</a>
     </div>
 
     <div class="tool-card">
-      <span class="tool-card-tag tag-app">FREE APP</span>
-      <div class="tool-card-icon">📐</div>
-      <h3>Technical Analysis — RSI, MACD & More</h3>
-      <p>Automatic RSI, MACD, Bollinger Bands, ATR, and EMA signals for any stock. Multi-timeframe analysis built in.</p>
-      <a href="https://app.fintiq.uk" class="tool-card-link">Open Tool →</a>
+      <span class="tool-card-tag tag-free">🏦 FREE · UK & US</span>
+      <div class="tool-card-icon">🏦</div>
+      <h3>Retirement Lifecycle Planner</h3>
+      <p>Monte Carlo retirement planning for UK and US investors. Run 5,000 scenarios covering State Pension, Social Security, ISA, SIPP, 401(k), inflation, and sequence-of-returns risk. Know your true probability of never running out of money.</p>
+      <a href="/pension-planner.html" class="tool-card-link">Open UK Planner →</a>
     </div>
 
-  </div>
+    <div class="tool-card">
+      <span class="tool-card-tag tag-free">🔍 FREE · DEEP ANALYSIS</span>
+      <div class="tool-card-icon">🔍</div>
+      <h3>Stock Deep Dive</h3>
+      <p>Full fundamental and technical analysis for any US or UK stock — revenue, margins, valuation multiples, RSI, MACD, analyst consensus, and an AI-generated plain-English thesis. One tool, complete picture.</p>
+      <a href="/deep-dive.html" class="tool-card-link">Open Deep Dive →</a>
+    </div>
 
-  <!-- COMING SOON -->
-  <div class="section-title">Coming Soon</div>
-  <div class="coming-grid">
-    <div class="coming-card">
-      <div class="coming-card-icon">🏠</div>
-      <h4>ISA vs SIPP Calculator</h4>
-      <p>Model the tax impact of each wrapper over your lifetime based on your income, age, and expected retirement income.</p>
-    </div>
-    <div class="coming-card">
-      <div class="coming-card-icon">📊</div>
-      <h4>FIRE Number Calculator</h4>
-      <p>Calculate your personal FIRE target using your spending, inflation, State Pension bridge, and safe withdrawal rate.</p>
-    </div>
-    <div class="coming-card">
-      <div class="coming-card-icon">💷</div>
-      <h4>Dividend Income Planner</h4>
-      <p>Build a dividend portfolio that generates your target monthly income — with yield, coverage, and growth projections.</p>
-    </div>
-    <div class="coming-card">
-      <div class="coming-card-icon">📉</div>
-      <h4>Drawdown Risk Analyser</h4>
-      <p>Model sequence-of-returns risk across different asset allocations and withdrawal strategies for early retirees.</p>
-    </div>
   </div>
 
   <div class="cta-box">
-    <h3>Ready to Put the Tools to Work?</h3>
-    <p>The stock screener, Monte Carlo, portfolio optimiser and pairs trading are all free in the Fintiq app — no card required.</p>
-    <a href="https://app.fintiq.uk" class="cta-btn">Launch Fintiq Free →</a>
+    <h3>Daily Signal Feed — Alpha Scanner</h3>
+    <p>Our most powerful tool scans 1,100+ US micro and small-cap companies every night using Piotroski, Altman Z-Score, Beneish M-Score, and SEC filing language drift analysis. Real institutional-grade signals, delivered daily.</p>
+    <a href="/alpha-scanner.html" class="cta-btn">View Today's Alpha Signals →</a>
   </div>
 
 </div>
 
 <footer>
-  <div class="f-logo">📊 Fintiq</div>
+  <div class="f-logo" style="display:flex;align-items:center;justify-content:center;gap:8px">
+    <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </div>
   <div class="f-sub">Professional investing tools for retail investors</div>
   <div class="f-links">
     <a href="https://fintiq.uk">Home</a>
