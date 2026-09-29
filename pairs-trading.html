@@ -359,7 +359,11 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 </div>
 
 <script>
-const YF_API = 'https://query2.finance.yahoo.com/v8/finance/chart';
+// Data source: api.fintiq.uk while Railway is live.
+// When shutting down Railway, deploy the Cloudflare Worker in
+// fintiq-api/cloudflare-worker.js and change this to:
+//   const PRICES_API = 'https://prices.fintiq.uk';
+const PRICES_API = 'https://api.fintiq.uk';
 
 const PRESETS = [
   { tickerA:'KO',  tickerB:'PEP'  },
@@ -406,39 +410,20 @@ function showLoading(tickerA, tickerB) {
     </div>`;
 }
 
-// ── Data fetch — direct from Yahoo Finance chart API ─────────────────────────
+// ── Data fetch ────────────────────────────────────────────────────────────────
 async function fetchPrices(ticker, period) {
-  // Yahoo Finance v8 chart endpoint — works directly from the browser (CORS open)
-  const url = `${YF_API}/${encodeURIComponent(ticker.toUpperCase())}?range=${period}&interval=1d&includePrePost=false&events=history`;
+  const url = `${PRICES_API}/prices/${encodeURIComponent(ticker.toUpperCase())}?period=${period}`;
   let resp;
   try {
     resp = await fetch(url);
   } catch (e) {
     throw new Error(`Network error fetching ${ticker}. Check your internet connection.`);
   }
-  if (!resp.ok) throw new Error(`No data for '${ticker}' (HTTP ${resp.status}). Is the ticker valid on Yahoo Finance?`);
-
-  const json = await resp.json();
-  const result = json?.chart?.result?.[0];
-  if (!result) {
-    const detail = json?.chart?.error?.description || `No price history found for '${ticker}'`;
-    throw new Error(detail);
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error(err.detail || `No data for '${ticker}' (HTTP ${resp.status}). Is the ticker symbol valid?`);
   }
-
-  const timestamps = result.timestamp || [];
-  // Prefer adjusted close; fall back to regular close
-  const closes = result.indicators?.adjclose?.[0]?.adjclose
-               || result.indicators?.quote?.[0]?.close
-               || [];
-
-  const prices = timestamps.map((ts, i) => ({
-    date:  new Date(ts * 1000).toISOString().slice(0, 10),
-    close: closes[i],
-  })).filter(p => p.close != null && p.close > 0);
-
-  if (!prices.length) throw new Error(`Price data came back empty for '${ticker}'. Try a different period.`);
-
-  return { ticker: ticker.toUpperCase(), count: prices.length, prices };
+  return resp.json(); // { ticker, count, prices: [{date, close}] }
 }
 
 // ── Align two price series on matching dates ──────────────────────────────────
