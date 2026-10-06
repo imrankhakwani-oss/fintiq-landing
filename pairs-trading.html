@@ -451,7 +451,6 @@ function renderPresetGrid() {
         <span class="pc-cat-badge cat-${p.cat}">${CAT_LABELS[p.cat]}</span>
       </div>
       <div class="preset-desc">${p.desc}</div>
-      <div class="pc-prices" id="pcs_prices_${i}"><span class="sig-scan">…</span></div>
       <div class="pc-stats">
         <div class="pc-stat">
           <div class="pc-stat-val" id="pcs_corr_${i}"><span class="sig-scan">…</span></div>
@@ -968,6 +967,18 @@ async function analyse() {
          </div>`
       : '';
 
+    // ── Mean reversion price targets ─────────────────────────────────────────
+    const priceA_now    = pA[pA.length - 1];
+    const priceB_now    = pB[pB.length - 1];
+    const priceA_target = spreadMean + beta * priceB_now;          // what A should be
+    const priceB_target = (priceA_now - spreadMean) / beta;        // what B should be
+    const gapA = ((priceA_target - priceA_now) / priceA_now) * 100;
+    const gapB = ((priceB_target - priceB_now) / priceB_now) * 100;
+    const gapAStr = (gapA >= 0 ? '↑ +' : '↓ ') + gapA.toFixed(1) + '%';
+    const gapBStr = (gapB >= 0 ? '↑ +' : '↓ ') + gapB.toFixed(1) + '%';
+    const gapACol = gapA > 0 ? '#22c55e' : '#ef4444';
+    const gapBCol = gapB > 0 ? '#22c55e' : '#ef4444';
+
     // ── Build HTML ────────────────────────────────────────────────────────────
     document.getElementById('resultsArea').innerHTML = `
       ${signalHTML}
@@ -1008,6 +1019,34 @@ async function analyse() {
               <div style="font-size:1.25rem;font-weight:900;color:#94A3B8">${currentSpread.toFixed(2)}</div>
               <div style="font-size:0.7rem;color:#64748B;margin-top:2px">Current Spread (mean: ${spreadMean.toFixed(2)})</div>
             </div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,0.06);padding-top:12px;margin-bottom:4px">
+            <div style="font-size:0.68rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">💱 What the statistics mean in real prices</div>
+            <table style="width:100%;border-collapse:collapse;font-size:0.82rem">
+              <thead>
+                <tr style="color:#475569;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.5px">
+                  <th style="text-align:left;padding:4px 8px 6px 0;font-weight:600">Asset</th>
+                  <th style="text-align:right;padding:4px 8px 6px;font-weight:600">Current Price</th>
+                  <th style="text-align:right;padding:4px 8px 6px;font-weight:600">Mean Reversion Target</th>
+                  <th style="text-align:right;padding:4px 0 6px 8px;font-weight:600">Gap to Revert</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-top:1px solid rgba(255,255,255,0.05)">
+                  <td style="padding:7px 8px 7px 0;font-weight:700;color:#F1F5F9">${tickerA}</td>
+                  <td style="text-align:right;padding:7px 8px;color:#94A3B8;font-variant-numeric:tabular-nums">${fmtPrice(priceA_now)}</td>
+                  <td style="text-align:right;padding:7px 8px;color:#38bdf8;font-weight:700;font-variant-numeric:tabular-nums">${fmtPrice(priceA_target)}</td>
+                  <td style="text-align:right;padding:7px 0 7px 8px;color:${gapACol};font-weight:700">${gapAStr}</td>
+                </tr>
+                <tr style="border-top:1px solid rgba(255,255,255,0.05)">
+                  <td style="padding:7px 8px 7px 0;font-weight:700;color:#F1F5F9">${tickerB}</td>
+                  <td style="text-align:right;padding:7px 8px;color:#94A3B8;font-variant-numeric:tabular-nums">${fmtPrice(priceB_now)}</td>
+                  <td style="text-align:right;padding:7px 8px;color:#38bdf8;font-weight:700;font-variant-numeric:tabular-nums">${fmtPrice(priceB_target)}</td>
+                  <td style="text-align:right;padding:7px 0 7px 8px;color:${gapBCol};font-weight:700">${gapBStr}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div style="font-size:0.7rem;color:#475569;margin-top:6px">Target = price each asset needs to reach for the spread to return to its ${lookback}-day mean. One or both legs will move — the table shows each scenario independently.</div>
           </div>
           <div style="font-size:0.8rem;color:#94A3B8;line-height:1.65;border-top:1px solid rgba(255,255,255,0.06);padding-top:12px">
             <strong style="color:#F1F5F9">What β = ${beta.toFixed(2)} means:</strong>
