@@ -45,6 +45,8 @@ _bulletin_refreshing: bool = False  # True while background regeneration is in p
 _market_cache:   dict = {}; _market_cached_at:   float = 0.0; _MARKET_TTL   = 30*60
 _earnings_cache: dict = {}; _earnings_cached_at: dict  = {};  _EARNINGS_TTL = 24*3600
 _earnings_refreshing: dict = {}  # per-index refresh lock
+_pair_signals_cache: dict      = {}; _pair_signals_cached_at: float = 0.0; _PAIR_SIGNALS_TTL = 12*3600
+_pair_signals_refreshing: bool = False
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 _FOMC_DATES = [
@@ -779,6 +781,117 @@ def get_prices(ticker: str, period: str = "1y"):
         from fastapi import HTTPException
         raise HTTPException(status_code=500, detail=str(e))
 
+# ── Pair signals — 50 classic pairs (must match PRESETS in pairs-trading.html) ─
+_PAIR_SIGNALS_PRESETS = [
+    # Equities (25)
+    ["KO","PEP"],["JPM","BAC"],["XOM","CVX"],["AAPL","MSFT"],["GOOGL","META"],
+    ["AMD","NVDA"],["T","VZ"],["WMT","TGT"],["HD","LOW"],["MCD","YUM"],
+    ["GS","MS"],["WFC","C"],["JNJ","PFE"],["LLY","MRK"],["BA","LMT"],
+    ["CAT","DE"],["UPS","FDX"],["NKE","UA"],["PG","CL"],["TSLA","F"],
+    ["DAL","UAL"],["AMZN","EBAY"],["NFLX","DIS"],["QCOM","AVGO"],["USB","TFC"],
+    # ETFs (10)
+    ["SPY","QQQ"],["GLD","SLV"],["SPY","GLD"],["TLT","IEF"],["QQQ","IWM"],
+    ["XLK","XLF"],["XLE","XLU"],["EEM","SPY"],["VTI","IWM"],["GLD","USO"],
+    # Commodities (8)
+    ["GC=F","SI=F"],["CL=F","BZ=F"],["GC=F","CL=F"],["NG=F","CL=F"],
+    ["ZW=F","ZC=F"],["ZS=F","ZC=F"],["GC=F","HG=F"],["GC=F","PL=F"],
+    # FX (7)
+    ["EURUSD=X","GBPUSD=X"],["AUDUSD=X","NZDUSD=X"],["EURUSD=X","USDJPY=X"],
+    ["GBPUSD=X","AUDUSD=X"],["USDCAD=X","CL=F"],["EURUSD=X","GC=F"],["DX-Y.NYB","GC=F"],
+]
+
+def _compute_pair_signals():
+    """Fetch 1y prices for all unique tickers, compute 60-day OLS Z-score + Pearson corr for each pair."""
+    unique = list({t for pair in _PAIR_SIGNALS_PRESETS for t in pair})
+    price_map: dict = {}
+
+    def _fetch_one(ticker):
+        try:
+            hist = yf.Ticker(ticker).history(period="1y", interval="1d", auto_adjust=True)
+            if hist is not None and not hist.empty:
+                return ticker, {
+                    idx.strftime("%Y-%m-%d"): float(row["Close"])
+                    for idx, row in hist.iterrows()
+                    if row["Close"] > 0
+                }
+        except Exception:
+            pass
+        return ticker, {}
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        for ticker, prices in ex.map(_fetch_one, unique):
+            price_map[ticker] = prices
+
+    pairs_out = []
+    for tA, tB in _PAIR_SIGNALS_PRESETS:
+        pA = price_map.get(tA, {})
+        pB = price_map.get(tB, {})
+        common = sorted(set(pA) & set(pB))
+        if len(common) < 65:
+            pairs_out.append({"corr": None, "z": None})
+            continue
+        aA = [pA[d] for d in common]
+        aB = [pB[d] for d in common]
+        n  = len(aA)
+        mA = sum(aA) / n
+        mB = sum(aB) / n
+        cov  = sum((aA[i] - mA) * (aB[i] - mB) for i in range(n))
+        varA = sum((v - mA) ** 2 for v in aA)
+        varB = sum((v - mB) ** 2 for v in aB)
+        beta = cov / varB if varB else 1.0
+        corr = cov / (varA * varB) ** 0.5 if (varA and varB) else 0.0
+        spread = [aA[i] - beta * aB[i] for i in range(n)]
+        w  = min(60, n)
+        wn = spread[-w:]
+        wm = sum(wn) / w
+        ws = (sum((v - wm) ** 2 for v in wn) / w) ** 0.5
+        z  = (spread[-1] - wm) / ws if ws > 1e-8 else None
+        pairs_out.append({
+            "corr": round(corr, 4),
+            "z":    round(z, 4) if z is not None else None,
+        })
+
+    return {
+        "computed_at": datetime.utcnow().isoformat() + "Z",
+        "ttl":         _PAIR_SIGNALS_TTL,
+        "pairs":       pairs_out,
+    }
+
+def _bg_refresh_pair_signals():
+    global _pair_signals_cache, _pair_signals_cached_at, _pair_signals_refreshing
+    if _pair_signals_refreshing:
+        return
+    _pair_signals_refreshing = True
+    try:
+        result = _compute_pair_signals()
+        _pair_signals_cache     = result
+        _pair_signals_cached_at = time.time()
+    except Exception:
+        pass
+    finally:
+        _pair_signals_refreshing = False
+
+@app.get("/pair-signals")
+def get_pair_signals():
+    """
+    Pre-computed Z-scores + correlations for all 50 classic pairs.
+    Refreshes in background every 12 hours — 1 call per visitor vs 81 for a local scan.
+    """
+    global _pair_signals_cache, _pair_signals_cached_at, _pair_signals_refreshing
+    age       = time.time() - _pair_signals_cached_at
+    has_cache = bool(_pair_signals_cache)
+
+    if has_cache:
+        # Stale-while-revalidate: return cached data immediately, refresh in background if stale
+        if age >= _PAIR_SIGNALS_TTL and not _pair_signals_refreshing:
+            threading.Thread(target=_bg_refresh_pair_signals, daemon=True).start()
+        return _pair_signals_cache
+
+    # No cache yet (cold start) — kick off background compute and tell client to retry
+    if not _pair_signals_refreshing:
+        threading.Thread(target=_bg_refresh_pair_signals, daemon=True).start()
+    raise HTTPException(status_code=503, detail="Pair signals are being computed — ready in ~60 seconds. Browser will fall back to local scan.")
+
 def _bg_regenerate():
     """Background thread: regenerate bulletin and update cache. Called when cache is stale."""
     global _bulletin_cache, _bulletin_cached_at, _bulletin_refreshing
@@ -830,6 +943,12 @@ async def startup_prewarm():
                 time.sleep(d)
                 _bg_refresh_earnings(i)
             threading.Thread(target=_deferred_fresh, daemon=True).start()
+
+    # ── Pair signals: pre-warm on startup (staggered 5s to not compete with bulletin) ──
+    def _deferred_pair_signals():
+        time.sleep(5)
+        _bg_refresh_pair_signals()
+    threading.Thread(target=_deferred_pair_signals, daemon=True).start()
 
 @app.get("/bulletin")
 def get_bulletin():
