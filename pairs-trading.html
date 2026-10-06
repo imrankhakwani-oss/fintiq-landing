@@ -81,6 +81,8 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .sig-neutral-pill{background:rgba(100,116,139,0.12);color:#64748B}
 .sig-scan{font-size:0.6rem;color:#38bdf8;opacity:0.6}
 .scan-status{font-size:0.72rem;color:#38bdf8;margin-bottom:6px;min-height:16px}
+.ps-info-bar{font-size:0.72rem;color:#475569;margin-bottom:10px;padding:6px 10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:6px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.pc-prices{font-size:0.71rem;color:#64748B;margin:3px 0 1px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* Custom pair inputs */
 .custom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
@@ -238,6 +240,10 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <!-- Preset pairs -->
     <div id="presetSection">
       <div id="scanStatus" class="scan-status"></div>
+      <div class="ps-info-bar">
+        <span>⏱ Signals &amp; prices refresh every 12 hours · Last close price shown</span>
+        <span>For information only — not financial advice</span>
+      </div>
       <div class="pc-cat-filter">
         <button class="pc-cat-btn active" id="catAll"         onclick="filterCat('all')">All (50)</button>
         <button class="pc-cat-btn"        id="catEquities"    onclick="filterCat('equities')">Equities (25)</button>
@@ -445,6 +451,7 @@ function renderPresetGrid() {
         <span class="pc-cat-badge cat-${p.cat}">${CAT_LABELS[p.cat]}</span>
       </div>
       <div class="preset-desc">${p.desc}</div>
+      <div class="pc-prices" id="pcs_prices_${i}"><span class="sig-scan">…</span></div>
       <div class="pc-stats">
         <div class="pc-stat">
           <div class="pc-stat-val" id="pcs_corr_${i}"><span class="sig-scan">…</span></div>
@@ -497,7 +504,7 @@ async function scanAllPairs() {
     if (raw) {
       const c = JSON.parse(raw);
       if (c.ts && Date.now() - c.ts < LS_SIG_TTL && Array.isArray(c.pairs) && c.pairs.length === PRESETS.length) {
-        c.pairs.forEach((r, i) => updateCardStats(i, r ? r.corr : null, r ? r.z : null));
+        c.pairs.forEach((r, i) => updateCardStats(i, r ? r.corr : null, r ? r.z : null, r ? r.price_a : null, r ? r.price_b : null));
         if (statusEl) statusEl.textContent = '';
         return;
       }
@@ -510,7 +517,7 @@ async function scanAllPairs() {
     if (resp.ok) {
       const data = await resp.json();
       if (Array.isArray(data.pairs) && data.pairs.length === PRESETS.length) {
-        data.pairs.forEach((r, i) => updateCardStats(i, r ? r.corr : null, r ? r.z : null));
+        data.pairs.forEach((r, i) => updateCardStats(i, r ? r.corr : null, r ? r.z : null, r ? r.price_a : null, r ? r.price_b : null));
         try { localStorage.setItem(LS_SIG_KEY, JSON.stringify({ ts: Date.now(), pairs: data.pairs })); } catch (_) {}
         if (statusEl) statusEl.textContent = '';
         return;
@@ -547,9 +554,9 @@ function computeAndUpdateCard(i) {
   const p  = PRESETS[i];
   const pA = scanCache[p.tickerA];
   const pB = scanCache[p.tickerB];
-  if (!pA || !pB) { scanResults[i] = { corr: null, z: null }; updateCardStats(i, null, null); return; }
+  if (!pA || !pB) { scanResults[i] = { corr: null, z: null, price_a: null, price_b: null }; updateCardStats(i, null, null, null, null); return; }
   const aligned = alignSeries(pA, pB);
-  if (aligned.length < 65) { scanResults[i] = { corr: null, z: null }; updateCardStats(i, null, null); return; }
+  if (aligned.length < 65) { scanResults[i] = { corr: null, z: null, price_a: null, price_b: null }; updateCardStats(i, null, null, null, null); return; }
   const aA  = aligned.map(x => x.a);
   const aB  = aligned.map(x => x.b);
   const reg = ols(aB, aA);
@@ -557,15 +564,34 @@ function computeAndUpdateCard(i) {
   const stats  = rollingStats(spread, 60);
   const last   = stats[stats.length - 1];
   const z      = (last && last.std) ? (spread[spread.length - 1] - last.mean) / last.std : null;
-  scanResults[i] = { corr: reg.corr, z };
-  updateCardStats(i, reg.corr, z);
+  const priceA = aA[aA.length - 1];
+  const priceB = aB[aB.length - 1];
+  scanResults[i] = { corr: reg.corr, z, price_a: priceA, price_b: priceB };
+  updateCardStats(i, reg.corr, z, priceA, priceB);
 }
 
-function updateCardStats(i, corr, z) {
-  const corrEl = document.getElementById('pcs_corr_' + i);
-  const zEl    = document.getElementById('pcs_z_'    + i);
-  const sigEl  = document.getElementById('pcs_sig_'  + i);
+function fmtPrice(p) {
+  if (p === null || p === undefined) return '—';
+  if (p < 0.1)  return p.toFixed(5);
+  if (p < 10)   return p.toFixed(4);
+  return p.toFixed(2);
+}
+
+function updateCardStats(i, corr, z, priceA, priceB) {
+  const corrEl  = document.getElementById('pcs_corr_'   + i);
+  const zEl     = document.getElementById('pcs_z_'      + i);
+  const sigEl   = document.getElementById('pcs_sig_'    + i);
+  const prEl    = document.getElementById('pcs_prices_' + i);
   if (!corrEl || !zEl || !sigEl) return;
+
+  // Prices row
+  if (prEl) {
+    if (priceA !== null && priceA !== undefined) {
+      prEl.textContent = fmtPrice(priceA) + '  /  ' + fmtPrice(priceB);
+    } else {
+      prEl.textContent = '';
+    }
+  }
 
   if (corr === null || z === null) {
     corrEl.innerHTML = '<span style="color:#475569;font-size:0.7rem">N/A</span>';
