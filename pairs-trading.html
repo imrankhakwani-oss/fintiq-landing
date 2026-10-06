@@ -979,8 +979,96 @@ async function analyse() {
     const gapACol = gapA > 0 ? '#22c55e' : '#ef4444';
     const gapBCol = gapB > 0 ? '#22c55e' : '#ef4444';
 
+    // ── Plain English Summary ─────────────────────────────────────────────────
+    const peCorr    = Math.abs(corrVal);
+    const peStrong  = peCorr >= 0.7;
+    const peMod     = peCorr >= 0.4 && peCorr < 0.7;
+    const peWeak    = peCorr < 0.4;
+    const relIcon   = peStrong ? '✅' : peMod ? '⚠️' : '⛔';
+    const relColor  = peStrong ? '#22c55e' : peMod ? '#F59E0B' : '#ef4444';
+    const relBorder = peStrong ? 'rgba(34,197,94,0.2)' : peMod ? 'rgba(245,158,11,0.2)' : 'rgba(239,68,68,0.2)';
+    const relText   = peStrong
+      ? `Strong — ${tickerA} and ${tickerB} move together reliably`
+      : peMod
+      ? `Moderate — they move together most of the time`
+      : `Weak — they don't move together reliably right now`;
+    const syncPct   = (peCorr * 100).toFixed(0);
+
+    let peActionHTML;
+    if (peWeak) {
+      peActionHTML = `<div style="margin-top:12px;padding:12px 14px;background:rgba(239,68,68,0.07);border-radius:10px;border:1px solid rgba(239,68,68,0.15)">
+        <div style="font-size:0.92rem;font-weight:700;color:#ef4444">⛔ Don't trade this pair right now</div>
+        <div style="margin-top:5px;font-size:0.81rem;color:#94A3B8;line-height:1.55">${tickerA} and ${tickerB} are only in sync ${syncPct}% of the time. Any signal could be random noise, not a real opportunity. Come back when correlation is above 70%. Try a different pair.</div>
+      </div>`;
+    } else if (currentZ === null || Math.abs(currentZ) < exitZ) {
+      peActionHTML = `<div style="margin-top:12px;padding:12px 14px;background:rgba(100,116,139,0.08);border-radius:10px;border:1px solid rgba(100,116,139,0.15)">
+        <div style="font-size:0.92rem;font-weight:700;color:#94A3B8">⏸ No trade right now — pair is in balance</div>
+        <div style="margin-top:5px;font-size:0.81rem;color:#94A3B8;line-height:1.55">${tickerA} and ${tickerB} are priced fairly relative to each other today. There's no gap to exploit. Nothing to do — check back when the gap widens.</div>
+      </div>`;
+    } else if (Math.abs(currentZ) >= exitZ && Math.abs(currentZ) < entryZ) {
+      peActionHTML = `<div style="margin-top:12px;padding:12px 14px;background:rgba(245,158,11,0.07);border-radius:10px;border:1px solid rgba(245,158,11,0.18)">
+        <div style="font-size:0.92rem;font-weight:700;color:#F59E0B">🔔 Getting interesting — not quite yet</div>
+        <div style="margin-top:5px;font-size:0.81rem;color:#94A3B8;line-height:1.55">The gap between ${tickerA} and ${tickerB} is widening but hasn't hit the trade trigger yet. Keep watching — if it widens a little more, a signal will fire.</div>
+      </div>`;
+    } else {
+      // Active trade signal
+      const isLongA      = currentZ < -entryZ;
+      const buyTicker    = isLongA ? tickerA : tickerB;
+      const sellTicker   = isLongA ? tickerB : tickerA;
+      const buyPrice     = isLongA ? priceA_now    : priceB_now;
+      const sellPrice    = isLongA ? priceB_now    : priceA_now;
+      const buyTarget    = isLongA ? priceA_target : priceB_target;
+      const sellTarget   = isLongA ? priceB_target : priceA_target;
+      const buyGapPct    = Math.abs(isLongA ? gapA : gapB).toFixed(1);
+      const sellGapPct   = Math.abs(isLongA ? gapB : gapA).toFixed(1);
+      const timeStr      = avgDays ? `~${avgDays} days` : 'unknown (not enough history)';
+      const winCol       = winRate !== null && winRate >= 50 ? '#22c55e' : '#f87171';
+      const winStr       = winRate !== null
+        ? `<strong style="color:${winCol}">${winRate}%</strong> of the time historically (${trades.length} past trades)`
+        : `unknown — not enough completed trades yet`;
+
+      peActionHTML = `
+        <div style="margin-top:14px">
+          <div style="font-size:0.7rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">What to do</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+            <div style="background:rgba(34,197,94,0.09);border:1px solid rgba(34,197,94,0.22);border-radius:10px;padding:13px 15px">
+              <div style="font-size:0.65rem;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">📈 BUY — underpriced</div>
+              <div style="font-size:1.15rem;font-weight:900;color:#F1F5F9">${buyTicker}</div>
+              <div style="font-size:0.81rem;color:#94A3B8;margin-top:2px">Current: <strong style="color:#F1F5F9">${fmtPrice(buyPrice)}</strong></div>
+              <div style="font-size:0.81rem;color:#22c55e;margin-top:4px;font-weight:600">Target: ${fmtPrice(buyTarget)} &nbsp;↑ +${buyGapPct}%</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:13px 15px">
+              <div style="font-size:0.65rem;color:#ef4444;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:5px">📉 SELL — overpriced</div>
+              <div style="font-size:1.15rem;font-weight:900;color:#F1F5F9">${sellTicker}</div>
+              <div style="font-size:0.81rem;color:#94A3B8;margin-top:2px">Current: <strong style="color:#F1F5F9">${fmtPrice(sellPrice)}</strong></div>
+              <div style="font-size:0.81rem;color:#ef4444;margin-top:4px;font-weight:600">Target: ${fmtPrice(sellTarget)} &nbsp;↓ -${sellGapPct}%</div>
+            </div>
+          </div>
+          <div style="font-size:0.81rem;color:#94A3B8;line-height:1.65;background:rgba(255,255,255,0.02);border-radius:8px;padding:12px 14px;border:1px solid rgba(255,255,255,0.05)">
+            <strong style="color:#F1F5F9">Why:</strong> ${sellTicker} has drifted too far from ${buyTicker} compared to their normal relationship. History says they tend to realign within <strong style="color:#38bdf8">${timeStr}</strong>.<br>
+            <strong style="color:#F1F5F9">When to exit:</strong> Close both trades when they come back in sync (the gap disappears).<br>
+            <strong style="color:#F1F5F9">This has worked:</strong> ${winStr}.<br>
+            <strong style="color:#F59E0B">Remember:</strong> Do both trades together — buy one, sell the other at the same time.
+          </div>
+        </div>`;
+    }
+
+    const plainEnglishHTML = `
+      <div style="background:#071018;border:1.5px solid ${relBorder};border-radius:14px;padding:20px;margin-bottom:20px">
+        <div style="font-size:0.68rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">🏠 Plain English — What's happening</div>
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:1.3rem;line-height:1">${relIcon}</span>
+          <div>
+            <div style="font-size:0.9rem;font-weight:700;color:${relColor}">${relText}</div>
+            <div style="font-size:0.76rem;color:#475569;margin-top:2px">${tickerA} and ${tickerB} moved in the same direction <strong style="color:#64748B">${syncPct}%</strong> of the time over the last ${aligned.length} trading days</div>
+          </div>
+        </div>
+        ${peActionHTML}
+      </div>`;
+
     // ── Build HTML ────────────────────────────────────────────────────────────
     document.getElementById('resultsArea').innerHTML = `
+      ${plainEnglishHTML}
       ${signalHTML}
       <div class="card">
         <div class="card-title">📊 Key Statistics — ${tickerA} / ${tickerB}</div>
