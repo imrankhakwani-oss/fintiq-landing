@@ -57,6 +57,29 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .preset-pair{font-size:0.88rem;font-weight:700;color:#F1F5F9;margin-bottom:3px}
 .preset-desc{font-size:0.7rem;color:#64748B}
 .preset-corr{font-size:0.72rem;color:#22c55e;margin-top:4px}
+/* Category filter */
+.pc-cat-filter{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.pc-cat-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:4px 12px;font-size:0.72rem;color:#64748B;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.pc-cat-btn.active{background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.3);color:#F59E0B}
+/* Enriched preset card */
+.pc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px;gap:4px}
+.pc-cat-badge{font-size:0.58rem;font-weight:700;padding:2px 5px;border-radius:5px;text-transform:uppercase;letter-spacing:0.3px;flex-shrink:0;margin-top:1px}
+.cat-equities{background:rgba(56,189,248,0.12);color:#38bdf8}
+.cat-etfs{background:rgba(167,139,250,0.12);color:#a78bfa}
+.cat-commodities{background:rgba(245,158,11,0.12);color:#F59E0B}
+.cat-fx{background:rgba(34,197,94,0.12);color:#22c55e}
+.pc-stats{display:flex;gap:3px;align-items:center;margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,0.05)}
+.pc-stat{flex:1;text-align:center;min-width:0}
+.pc-stat-val{font-size:0.75rem;font-weight:700;color:#94A3B8;line-height:1.3;white-space:nowrap}
+.pc-stat-lbl{font-size:0.54rem;color:#475569;text-transform:uppercase;letter-spacing:0.2px}
+.pc-signal{flex:1.4;text-align:center;min-width:0}
+.pc-sig-pill{font-size:0.6rem;font-weight:700;padding:2px 5px;border-radius:5px;display:inline-block;white-space:nowrap}
+.sig-active-long{background:rgba(34,197,94,0.18);color:#22c55e}
+.sig-active-short{background:rgba(239,68,68,0.18);color:#ef4444}
+.sig-watching{background:rgba(245,158,11,0.18);color:#F59E0B}
+.sig-neutral-pill{background:rgba(100,116,139,0.12);color:#64748B}
+.sig-scan{font-size:0.6rem;color:#38bdf8;opacity:0.6}
+.scan-status{font-size:0.72rem;color:#38bdf8;margin-bottom:6px;min-height:16px}
 
 /* Custom pair inputs */
 .custom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
@@ -213,38 +236,15 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 
     <!-- Preset pairs -->
     <div id="presetSection">
-      <div class="preset-grid">
-        <div class="preset-card selected" id="pair_0" onclick="selectPreset(0)">
-          <div class="preset-pair">KO / PEP</div>
-          <div class="preset-desc">Coca-Cola vs Pepsi</div>
-          <div class="preset-corr">★ Classic pair</div>
-        </div>
-        <div class="preset-card" id="pair_1" onclick="selectPreset(1)">
-          <div class="preset-pair">JPM / BAC</div>
-          <div class="preset-desc">JP Morgan vs Bank of America</div>
-          <div class="preset-corr">★ Banking sector</div>
-        </div>
-        <div class="preset-card" id="pair_2" onclick="selectPreset(2)">
-          <div class="preset-pair">XOM / CVX</div>
-          <div class="preset-desc">ExxonMobil vs Chevron</div>
-          <div class="preset-corr">★ Oil majors</div>
-        </div>
-        <div class="preset-card" id="pair_3" onclick="selectPreset(3)">
-          <div class="preset-pair">AAPL / MSFT</div>
-          <div class="preset-desc">Apple vs Microsoft</div>
-          <div class="preset-corr">★ Big Tech</div>
-        </div>
-        <div class="preset-card" id="pair_4" onclick="selectPreset(4)">
-          <div class="preset-pair">GLD / SLV</div>
-          <div class="preset-desc">Gold vs Silver ETF</div>
-          <div class="preset-corr">★ Precious metals</div>
-        </div>
-        <div class="preset-card" id="pair_5" onclick="selectPreset(5)">
-          <div class="preset-pair">SPY / GLD</div>
-          <div class="preset-desc">S&amp;P 500 vs Gold</div>
-          <div class="preset-corr">★ Risk-on/off hedge</div>
-        </div>
+      <div id="scanStatus" class="scan-status"></div>
+      <div class="pc-cat-filter">
+        <button class="pc-cat-btn active" id="catAll"         onclick="filterCat('all')">All (50)</button>
+        <button class="pc-cat-btn"        id="catEquities"    onclick="filterCat('equities')">Equities (25)</button>
+        <button class="pc-cat-btn"        id="catEtfs"        onclick="filterCat('etfs')">ETFs (10)</button>
+        <button class="pc-cat-btn"        id="catCommodities" onclick="filterCat('commodities')">Commodities (8)</button>
+        <button class="pc-cat-btn"        id="catFx"          onclick="filterCat('fx')">FX (7)</button>
       </div>
+      <div class="preset-grid" id="presetGrid"></div>
     </div>
 
     <!-- Custom pair mode -->
@@ -359,12 +359,60 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 const PRICES_API = 'https://api.fintiq.uk';
 
 const PRESETS = [
-  { tickerA:'KO',  tickerB:'PEP'  },
-  { tickerA:'JPM', tickerB:'BAC'  },
-  { tickerA:'XOM', tickerB:'CVX'  },
-  { tickerA:'AAPL',tickerB:'MSFT' },
-  { tickerA:'GLD', tickerB:'SLV'  },
-  { tickerA:'SPY', tickerB:'GLD'  },
+  // ── Equities (25) ────────────────────────────────────────────────────────────
+  { tickerA:'KO',    tickerB:'PEP',      name:'KO / PEP',        desc:'Coca-Cola vs Pepsi',                cat:'equities' },
+  { tickerA:'JPM',   tickerB:'BAC',      name:'JPM / BAC',       desc:'JP Morgan vs Bank of America',      cat:'equities' },
+  { tickerA:'XOM',   tickerB:'CVX',      name:'XOM / CVX',       desc:'ExxonMobil vs Chevron',             cat:'equities' },
+  { tickerA:'AAPL',  tickerB:'MSFT',     name:'AAPL / MSFT',     desc:'Apple vs Microsoft',                cat:'equities' },
+  { tickerA:'GOOGL', tickerB:'META',     name:'GOOGL / META',    desc:'Google vs Meta',                    cat:'equities' },
+  { tickerA:'AMD',   tickerB:'NVDA',     name:'AMD / NVDA',      desc:'AMD vs NVIDIA',                     cat:'equities' },
+  { tickerA:'T',     tickerB:'VZ',       name:'T / VZ',          desc:'AT&amp;T vs Verizon',               cat:'equities' },
+  { tickerA:'WMT',   tickerB:'TGT',      name:'WMT / TGT',       desc:'Walmart vs Target',                 cat:'equities' },
+  { tickerA:'HD',    tickerB:'LOW',      name:'HD / LOW',        desc:"Home Depot vs Lowe's",              cat:'equities' },
+  { tickerA:'MCD',   tickerB:'YUM',      name:'MCD / YUM',       desc:"McDonald's vs Yum Brands",          cat:'equities' },
+  { tickerA:'GS',    tickerB:'MS',       name:'GS / MS',         desc:'Goldman Sachs vs Morgan Stanley',   cat:'equities' },
+  { tickerA:'WFC',   tickerB:'C',        name:'WFC / C',         desc:'Wells Fargo vs Citigroup',          cat:'equities' },
+  { tickerA:'JNJ',   tickerB:'PFE',      name:'JNJ / PFE',       desc:'Johnson & Johnson vs Pfizer',       cat:'equities' },
+  { tickerA:'LLY',   tickerB:'MRK',      name:'LLY / MRK',       desc:'Eli Lilly vs Merck',                cat:'equities' },
+  { tickerA:'BA',    tickerB:'LMT',      name:'BA / LMT',        desc:'Boeing vs Lockheed Martin',         cat:'equities' },
+  { tickerA:'CAT',   tickerB:'DE',       name:'CAT / DE',        desc:'Caterpillar vs John Deere',         cat:'equities' },
+  { tickerA:'UPS',   tickerB:'FDX',      name:'UPS / FDX',       desc:'UPS vs FedEx',                      cat:'equities' },
+  { tickerA:'NKE',   tickerB:'UA',       name:'NKE / UA',        desc:'Nike vs Under Armour',              cat:'equities' },
+  { tickerA:'PG',    tickerB:'CL',       name:'PG / CL',         desc:'Procter & Gamble vs Colgate',       cat:'equities' },
+  { tickerA:'TSLA',  tickerB:'F',        name:'TSLA / F',        desc:'Tesla vs Ford',                     cat:'equities' },
+  { tickerA:'DAL',   tickerB:'UAL',      name:'DAL / UAL',       desc:'Delta vs United Airlines',          cat:'equities' },
+  { tickerA:'AMZN',  tickerB:'EBAY',     name:'AMZN / EBAY',     desc:'Amazon vs eBay',                    cat:'equities' },
+  { tickerA:'NFLX',  tickerB:'DIS',      name:'NFLX / DIS',      desc:'Netflix vs Disney',                 cat:'equities' },
+  { tickerA:'QCOM',  tickerB:'AVGO',     name:'QCOM / AVGO',     desc:'Qualcomm vs Broadcom',              cat:'equities' },
+  { tickerA:'USB',   tickerB:'TFC',      name:'USB / TFC',       desc:'US Bancorp vs Truist',              cat:'equities' },
+  // ── ETFs (10) ────────────────────────────────────────────────────────────────
+  { tickerA:'SPY',   tickerB:'QQQ',      name:'SPY / QQQ',       desc:'S&amp;P 500 vs Nasdaq 100',         cat:'etfs' },
+  { tickerA:'GLD',   tickerB:'SLV',      name:'GLD / SLV',       desc:'Gold vs Silver ETF',                cat:'etfs' },
+  { tickerA:'SPY',   tickerB:'GLD',      name:'SPY / GLD',       desc:'Equities vs Gold',                  cat:'etfs' },
+  { tickerA:'TLT',   tickerB:'IEF',      name:'TLT / IEF',       desc:'Long Bonds vs Mid Bonds',           cat:'etfs' },
+  { tickerA:'QQQ',   tickerB:'IWM',      name:'QQQ / IWM',       desc:'Nasdaq 100 vs Small-cap',           cat:'etfs' },
+  { tickerA:'XLK',   tickerB:'XLF',      name:'XLK / XLF',       desc:'Tech ETF vs Financials ETF',        cat:'etfs' },
+  { tickerA:'XLE',   tickerB:'XLU',      name:'XLE / XLU',       desc:'Energy ETF vs Utilities ETF',       cat:'etfs' },
+  { tickerA:'EEM',   tickerB:'SPY',      name:'EEM / SPY',       desc:'Emerging Markets vs US',            cat:'etfs' },
+  { tickerA:'VTI',   tickerB:'IWM',      name:'VTI / IWM',       desc:'US Total Market vs Small-cap',      cat:'etfs' },
+  { tickerA:'GLD',   tickerB:'USO',      name:'GLD / USO',       desc:'Gold ETF vs Oil ETF',               cat:'etfs' },
+  // ── Commodities (8) ──────────────────────────────────────────────────────────
+  { tickerA:'GC=F',  tickerB:'SI=F',     name:'Gold / Silver',   desc:'Gold vs Silver Futures',            cat:'commodities' },
+  { tickerA:'CL=F',  tickerB:'BZ=F',     name:'WTI / Brent',     desc:'WTI vs Brent Crude Futures',        cat:'commodities' },
+  { tickerA:'GC=F',  tickerB:'CL=F',     name:'Gold / Oil',      desc:'Gold vs WTI Crude Futures',         cat:'commodities' },
+  { tickerA:'NG=F',  tickerB:'CL=F',     name:'Nat Gas / Oil',   desc:'Natural Gas vs Crude Oil',          cat:'commodities' },
+  { tickerA:'ZW=F',  tickerB:'ZC=F',     name:'Wheat / Corn',    desc:'Wheat vs Corn Futures',             cat:'commodities' },
+  { tickerA:'ZS=F',  tickerB:'ZC=F',     name:'Soy / Corn',      desc:'Soybeans vs Corn Futures',          cat:'commodities' },
+  { tickerA:'GC=F',  tickerB:'HG=F',     name:'Gold / Copper',   desc:'Gold vs Copper Futures',            cat:'commodities' },
+  { tickerA:'GC=F',  tickerB:'PL=F',     name:'Gold / Platinum', desc:'Gold vs Platinum Futures',          cat:'commodities' },
+  // ── FX (7) ───────────────────────────────────────────────────────────────────
+  { tickerA:'EURUSD=X', tickerB:'GBPUSD=X', name:'EUR/USD vs GBP/USD', desc:'Euro vs British Pound',            cat:'fx' },
+  { tickerA:'AUDUSD=X', tickerB:'NZDUSD=X', name:'AUD/USD vs NZD/USD', desc:'Australian vs New Zealand $',      cat:'fx' },
+  { tickerA:'EURUSD=X', tickerB:'USDJPY=X', name:'EUR/USD vs USD/JPY', desc:'Euro vs Japanese Yen',             cat:'fx' },
+  { tickerA:'GBPUSD=X', tickerB:'AUDUSD=X', name:'GBP/USD vs AUD/USD', desc:'British vs Australian $',          cat:'fx' },
+  { tickerA:'USDCAD=X', tickerB:'CL=F',     name:'USD/CAD vs Oil',     desc:'Canadian $ vs Crude Oil',          cat:'fx' },
+  { tickerA:'EURUSD=X', tickerB:'GC=F',     name:'EUR/USD vs Gold',    desc:'Euro vs Gold (safe havens)',        cat:'fx' },
+  { tickerA:'DX-Y.NYB', tickerB:'GC=F',     name:'USD Index vs Gold',  desc:'Dollar Index vs Gold',             cat:'fx' },
 ];
 
 let mode = 'preset';
@@ -380,10 +428,175 @@ function setMode(m) {
   document.getElementById('mode' + m.charAt(0).toUpperCase() + m.slice(1)).classList.add('active');
 }
 
+// ── Preset rendering ──────────────────────────────────────────────────────────
+let presetFilter = 'all';
+const scanCache  = {};   // ticker → prices[]
+const scanComputed = new Set();
+
+const CAT_LABELS = { equities:'Equities', etfs:'ETFs', commodities:'Commodities', fx:'FX' };
+
+function renderPresetGrid() {
+  const grid = document.getElementById('presetGrid');
+  if (!grid) return;
+  grid.innerHTML = PRESETS.map((p, i) => `
+    <div class="preset-card${i === 0 ? ' selected' : ''}" id="pair_${i}" onclick="selectPreset(${i})" style="${presetFilter !== 'all' && p.cat !== presetFilter ? 'display:none' : ''}">
+      <div class="pc-top">
+        <div class="preset-pair">${p.name}</div>
+        <span class="pc-cat-badge cat-${p.cat}">${CAT_LABELS[p.cat]}</span>
+      </div>
+      <div class="preset-desc">${p.desc}</div>
+      <div class="pc-stats">
+        <div class="pc-stat">
+          <div class="pc-stat-val" id="pcs_corr_${i}"><span class="sig-scan">…</span></div>
+          <div class="pc-stat-lbl">Corr</div>
+        </div>
+        <div class="pc-stat">
+          <div class="pc-stat-val" id="pcs_z_${i}"><span class="sig-scan">…</span></div>
+          <div class="pc-stat-lbl">Z-score</div>
+        </div>
+        <div class="pc-signal" id="pcs_sig_${i}">
+          <span class="sig-scan">scanning</span>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function filterCat(cat) {
+  presetFilter = cat;
+  document.querySelectorAll('.pc-cat-btn').forEach(b => b.classList.remove('active'));
+  const ids = { all:'catAll', equities:'catEquities', etfs:'catEtfs', commodities:'catCommodities', fx:'catFx' };
+  const btn = document.getElementById(ids[cat]);
+  if (btn) btn.classList.add('active');
+  PRESETS.forEach((p, i) => {
+    const card = document.getElementById('pair_' + i);
+    if (card) card.style.display = (cat === 'all' || p.cat === cat) ? '' : 'none';
+  });
+  // Keep selected card highlighted if still visible
+  const sel = document.getElementById('pair_' + currentPreset);
+  if (sel && sel.style.display !== 'none') sel.classList.add('selected');
+}
+
 function selectPreset(i) {
   document.querySelectorAll('.preset-card').forEach(c => c.classList.remove('selected'));
-  document.getElementById('pair_' + i).classList.add('selected');
+  const card = document.getElementById('pair_' + i);
+  if (card) card.classList.add('selected');
   currentPreset = i;
+}
+
+// ── Pair signal scan — server-first, localStorage cache, local fallback ───────
+const LS_SIG_KEY  = 'pt_signals_v2';
+const LS_SIG_TTL  = 12 * 3600 * 1000; // 12 hours
+const scanResults = new Array(PRESETS.length).fill(null); // used by local fallback only
+
+async function scanAllPairs() {
+  const statusEl = document.getElementById('scanStatus');
+
+  // 1. localStorage — zero API calls ─────────────────────────────────────────
+  try {
+    const raw = localStorage.getItem(LS_SIG_KEY);
+    if (raw) {
+      const c = JSON.parse(raw);
+      if (c.ts && Date.now() - c.ts < LS_SIG_TTL && Array.isArray(c.pairs) && c.pairs.length === PRESETS.length) {
+        c.pairs.forEach((r, i) => updateCardStats(i, r ? r.corr : null, r ? r.z : null));
+        if (statusEl) statusEl.textContent = '';
+        return;
+      }
+    }
+  } catch (_) {}
+
+  // 2. Server-side shared cache — 1 API call for all 50 pairs ────────────────
+  try {
+    const resp = await fetch(`${PRICES_API}/pair-signals`);
+    if (resp.ok) {
+      const data = await resp.json();
+      if (Array.isArray(data.pairs) && data.pairs.length === PRESETS.length) {
+        data.pairs.forEach((r, i) => updateCardStats(i, r ? r.corr : null, r ? r.z : null));
+        try { localStorage.setItem(LS_SIG_KEY, JSON.stringify({ ts: Date.now(), pairs: data.pairs })); } catch (_) {}
+        if (statusEl) statusEl.textContent = '';
+        return;
+      }
+    }
+  } catch (_) {}
+
+  // 3. Local fallback — server cold-starting or unreachable (81 API calls) ───
+  const uniqueTickers = [...new Set(PRESETS.flatMap(p => [p.tickerA, p.tickerB]))];
+  let fetched = 0;
+  const BATCH = 6;
+  for (let i = 0; i < uniqueTickers.length; i += BATCH) {
+    const batch   = uniqueTickers.slice(i, i + BATCH);
+    const results = await Promise.allSettled(
+      batch.map(t => fetchPrices(t, '1y').then(d => ({ ticker: t, prices: d.prices })))
+    );
+    results.forEach(r => {
+      fetched++;
+      if (r.status === 'fulfilled') scanCache[r.value.ticker] = r.value.prices;
+    });
+    if (statusEl) statusEl.textContent = `⚡ Computing signals… ${fetched}/${uniqueTickers.length}`;
+    PRESETS.forEach((p, idx) => {
+      if (!scanComputed.has(idx) && scanCache[p.tickerA] && scanCache[p.tickerB]) {
+        computeAndUpdateCard(idx);
+        scanComputed.add(idx);
+      }
+    });
+  }
+  try { localStorage.setItem(LS_SIG_KEY, JSON.stringify({ ts: Date.now(), pairs: scanResults })); } catch (_) {}
+  if (statusEl) statusEl.textContent = '';
+}
+
+function computeAndUpdateCard(i) {
+  const p  = PRESETS[i];
+  const pA = scanCache[p.tickerA];
+  const pB = scanCache[p.tickerB];
+  if (!pA || !pB) { scanResults[i] = { corr: null, z: null }; updateCardStats(i, null, null); return; }
+  const aligned = alignSeries(pA, pB);
+  if (aligned.length < 65) { scanResults[i] = { corr: null, z: null }; updateCardStats(i, null, null); return; }
+  const aA  = aligned.map(x => x.a);
+  const aB  = aligned.map(x => x.b);
+  const reg = ols(aB, aA);
+  const spread = aA.map((a, j) => a - reg.beta * aB[j]);
+  const stats  = rollingStats(spread, 60);
+  const last   = stats[stats.length - 1];
+  const z      = (last && last.std) ? (spread[spread.length - 1] - last.mean) / last.std : null;
+  scanResults[i] = { corr: reg.corr, z };
+  updateCardStats(i, reg.corr, z);
+}
+
+function updateCardStats(i, corr, z) {
+  const corrEl = document.getElementById('pcs_corr_' + i);
+  const zEl    = document.getElementById('pcs_z_'    + i);
+  const sigEl  = document.getElementById('pcs_sig_'  + i);
+  if (!corrEl || !zEl || !sigEl) return;
+
+  if (corr === null || z === null) {
+    corrEl.innerHTML = '<span style="color:#475569;font-size:0.7rem">N/A</span>';
+    zEl.innerHTML    = '<span style="color:#475569;font-size:0.7rem">N/A</span>';
+    sigEl.innerHTML  = '<span class="pc-sig-pill sig-neutral-pill">N/A</span>';
+    return;
+  }
+
+  // Correlation
+  const corrAbs   = Math.abs(corr);
+  const corrColor = corrAbs >= 0.7 ? '#22c55e' : corrAbs >= 0.4 ? '#F59E0B' : '#ef4444';
+  corrEl.innerHTML = `<span style="color:${corrColor}">${corr.toFixed(2)}</span>`;
+
+  // Z-score
+  const zAbs    = Math.abs(z);
+  const zColor  = zAbs >= 2 ? (z > 0 ? '#ef4444' : '#22c55e') : zAbs >= 1 ? '#F59E0B' : '#64748B';
+  const zSign   = z >= 0 ? '+' : '';
+  zEl.innerHTML = `<span style="color:${zColor}">${zSign}${z.toFixed(2)}</span>`;
+
+  // Signal pill
+  let sigHtml;
+  if (zAbs >= 2) {
+    sigHtml = z > 0
+      ? '<span class="pc-sig-pill sig-active-short">▼ Short A</span>'
+      : '<span class="pc-sig-pill sig-active-long">▲ Long A</span>';
+  } else if (zAbs >= 1) {
+    sigHtml = '<span class="pc-sig-pill sig-watching">◎ Watch</span>';
+  } else {
+    sigHtml = '<span class="pc-sig-pill sig-neutral-pill">— Neutral</span>';
+  }
+  sigEl.innerHTML = sigHtml;
 }
 
 function showError(msg) {
@@ -873,6 +1086,12 @@ async function analyse() {
     btn.textContent = '⚡ Analyse Pair';
   }
 }
+
+// ── Page init ─────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  renderPresetGrid();
+  setTimeout(scanAllPairs, 400);
+});
 </script>
 </body>
 </html>
