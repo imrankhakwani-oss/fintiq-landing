@@ -5258,9 +5258,12 @@ class OptimiseRequest(BaseModel):
     period: str = "2y"          # yfinance period string
     allow_shorts: bool = False
     risk_free: float = 0.045    # annualised risk-free rate
+    min_weight: float = 0.03    # minimum allocation per ticker (0.03 = 3% floor for diversification)
+    max_weight: float = 0.40    # maximum allocation per ticker (0.40 = 40% cap)
 
 
-def _compute_portfolio(tickers: list[str], period: str, allow_shorts: bool, rf: float) -> dict:
+def _compute_portfolio(tickers: list[str], period: str, allow_shorts: bool, rf: float,
+                       min_weight: float = 0.03, max_weight: float = 0.40) -> dict:
     """
     Fetches prices, builds efficient frontier, computes all 5 ratios.
     Returns serialisable dict.
@@ -5293,7 +5296,15 @@ def _compute_portfolio(tickers: list[str], period: str, allow_shorts: bool, rf: 
     n         = len(valid)
 
     # ── 2. Efficient frontier via SLSQP ───────────────────────────────────────
-    bounds = ((-1.0, 1.0),) * n if allow_shorts else ((0.0, 1.0),) * n
+    # Long-only: apply min/max weight floors so optimizer diversifies across all tickers
+    # Shorts mode: unrestricted (-1 to 1)
+    if allow_shorts:
+        bounds = ((-1.0, 1.0),) * n
+    else:
+        # Clamp min_weight so constraints are feasible (n × min_weight must be ≤ 1)
+        eff_min = min(min_weight, 1.0 / n) if n > 0 else min_weight
+        eff_max = max(max_weight, eff_min)
+        bounds = ((eff_min, eff_max),) * n
     constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]
 
     def port_vol(w):
@@ -5434,7 +5445,8 @@ def optimise_portfolio(req: OptimiseRequest):
     if len(tickers) > 25:
         raise HTTPException(status_code=422, detail="Maximum 25 tickers per request")
     try:
-        result = _compute_portfolio(tickers, req.period, req.allow_shorts, req.risk_free)
+        result = _compute_portfolio(tickers, req.period, req.allow_shorts, req.risk_free,
+                                    req.min_weight, req.max_weight)
         return result
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
@@ -5483,7 +5495,8 @@ def _bg_refresh_fintiq_portfolios():
         result = {}
         for key, meta in _FINTIQ_MODEL_PORTFOLIOS.items():
             try:
-                data = _compute_portfolio(meta["tickers"], "2y", False, 0.045)
+                data = _compute_portfolio(meta["tickers"], "2y", False, 0.045,
+                                          min_weight=0.03, max_weight=0.40)
                 result[key] = {**meta, **data}
             except Exception as e:
                 result[key] = {**meta, "error": str(e)}
