@@ -4,5 +4,6 @@ yfinance
 requests
 pandas
 numpy
+scipy
 anthropic
 openbb
