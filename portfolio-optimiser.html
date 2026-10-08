@@ -6,131 +6,151 @@
 <title>Portfolio Optimiser — Fintiq</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
-:root {
-  --bg:       #0d1117;
-  --surface:  #161b22;
-  --surface2: #1c2333;
-  --border:   rgba(255,255,255,0.07);
-  --text:     #e6edf3;
-  --muted:    #8b949e;
-  --accent:   #3b82f6;
-  --green:    #22c55e;
-  --red:      #ef4444;
-  --amber:    #f59e0b;
-  --purple:   #a855f7;
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2333;
+  --border:rgba(255,255,255,0.07);--text:#e6edf3;--muted:#8b949e;
+  --accent:#3b82f6;--green:#22c55e;--red:#ef4444;--amber:#f59e0b;--purple:#a855f7;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 
 /* ── nav ── */
-.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border);background:var(--surface)}
-.nav-logo{font-size:1.15rem;font-weight:700;color:#fff;text-decoration:none;letter-spacing:-0.3px}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;border-bottom:1px solid var(--border);background:var(--surface)}
+.nav-logo{font-size:1.1rem;font-weight:700;color:#fff;text-decoration:none;letter-spacing:-0.3px;display:flex;align-items:center;gap:8px}
 .nav-logo span{color:var(--accent)}
-.nav-links{display:flex;gap:8px}
-.nav-links a{color:var(--muted);text-decoration:none;font-size:0.82rem;padding:5px 10px;border-radius:6px;transition:all .15s}
+.nav-links{display:flex;gap:4px}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:0.82rem;padding:6px 12px;border-radius:6px;transition:all .15s}
 .nav-links a:hover{color:var(--text);background:rgba(255,255,255,0.06)}
-.nav-links a.active{color:var(--text);background:rgba(59,130,246,0.15)}
+.nav-links a.active{color:#fff;background:var(--accent)}
 
 /* ── hero ── */
-.hero{background:linear-gradient(135deg,rgba(59,130,246,0.12) 0%,rgba(168,85,247,0.08) 100%);border-bottom:1px solid var(--border);padding:32px 24px 28px}
-.hero-inner{max-width:960px;margin:0 auto}
-.hero h1{font-size:1.7rem;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
-.hero p{color:var(--muted);font-size:0.92rem;max-width:560px}
+.hero{background:linear-gradient(135deg,rgba(59,130,246,0.1) 0%,rgba(168,85,247,0.06) 100%);border-bottom:1px solid var(--border);padding:36px 28px 30px}
+.hero-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;gap:20px}
+.hero-icon{flex-shrink:0}
+.hero-text h1{font-size:1.75rem;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.hero-text p{color:var(--muted);font-size:0.9rem;max-width:560px;line-height:1.5}
 
 /* ── tabs ── */
-.tabs{display:flex;gap:2px;padding:16px 24px 0;max-width:960px;margin:0 auto}
-.tab{padding:9px 20px;border-radius:8px 8px 0 0;font-size:0.85rem;font-weight:500;cursor:pointer;color:var(--muted);border:1px solid transparent;border-bottom:none;transition:all .15s;background:transparent}
+.tabs-wrap{max-width:1280px;margin:0 auto;padding:18px 28px 0}
+.tabs{display:flex;gap:2px}
+.tab{padding:9px 22px;border-radius:8px 8px 0 0;font-size:0.85rem;font-weight:500;cursor:pointer;color:var(--muted);border:1px solid transparent;border-bottom:none;transition:all .15s;background:transparent;user-select:none}
 .tab:hover{color:var(--text);background:var(--surface2)}
 .tab.active{color:var(--text);background:var(--surface);border-color:var(--border)}
-.tab-icon{margin-right:6px}
 
 /* ── main ── */
-.main{max-width:960px;margin:0 auto;padding:0 24px 60px}
-.panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:0 12px 12px 12px;padding:24px}
+.main{max-width:1280px;margin:0 auto;padding:0 28px 60px}
+.panel{display:none;background:var(--surface);border:1px solid var(--border);border-radius:0 12px 12px 12px;padding:28px}
 .panel.active{display:block}
 
 /* ── inputs ── */
-.input-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:160px}
-.input-group label{font-size:0.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
-.input-group input,.input-group select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:7px;font-size:0.88rem;outline:none;transition:border .15s}
+.input-group{display:flex;flex-direction:column;gap:5px;flex:1;min-width:150px}
+.input-group label{font-size:0.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px}
+.input-group input,.input-group select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:7px;font-size:0.87rem;outline:none;transition:border .15s}
 .input-group input:focus,.input-group select:focus{border-color:var(--accent)}
-textarea.ticker-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:7px;font-size:0.88rem;resize:vertical;min-height:72px;outline:none;transition:border .15s;font-family:inherit}
+textarea.ticker-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:7px;font-size:0.87rem;resize:vertical;min-height:70px;outline:none;transition:border .15s;font-family:inherit}
 textarea.ticker-input:focus{border-color:var(--accent)}
-.btn{padding:10px 20px;border-radius:8px;font-size:0.88rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
+.btn{padding:10px 22px;border-radius:8px;font-size:0.87rem;font-weight:600;cursor:pointer;border:none;transition:all .15s}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-primary:hover{background:#2563eb}
-.btn-primary:disabled{opacity:.5;cursor:not-allowed}
-.toggle-row{display:flex;align-items:center;gap:10px;font-size:0.84rem;color:var(--muted)}
-.toggle{position:relative;width:36px;height:20px;cursor:pointer}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.toggle-row{display:flex;align-items:center;gap:10px;font-size:0.83rem;color:var(--muted)}
+.toggle{position:relative;width:36px;height:20px;cursor:pointer;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
-.slider-toggle{position:absolute;inset:0;background:var(--surface2);border-radius:20px;transition:.2s;border:1px solid var(--border)}
-.slider-toggle:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}
-.toggle input:checked+.slider-toggle{background:var(--accent);border-color:var(--accent)}
-.toggle input:checked+.slider-toggle:before{transform:translateX(16px)}
+.tog-slider{position:absolute;inset:0;background:var(--surface2);border-radius:20px;transition:.2s;border:1px solid var(--border)}
+.tog-slider:before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.tog-slider{background:var(--accent);border-color:var(--accent)}
+.toggle input:checked+.tog-slider:before{transform:translateX(16px)}
 
 /* ── results grid ── */
-.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px}
-.results-grid.single{grid-template-columns:1fr}
-@media(max-width:640px){.results-grid{grid-template-columns:1fr}}
-.card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:18px}
-.card-title{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:12px;display:flex;align-items:center;gap:6px}
-.badge{background:rgba(59,130,246,0.15);color:var(--accent);padding:2px 8px;border-radius:12px;font-size:0.68rem}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+.rg.single{grid-template-columns:1fr}
+@media(max-width:800px){.rg{grid-template-columns:1fr}}
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px}
+.card-title{font-size:0.71rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:14px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.badge{padding:2px 9px;border-radius:12px;font-size:0.67rem;font-weight:600}
+.badge-blue{background:rgba(59,130,246,0.15);color:var(--accent)}
+.badge-green{background:rgba(34,197,94,0.12);color:var(--green)}
+.badge-purple{background:rgba(168,85,247,0.12);color:var(--purple)}
 
 /* ── charts ── */
-.chart-wrap{position:relative;height:320px}
+.chart-wrap{position:relative;height:340px}
+.chart-wrap.sm{height:260px}
 .heatmap-wrap{overflow-x:auto}
-.heatmap-table{border-collapse:collapse;font-size:0.75rem;min-width:100%}
-.heatmap-table th,.heatmap-table td{padding:7px 10px;text-align:center;border:1px solid var(--border)}
-.heatmap-table th{color:var(--muted);background:var(--surface)}
+.heatmap-tbl{border-collapse:collapse;font-size:0.74rem;min-width:100%}
+.heatmap-tbl th,.heatmap-tbl td{padding:7px 10px;text-align:center;border:1px solid var(--border)}
+.heatmap-tbl th{color:var(--muted);background:var(--surface);font-weight:500}
 
 /* ── weights table ── */
-.weights-table{width:100%;border-collapse:collapse;font-size:0.83rem}
-.weights-table th{text-align:left;padding:7px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);font-size:0.74rem;text-transform:uppercase;letter-spacing:0.4px}
-.weights-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04)}
-.weights-table tr:last-child td{border-bottom:none}
-.weight-bar-bg{background:rgba(59,130,246,0.12);border-radius:4px;height:6px;margin-top:4px}
-.weight-bar{background:var(--accent);border-radius:4px;height:6px;transition:width .4s}
+.wtbl{width:100%;border-collapse:collapse;font-size:0.82rem}
+.wtbl th{text-align:left;padding:7px 10px;color:var(--muted);font-weight:500;border-bottom:1px solid var(--border);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.4px}
+.wtbl td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.wtbl tr:last-child td{border-bottom:none}
+.wbar-bg{background:rgba(59,130,246,0.1);border-radius:4px;height:5px;margin-top:4px}
+.wbar{border-radius:4px;height:5px;transition:width .5s}
 
-/* ── portfolio cards (Fintiq tab) ── */
-.portfolio-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
-@media(max-width:700px){.portfolio-cards{grid-template-columns:1fr}}
-.port-card{border:2px solid var(--border);border-radius:12px;padding:18px;cursor:pointer;transition:all .2s;background:var(--surface2)}
-.port-card:hover{border-color:var(--accent);background:rgba(59,130,246,0.05)}
-.port-card.selected{border-color:var(--accent);background:rgba(59,130,246,0.08)}
-.port-icon{font-size:1.6rem;margin-bottom:8px}
-.port-name{font-size:0.95rem;font-weight:700;margin-bottom:4px}
-.port-desc{font-size:0.78rem;color:var(--muted);line-height:1.4;margin-bottom:10px}
-.port-risk{font-size:0.72rem;padding:3px 10px;border-radius:12px;display:inline-block;font-weight:600}
+/* ── performance table ── */
+.perf-tbl{width:100%;border-collapse:collapse;font-size:0.82rem}
+.perf-tbl thead th{padding:8px 10px;color:var(--muted);font-size:0.72rem;font-weight:500;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border)}
+.perf-tbl thead th.col-h{text-align:right}
+.perf-tbl tbody td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04)}
+.perf-tbl tbody td.col-h{text-align:right;font-weight:600}
+.perf-tbl tbody tr:last-child td{border-bottom:none}
+.col-desc{font-size:0.72rem;color:var(--muted);margin-top:2px;font-weight:400}
+.pos{color:var(--green)}
+.neg{color:var(--red)}
 
 /* ── slider ── */
-.range-slider{width:100%;accent-color:var(--accent);margin:8px 0}
-.slider-vals{display:flex;justify-content:space-between;font-size:0.78rem;color:var(--muted)}
+.range-slider{width:100%;accent-color:var(--accent);margin:8px 0;cursor:pointer}
+.slider-extremes{display:flex;justify-content:space-between;font-size:0.76rem;color:var(--muted)}
+
+/* ── portfolio cards (fintiq tab) ── */
+.port-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:26px}
+@media(max-width:720px){.port-cards{grid-template-columns:1fr}}
+.port-card{border:2px solid var(--border);border-radius:12px;padding:20px;cursor:pointer;transition:all .2s;background:var(--surface2)}
+.port-card:hover{border-color:var(--accent);background:rgba(59,130,246,0.04)}
+.port-card.selected{border-color:var(--accent);background:rgba(59,130,246,0.07);box-shadow:0 0 0 1px rgba(59,130,246,0.3)}
+.port-icon{font-size:1.7rem;margin-bottom:10px}
+.port-name{font-size:1rem;font-weight:700;margin-bottom:5px}
+.port-desc{font-size:0.79rem;color:var(--muted);line-height:1.45;margin-bottom:12px}
+.port-risk{font-size:0.71rem;padding:3px 10px;border-radius:12px;display:inline-block;font-weight:600}
 
 /* ── upload area ── */
 .upload-area{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:border .2s;margin-bottom:16px}
 .upload-area:hover,.upload-area.dragover{border-color:var(--accent);background:rgba(59,130,246,0.04)}
-.upload-area p{color:var(--muted);font-size:0.85rem;margin-top:8px}
-.portfolio-input-table{width:100%;border-collapse:collapse;font-size:0.83rem;margin-bottom:12px}
-.portfolio-input-table th{text-align:left;padding:6px 10px;color:var(--muted);font-size:0.73rem;text-transform:uppercase;border-bottom:1px solid var(--border)}
-.portfolio-input-table td{padding:6px 6px}
-.portfolio-input-table input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;width:100%;font-size:0.82rem;outline:none}
-.portfolio-input-table input:focus{border-color:var(--accent)}
+.upload-area p{color:var(--muted);font-size:0.84rem;margin-top:8px}
+.port-input-tbl{width:100%;border-collapse:collapse;font-size:0.83rem;margin-bottom:10px}
+.port-input-tbl th{text-align:left;padding:6px 10px;color:var(--muted);font-size:0.72rem;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.port-input-tbl td{padding:5px 6px}
+.port-input-tbl input{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:5px;width:100%;font-size:0.82rem;outline:none}
+.port-input-tbl input:focus{border-color:var(--accent)}
 
 /* ── disclaimer ── */
-.disclaimer{margin-top:24px;padding:12px 16px;background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:8px;font-size:0.76rem;color:#92693a}
+.disclaimer{margin-top:26px;padding:13px 16px;background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.18);border-radius:8px;font-size:0.76rem;color:#8a6930;line-height:1.5}
 
 /* ── loading / error ── */
 .loading-wrap{text-align:center;padding:60px 20px;color:var(--muted)}
-.loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
+.loading-spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 14px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.error-box{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:14px 16px;font-size:0.84rem;color:#f87171;margin-top:16px}
+.error-box{background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:8px;padding:14px 16px;font-size:0.84rem;color:#f87171;margin-top:16px}
+
+/* ── col explanations ── */
+.col-explain{padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;font-size:0.77rem;color:var(--muted);margin-bottom:14px;line-height:1.6}
+.col-explain strong{color:var(--text)}
 </style>
 </head>
 <body>
 
 <!-- NAV -->
 <nav class="nav">
-  <a href="index.html" class="nav-logo">Fin<span>tiq</span></a>
+  <a href="index.html" class="nav-logo">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect x="2" y="12" width="4" height="8" rx="0.8" stroke="#22c55e" stroke-width="1.8"/>
+      <rect x="9" y="7" width="4" height="13" rx="0.8" stroke="#22c55e" stroke-width="1.8"/>
+      <rect x="16" y="3" width="4" height="17" rx="0.8" stroke="#22c55e" stroke-width="1.8"/>
+      <polyline points="4,11 11,6 18,2" stroke="#22c55e" stroke-width="1.2" stroke-opacity=".5" fill="none"/>
+    </svg>
+    Fin<span>tiq</span>
+  </a>
   <div class="nav-links">
     <a href="index.html">Home</a>
     <a href="pairs-trading.html">Pairs</a>
@@ -142,29 +162,53 @@ textarea.ticker-input:focus{border-color:var(--accent)}
 <!-- HERO -->
 <div class="hero">
   <div class="hero-inner">
-    <h1>📊 Portfolio Optimiser</h1>
-    <p>Build efficient portfolios using real market data. Analyse risk, return and diversification — powered by mean-variance optimisation.</p>
+    <div class="hero-icon">
+      <!-- Efficient frontier SVG icon -->
+      <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+        <rect width="52" height="52" rx="12" fill="rgba(59,130,246,0.12)"/>
+        <!-- Axes -->
+        <line x1="10" y1="42" x2="10" y2="10" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+        <line x1="10" y1="42" x2="44" y2="42" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+        <!-- Frontier curve -->
+        <path d="M11 40 C14 30 20 18 42 11" stroke="#3b82f6" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        <!-- Min vol point -->
+        <circle cx="15" cy="30" r="3.5" fill="#22c55e"/>
+        <!-- Max sharpe star area -->
+        <circle cx="27" cy="19" r="3.5" fill="#f59e0b"/>
+        <!-- High return point -->
+        <circle cx="40" cy="13" r="3" fill="rgba(255,255,255,0.3)"/>
+        <!-- Axis labels -->
+        <text x="10" y="49" font-size="6" fill="rgba(255,255,255,0.35)" text-anchor="middle">Risk</text>
+        <text x="6" y="12" font-size="6" fill="rgba(255,255,255,0.35)" text-anchor="middle" transform="rotate(-90,6,24)">Ret</text>
+      </svg>
+    </div>
+    <div class="hero-text">
+      <h1>Portfolio Optimiser</h1>
+      <p>Build efficient portfolios using real market data. Find the optimal blend of risk and return — powered by mean-variance optimisation and live prices.</p>
+    </div>
   </div>
 </div>
 
 <!-- TABS -->
-<div class="tabs">
-  <div class="tab active" onclick="switchTab('watchlist',this)"><span class="tab-icon">🔍</span>Watchlist</div>
-  <div class="tab" onclick="switchTab('myportfolio',this)"><span class="tab-icon">💼</span>My Portfolio</div>
-  <div class="tab" onclick="switchTab('fintiq',this)"><span class="tab-icon">✨</span>Fintiq Portfolios</div>
+<div class="tabs-wrap">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('watchlist',this)">🔍 Watchlist</div>
+    <div class="tab" onclick="switchTab('myportfolio',this)">💼 My Portfolio</div>
+    <div class="tab" onclick="switchTab('fintiq',this)">✨ Fintiq Portfolios</div>
+  </div>
 </div>
 
 <div class="main">
 
-<!-- ══════ TAB: WATCHLIST ══════ -->
+<!-- ══ TAB: WATCHLIST ══ -->
 <div id="tab-watchlist" class="panel active">
-  <p style="color:var(--muted);font-size:0.84rem;margin-bottom:16px">Paste any tickers and get an optimal allocation with full performance metrics.</p>
-  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-start">
-    <div style="flex:1;min-width:200px">
-      <label style="font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Tickers (comma or space separated)</label>
-      <textarea class="ticker-input" id="wl-tickers" placeholder="e.g. AAPL MSFT NVDA GOOG META AMZN TSLA"></textarea>
+  <p style="color:var(--muted);font-size:0.84rem;margin-bottom:18px">Paste any stock tickers to find the optimal allocation. Each ticker gets a minimum 3% and maximum 40% weight to ensure proper diversification.</p>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
+    <div style="flex:1;min-width:220px">
+      <label style="font-size:0.74rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Tickers (comma or space separated)</label>
+      <textarea class="ticker-input" id="wl-tickers" placeholder="e.g. AAPL MSFT NVDA GOOG META AMZN TSLA JPM"></textarea>
     </div>
-    <div style="display:flex;flex-direction:column;gap:10px;min-width:140px">
+    <div style="display:flex;flex-direction:column;gap:11px;min-width:145px">
       <div class="input-group">
         <label>Lookback Period</label>
         <select id="wl-period">
@@ -175,7 +219,7 @@ textarea.ticker-input:focus{border-color:var(--accent)}
         </select>
       </div>
       <div class="toggle-row">
-        <label class="toggle"><input type="checkbox" id="wl-shorts"><span class="slider-toggle"></span></label>
+        <label class="toggle"><input type="checkbox" id="wl-shorts"><span class="tog-slider"></span></label>
         Allow Shorts
       </div>
       <button class="btn btn-primary" id="wl-run-btn" onclick="runWatchlist()">Optimise ↗</button>
@@ -184,33 +228,30 @@ textarea.ticker-input:focus{border-color:var(--accent)}
   <div id="wl-results"></div>
 </div>
 
-<!-- ══════ TAB: MY PORTFOLIO ══════ -->
+<!-- ══ TAB: MY PORTFOLIO ══ -->
 <div id="tab-myportfolio" class="panel">
-  <p style="color:var(--muted);font-size:0.84rem;margin-bottom:16px">Enter your current holdings to see where you sit on the efficient frontier and how to improve.</p>
-
+  <p style="color:var(--muted);font-size:0.84rem;margin-bottom:18px">Enter your current holdings to see where you sit on the efficient frontier compared to the optimal allocation.</p>
   <div class="upload-area" id="upload-area" onclick="document.getElementById('csv-upload').click()"
        ondragover="event.preventDefault();this.classList.add('dragover')"
        ondragleave="this.classList.remove('dragover')"
        ondrop="handleCsvDrop(event)">
     <div style="font-size:2rem">📁</div>
-    <p><strong>Click or drag</strong> a CSV with columns: <code>Ticker, Weight</code></p>
-    <p style="font-size:0.75rem;margin-top:4px">e.g. AAPL, 0.30 &nbsp;|&nbsp; MSFT, 0.20 …</p>
+    <p><strong>Click or drag</strong> a CSV — columns: <code>Ticker, Weight</code></p>
+    <p style="font-size:0.75rem;margin-top:3px">e.g. AAPL, 0.30 &nbsp;·&nbsp; MSFT, 0.20</p>
     <input type="file" id="csv-upload" accept=".csv" style="display:none" onchange="handleCsvFile(this)">
   </div>
-  <p style="color:var(--muted);font-size:0.8rem;margin-bottom:10px;text-align:center">— or enter manually —</p>
-
-  <table class="portfolio-input-table" id="portfolio-table">
+  <p style="color:var(--muted);font-size:0.79rem;margin-bottom:10px;text-align:center">— or enter manually —</p>
+  <table class="port-input-tbl">
     <thead><tr><th>Ticker</th><th>Weight (%)</th><th></th></tr></thead>
     <tbody id="portfolio-rows">
-      <tr><td><input type="text" placeholder="AAPL" class="pt-ticker"></td><td><input type="number" placeholder="30" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td></tr>
-      <tr><td><input type="text" placeholder="MSFT" class="pt-ticker"></td><td><input type="number" placeholder="20" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td></tr>
-      <tr><td><input type="text" placeholder="NVDA" class="pt-ticker"></td><td><input type="number" placeholder="15" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td></tr>
+      <tr><td><input type="text" placeholder="AAPL" class="pt-ticker"></td><td><input type="number" placeholder="30" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.74rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td></tr>
+      <tr><td><input type="text" placeholder="MSFT" class="pt-ticker"></td><td><input type="number" placeholder="20" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.74rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td></tr>
+      <tr><td><input type="text" placeholder="NVDA" class="pt-ticker"></td><td><input type="number" placeholder="15" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.74rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td></tr>
     </tbody>
   </table>
-  <button onclick="addRow()" style="font-size:0.8rem;color:var(--accent);cursor:pointer;background:none;border:none;padding:4px 0;margin-bottom:12px">+ Add row</button>
-
-  <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap">
-    <div class="input-group" style="min-width:140px">
+  <button onclick="addRow()" style="font-size:0.8rem;color:var(--accent);cursor:pointer;background:none;border:none;padding:4px 0;margin-bottom:14px">+ Add row</button>
+  <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+    <div class="input-group" style="min-width:145px">
       <label>Lookback Period</label>
       <select id="mp-period">
         <option value="1y">1 Year</option>
@@ -224,18 +265,16 @@ textarea.ticker-input:focus{border-color:var(--accent)}
   <div id="mp-results"></div>
 </div>
 
-<!-- ══════ TAB: FINTIQ PORTFOLIOS ══════ -->
+<!-- ══ TAB: FINTIQ PORTFOLIOS ══ -->
 <div id="tab-fintiq" class="panel">
   <div id="fintiq-loading" class="loading-wrap">
     <div class="loading-spinner"></div>
     <p id="fintiq-load-msg">Loading Fintiq model portfolios…</p>
   </div>
   <div id="fintiq-content" style="display:none">
-    <div class="portfolio-cards" id="fintiq-cards"></div>
+    <div class="port-cards" id="fintiq-cards"></div>
     <div id="fintiq-detail"></div>
-    <div class="disclaimer">
-      ⚠️ <strong>Disclaimer:</strong> Fintiq model portfolios are for <strong>educational and illustrative purposes only</strong>. They do not constitute financial advice, a recommendation to buy or sell any security, or a solicitation of any investment. Past performance does not guarantee future results. Always consult a qualified financial adviser before making investment decisions.
-    </div>
+    <div class="disclaimer">⚠️ <strong>Disclaimer:</strong> Fintiq model portfolios are for <strong>educational and illustrative purposes only</strong>. They do not constitute financial advice or a recommendation to buy or sell any security. Past performance does not guarantee future results. Always consult a qualified financial adviser before making investment decisions.</div>
   </div>
   <div id="fintiq-error" class="error-box" style="display:none"></div>
 </div>
@@ -245,491 +284,494 @@ textarea.ticker-input:focus{border-color:var(--accent)}
 <script>
 const API = 'https://api.fintiq.uk';
 
-const COLOURS = ['#3b82f6','#22c55e','#f59e0b','#a855f7','#ef4444',
-                 '#06b6d4','#ec4899','#84cc16','#f97316','#6366f1',
-                 '#10b981','#fbbf24','#e11d48','#14b8a6','#fb923c',
-                 '#7c3aed','#0ea5e9','#4ade80','#fcd34d','#a78bfa'];
+// ── Colour palette ────────────────────────────────────────────────────────
+const C = ['#3b82f6','#22c55e','#f59e0b','#a855f7','#ef4444',
+           '#06b6d4','#ec4899','#84cc16','#f97316','#6366f1',
+           '#10b981','#fbbf24','#e11d48','#14b8a6','#fb923c',
+           '#7c3aed','#0ea5e9','#4ade80','#fcd34d','#a78bfa',
+           '#34d399','#f472b6','#60a5fa','#facc15','#818cf8'];
+
+// ── Ticker → Company Name lookup ──────────────────────────────────────────
+const NAMES = {
+  AAPL:'Apple',MSFT:'Microsoft',NVDA:'Nvidia',GOOG:'Alphabet',GOOGL:'Alphabet',
+  AMZN:'Amazon',META:'Meta',TSLA:'Tesla',NFLX:'Netflix',ORCL:'Oracle',
+  ADBE:'Adobe',CRM:'Salesforce',INTC:'Intel',AMD:'AMD',QCOM:'Qualcomm',
+  JPM:'JPMorgan',BAC:'Bank of America',GS:'Goldman Sachs',MS:'Morgan Stanley',
+  WFC:'Wells Fargo',C:'Citigroup',V:'Visa',MA:'Mastercard',AXP:'Amex',
+  'BRK-B':'Berkshire',JNJ:'J&J',PG:'P&G',KO:'Coca-Cola',PEP:'PepsiCo',
+  MCD:'McDonald\'s',WMT:'Walmart',HD:'Home Depot',NKE:'Nike',
+  XOM:'ExxonMobil',CVX:'Chevron',COP:'ConocoPhillips',
+  UNH:'UnitedHealth',LLY:'Eli Lilly',PFE:'Pfizer',ABBV:'AbbVie',MRK:'Merck',
+  NEE:'NextEra',DUK:'Duke Energy',SO:'Southern Co',
+  AMT:'American Tower',PLD:'Prologis',O:'Realty Income',VNQ:'Real Estate ETF',
+  VOO:'S&P 500 ETF',QQQ:'Nasdaq 100 ETF',SPY:'S&P 500 ETF',IWM:'Russell 2000',
+  VTI:'Total Market ETF',VEA:'Intl Dev ETF',VWO:'Emerging Markets',
+  GLD:'Gold ETF',SLV:'Silver ETF',USO:'Oil ETF',
+  TLT:'20yr Treasury',IEF:'10yr Treasury',AGG:'Bond Agg ETF',LQD:'Corp Bond',
+  HYG:'High Yield Bond',BND:'Total Bond',
+  VYM:'High Dividend ETF',SCHD:'Dividend Growth ETF',DVY:'Dividend ETF',
+  SMH:'Semiconductors ETF',ARKK:'ARK Innovation',XLK:'Tech Sector',
+  XLF:'Financials',XLE:'Energy',XLV:'Healthcare',XLU:'Utilities',
+  'BRK-B':'Berkshire B',
+};
+function tickerName(t){return NAMES[t]||t;}
+function tickerLabel(t){const n=NAMES[t];return n&&n!==t?`${t} <span style="color:var(--muted);font-weight:400;font-size:0.8em">${n}</span>`:t;}
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
-function switchTab(id, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+function switchTab(id,el){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('tab-' + id).classList.add('active');
-  if (id === 'fintiq' && !window._fintiqLoaded) loadFintiqPortfolios();
+  document.getElementById('tab-'+id).classList.add('active');
+  if(id==='fintiq'&&!window._fintiqLoaded)loadFintiqPortfolios();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
-function fmt(v, dec) { return (v != null) ? (+v).toFixed(dec||2) : '—'; }
-function fmtPct(v)   { return (v != null) ? (v*100).toFixed(2)+'%' : '—'; }
-function fmtPctSigned(v) {
-  if (v == null) return '—';
-  const s = (v*100).toFixed(2);
-  return v >= 0 ? '+'+s+'%' : s+'%';
-}
-function valClass(v) { return v > 0.05 ? 'pos' : v < -0.05 ? 'neg' : 'neu'; }
-const posStyle = 'color:var(--green)';
-const negStyle = 'color:var(--red)';
-const neuStyle = 'color:var(--amber)';
-function vcStyle(v) { return v > 0.05 ? posStyle : v < -0.05 ? negStyle : 'color:var(--text)'; }
+function fmt(v,d){return v!=null?(+v).toFixed(d||2):'—';}
+function fmtPct(v){return v!=null?(v*100).toFixed(2)+'%':'—';}
+function fmtPctSgn(v){if(v==null)return'—';const s=(v*100).toFixed(2);return v>=0?'+'+s+'%':s+'%';}
+function vcStyle(v){return v>0.05?'color:var(--green)':v<-0.05?'color:var(--red)':'color:var(--text)';}
+function showLoading(el){el.innerHTML=`<div class="loading-wrap"><div class="loading-spinner"></div><p>Fetching data &amp; optimising…</p></div>`;}
+function showError(el,msg){el.innerHTML=`<div class="error-box">⚠️ ${msg}</div>`;}
 
-function showLoading(el) {
-  el.innerHTML = `<div class="loading-wrap"><div class="loading-spinner"></div><p>Fetching data &amp; optimising…</p></div>`;
-}
-function showError(el, msg) {
-  el.innerHTML = `<div class="error-box">⚠️ ${msg}</div>`;
-}
-
-const RATIO_HELP = {
-  sharpe:    'Return per unit of total risk. &gt;1 is good, &gt;2 is excellent.',
-  sortino:   'Like Sharpe but only penalises downside volatility. &gt;1 is good.',
-  treynor:   'Return per unit of market (beta) risk.',
-  alpha:     "Excess return vs benchmark. Positive = outperforming S&P 500.",
-  info_ratio:'Excess return vs S&P 500 per unit of tracking error. &gt;0.5 is strong.',
-};
+// ── Chart instance registry ───────────────────────────────────────────────
+const _charts={};
+function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
 
 // ── Build results ─────────────────────────────────────────────────────────
-// chartSuffix: unique string so multiple canvases don't collide
-let _chartInstances = {};
-function destroyChart(id) {
-  if (_chartInstances[id]) { _chartInstances[id].destroy(); delete _chartInstances[id]; }
-}
-
-function buildResults(data, container, currentWeights) {
-  const { tickers, max_sharpe, min_vol, equal_weight, frontier,
-          benchmark_spy, correlation, ticker_stats } = data;
-  const sfx = Date.now(); // unique suffix per render
-
-  container.innerHTML = '';
+function buildResults(data,container,currentPt){
+  const{tickers,max_sharpe,min_vol,equal_weight,frontier,benchmark_spy,correlation,ticker_stats}=data;
+  const sfx=Date.now()+Math.random().toString(36).slice(2,6);
+  container.innerHTML='';
 
   // ── Row 1: Frontier + Metrics ──────────────────────────────────────────
-  const row1 = document.createElement('div');
-  row1.className = 'results-grid';
-  row1.style.marginTop = '20px';
+  const r1=document.createElement('div'); r1.className='rg'; r1.style.marginTop='22px';
 
   // Frontier card
-  const frontierCard = document.createElement('div');
-  frontierCard.className = 'card';
-  frontierCard.innerHTML = `
-    <div class="card-title">📈 Efficient Frontier <span class="badge">60-pt SLSQP</span></div>
-    <div class="chart-wrap"><canvas id="chart-frontier-${sfx}"></canvas></div>
-    <div id="slider-wrap-${sfx}" style="margin-top:14px"></div>`;
-  row1.appendChild(frontierCard);
+  const fc=document.createElement('div'); fc.className='card';
+  fc.innerHTML=`
+    <div class="card-title">📈 Efficient Frontier <span class="badge badge-blue">60-pt SLSQP optimised</span></div>
+    <div class="chart-wrap"><canvas id="cf-${sfx}"></canvas></div>
+    <div id="sl-${sfx}" style="margin-top:14px"></div>`;
+  r1.appendChild(fc);
 
-  // Metrics comparison
-  const metricsCard = document.createElement('div');
-  metricsCard.className = 'card';
-  const ms = max_sharpe.metrics, mv = min_vol.metrics, ew = equal_weight.metrics;
-  const spy = benchmark_spy;
-  metricsCard.innerHTML = `
+  // Metrics card
+  const ms=max_sharpe.metrics,mv=min_vol.metrics,ew=equal_weight.metrics,spy=benchmark_spy;
+  const mc=document.createElement('div'); mc.className='card';
+  mc.innerHTML=`
     <div class="card-title">📊 Performance Metrics</div>
-    <table style="width:100%;border-collapse:collapse;font-size:0.8rem">
-      <thead><tr style="color:var(--muted);font-size:0.71rem;text-transform:uppercase;letter-spacing:.4px">
-        <th style="text-align:left;padding:5px 0;width:36%">Metric</th>
-        <th style="text-align:right;padding:5px 6px;color:#3b82f6">Max Sharpe</th>
-        <th style="text-align:right;padding:5px 6px;color:#22c55e">Min Vol</th>
-        <th style="text-align:right;padding:5px 6px;color:var(--muted)">EW</th>
-        ${spy ? '<th style="text-align:right;padding:5px 6px;color:var(--amber)">SPY</th>' : ''}
+    <div class="col-explain">
+      These 4 columns compare different portfolio strategies side by side:<br>
+      <strong style="color:#3b82f6">Max Sharpe</strong> = mathematically optimal risk-adjusted portfolio &nbsp;·&nbsp;
+      <strong style="color:#22c55e">Min Vol</strong> = lowest possible volatility (safest mix) &nbsp;·&nbsp;
+      <strong>Equal Weight</strong> = 1/N split across all tickers &nbsp;·&nbsp;
+      <strong style="color:var(--amber)">S&P 500</strong> = your benchmark (can you beat the market?)
+    </div>
+    <table class="perf-tbl">
+      <thead><tr>
+        <th style="text-align:left;width:35%">Metric</th>
+        <th class="col-h" style="color:#3b82f6">Max Sharpe</th>
+        <th class="col-h" style="color:#22c55e">Min Vol</th>
+        <th class="col-h" style="color:var(--muted)">Equal Wt</th>
+        ${spy?'<th class="col-h" style="color:var(--amber)">S&P 500</th>':''}
       </tr></thead>
       <tbody>
-        ${mRow('Ann. Return','annualised_return',ms,mv,ew,spy,true)}
-        ${mRow('Volatility','annualised_vol',ms,mv,ew,spy,true)}
-        ${mRow('Sharpe','sharpe',ms,mv,ew,spy)}
-        ${mRow('Sortino','sortino',ms,mv,ew,spy)}
-        ${mRow('Treynor','treynor',ms,mv,ew,spy)}
-        ${mRow("Jensen's α",'alpha',ms,mv,ew,spy)}
-        ${mRow('Info Ratio','info_ratio',ms,mv,ew,spy)}
-        ${mRow('Beta','beta',ms,mv,ew,spy)}
+        ${mRow('Ann. Return','annualised_return',ms,mv,ew,spy,true,'Expected annual return based on historical data')}
+        ${mRow('Volatility (Risk)','annualised_vol',ms,mv,ew,spy,true,'How much the portfolio value swings up and down')}
+        ${mRow('Sharpe Ratio','sharpe',ms,mv,ew,spy,false,'Return per unit of risk — higher is better (>1 is good)')}
+        ${mRow('Sortino Ratio','sortino',ms,mv,ew,spy,false,'Like Sharpe but only penalises losses, not gains')}
+        ${mRow('Treynor Ratio','treynor',ms,mv,ew,spy,false,'Return per unit of market exposure (beta risk)')}
+        ${mRow("Jensen's Alpha",'alpha',ms,mv,ew,spy,false,'Extra return vs S&P 500 after adjusting for risk')}
+        ${mRow('Info Ratio','info_ratio',ms,mv,ew,spy,false,'Consistency of outperforming S&P 500 (&gt;0.5 = strong)')}
+        ${mRow('Beta','beta',ms,mv,ew,spy,false,'How much the portfolio moves relative to S&P 500 (1.0 = in sync)')}
       </tbody>
-    </table>
-    <div style="margin-top:12px;padding:10px;background:rgba(59,130,246,0.06);border-radius:7px;font-size:0.75rem;color:var(--muted);line-height:1.6">
-      <strong style="color:var(--text)">Key ratios explained:</strong><br>
-      ${Object.entries(RATIO_HELP).map(([k,v])=>`<strong style="color:var(--accent)">${k.charAt(0).toUpperCase()+k.slice(1).replace('_',' ')}</strong>: ${v}`).join(' &nbsp;·&nbsp; ')}
-    </div>`;
-  row1.appendChild(metricsCard);
-  container.appendChild(row1);
+    </table>`;
+  r1.appendChild(mc);
+  container.appendChild(r1);
 
-  // ── Row 2: Weights pie + ticker stats ──────────────────────────────────
-  const row2 = document.createElement('div');
-  row2.className = 'results-grid';
-  row2.style.marginTop = '16px';
+  // ── Row 2: Weights + Ticker stats ─────────────────────────────────────
+  const r2=document.createElement('div'); r2.className='rg'; r2.style.marginTop='18px';
 
-  const weightsCard = document.createElement('div');
-  weightsCard.className = 'card';
-  weightsCard.innerHTML = `
-    <div class="card-title">🏆 Optimal Weights — Max Sharpe</div>
+  const wc=document.createElement('div'); wc.className='card';
+  wc.innerHTML=`
+    <div class="card-title">🏆 Optimal Weights — Max Sharpe <span class="badge badge-green">Min 3% · Max 40%</span></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
-      <div class="chart-wrap" style="height:240px"><canvas id="chart-pie-${sfx}"></canvas></div>
-      <div id="wtable-${sfx}"></div>
+      <div class="chart-wrap sm"><canvas id="cp-${sfx}"></canvas></div>
+      <div id="wt-${sfx}"></div>
     </div>`;
-  row2.appendChild(weightsCard);
+  r2.appendChild(wc);
 
-  const tickerCard = document.createElement('div');
-  tickerCard.className = 'card';
-  tickerCard.innerHTML = `
-    <div class="card-title">🔬 Individual Ticker Stats</div>
-    <table class="weights-table">
-      <thead><tr><th>Ticker</th><th>Exp. Return</th><th>Volatility</th><th>Max-Sharpe Weight</th></tr></thead>
+  const tc=document.createElement('div'); tc.className='card';
+  tc.innerHTML=`
+    <div class="card-title">🔬 Individual Ticker Analysis</div>
+    <table class="wtbl">
+      <thead><tr><th>Ticker</th><th>Ann. Return</th><th>Volatility</th><th>Optimal Weight</th></tr></thead>
       <tbody>
-        ${tickers.map((t,i) => {
-          const stat = ticker_stats[t]||{};
-          const w = max_sharpe.weights[t]||0;
-          return `<tr>
-            <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLOURS[i%COLOURS.length]};margin-right:6px"></span>${t}</td>
-            <td style="${vcStyle(stat.annualised_return)}">${fmtPctSigned(stat.annualised_return)}</td>
-            <td style="color:var(--muted)">${fmtPct(stat.annualised_vol)}</td>
+        ${tickers.map((t,i)=>{
+          const st=ticker_stats[t]||{};const w=max_sharpe.weights[t]||0;
+          return`<tr>
+            <td><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${C[i%C.length]};margin-right:7px;flex-shrink:0"></span>
+              <span style="font-weight:600">${t}</span>
+              <span style="color:var(--muted);font-size:0.78em;margin-left:4px">${tickerName(t)!==t?tickerName(t):''}</span></td>
+            <td style="${vcStyle(st.annualised_return)}">${fmtPctSgn(st.annualised_return)}</td>
+            <td style="color:var(--muted)">${fmtPct(st.annualised_vol)}</td>
             <td><strong>${fmtPct(w)}</strong>
-              <div class="weight-bar-bg"><div class="weight-bar" style="width:${(w*100).toFixed(1)}%;background:${COLOURS[i%COLOURS.length]}"></div></div>
+              <div class="wbar-bg"><div class="wbar" style="width:${(w*100).toFixed(1)}%;background:${C[i%C.length]}"></div></div>
             </td></tr>`;
         }).join('')}
       </tbody>
     </table>`;
-  row2.appendChild(tickerCard);
-  container.appendChild(row2);
+  r2.appendChild(tc);
+  container.appendChild(r2);
 
-  // ── Row 3: Correlation heatmap ──────────────────────────────────────────
-  const row3 = document.createElement('div');
-  row3.className = 'results-grid single';
-  row3.style.marginTop = '16px';
-  const corrCard = document.createElement('div');
-  corrCard.className = 'card';
-  corrCard.innerHTML = `
-    <div class="card-title">🔗 Correlation Matrix <span class="badge" style="background:rgba(168,85,247,0.12);color:var(--purple)">Diversification view</span></div>
-    <p style="color:var(--muted);font-size:0.79rem;margin-bottom:12px">Low / negative correlations (blue) reduce risk. High correlations (red) mean assets move together.</p>
-    <div class="heatmap-wrap"><div id="heatmap-${sfx}"></div></div>`;
-  row3.appendChild(corrCard);
-  container.appendChild(row3);
+  // ── Row 3: Correlation heatmap ─────────────────────────────────────────
+  const r3=document.createElement('div'); r3.className='rg single'; r3.style.marginTop='18px';
+  const cc=document.createElement('div'); cc.className='card';
+  cc.innerHTML=`
+    <div class="card-title">🔗 Correlation Matrix <span class="badge badge-purple">Diversification map</span></div>
+    <p style="color:var(--muted);font-size:0.8rem;margin-bottom:13px">Blue = low/negative correlation (assets move differently = good diversification). Red = high correlation (assets move together = less diversification benefit).</p>
+    <div class="heatmap-wrap"><div id="hm-${sfx}"></div></div>`;
+  r3.appendChild(cc);
+  container.appendChild(r3);
 
-  // ── Render charts after DOM is painted ──────────────────────────────────
-  requestAnimationFrame(() => {
-    drawFrontier(`chart-frontier-${sfx}`, data, currentWeights);
-    drawPie(`chart-pie-${sfx}`, tickers, max_sharpe.weights);
-    buildWeightsTable(`wtable-${sfx}`, tickers, max_sharpe.weights);
-    buildHeatmap(`heatmap-${sfx}`, tickers, correlation);
-    buildSlider(`slider-wrap-${sfx}`, data);
+  requestAnimationFrame(()=>{
+    drawFrontier(`cf-${sfx}`,`sl-${sfx}`,data,currentPt);
+    drawPie(`cp-${sfx}`,tickers,max_sharpe.weights);
+    buildWTable(`wt-${sfx}`,tickers,max_sharpe.weights);
+    buildHeatmap(`hm-${sfx}`,tickers,correlation);
   });
 }
 
-function mRow(label, key, ms, mv, ew, spy, isPct) {
-  function cell(obj, k, pct) {
-    if (!obj || obj[k] == null) return `<td style="text-align:right;padding:5px 6px;color:var(--muted)">—</td>`;
-    const v = obj[k];
-    const txt = pct ? fmtPctSigned(v) : fmt(v, 3);
-    const sty = k==='annualised_vol' ? 'color:var(--text)' : vcStyle(v);
-    return `<td style="text-align:right;padding:5px 6px;${sty}">${txt}</td>`;
+function mRow(label,key,ms,mv,ew,spy,isPct,desc){
+  function cell(obj,k,pct){
+    if(!obj||obj[k]==null)return`<td class="col-h" style="color:var(--muted)">—</td>`;
+    const v=obj[k];
+    const txt=pct?fmtPctSgn(v):fmt(v,3);
+    const sty=k==='annualised_vol'?'color:var(--text)':vcStyle(v);
+    return`<td class="col-h" style="${sty}">${txt}</td>`;
   }
-  return `<tr style="border-bottom:1px solid var(--border)">
-    <td style="padding:6px 0;font-size:0.79rem;color:var(--muted)">${label}</td>
-    ${cell(ms,key,isPct)}${cell(mv,key,isPct)}${cell(ew,key,isPct)}${spy ? cell(spy,key,isPct) : ''}
+  return`<tr>
+    <td><div style="font-size:0.82rem">${label}</div>${desc?`<div class="col-desc">${desc}</div>`:''}</td>
+    ${cell(ms,key,isPct)}${cell(mv,key,isPct)}${cell(ew,key,isPct)}${spy?cell(spy,key,isPct):''}
   </tr>`;
 }
 
 // ── Frontier chart ─────────────────────────────────────────────────────────
-function drawFrontier(canvasId, data, currentWeights) {
-  const ctx = document.getElementById(canvasId); if (!ctx) return;
+const _frontierStore={};
+function drawFrontier(canvasId,sliderWrapId,data,currentPt){
+  const ctx=document.getElementById(canvasId);if(!ctx)return;
   destroyChart(canvasId);
-  const { frontier, max_sharpe, min_vol, equal_weight } = data;
-  const pts = frontier.vols.map((v,i) => ({x:+(v*100).toFixed(3), y:+(frontier.rets[i]*100).toFixed(3)}));
-  const datasets = [
-    {label:'Efficient Frontier', data:pts, type:'scatter', showLine:true,
-     borderColor:'rgba(59,130,246,0.5)', backgroundColor:'transparent',
-     pointRadius:0, borderWidth:2, tension:0.3},
-    {label:'★ Max Sharpe', data:[{x:+(max_sharpe.metrics.annualised_vol*100).toFixed(3), y:+(max_sharpe.metrics.annualised_return*100).toFixed(3)}],
-     type:'scatter', backgroundColor:'#f59e0b', borderColor:'#fff', borderWidth:2, pointRadius:10, pointStyle:'star'},
-    {label:'◆ Min Vol', data:[{x:+(min_vol.metrics.annualised_vol*100).toFixed(3), y:+(min_vol.metrics.annualised_return*100).toFixed(3)}],
-     type:'scatter', backgroundColor:'#22c55e', borderColor:'#fff', borderWidth:2, pointRadius:8, pointStyle:'rectRot'},
-    {label:'● Equal Weight', data:[{x:+(equal_weight.metrics.annualised_vol*100).toFixed(3), y:+(equal_weight.metrics.annualised_return*100).toFixed(3)}],
-     type:'scatter', backgroundColor:'#8b949e', borderColor:'#fff', borderWidth:2, pointRadius:7},
+  const{frontier,max_sharpe,min_vol,equal_weight}=data;
+  _frontierStore[canvasId]={frontier,sliderWrapId};
+
+  const pts=frontier.vols.map((v,i)=>({x:+(v*100).toFixed(3),y:+(frontier.rets[i]*100).toFixed(3)}));
+  const msPt={x:+(max_sharpe.metrics.annualised_vol*100).toFixed(3),y:+(max_sharpe.metrics.annualised_return*100).toFixed(3)};
+  const mvPt={x:+(min_vol.metrics.annualised_vol*100).toFixed(3),y:+(min_vol.metrics.annualised_return*100).toFixed(3)};
+  const ewPt={x:+(equal_weight.metrics.annualised_vol*100).toFixed(3),y:+(equal_weight.metrics.annualised_return*100).toFixed(3)};
+
+  const datasets=[
+    {label:'Efficient Frontier',data:pts,type:'scatter',showLine:true,
+     borderColor:'rgba(59,130,246,0.55)',backgroundColor:'transparent',
+     pointRadius:0,borderWidth:2.5,tension:0.35,order:10},
+    {label:'★ Max Sharpe',data:[msPt],type:'scatter',
+     backgroundColor:'#f59e0b',borderColor:'#fff',borderWidth:2,pointRadius:12,pointStyle:'star',order:1},
+    {label:'◆ Min Volatility',data:[mvPt],type:'scatter',
+     backgroundColor:'#22c55e',borderColor:'#fff',borderWidth:2,pointRadius:9,pointStyle:'rectRot',order:2},
+    {label:'● Equal Weight',data:[ewPt],type:'scatter',
+     backgroundColor:'#8b949e',borderColor:'#fff',borderWidth:1.5,pointRadius:7,order:3},
+    // Dataset index 4: slider target dot (starts hidden)
+    {label:'◎ Target',data:[],type:'scatter',
+     backgroundColor:'#fff',borderColor:'#3b82f6',borderWidth:2,pointRadius:8,pointStyle:'circle',order:0},
   ];
-  if (currentWeights) {
-    datasets.push({label:'■ Your Portfolio', data:[{x:+(currentWeights.vol*100).toFixed(3), y:+(currentWeights.ret*100).toFixed(3)}],
-      type:'scatter', backgroundColor:'#a855f7', borderColor:'#fff', borderWidth:2, pointRadius:9, pointStyle:'rect'});
+  if(currentPt){
+    datasets.push({label:'■ Your Portfolio',data:[{x:+(currentPt.vol*100).toFixed(3),y:+(currentPt.ret*100).toFixed(3)}],
+      type:'scatter',backgroundColor:'#a855f7',borderColor:'#fff',borderWidth:2,pointRadius:9,pointStyle:'rect',order:1});
   }
-  _chartInstances[canvasId] = new Chart(ctx, {
-    type:'scatter', data:{datasets},
+  _charts[canvasId]=new Chart(ctx,{
+    type:'scatter',data:{datasets},
     options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#8b949e',font:{size:11}},position:'bottom'},
-               tooltip:{callbacks:{label:p=>`${p.dataset.label}: Vol ${p.parsed.x.toFixed(1)}%, Ret ${p.parsed.y.toFixed(1)}%`}}},
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#8b949e',font:{size:11},boxWidth:14},position:'bottom'},
+        tooltip:{callbacks:{label:p=>`${p.dataset.label}: Vol ${p.parsed.x.toFixed(1)}%, Return ${p.parsed.y.toFixed(1)}%`}},
+      },
       scales:{
-        x:{title:{display:true,text:'Volatility (Risk) %',color:'#64748b'},ticks:{color:'#64748b'},grid:{color:'rgba(100,116,139,0.1)'}},
-        y:{title:{display:true,text:'Expected Return %',color:'#64748b'},ticks:{color:'#64748b'},grid:{color:'rgba(100,116,139,0.1)'}},
-      }
+        x:{title:{display:true,text:'Volatility (Risk) %',color:'#64748b',font:{size:11}},
+           ticks:{color:'#64748b'},grid:{color:'rgba(100,116,139,0.08)'}},
+        y:{title:{display:true,text:'Expected Return %',color:'#64748b',font:{size:11}},
+           ticks:{color:'#64748b'},grid:{color:'rgba(100,116,139,0.08)'}},
+      },
+      animation:{duration:400},
     }
   });
+  buildSlider(sliderWrapId,canvasId,data);
+}
+
+// ── Slider with live frontier dot ─────────────────────────────────────────
+function buildSlider(wrapId,chartId,data){
+  const wrap=document.getElementById(wrapId);if(!wrap)return;
+  const{frontier,max_sharpe}=data;
+  if(!frontier.rets.length)return;
+  const rets=frontier.rets,vols=frontier.vols;
+  const minR=+(Math.min(...rets)*100).toFixed(2);
+  const maxR=+(Math.max(...rets)*100).toFixed(2);
+  const msR =+(max_sharpe.metrics.annualised_return*100).toFixed(2);
+  wrap.innerHTML=`
+    <div style="font-size:0.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">
+      What if I target: <strong id="sv-ret-${wrapId}" style="color:var(--text)">${msR}%</strong> return?
+      &nbsp;→&nbsp; Est. Risk: <strong id="sv-vol-${wrapId}" style="color:var(--accent)">—</strong>
+    </div>
+    <input type="range" class="range-slider" id="rng-${wrapId}" min="${minR}" max="${maxR}" step="0.1" value="${msR}">
+    <div class="slider-extremes"><span>${minR}%</span><span>${maxR}%</span></div>`;
+
+  function updateSlider(tgt){
+    document.getElementById(`sv-ret-${wrapId}`).textContent=tgt.toFixed(1)+'%';
+    let best=0,bestDist=Infinity;
+    rets.forEach((r,i)=>{const d=Math.abs(r*100-tgt);if(d<bestDist){bestDist=d;best=i;}});
+    const vol=(vols[best]*100).toFixed(1);
+    document.getElementById(`sv-vol-${wrapId}`).textContent=vol+'%';
+    // Update moving dot on chart (dataset index 4 = Target)
+    const ch=_charts[chartId];
+    if(ch&&ch.data.datasets[4]){
+      ch.data.datasets[4].data=[{x:+vol,y:+(rets[best]*100).toFixed(3)}];
+      ch.update('none');
+    }
+  }
+  document.getElementById(`rng-${wrapId}`).addEventListener('input',function(){updateSlider(+this.value);});
+  updateSlider(msR);
 }
 
 // ── Pie chart ──────────────────────────────────────────────────────────────
-function drawPie(canvasId, tickers, weights) {
-  const ctx = document.getElementById(canvasId); if (!ctx) return;
+function drawPie(canvasId,tickers,weights){
+  const ctx=document.getElementById(canvasId);if(!ctx)return;
   destroyChart(canvasId);
-  const labels = tickers.filter(t => (weights[t]||0) > 0.001);
-  const vals   = labels.map(t => +(weights[t]*100).toFixed(2));
-  const colors = labels.map((_,i) => COLOURS[i%COLOURS.length]);
-  _chartInstances[canvasId] = new Chart(ctx, {
+  const labels=tickers.filter(t=>(weights[t]||0)>0.001);
+  const vals=labels.map(t=>+(weights[t]*100).toFixed(2));
+  const colors=labels.map((_,i)=>C[i%C.length]);
+  const displayLabels=labels.map(t=>tickerName(t)!==t?`${t} (${tickerName(t)})`:t);
+  _charts[canvasId]=new Chart(ctx,{
     type:'doughnut',
-    data:{labels, datasets:[{data:vals, backgroundColor:colors, borderWidth:2, borderColor:'#1c2333', hoverOffset:6}]},
+    data:{labels:displayLabels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#1c2333',hoverOffset:6}]},
     options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}},position:'right'},
-               tooltip:{callbacks:{label:p=>`${p.label}: ${p.parsed.toFixed(2)}%`}}},
-      cutout:'50%',
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#8b949e',font:{size:10},boxWidth:10},position:'right'},
+        tooltip:{callbacks:{label:p=>`${p.label}: ${p.parsed.toFixed(2)}%`}},
+      },
+      cutout:'48%',
     }
   });
 }
 
-function buildWeightsTable(wrapId, tickers, weights) {
-  const wrap = document.getElementById(wrapId); if (!wrap) return;
-  const sorted = [...tickers].sort((a,b) => (weights[b]||0) - (weights[a]||0));
-  wrap.innerHTML = `<table class="weights-table">
+function buildWTable(wrapId,tickers,weights){
+  const wrap=document.getElementById(wrapId);if(!wrap)return;
+  const sorted=[...tickers].sort((a,b)=>(weights[b]||0)-(weights[a]||0));
+  wrap.innerHTML=`<table class="wtbl">
     <thead><tr><th>Ticker</th><th>Weight</th></tr></thead>
-    <tbody>${sorted.map((t,i) => {
-      const w = weights[t]||0;
-      if (w < 0.001) return '';
-      return `<tr>
-        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${COLOURS[i%COLOURS.length]};margin-right:5px"></span>${t}</td>
-        <td><strong>${fmtPct(w)}</strong><div class="weight-bar-bg"><div class="weight-bar" style="width:${(w*100).toFixed(1)}%;background:${COLOURS[i%COLOURS.length]}"></div></div></td>
-      </tr>`;
+    <tbody>${sorted.map((t,i)=>{
+      const w=weights[t]||0;if(w<0.001)return'';
+      const name=tickerName(t);
+      return`<tr>
+        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${C[i%C.length]};margin-right:6px"></span>
+          <strong>${t}</strong>${name!==t?` <span style="color:var(--muted);font-size:0.78em">${name}</span>`:''}
+        </td>
+        <td><strong>${fmtPct(w)}</strong>
+          <div class="wbar-bg"><div class="wbar" style="width:${(w*100).toFixed(1)}%;background:${C[i%C.length]}"></div></div>
+        </td></tr>`;
     }).join('')}</tbody>
   </table>`;
 }
 
-function buildHeatmap(wrapId, tickers, corr) {
-  const wrap = document.getElementById(wrapId); if (!wrap) return;
-  function heatBg(v) {
-    if (v >= 0.9) return 'rgba(239,68,68,0.5)';
-    if (v >= 0.7) return 'rgba(249,115,22,0.35)';
-    if (v >= 0.4) return 'rgba(245,158,11,0.2)';
-    if (v >= 0.1) return 'rgba(255,255,255,0.05)';
-    if (v >= -0.1) return 'rgba(255,255,255,0.02)';
-    if (v >= -0.4) return 'rgba(59,130,246,0.15)';
-    return 'rgba(59,130,246,0.4)';
+function buildHeatmap(wrapId,tickers,corr){
+  const wrap=document.getElementById(wrapId);if(!wrap)return;
+  function bg(v){
+    if(v>=0.9)return'rgba(239,68,68,0.55)';if(v>=0.7)return'rgba(249,115,22,0.38)';
+    if(v>=0.4)return'rgba(245,158,11,0.22)';if(v>=0.1)return'rgba(255,255,255,0.05)';
+    if(v>=-0.1)return'rgba(255,255,255,0.02)';if(v>=-0.4)return'rgba(59,130,246,0.18)';
+    return'rgba(59,130,246,0.45)';
   }
-  let html = `<table class="heatmap-table"><thead><tr><th></th>${tickers.map(t=>`<th>${t}</th>`).join('')}</tr></thead><tbody>`;
-  tickers.forEach((t,i) => {
-    html += `<tr><th style="text-align:right;color:var(--muted)">${t}</th>`;
-    tickers.forEach((_,j) => {
-      const v = corr[i][j];
-      const isDiag = i===j;
-      const bg  = isDiag ? 'rgba(59,130,246,0.18)' : heatBg(v);
-      const col = isDiag ? '#3b82f6' : 'var(--text)';
-      html += `<td style="background:${bg};color:${col};font-weight:${isDiag?700:400}">${v.toFixed(2)}</td>`;
+  const header=tickers.map(t=>`<th title="${tickerName(t)}">${t}</th>`).join('');
+  let html=`<table class="heatmap-tbl"><thead><tr><th></th>${header}</tr></thead><tbody>`;
+  tickers.forEach((t,i)=>{
+    html+=`<tr><th style="text-align:right;color:var(--muted)" title="${tickerName(t)}">${t}</th>`;
+    tickers.forEach((_,j)=>{
+      const v=corr[i][j];const diag=i===j;
+      html+=`<td style="background:${diag?'rgba(59,130,246,0.18)':bg(v)};color:${diag?'#3b82f6':'var(--text)'};font-weight:${diag?700:400}">${v.toFixed(2)}</td>`;
     });
-    html += '</tr>';
+    html+='</tr>';
   });
-  html += '</tbody></table>';
-  wrap.innerHTML = html;
-}
-
-function buildSlider(wrapId, data) {
-  const wrap = document.getElementById(wrapId); if (!wrap) return;
-  const { frontier, max_sharpe } = data;
-  if (!frontier.rets.length) return;
-  const rets = frontier.rets, vols = frontier.vols;
-  const minR = +(Math.min(...rets)*100).toFixed(2);
-  const maxR = +(Math.max(...rets)*100).toFixed(2);
-  const msR  = +(max_sharpe.metrics.annualised_return*100).toFixed(2);
-
-  wrap.innerHTML = `<div style="font-size:0.76rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">
-      Target Return: <strong id="sr-val-${wrapId}" style="color:var(--text)">${msR}%</strong>
-      &nbsp;→&nbsp; Est. Volatility: <strong id="sv-val-${wrapId}" style="color:var(--accent)">—</strong>
-    </div>
-    <input type="range" class="range-slider" id="rslider-${wrapId}" min="${minR}" max="${maxR}" step="0.1" value="${msR}">
-    <div class="slider-vals"><span>${minR}%</span><span>${maxR}%</span></div>`;
-
-  document.getElementById(`rslider-${wrapId}`).addEventListener('input', function() {
-    const tgt = +this.value;
-    document.getElementById(`sr-val-${wrapId}`).textContent = tgt.toFixed(1)+'%';
-    let best = 0, bestDist = Infinity;
-    rets.forEach((r,i) => { const d = Math.abs(r*100 - tgt); if (d < bestDist) { bestDist=d; best=i; } });
-    document.getElementById(`sv-val-${wrapId}`).textContent = (vols[best]*100).toFixed(1)+'%';
-  });
-  // Trigger once to populate vol display
-  document.getElementById(`rslider-${wrapId}`).dispatchEvent(new Event('input'));
+  html+='</tbody></table>';
+  wrap.innerHTML=html;
 }
 
 // ── Watchlist ─────────────────────────────────────────────────────────────
-async function runWatchlist() {
-  const raw = document.getElementById('wl-tickers').value;
-  const tickers = raw.split(/[\s,]+/).map(t=>t.trim().toUpperCase()).filter(Boolean);
-  if (tickers.length < 2) { alert('Please enter at least 2 tickers'); return; }
-  const btn = document.getElementById('wl-run-btn');
-  btn.disabled = true; btn.textContent = 'Optimising…';
-  const container = document.getElementById('wl-results');
+async function runWatchlist(){
+  const raw=document.getElementById('wl-tickers').value;
+  const tickers=raw.split(/[\s,]+/).map(t=>t.trim().toUpperCase()).filter(Boolean);
+  if(tickers.length<2){alert('Please enter at least 2 tickers');return;}
+  const btn=document.getElementById('wl-run-btn');
+  btn.disabled=true;btn.textContent='Optimising…';
+  const container=document.getElementById('wl-results');
   showLoading(container);
-  try {
-    const resp = await fetch(`${API}/optimise`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ tickers, period: document.getElementById('wl-period').value,
-                             allow_shorts: document.getElementById('wl-shorts').checked, risk_free: 0.045 })
+  try{
+    const resp=await fetch(`${API}/optimise`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tickers,period:document.getElementById('wl-period').value,
+        allow_shorts:document.getElementById('wl-shorts').checked,risk_free:0.045,
+        min_weight:0.03,max_weight:0.40})
     });
-    if (!resp.ok) { const e = await resp.json().catch(()=>({detail:'Request failed'})); throw new Error(e.detail||'Optimisation failed'); }
-    buildResults(await resp.json(), container, null);
-  } catch(e) { showError(container, e.message); }
-  finally { btn.disabled = false; btn.textContent = 'Optimise ↗'; }
+    if(!resp.ok){const e=await resp.json().catch(()=>({detail:'Request failed'}));throw new Error(e.detail||'Failed');}
+    buildResults(await resp.json(),container,null);
+  }catch(e){showError(container,e.message);}
+  finally{btn.disabled=false;btn.textContent='Optimise ↗';}
 }
-document.getElementById('wl-tickers').addEventListener('keydown', e => {
-  if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) runWatchlist();
+document.getElementById('wl-tickers').addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&(e.ctrlKey||e.metaKey))runWatchlist();
 });
 
 // ── My Portfolio ──────────────────────────────────────────────────────────
-function addRow() {
-  const tbody = document.getElementById('portfolio-rows');
-  const tr = document.createElement('tr');
-  tr.innerHTML = `<td><input type="text" placeholder="GOOG" class="pt-ticker"></td><td><input type="number" placeholder="10" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td>`;
+function addRow(){
+  const tbody=document.getElementById('portfolio-rows');
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" placeholder="GOOG" class="pt-ticker"></td><td><input type="number" placeholder="10" min="0" max="100" step="0.1" class="pt-weight"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.74rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td>`;
   tbody.appendChild(tr);
 }
-function removeRow(btn) {
-  const tr = btn.closest('tr');
-  if (document.querySelectorAll('#portfolio-rows tr').length > 1) tr.remove();
+function removeRow(btn){
+  const tr=btn.closest('tr');
+  if(document.querySelectorAll('#portfolio-rows tr').length>1)tr.remove();
 }
-function handleCsvFile(input) { const f = input.files[0]; if (f) parseCsvFile(f); }
-function handleCsvDrop(e) {
-  e.preventDefault(); document.getElementById('upload-area').classList.remove('dragover');
-  const f = e.dataTransfer.files[0]; if (f) parseCsvFile(f);
+function handleCsvFile(inp){const f=inp.files[0];if(f)parseCsv(f);}
+function handleCsvDrop(e){
+  e.preventDefault();document.getElementById('upload-area').classList.remove('dragover');
+  const f=e.dataTransfer.files[0];if(f)parseCsv(f);
 }
-function parseCsvFile(file) {
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const lines = ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
-    const tbody = document.getElementById('portfolio-rows'); tbody.innerHTML = '';
-    lines.forEach(line => {
-      if (line.toLowerCase().startsWith('ticker')) return;
-      const parts = line.split(','); if (parts.length < 2) return;
-      const ticker = parts[0].trim().toUpperCase(), weight = parseFloat(parts[1]);
-      if (!ticker) return;
-      const dw = weight <= 1 ? (weight*100).toFixed(1) : weight.toFixed(1);
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td><input type="text" class="pt-ticker" value="${ticker}"></td><td><input type="number" class="pt-weight" value="${dw}" min="0" max="100" step="0.1"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.75rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td>`;
+function parseCsv(file){
+  const r=new FileReader();
+  r.onload=ev=>{
+    const lines=ev.target.result.split('\n').map(l=>l.trim()).filter(Boolean);
+    const tbody=document.getElementById('portfolio-rows');tbody.innerHTML='';
+    lines.forEach(line=>{
+      if(line.toLowerCase().startsWith('ticker'))return;
+      const p=line.split(',');if(p.length<2)return;
+      const t=p[0].trim().toUpperCase(),w=parseFloat(p[1]);if(!t)return;
+      const dw=w<=1?(w*100).toFixed(1):w.toFixed(1);
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td><input type="text" class="pt-ticker" value="${t}"></td><td><input type="number" class="pt-weight" value="${dw}" min="0" max="100" step="0.1"></td><td><button onclick="removeRow(this)" style="padding:4px 8px;border-radius:5px;font-size:0.74rem;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--muted)">✕</button></td>`;
       tbody.appendChild(tr);
     });
   };
-  reader.readAsText(file);
+  r.readAsText(file);
 }
 
-async function runMyPortfolio() {
-  const rows = document.querySelectorAll('#portfolio-rows tr');
-  let tickers = [], weights = [], totalW = 0;
-  rows.forEach(r => {
-    const t = r.querySelector('.pt-ticker')?.value?.trim().toUpperCase();
-    const w = parseFloat(r.querySelector('.pt-weight')?.value);
-    if (t && !isNaN(w) && w > 0) { tickers.push(t); weights.push(w/100); totalW += w; }
+async function runMyPortfolio(){
+  const rows=document.querySelectorAll('#portfolio-rows tr');
+  let tickers=[],weights=[],totalW=0;
+  rows.forEach(r=>{
+    const t=r.querySelector('.pt-ticker')?.value?.trim().toUpperCase();
+    const w=parseFloat(r.querySelector('.pt-weight')?.value);
+    if(t&&!isNaN(w)&&w>0){tickers.push(t);weights.push(w/100);totalW+=w;}
   });
-  if (tickers.length < 2) { alert('Enter at least 2 holdings'); return; }
-  if (Math.abs(totalW - 100) > 1) {
-    if (!confirm(`Weights sum to ${totalW.toFixed(1)}% (not 100%). Normalise and proceed?`)) return;
-    const s = weights.reduce((a,b)=>a+b,0); weights = weights.map(w=>w/s);
+  if(tickers.length<2){alert('Enter at least 2 holdings');return;}
+  if(Math.abs(totalW-100)>1){
+    if(!confirm(`Weights sum to ${totalW.toFixed(1)}% (not 100%). Normalise and proceed?`))return;
+    const s=weights.reduce((a,b)=>a+b,0);weights=weights.map(w=>w/s);
   }
-  const btn = document.getElementById('mp-run-btn');
-  btn.disabled = true; btn.textContent = 'Analysing…';
-  const container = document.getElementById('mp-results');
+  const btn=document.getElementById('mp-run-btn');
+  btn.disabled=true;btn.textContent='Analysing…';
+  const container=document.getElementById('mp-results');
   showLoading(container);
-  try {
-    const resp = await fetch(`${API}/optimise`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ tickers, period: document.getElementById('mp-period').value, allow_shorts:false, risk_free:0.045 })
+  try{
+    const resp=await fetch(`${API}/optimise`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({tickers,period:document.getElementById('mp-period').value,
+        allow_shorts:false,risk_free:0.045,min_weight:0.03,max_weight:0.40})
     });
-    if (!resp.ok) { const e = await resp.json().catch(()=>({detail:'Failed'})); throw new Error(e.detail||'Failed'); }
-    const data = await resp.json();
-
-    // Compute current portfolio point on frontier
-    const allT = data.tickers;
-    const wMap = {}; tickers.forEach((t,i) => { if (allT.includes(t)) wMap[t] = weights[i]; });
-    const normW = allT.map(t => wMap[t]||0);
-    const sumNW = normW.reduce((a,b)=>a+b,0);
-    const nw    = sumNW > 0 ? normW.map(w=>w/sumNW) : normW;
-    const curRet = allT.reduce((acc,t,i) => acc + nw[i]*(data.ticker_stats[t]?.annualised_return||0), 0);
-    const curVol = Math.sqrt(allT.reduce((acc,t,i) => acc + nw[i]*nw[i]*(data.ticker_stats[t]?.annualised_vol||0)**2, 0));
-
-    buildResults(data, container, {ret:curRet, vol:curVol});
-
-    // Insert "your vs optimal" summary before results
-    const sumEl = document.createElement('div');
-    sumEl.style.cssText = 'background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.2);border-radius:10px;padding:16px;margin-top:20px';
-    const optRet = data.max_sharpe.metrics.annualised_return;
-    const optVol = data.max_sharpe.metrics.annualised_vol;
-    sumEl.innerHTML = `<div style="font-size:0.78rem;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📍 Your Portfolio vs Optimal</div>
-      <div style="display:grid;grid-template-columns:repeat(2,1fr) repeat(2,1fr);gap:12px;font-size:0.84rem">
-        <div><div style="color:var(--muted);font-size:0.72rem">Your Return (est.)</div><strong style="${vcStyle(curRet)}">${fmtPctSigned(curRet)}</strong></div>
-        <div><div style="color:var(--muted);font-size:0.72rem">Your Volatility (est.)</div><strong style="color:var(--text)">${fmtPct(curVol)}</strong></div>
-        <div><div style="color:var(--muted);font-size:0.72rem">Optimal Return</div><strong style="${vcStyle(optRet)}">${fmtPctSigned(optRet)}</strong></div>
-        <div><div style="color:var(--muted);font-size:0.72rem">Optimal Volatility</div><strong style="color:var(--text)">${fmtPct(optVol)}</strong></div>
+    if(!resp.ok){const e=await resp.json().catch(()=>({detail:'Failed'}));throw new Error(e.detail||'Failed');}
+    const data=await resp.json();
+    const allT=data.tickers;
+    const wMap={};tickers.forEach((t,i)=>{if(allT.includes(t))wMap[t]=weights[i];});
+    const nw=allT.map(t=>wMap[t]||0);const sum=nw.reduce((a,b)=>a+b,0);
+    const nwn=sum>0?nw.map(w=>w/sum):nw;
+    const curRet=allT.reduce((a,t,i)=>a+nwn[i]*(data.ticker_stats[t]?.annualised_return||0),0);
+    const curVol=Math.sqrt(allT.reduce((a,t,i)=>a+nwn[i]*nwn[i]*(data.ticker_stats[t]?.annualised_vol||0)**2,0));
+    buildResults(data,container,{ret:curRet,vol:curVol});
+    const opt=data.max_sharpe.metrics;
+    const sumEl=document.createElement('div');
+    sumEl.style.cssText='background:rgba(168,85,247,0.07);border:1px solid rgba(168,85,247,0.2);border-radius:10px;padding:18px;margin-top:22px';
+    sumEl.innerHTML=`<div style="font-size:0.77rem;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:11px">📍 Your Portfolio vs Optimal</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;font-size:0.85rem">
+        <div><div style="color:var(--muted);font-size:0.72rem;margin-bottom:3px">Your Return (est.)</div><strong style="${vcStyle(curRet)}">${fmtPctSgn(curRet)}</strong></div>
+        <div><div style="color:var(--muted);font-size:0.72rem;margin-bottom:3px">Your Risk (est.)</div><strong>${fmtPct(curVol)}</strong></div>
+        <div><div style="color:var(--muted);font-size:0.72rem;margin-bottom:3px">Optimal Return</div><strong style="${vcStyle(opt.annualised_return)}">${fmtPctSgn(opt.annualised_return)}</strong></div>
+        <div><div style="color:var(--muted);font-size:0.72rem;margin-bottom:3px">Optimal Risk</div><strong>${fmtPct(opt.annualised_vol)}</strong></div>
       </div>
-      <div style="margin-top:10px;font-size:0.78rem;color:var(--muted)">Purple square ■ shows your portfolio on the frontier chart. The ★ star shows the optimal allocation.</div>`;
-    container.insertBefore(sumEl, container.firstChild);
-  } catch(e) { showError(container, e.message); }
-  finally { btn.disabled = false; btn.textContent = 'Analyse Portfolio ↗'; }
+      <div style="margin-top:10px;font-size:0.78rem;color:var(--muted)">Purple ■ = your current portfolio on the frontier. Gold ★ = optimal. Move closer to the star to improve your risk-adjusted return.</div>`;
+    container.insertBefore(sumEl,container.firstChild);
+  }catch(e){showError(container,e.message);}
+  finally{btn.disabled=false;btn.textContent='Analyse Portfolio ↗';}
 }
 
 // ── Fintiq Portfolios ─────────────────────────────────────────────────────
-let _fintiqData = null;
-window._fintiqLoaded = false;
+let _fintiqData=null;
+window._fintiqLoaded=false;
 
-async function loadFintiqPortfolios() {
-  window._fintiqLoaded = true;
-  const loading = document.getElementById('fintiq-loading');
-  const content = document.getElementById('fintiq-content');
-  const errEl   = document.getElementById('fintiq-error');
-  const msgEl   = document.getElementById('fintiq-load-msg');
-
-  try {
-    const resp = await fetch(`${API}/fintiq-portfolios`);
-    if (resp.status === 503) {
-      msgEl.textContent = 'Computing portfolios — this takes ~30 s on first load. Retrying…';
-      setTimeout(() => { window._fintiqLoaded = false; loadFintiqPortfolios(); }, 10000);
+async function loadFintiqPortfolios(){
+  window._fintiqLoaded=true;
+  const loading=document.getElementById('fintiq-loading');
+  const content=document.getElementById('fintiq-content');
+  const errEl=document.getElementById('fintiq-error');
+  const msgEl=document.getElementById('fintiq-load-msg');
+  try{
+    const resp=await fetch(`${API}/fintiq-portfolios`);
+    if(resp.status===503){
+      msgEl.textContent='Computing portfolios — first load takes ~30 s. Retrying…';
+      setTimeout(()=>{window._fintiqLoaded=false;loadFintiqPortfolios();},10000);
       return;
     }
-    if (!resp.ok) throw new Error('Failed to load portfolios (' + resp.status + ')');
-    _fintiqData = await resp.json();
-    loading.style.display = 'none';
-    content.style.display = 'block';
+    if(!resp.ok)throw new Error('Failed to load portfolios ('+resp.status+')');
+    _fintiqData=await resp.json();
+    loading.style.display='none';content.style.display='block';
     buildFintiqCards();
-    const firstKey = Object.keys(_fintiqData)[0];
-    if (firstKey) selectFintiqPortfolio(firstKey);
-  } catch(e) {
-    loading.style.display = 'none';
-    errEl.style.display = 'block';
-    errEl.textContent = `⚠️ Could not load Fintiq portfolios: ${e.message}`;
+    const firstKey=Object.keys(_fintiqData)[0];
+    if(firstKey)selectFintiqPortfolio(firstKey);
+  }catch(e){
+    loading.style.display='none';errEl.style.display='block';
+    errEl.textContent=`⚠️ Could not load portfolios: ${e.message}`;
   }
 }
 
-function buildFintiqCards() {
-  const container = document.getElementById('fintiq-cards');
-  container.innerHTML = '';
-  const riskBg  = {Conservative:'rgba(34,197,94,0.12)',Moderate:'rgba(59,130,246,0.12)',Aggressive:'rgba(245,158,11,0.12)'};
-  const riskCol = {Conservative:'var(--green)',Moderate:'var(--accent)',Aggressive:'var(--amber)'};
-  Object.entries(_fintiqData).forEach(([key, port]) => {
-    const card = document.createElement('div');
-    card.className = 'port-card'; card.id = `fcard-${key}`;
-    const sharpe = port.max_sharpe?.metrics?.sharpe;
-    const annR   = port.max_sharpe?.metrics?.annualised_return;
-    card.innerHTML = `<div class="port-icon">${port.icon||'📊'}</div>
+function buildFintiqCards(){
+  const container=document.getElementById('fintiq-cards');container.innerHTML='';
+  const rBg={Conservative:'rgba(34,197,94,0.11)',Moderate:'rgba(59,130,246,0.11)',Aggressive:'rgba(245,158,11,0.11)'};
+  const rCol={Conservative:'var(--green)',Moderate:'var(--accent)',Aggressive:'var(--amber)'};
+  Object.entries(_fintiqData).forEach(([key,port])=>{
+    const card=document.createElement('div');
+    card.className='port-card';card.id=`fcard-${key}`;
+    const sharpe=port.max_sharpe?.metrics?.sharpe;
+    const annR=port.max_sharpe?.metrics?.annualised_return;
+    const tickerNames=(port.tickers||[]).map(t=>tickerName(t)!==t?`${t} (${tickerName(t)})`:t).join(' · ');
+    card.innerHTML=`<div class="port-icon">${port.icon||'📊'}</div>
       <div class="port-name">${port.name}</div>
       <div class="port-desc">${port.description}</div>
-      <span class="port-risk" style="background:${riskBg[port.risk_label]||''};color:${riskCol[port.risk_label]||'var(--muted)'}">${port.risk_label||''}</span>
-      ${sharpe != null ? `<div style="margin-top:10px;font-size:0.78rem;color:var(--muted)">Sharpe <strong style="color:var(--text)">${sharpe.toFixed(2)}</strong> &nbsp;·&nbsp; Return <strong style="${vcStyle(annR)}">${fmtPctSigned(annR)}</strong></div>` : ''}
-      <div style="margin-top:6px;font-size:0.72rem;color:var(--muted)">${(port.tickers||[]).join(' · ')}</div>`;
-    card.onclick = () => selectFintiqPortfolio(key);
+      <span class="port-risk" style="background:${rBg[port.risk_label]||''};color:${rCol[port.risk_label]||'var(--muted)'}">${port.risk_label||''}</span>
+      ${sharpe!=null?`<div style="margin-top:11px;font-size:0.8rem;color:var(--muted)">Sharpe <strong style="color:var(--text)">${sharpe.toFixed(2)}</strong> &nbsp;·&nbsp; Return <strong style="${vcStyle(annR)}">${fmtPctSgn(annR)}</strong></div>`:''}
+      <div style="margin-top:7px;font-size:0.73rem;color:var(--muted)">${tickerNames}</div>`;
+    card.onclick=()=>selectFintiqPortfolio(key);
     container.appendChild(card);
   });
 }
 
-function selectFintiqPortfolio(key) {
-  document.querySelectorAll('.port-card').forEach(c => c.classList.remove('selected'));
-  const el = document.getElementById(`fcard-${key}`); if (el) el.classList.add('selected');
-  const port = _fintiqData[key];
-  const detail = document.getElementById('fintiq-detail');
-  detail.innerHTML = '';
-  if (port.error) {
-    detail.innerHTML = `<div class="error-box">⚠️ Could not compute this portfolio: ${port.error}</div>`;
-    return;
-  }
-  buildResults(port, detail, null);
-  const heading = document.createElement('div');
-  heading.style.cssText = 'margin-bottom:0';
-  heading.innerHTML = `<h2 style="font-size:1.05rem;font-weight:700;margin-top:20px">${port.icon||''} ${port.name}</h2>
-    <p style="color:var(--muted);font-size:0.82rem;margin-top:3px">${port.description}</p>`;
-  detail.insertBefore(heading, detail.firstChild);
+function selectFintiqPortfolio(key){
+  document.querySelectorAll('.port-card').forEach(c=>c.classList.remove('selected'));
+  const el=document.getElementById(`fcard-${key}`);if(el)el.classList.add('selected');
+  const port=_fintiqData[key];
+  const detail=document.getElementById('fintiq-detail');detail.innerHTML='';
+  if(port.error){detail.innerHTML=`<div class="error-box">⚠️ ${port.error}</div>`;return;}
+  buildResults(port,detail,null);
+  const heading=document.createElement('div');
+  heading.innerHTML=`<h2 style="font-size:1.1rem;font-weight:700;margin-top:22px;margin-bottom:3px">${port.icon||''} ${port.name}</h2>
+    <p style="color:var(--muted);font-size:0.83rem;margin-bottom:-4px">${port.description}</p>`;
+  detail.insertBefore(heading,detail.firstChild);
 }
 </script>
 </body>
