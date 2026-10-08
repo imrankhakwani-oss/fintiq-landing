@@ -47,6 +47,8 @@ _earnings_cache: dict = {}; _earnings_cached_at: dict  = {};  _EARNINGS_TTL = 24
 _earnings_refreshing: dict = {}  # per-index refresh lock
 _pair_signals_cache: dict      = {}; _pair_signals_cached_at: float = 0.0; _PAIR_SIGNALS_TTL = 12*3600
 _pair_signals_refreshing: bool = False
+_fintiq_portfolios_cache: dict = {}; _fintiq_portfolios_cached_at: float = 0.0; _FINTIQ_PORTFOLIOS_TTL = 24*3600
+_fintiq_portfolios_refreshing: bool = False
 
 # ── Constants ──────────────────────────────────────────────────────────────────
 _FOMC_DATES = [
@@ -828,7 +830,7 @@ def _compute_pair_signals():
         pB = price_map.get(tB, {})
         common = sorted(set(pA) & set(pB))
         if len(common) < 65:
-            pairs_out.append({"corr": None, "z": None})
+            pairs_out.append({"corr": None, "z": None, "price_a": None, "price_b": None})
             continue
         aA = [pA[d] for d in common]
         aB = [pB[d] for d in common]
@@ -847,8 +849,10 @@ def _compute_pair_signals():
         ws = (sum((v - wm) ** 2 for v in wn) / w) ** 0.5
         z  = (spread[-1] - wm) / ws if ws > 1e-8 else None
         pairs_out.append({
-            "corr": round(corr, 4),
-            "z":    round(z, 4) if z is not None else None,
+            "corr":    round(corr, 4),
+            "z":       round(z, 4) if z is not None else None,
+            "price_a": round(aA[-1], 4),
+            "price_b": round(aB[-1], 4),
         })
 
     return {
@@ -5234,3 +5238,278 @@ def alpha_scanner_status():
         "active_signals": active_signals,
         "new_last_24h": new_24h,
     }
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+#  PORTFOLIO OPTIMISER  —  /optimise  &  /fintiq-portfolios
+# ══════════════════════════════════════════════════════════════════════════════
+
+try:
+    import numpy as np
+    from scipy.optimize import minimize
+    _SCIPY_OK = True
+except ImportError:
+    _SCIPY_OK = False
+
+from pydantic import BaseModel
+
+class OptimiseRequest(BaseModel):
+    tickers: list[str]
+    period: str = "2y"          # yfinance period string
+    allow_shorts: bool = False
+    risk_free: float = 0.045    # annualised risk-free rate
+
+
+def _compute_portfolio(tickers: list[str], period: str, allow_shorts: bool, rf: float) -> dict:
+    """
+    Fetches prices, builds efficient frontier, computes all 5 ratios.
+    Returns serialisable dict.
+    """
+    if not _SCIPY_OK:
+        raise RuntimeError("scipy not installed on this server")
+
+    # ── 1. Fetch prices (tickers + SPY benchmark) ─────────────────────────────
+    all_tickers = list(dict.fromkeys(tickers + ["SPY"]))  # deduplicate, preserve order
+    raw = yf.download(all_tickers, period=period, auto_adjust=True, progress=False)["Close"]
+    if len(all_tickers) == 1:
+        raw = raw.to_frame(name=all_tickers[0])
+
+    # Drop tickers with <30 valid trading days
+    valid = [t for t in tickers if t in raw.columns and raw[t].dropna().shape[0] >= 30]
+    if len(valid) < 2:
+        raise ValueError("Need at least 2 tickers with sufficient price history")
+
+    spy_returns = None
+    if "SPY" in raw.columns:
+        spy_prices  = raw["SPY"].dropna()
+        spy_returns = spy_prices.pct_change().dropna()
+
+    prices = raw[valid].dropna()
+    rets   = prices.pct_change().dropna()
+
+    ann_ret   = rets.mean() * 252              # annualised mean return
+    cov_daily = rets.cov()
+    cov_ann   = cov_daily * 252                # annualised covariance
+    n         = len(valid)
+
+    # ── 2. Efficient frontier via SLSQP ───────────────────────────────────────
+    bounds = ((-1.0, 1.0),) * n if allow_shorts else ((0.0, 1.0),) * n
+    constraints = [{"type": "eq", "fun": lambda w: np.sum(w) - 1}]
+
+    def port_vol(w):
+        return float(np.sqrt(w @ cov_ann.values @ w))
+
+    def port_ret(w):
+        return float(ann_ret.values @ w)
+
+    def neg_sharpe(w):
+        r = port_ret(w)
+        s = port_vol(w)
+        return -(r - rf) / s if s > 1e-9 else 1e9
+
+    # Max-Sharpe portfolio
+    w0 = np.ones(n) / n
+    res_sharpe = minimize(neg_sharpe, w0, method="SLSQP",
+                          bounds=bounds, constraints=constraints,
+                          options={"maxiter": 1000, "ftol": 1e-9})
+    w_sharpe = res_sharpe.x
+
+    # Min-Vol portfolio
+    res_minvol = minimize(port_vol, w0, method="SLSQP",
+                          bounds=bounds, constraints=constraints,
+                          options={"maxiter": 1000, "ftol": 1e-9})
+    w_minvol = res_minvol.x
+
+    # Frontier: sweep target returns
+    ret_min  = float(ann_ret.min())
+    ret_max  = float(ann_ret.max())
+    n_points = 60
+    targets  = np.linspace(ret_min, ret_max, n_points)
+    frontier_vols, frontier_rets = [], []
+    for tgt in targets:
+        cons = [{"type": "eq", "fun": lambda w: np.sum(w) - 1},
+                {"type": "eq", "fun": lambda w, t=tgt: port_ret(w) - t}]
+        res = minimize(port_vol, w0, method="SLSQP",
+                       bounds=bounds, constraints=cons,
+                       options={"maxiter": 500, "ftol": 1e-9})
+        if res.success:
+            frontier_vols.append(round(float(port_vol(res.x)), 6))
+            frontier_rets.append(round(float(port_ret(res.x)), 6))
+
+    # ── 3. Compute portfolio metrics for max-Sharpe weights ───────────────────
+    def compute_metrics(w, label="portfolio"):
+        r  = port_ret(w)
+        s  = port_vol(w)
+        sharpe = (r - rf) / s if s > 1e-9 else 0.0
+
+        # Sortino — downside deviation
+        port_daily = rets.values @ w
+        daily_rf   = rf / 252
+        downside   = port_daily[port_daily < daily_rf] - daily_rf
+        sortino_denom = float(np.sqrt(np.mean(downside**2) * 252)) if len(downside) > 0 else 1e-9
+        sortino = (r - rf) / sortino_denom if sortino_denom > 1e-9 else 0.0
+
+        # Beta vs SPY & Treynor / Jensen's Alpha / Information Ratio
+        treynor = alpha = info_ratio = 0.0
+        beta_p  = 0.0
+        if spy_returns is not None:
+            common = spy_returns.index.intersection(rets.index)
+            if len(common) > 10:
+                spy_d   = spy_returns.loc[common].values
+                port_d  = rets.loc[common].values @ w
+                cov_sp  = np.cov(port_d, spy_d)
+                var_spy = cov_sp[1, 1]
+                beta_p  = float(cov_sp[0, 1] / var_spy) if var_spy > 1e-9 else 1.0
+                spy_ann = float(spy_d.mean() * 252)
+                treynor = (r - rf) / beta_p if abs(beta_p) > 1e-9 else 0.0
+                alpha   = r - (rf + beta_p * (spy_ann - rf))
+                tracking_err = float(np.std(port_d - spy_d, ddof=1) * np.sqrt(252))
+                info_ratio   = (r - spy_ann) / tracking_err if tracking_err > 1e-9 else 0.0
+
+        return {
+            "annualised_return": round(r, 6),
+            "annualised_vol":    round(s, 6),
+            "sharpe":    round(sharpe, 4),
+            "sortino":   round(sortino, 4),
+            "treynor":   round(treynor, 4),
+            "alpha":     round(alpha, 4),
+            "info_ratio": round(info_ratio, 4),
+            "beta":      round(beta_p, 4),
+        }
+
+    metrics_sharpe = compute_metrics(w_sharpe, "max_sharpe")
+    metrics_minvol = compute_metrics(w_minvol, "min_vol")
+    metrics_ew     = compute_metrics(np.ones(n) / n, "equal_weight")
+
+    # SPY benchmark metrics
+    spy_metrics = None
+    if spy_returns is not None:
+        spy_ann_r  = float(spy_returns.mean() * 252)
+        spy_ann_v  = float(spy_returns.std() * np.sqrt(252))
+        spy_sharpe = (spy_ann_r - rf) / spy_ann_v if spy_ann_v > 1e-9 else 0.0
+        spy_metrics = {
+            "annualised_return": round(spy_ann_r, 6),
+            "annualised_vol":    round(spy_ann_v, 6),
+            "sharpe":    round(spy_sharpe, 4),
+        }
+
+    # ── 4. Correlation matrix ─────────────────────────────────────────────────
+    corr = rets.corr().round(4).values.tolist()
+
+    # ── 5. Individual ticker stats ────────────────────────────────────────────
+    ticker_stats = {}
+    for t in valid:
+        ticker_stats[t] = {
+            "annualised_return": round(float(ann_ret[t]), 6),
+            "annualised_vol":    round(float(np.sqrt(cov_ann.loc[t, t])), 6),
+        }
+
+    return {
+        "tickers":       valid,
+        "period":        period,
+        "allow_shorts":  allow_shorts,
+        "frontier":      {"vols": frontier_vols, "rets": frontier_rets},
+        "max_sharpe":    {"weights": {t: round(float(w_sharpe[i]), 6) for i, t in enumerate(valid)},
+                          "metrics": metrics_sharpe},
+        "min_vol":       {"weights": {t: round(float(w_minvol[i]), 6) for i, t in enumerate(valid)},
+                          "metrics": metrics_minvol},
+        "equal_weight":  {"weights": {t: round(1/n, 6) for t in valid},
+                          "metrics": metrics_ew},
+        "benchmark_spy": spy_metrics,
+        "correlation":   corr,
+        "ticker_stats":  ticker_stats,
+        "computed_at":   time.time(),
+    }
+
+
+@app.post("/optimise")
+def optimise_portfolio(req: OptimiseRequest):
+    """
+    Run mean-variance optimisation on a custom watchlist.
+    Returns efficient frontier + max-Sharpe + min-vol portfolios + 5 ratios.
+    """
+    tickers = [t.upper().strip() for t in req.tickers if t.strip()]
+    if len(tickers) < 2:
+        raise HTTPException(status_code=422, detail="Supply at least 2 tickers")
+    if len(tickers) > 25:
+        raise HTTPException(status_code=422, detail="Maximum 25 tickers per request")
+    try:
+        result = _compute_portfolio(tickers, req.period, req.allow_shorts, req.risk_free)
+        return result
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Optimisation failed: {e}")
+
+
+# ── Fintiq model portfolios ───────────────────────────────────────────────────
+
+_FINTIQ_MODEL_PORTFOLIOS = {
+    "income_preserve": {
+        "name": "Income & Preserve",
+        "description": "Capital preservation with steady income. Dividend equities, bonds, REITs.",
+        "tickers": ["VYM", "TLT", "O", "PG", "JNJ", "VNQ", "IEF"],
+        "theme_color": "#22c55e",
+        "risk_label": "Conservative",
+        "icon": "🛡️",
+    },
+    "balanced_growth": {
+        "name": "Balanced Growth",
+        "description": "Blend of growth equities and diversifiers for steady long-term compounding.",
+        "tickers": ["VOO", "QQQ", "BRK-B", "MSFT", "AAPL", "GLD", "AGG"],
+        "theme_color": "#3b82f6",
+        "risk_label": "Moderate",
+        "icon": "⚖️",
+    },
+    "high_conviction": {
+        "name": "High Conviction",
+        "description": "Concentrated positions in high-growth themes. Higher volatility expected.",
+        "tickers": ["NVDA", "MSFT", "AMZN", "META", "TSLA", "SMH", "ARKK"],
+        "theme_color": "#f59e0b",
+        "risk_label": "Aggressive",
+        "icon": "🚀",
+    },
+}
+
+
+def _bg_refresh_fintiq_portfolios():
+    global _fintiq_portfolios_cache, _fintiq_portfolios_cached_at, _fintiq_portfolios_refreshing
+    if _fintiq_portfolios_refreshing:
+        return
+    _fintiq_portfolios_refreshing = True
+    try:
+        result = {}
+        for key, meta in _FINTIQ_MODEL_PORTFOLIOS.items():
+            try:
+                data = _compute_portfolio(meta["tickers"], "2y", False, 0.045)
+                result[key] = {**meta, **data}
+            except Exception as e:
+                result[key] = {**meta, "error": str(e)}
+        _fintiq_portfolios_cache    = result
+        _fintiq_portfolios_cached_at = time.time()
+    except Exception:
+        pass
+    finally:
+        _fintiq_portfolios_refreshing = False
+
+
+@app.get("/fintiq-portfolios")
+def get_fintiq_portfolios():
+    """
+    Pre-computed Fintiq model portfolios. Refreshes every 24 h.
+    Returns all 3 model portfolios with optimal weights + metrics.
+    """
+    global _fintiq_portfolios_cache, _fintiq_portfolios_cached_at, _fintiq_portfolios_refreshing
+    age       = time.time() - _fintiq_portfolios_cached_at
+    has_cache = bool(_fintiq_portfolios_cache)
+
+    if has_cache:
+        if age >= _FINTIQ_PORTFOLIOS_TTL and not _fintiq_portfolios_refreshing:
+            threading.Thread(target=_bg_refresh_fintiq_portfolios, daemon=True).start()
+        return _fintiq_portfolios_cache
+
+    if not _fintiq_portfolios_refreshing:
+        threading.Thread(target=_bg_refresh_fintiq_portfolios, daemon=True).start()
+    raise HTTPException(status_code=503, detail="Fintiq portfolios are being computed — ready in ~30 seconds. Please retry.")
