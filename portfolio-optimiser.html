@@ -354,19 +354,19 @@ function buildResults(data,container,currentPt,userWeights){
   const fc=document.createElement('div');fc.className='card';
   fc.innerHTML=`
     <div class="card-title">📈 Efficient Frontier <span class="badge badge-amber">60-pt SLSQP optimised</span></div>
-    <div class="frontier-explainer">
-      <strong>What is the Efficient Frontier?</strong> The curved line is the set of all <em>mathematically optimal</em> portfolios — meaning, for any level of risk (volatility) you're willing to accept, these are the portfolios that deliver the <em>highest possible return</em>. No portfolio can exist above this line; any portfolio below it is "inefficient" because you could get the same return with less risk, or more return with the same risk.<br><br>
-      <strong>Why does it matter to you?</strong> It tells you whether your current portfolio is using your risk budget efficiently. If your portfolio lies well below the curve, you're taking on unnecessary risk for the return you're getting — and rebalancing could improve that without taking on more risk.<br><br>
-      <strong>How to use the slider:</strong> Drag the target return slider to see which point on the frontier matches your goal — and what volatility (risk) you'd need to accept to get there.
+    <div class="chart-wrap"><canvas id="cf-${sfx}"></canvas></div>
+    <div id="sl-${sfx}" style="margin-top:16px"></div>
+    <div class="frontier-explainer" style="margin-top:18px;margin-bottom:0">
+      <strong>What is the Efficient Frontier?</strong> The curved line is the set of all <em>mathematically optimal</em> portfolios — meaning for any level of risk (volatility) you're willing to accept, these portfolios deliver the <em>highest possible expected return</em>. No portfolio can exist above this line; any portfolio below it is "inefficient" because you could earn the same return with less risk, or more return with the same risk.<br><br>
+      <strong>How is it calculated?</strong> We use <em>mean-variance optimisation</em> — the framework pioneered by Harry Markowitz (1952 Nobel Prize). The steps are: (1) compute each asset's historical annualised return and variance from daily price data; (2) build a full <em>covariance matrix</em> — measuring how every pair of assets moves together; (3) run a constrained optimisation (SciPy SLSQP solver) 60 times, each time targeting a different level of portfolio return and minimising the resulting portfolio variance; (4) the 60 optimal {risk, return} pairs trace the curve. The <strong>gold star (★)</strong> maximises the Sharpe ratio — the most return per unit of risk taken. The <strong>green diamond (◆)</strong> sits at the leftmost point — the lowest possible volatility achievable with these assets. Portfolios to the left of the star are "sub-optimal" on a risk-adjusted basis; those to the right accept more risk for incrementally higher expected return.<br><br>
+      <strong>Why does this matter to you?</strong> It shows whether your current allocation is using its risk budget efficiently. If your portfolio sits below the curve, rebalancing can improve your expected return <em>without taking on extra risk</em>. The target-return slider lets you set a personal return goal and instantly see the minimum volatility required to achieve it — a key input for any disciplined asset allocation decision.
       <div class="fe-row">
         <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#F59E0B;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)"></span> ★ Max Sharpe = best risk-adjusted return</span>
         <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;transform:rotate(45deg)"></span> ◆ Min Volatility = lowest possible risk</span>
         <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#94A3B8;border-radius:50%"></span> Equal Weight = 1/N naive baseline</span>
         ${currentPt?'<span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#a855f7"></span> ■ Your current portfolio</span>':''}
       </div>
-    </div>
-    <div class="chart-wrap"><canvas id="cf-${sfx}"></canvas></div>
-    <div id="sl-${sfx}" style="margin-top:16px"></div>`;
+    </div>`;
   r1.appendChild(fc);
 
   // Metrics card
@@ -542,25 +542,28 @@ function drawFrontier(canvasId,sliderWrapId,data,currentPt){
   buildSlider(sliderWrapId,canvasId,data);
 }
 
-// Slider — fixed 1% to 100% range, moving dot on chart
+// Slider — range bounded by actual frontier min/max return (financially correct)
 function buildSlider(wrapId,chartId,data){
   const wrap=document.getElementById(wrapId);if(!wrap)return;
   const{frontier}=data;
   if(!frontier.rets.length)return;
   const rets=frontier.rets,vols=frontier.vols;
-  const msR=+(data.max_sharpe.metrics.annualised_return*100).toFixed(1);
+  const minR=+(Math.min(...rets)*100).toFixed(2);
+  const maxR=+(Math.max(...rets)*100).toFixed(2);
+  const msR=+(data.max_sharpe.metrics.annualised_return*100).toFixed(2);
+  const initVal=Math.max(minR,Math.min(maxR,msR));
 
   wrap.innerHTML=`
     <div style="font-size:0.76rem;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">
-      If I target a <strong id="sv-r-${wrapId}" style="color:#F59E0B">${msR}%</strong> annual return,
+      If I target a <strong id="sv-r-${wrapId}" style="color:#F59E0B">${initVal.toFixed(1)}%</strong> annual return,
       the minimum risk I must accept is <strong id="sv-v-${wrapId}" style="color:#22c55e">—</strong>
     </div>
-    <input type="range" class="range-slider" id="rng-${wrapId}" min="1" max="100" step="0.5" value="${Math.max(1,Math.min(100,msR))}">
-    <div class="slider-extremes"><span>1% (low target)</span><span>100% (high target)</span></div>`;
+    <input type="range" class="range-slider" id="rng-${wrapId}" min="${minR}" max="${maxR}" step="${((maxR-minR)/200).toFixed(2)}" value="${initVal}">
+    <div class="slider-extremes"><span>${minR.toFixed(1)}% (min-vol portfolio)</span><span>${maxR.toFixed(1)}% (max-return portfolio)</span></div>
+    <div style="font-size:0.72rem;color:#475569;margin-top:4px">Range is bounded by the actual achievable returns of this asset universe — returns outside this range are not reachable with these assets.</div>`;
 
   function update(tgt){
-    document.getElementById(`sv-r-${wrapId}`).textContent=tgt.toFixed(1)+'%';
-    // Find nearest frontier point
+    document.getElementById(`sv-r-${wrapId}`).textContent=(+tgt).toFixed(1)+'%';
     let best=0,bestDist=Infinity;
     rets.forEach((r,i)=>{const d=Math.abs(r*100-tgt);if(d<bestDist){bestDist=d;best=i;}});
     const vol=(vols[best]*100).toFixed(1);
@@ -572,7 +575,7 @@ function buildSlider(wrapId,chartId,data){
     }
   }
   document.getElementById(`rng-${wrapId}`).addEventListener('input',function(){update(+this.value);});
-  update(Math.max(1,Math.min(100,msR)));
+  update(initVal);
 }
 
 // Pie chart
