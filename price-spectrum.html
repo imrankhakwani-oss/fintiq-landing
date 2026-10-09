@@ -258,10 +258,12 @@ document.getElementById('tickerInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') runSpectrum();
 });
 
-// ── URL param pre-fill ──
+// ── URL param pre-fill / default AAPL ──
 (function(){
   const p = new URLSearchParams(location.search).get('ticker');
-  if (p) { document.getElementById('tickerInput').value = p.toUpperCase(); runSpectrum(); }
+  const ticker = p ? p.toUpperCase() : 'AAPL';
+  document.getElementById('tickerInput').value = ticker;
+  runSpectrum();
 })();
 
 // ── Helpers ──
@@ -379,6 +381,10 @@ function renderResults(d){
 
   // ── Expanders ──
   const expHtml = `
+    <details class="expander" id="explainerExpander" open>
+      <summary>💡 What does this mean for <span id="explainerTicker">${d.ticker}</span>?</summary>
+      <div class="exp-body" id="explainerBody"></div>
+    </details>
     <details class="expander">
       <summary>📖 How does PriceSpectrum work?</summary>
       <div class="exp-body">
@@ -403,6 +409,7 @@ function renderResults(d){
   requestAnimationFrame(() => {
     drawFanChart(d);
     renderDetail(d, '1d');
+    renderExplainer(d, '1d');
     renderParams(d);
   });
 }
@@ -494,6 +501,69 @@ function selectHorizon(key, el){
   document.querySelectorAll('.hz-card').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
   renderDetail(_data, key);
+  renderExplainer(_data, key);
+}
+
+function renderExplainer(d, key){
+  const el = document.getElementById('explainerBody');
+  if (!el) return;
+  const h   = d.horizons[key];
+  const cy  = currSymbol(d.currency);
+  const S0  = d.current_price;
+  const med = h.percentiles.p50;
+  const p10 = h.percentiles.p10;
+  const p90 = h.percentiles.p90;
+  const medChg = ((med - S0) / S0 * 100);
+  const medDir = medChg >= 0 ? 'up' : 'down';
+  const medAbs = Math.abs(medChg).toFixed(1);
+  const probUp   = (h.prob_above * 100).toFixed(0);
+  const probDown = (h.prob_below * 100).toFixed(0);
+  const probUp5  = (h.prob_up5   * 100).toFixed(0);
+  const probDn5  = (h.prob_down5 * 100).toFixed(0);
+  const probUp10 = (h.prob_up10  * 100).toFixed(0);
+  const probDn10 = (h.prob_down10* 100).toFixed(0);
+  const probUp20 = (h.prob_up20  * 100).toFixed(0);
+  const probDn20 = (h.prob_down20* 100).toFixed(0);
+  const fmt2 = v => cy+(+v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+  // Regime plain-English
+  const regimeTxt = {
+    calm:     'volatility is <strong>unusually calm</strong> right now — the market is pricing in relatively small moves',
+    normal:   'volatility is <strong>in its normal historical range</strong>',
+    elevated: 'volatility is <strong>elevated</strong> — the market is pricing in larger-than-usual swings'
+  }[d.vol_regime] || 'volatility is in its normal range';
+
+  // Horizon-specific sentence
+  const HZ_CONTEXT = {
+    '1d': `Over a <strong>single trading day</strong>, even large stocks can move more than people expect. The model is capturing short-term price noise — earnings news, macro data drops, or just random market flow.`,
+    '1w': `Over <strong>one week (5 trading days)</strong>, small daily moves compound. News events, Fed statements or sector rotation can push prices noticeably in either direction.`,
+    '1m': `Over <strong>one month (~21 trading days)</strong>, company-specific news and broader market trends start to matter more. This is a useful horizon if you're thinking about whether to hold through earnings or a product launch.`,
+    '3m': `Over <strong>three months (~63 trading days)</strong>, a full earnings cycle plays out. Macro trends, analyst upgrades/downgrades and sector rotations can all shift the price meaningfully.`,
+    '6m': `Over <strong>six months (~126 trading days)</strong>, you're looking at roughly two earnings reports. Market regimes can shift — bull runs, corrections and sector rotations all become more likely over this window.`,
+    '1y': `Over <strong>one year (252 trading days)</strong>, the full range of outcomes widens dramatically. Long-term compounders and volatile growth stocks look very different at this horizon — notice how wide the p10–p90 band is.`
+  };
+
+  // Tail risk commentary
+  let tailComment = '';
+  if (d.student_t_df < 5) {
+    tailComment = `<br><br>⚠️ <strong>Fat tail warning:</strong> ${d.ticker}'s historical returns have very heavy tails (df = ${d.student_t_df.toFixed(1)}). This means extreme moves — both crashes and surges — happen more often than a normal distribution would suggest. The probability of a −20% or +20% move is higher than it looks for an "average" stock.`;
+  } else if (d.jump_lambda_annual > 6) {
+    tailComment = `<br><br>⚡ <strong>Jump risk:</strong> ${d.ticker} has historically had ${d.jump_lambda_annual.toFixed(0)} large-gap events per year (earnings shocks, news events). These are modelled explicitly — they're part of why the tails are wider than a simple volatility model would show.`;
+  }
+
+  el.innerHTML = `
+    ${HZ_CONTEXT[key]}<br><br>
+    <strong>Reading the numbers for ${d.ticker} — ${h.label}:</strong><br><br>
+    The model's <strong>central estimate (median)</strong> is <span style="color:#F59E0B;font-weight:700">${fmt2(med)}</span> — that's the price the model thinks is equally likely to be above or below, based on how ${d.ticker} has traded historically. That's ${medDir} <strong>${medAbs}%</strong> from today's ${fmt2(S0)}.<br><br>
+    The <strong>most likely range</strong> (80% of simulated paths land here) runs from <span style="color:#ef4444;font-weight:700">${fmt2(p10)}</span> on the downside to <span style="color:#22c55e;font-weight:700">${fmt2(p90)}</span> on the upside — a spread of ${cy}${((+p90)-(+p10)).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}.<br><br>
+    In plain terms: the model gives a <strong>${probUp}% chance the price is higher</strong> by ${h.label.toLowerCase()} and a <strong>${probDown}% chance it's lower</strong>.
+    ${+probUp5 > 0 ? ` A gain of more than 5% has a <strong>${probUp5}% probability</strong>.` : ''}
+    ${+probDn5 > 0 ? ` A drop of more than 5% has a <strong>${probDn5}% probability</strong>.` : ''}
+    ${+probUp10 > 0 ? ` A gain beyond 10% is at <strong>${probUp10}%</strong>.` : ''}
+    ${+probDn10 > 0 ? ` A fall beyond 10% is at <strong>${probDn10}%</strong>.` : ''}
+    ${+probUp20 > 0 || +probDn20 > 0 ? `<br><br>The chance of a <strong>+20% gain</strong> is ${probUp20}% and the chance of a <strong>−20% crash</strong> is ${probDn20}%. These are the tail scenarios.` : ''}<br><br>
+    Currently, ${d.ticker}'s ${regimeTxt}. The model fitted a current annualised volatility of <strong>${(d.vol_current_annual*100).toFixed(1)}%</strong> — its long-run average is ${(d.vol_longrun_annual*100).toFixed(1)}%.
+    ${tailComment}`;
 }
 
 function renderDetail(d, key){
