@@ -204,16 +204,16 @@ textarea.ticker-input:focus{border-color:#F59E0B}
 <!-- ══ TABS ══ -->
 <div class="tabs-wrap">
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('watchlist',this)">🔍 Watchlist</div>
+    <div class="tab active" onclick="switchTab('fintiq',this)">✨ Fintiq Portfolios</div>
+    <div class="tab" onclick="switchTab('watchlist',this)">🔍 Watchlist</div>
     <div class="tab" onclick="switchTab('myportfolio',this)">💼 My Portfolio</div>
-    <div class="tab" onclick="switchTab('fintiq',this)">✨ Fintiq Portfolios</div>
   </div>
 </div>
 
 <div class="main">
 
 <!-- ══ WATCHLIST ══ -->
-<div id="tab-watchlist" class="panel active">
+<div id="tab-watchlist" class="panel">
   <p style="color:#94A3B8;font-size:0.82rem;margin-bottom:12px">Paste any tickers to find the optimal allocation. Each ticker gets a minimum 3% weight to ensure genuine diversification (standard academic practice).</p>
   <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">
     <div style="flex:1;min-width:220px">
@@ -278,7 +278,7 @@ textarea.ticker-input:focus{border-color:#F59E0B}
 </div>
 
 <!-- ══ FINTIQ PORTFOLIOS ══ -->
-<div id="tab-fintiq" class="panel">
+<div id="tab-fintiq" class="panel active">
   <div id="fintiq-loading" class="loading-wrap">
     <div class="loading-spinner"></div>
     <p id="fintiq-load-msg">Loading Fintiq model portfolios…</p>
@@ -419,10 +419,6 @@ function buildResults(data,container,currentPt,userWeights){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
       <div class="chart-wrap sm"><canvas id="cp-${sfx}"></canvas></div>
       <div id="wt-${sfx}"></div>
-    </div>
-    <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">
-      <div style="font-size:0.82rem;color:#94A3B8;margin-bottom:10px">🗂️ <strong style="color:#F1F5F9">Sector Diversification</strong> — allocation by industry under the optimal portfolio</div>
-      <div class="chart-wrap sm"><canvas id="sp-${sfx}"></canvas></div>
     </div>`;
   r2.appendChild(wc);
 
@@ -471,12 +467,18 @@ function buildResults(data,container,currentPt,userWeights){
   r2.appendChild(tc);
   container.appendChild(r2);
 
-  // Row 3: Correlation heatmap
-  const r3=document.createElement('div');r3.className='rg single';r3.style.marginTop='18px';
+  // Row 3: Sector pie + Correlation heatmap side by side
+  const r3=document.createElement('div');r3.className='rg';r3.style.marginTop='18px';
+  const sc=document.createElement('div');sc.className='card';
+  sc.innerHTML=`
+    <div class="card-title">🗂️ Sector Diversification</div>
+    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:13px">Optimal portfolio allocation broken down by sector. A well-diversified portfolio spreads across multiple industries.</p>
+    <div class="chart-wrap sm"><canvas id="sp-${sfx}"></canvas></div>`;
+  r3.appendChild(sc);
   const cc=document.createElement('div');cc.className='card';
   cc.innerHTML=`
     <div class="card-title">🔗 Correlation Matrix <span class="badge badge-purple">Diversification map</span></div>
-    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:13px"><strong style="color:#F1F5F9">How to read this:</strong> Each cell shows how closely two assets move together. <span style="color:#ef4444">Red (0.8–1.0)</span> = move together — little diversification benefit. <span style="color:#22c55e">Blue (negative)</span> = move opposite — great for risk reduction. <span style="color:#94A3B8">Near zero</span> = uncorrelated — ideal diversification.</p>
+    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:13px"><strong style="color:#F1F5F9">How to read this:</strong> Each cell shows how closely two assets move together. <span style="color:#ef4444">Red = high correlation</span> — move together, less diversification. <span style="color:#3b82f6">Blue = negative</span> — move opposite, great for risk reduction.</p>
     <div class="hm-wrap"><div id="hm-${sfx}"></div></div>`;
   r3.appendChild(cc);
   container.appendChild(r3);
@@ -632,10 +634,19 @@ function buildHeatmap(wrapId,tickers,corr,names){
   function rN(t){return names[t]||tName(t);}
   const wrap=document.getElementById(wrapId);if(!wrap)return;
   function bg(v){
-    if(v>=0.9)return'rgba(239,68,68,0.80)';if(v>=0.7)return'rgba(249,115,22,0.65)';
-    if(v>=0.4)return'rgba(245,158,11,0.45)';if(v>=0.1)return'rgba(255,255,255,0.12)';
-    if(v>=-0.1)return'rgba(255,255,255,0.04)';if(v>=-0.4)return'rgba(59,130,246,0.35)';
-    return'rgba(59,130,246,0.65)';
+    // Continuous scale: opacity scales linearly so even low correlations show colour
+    if(v>0){
+      const t=Math.min(v,1);
+      if(t>=0.7)return`rgba(220,38,38,${(0.40+t*0.55).toFixed(2)})`;   // red
+      if(t>=0.4)return`rgba(249,115,22,${(0.20+t*0.65).toFixed(2)})`;  // orange
+      return`rgba(245,158,11,${(0.08+t*0.70).toFixed(2)})`;            // amber
+    }else if(v<0){
+      const t=Math.min(-v,1);
+      if(t>=0.7)return`rgba(37,99,235,${(0.40+t*0.55).toFixed(2)})`;   // dark blue
+      if(t>=0.4)return`rgba(59,130,246,${(0.20+t*0.65).toFixed(2)})`;  // blue
+      return`rgba(99,162,255,${(0.08+t*0.70).toFixed(2)})`;            // light blue
+    }
+    return'rgba(255,255,255,0.03)';
   }
   let html=`<table class="hm-tbl"><thead><tr><th></th>${tickers.map(t=>`<th title="${rN(t)}">${t}</th>`).join('')}</tr></thead><tbody>`;
   tickers.forEach((t,i)=>{
@@ -672,16 +683,17 @@ function drawSectorPie(canvasId,tickers,weights,sectors){
     sectorMap[s]=(sectorMap[s]||0)+w;
   });
   const labels=Object.keys(sectorMap).sort((a,b)=>sectorMap[b]-sectorMap[a]);
-  const vals=labels.map(s=>+(sectorMap[s]*100).toFixed(2));
+  const vals=labels.map(s=>+(sectorMap[s]*100).toFixed(1));
   const colors=labels.map(s=>SECTOR_COLORS[s]||'#475569');
+  const legendLabels=labels.map((s,i)=>`${s}  ${vals[i]}%`);
   _ch[canvasId]=new Chart(ctx,{
     type:'doughnut',
-    data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0F2337',hoverOffset:6}]},
+    data:{labels:legendLabels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0F2337',hoverOffset:6}]},
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{
         legend:{labels:{color:'#94A3B8',font:{size:10},boxWidth:10},position:'right'},
-        tooltip:{callbacks:{label:p=>`${p.label}: ${p.parsed.toFixed(1)}%`}},
+        tooltip:{callbacks:{label:p=>`${p.parsed.toFixed(1)}%`}},
       },
       cutout:'48%',
     }
@@ -771,6 +783,8 @@ async function runMyPortfolio(){
 
 // ── Fintiq Portfolios ─────────────────────────────────────────────────────
 let _fintiqData=null;window._fintiqLoaded=false;
+// Auto-load Fintiq Portfolios since it's the default tab
+document.addEventListener('DOMContentLoaded',()=>loadFintiqPortfolios());
 async function loadFintiqPortfolios(){
   window._fintiqLoaded=true;
   const loading=document.getElementById('fintiq-loading');
