@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PriceSpectrum — Stock Price Probability Simulator | Fintiq</title>
+<meta name="description" content="Free stock price probability simulator. See the full range of possible prices for any stock over the next day, week, month or year using GARCH volatility modelling and Monte Carlo simulation.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://fintiq.uk/price-spectrum.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://fintiq.uk/price-spectrum.html" />
+<meta property="og:title" content="PriceSpectrum — Stock Price Probability Simulator | Fintiq" />
+<meta property="og:description" content="What price range could your stock be at in a month? A year? Powered by GARCH volatility modelling and 5,000-path Monte Carlo simulation." />
+<meta property="og:image" content="https://fintiq.uk/og-image.png" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6}
+a{color:#F59E0B;text-decoration:none}
+
+/* ── NAV ── */
+nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.88rem}
+.nav-links a:hover,.nav-links a.active{color:#F59E0B}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#F1F5F9}
+
+/* ── HERO ── */
+.hero{text-align:center;padding:48px 24px 32px;max-width:720px;margin:0 auto}
+.hero-tag{display:inline-block;background:rgba(245,158,11,0.12);color:#F59E0B;border:1px solid rgba(245,158,11,0.3);border-radius:20px;padding:4px 14px;font-size:0.72rem;font-weight:700;margin-bottom:14px;letter-spacing:.5px}
+.hero h1{font-size:2.3rem;font-weight:900;line-height:1.15;margin-bottom:12px}
+.hero h1 span{color:#F59E0B}
+.hero p{color:#94A3B8;font-size:0.93rem;max-width:580px;margin:0 auto 22px}
+.hero-pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.pill{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.18);border-radius:20px;padding:4px 13px;font-size:0.73rem;color:#94A3B8}
+
+/* ── SEARCH ── */
+.search-wrap{max-width:600px;margin:0 auto 36px;padding:0 24px}
+.search-box{display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:8px 8px 8px 20px}
+.search-box input{flex:1;background:transparent;border:none;outline:none;color:#F1F5F9;font-size:1.05rem;font-family:'Inter',sans-serif;min-width:0}
+.search-box input::placeholder{color:#475569}
+.search-btn{background:#F59E0B;color:#0A1628;border:none;border-radius:10px;padding:11px 26px;font-size:0.92rem;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .2s}
+.search-btn:hover{opacity:.88}
+.search-btn:disabled{opacity:.5;cursor:wait}
+
+/* ── MAIN ── */
+.main{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+
+/* ── INFO BAR ── */
+.info-bar{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 24px;display:flex;align-items:center;flex-wrap:wrap;gap:18px;margin-bottom:20px}
+.info-ticker{font-size:1.5rem;font-weight:900;color:#F59E0B}
+.info-name{font-size:0.88rem;color:#94A3B8}
+.info-price{font-size:1.7rem;font-weight:900;color:#F1F5F9}
+.info-sep{width:1px;height:40px;background:rgba(255,255,255,0.08);flex-shrink:0}
+.info-stat{text-align:center}
+.info-stat-val{font-size:1.05rem;font-weight:700;color:#F1F5F9}
+.info-stat-lbl{font-size:0.67rem;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.regime-badge{padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:700;border:1px solid}
+
+/* ── CARDS ── */
+.card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:22px 24px;margin-bottom:20px}
+.card-title{font-size:0.75rem;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px}
+
+/* ── FAN CHART ── */
+.fan-wrap{position:relative;height:460px}
+
+/* ── HORIZON CARDS ── */
+.hz-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px}
+.hz-card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px 12px;cursor:pointer;transition:border-color .2s,transform .15s;text-align:center}
+.hz-card:hover{border-color:rgba(245,158,11,0.4);transform:translateY(-2px)}
+.hz-card.active{border-color:#F59E0B;background:linear-gradient(135deg,#1a2d42,#1e3048)}
+.hz-label{font-size:0.7rem;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.hz-median{font-size:1.1rem;font-weight:800;color:#F1F5F9;margin-bottom:3px}
+.hz-change{font-size:0.75rem;font-weight:600;margin-bottom:8px}
+.hz-range{font-size:0.65rem;color:#475569;margin-bottom:6px}
+.hz-prob-bar{height:4px;border-radius:2px;background:rgba(255,255,255,0.07);overflow:hidden;display:flex}
+.hz-prob-up{background:#22c55e;height:100%}
+.hz-prob-dn{background:#ef4444;height:100%}
+
+/* ── DETAIL PANEL ── */
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.prob-table{width:100%;border-collapse:collapse}
+.prob-table th{background:#060F1A;color:#94A3B8;padding:9px 14px;text-align:left;font-size:0.73rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.prob-table td{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.85rem}
+.prob-table tr:last-child td{border:none}
+.prob-bar-wrap{display:flex;align-items:center;gap:8px}
+.prob-bar-bg{flex:1;height:6px;background:rgba(255,255,255,0.07);border-radius:3px;overflow:hidden}
+.prob-bar-fill{height:100%;border-radius:3px;transition:width .4s}
+.pct-table{width:100%;border-collapse:collapse}
+.pct-table th{background:#060F1A;color:#94A3B8;padding:9px 14px;text-align:left;font-size:0.73rem;font-weight:600;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid rgba(255,255,255,0.06)}
+.pct-table td{padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.85rem}
+.pct-table tr:last-child td{border:none}
+.pct-row-med td{background:rgba(245,158,11,0.07);font-weight:700;color:#F59E0B}
+.pct-highlight{font-weight:700;color:#F1F5F9}
+
+/* ── EXPANDER ── */
+.expander{background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.14);border-radius:10px;margin-bottom:16px;overflow:hidden}
+.expander summary{cursor:pointer;padding:13px 18px;font-size:0.83rem;font-weight:600;color:#F59E0B;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
+.expander summary::-webkit-details-marker{display:none}
+.expander summary::before{content:'▶';font-size:0.6rem;transition:transform .2s;opacity:.7}
+.expander[open] summary::before{transform:rotate(90deg)}
+.expander .exp-body{padding:4px 20px 18px;font-size:0.82rem;line-height:1.72;color:#94A3B8}
+.expander .exp-body strong{color:#F1F5F9}
+.exp-params{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.exp-param{background:#060F1A;border-radius:8px;padding:12px;text-align:center}
+.exp-param-val{font-size:1rem;font-weight:700;color:#F59E0B}
+.exp-param-lbl{font-size:0.66rem;color:#475569;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+
+/* ── DISCLAIMER ── */
+.disclaimer{background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.15);border-radius:10px;padding:14px 18px;font-size:0.76rem;color:#64748B;line-height:1.65;margin-top:6px}
+.disclaimer strong{color:#94A3B8}
+
+/* ── EMPTY / LOADING / ERROR ── */
+.state-box{text-align:center;padding:64px 24px;color:#475569}
+.state-box .ico{font-size:2.8rem;margin-bottom:14px;opacity:.5}
+.state-box p{font-size:0.9rem}
+.spinner{width:36px;height:36px;border:3px solid rgba(245,158,11,0.2);border-top-color:#F59E0B;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:10px;padding:14px 18px;color:#fca5a5;font-size:0.85rem}
+
+/* ── FOOTER ── */
+footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
+.f-logo{display:flex;align-items:center;justify-content:center;gap:8px;font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
+.f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
+.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.f-links a{color:#94A3B8;font-size:0.82rem}
+.f-copy{color:#334155;font-size:0.72rem}
+
+/* ── MOBILE ── */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:#08121f;border-top:1px solid rgba(245,158,11,0.25);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
+.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;font-size:0.65rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase}
+.mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
+
+@media(max-width:900px){
+  .hz-grid{grid-template-columns:repeat(3,1fr)}
+  .detail-grid{grid-template-columns:1fr}
+  .exp-params{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:600px){
+  .hero h1{font-size:1.75rem}
+  .hz-grid{grid-template-columns:repeat(2,1fr)}
+  .info-bar{gap:12px}
+  nav{padding:10px 16px}
+  .nav-links{display:none;position:absolute;top:56px;left:0;right:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2);flex-direction:column;gap:0}
+  .nav-links.mobile-open{display:flex}
+  .nav-links a{padding:12px 24px;border-bottom:1px solid rgba(255,255,255,0.05)}
+  .nav-hamburger{display:block}
+  .mobile-bottom-nav{display:block}
+  body{padding-bottom:68px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="https://fintiq.uk" class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </a>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Open menu">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/></svg>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
+    <a href="/tools.html" class="active">Tools</a>
+    <a href="/learn.html">Learn</a>
+  </div>
+</nav>
+<script>
+document.getElementById('navHamburger').addEventListener('click',function(){
+  document.getElementById('navLinks').classList.toggle('mobile-open');
+});
+</script>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-tag">⚡ POWERED BY GARCH + MONTE CARLO</div>
+  <h1>Price<span>Spectrum</span></h1>
+  <p>Enter any stock ticker and see the full probability distribution of where the price could be — tomorrow, next week, or a year from now. 5,000 simulated paths. No guesswork, just maths.</p>
+  <div class="hero-pills">
+    <span class="pill">📈 GARCH(1,1) Volatility</span>
+    <span class="pill">🎲 5,000 Monte Carlo Paths</span>
+    <span class="pill">⚡ Fat-Tail Student-t Returns</span>
+    <span class="pill">💥 Jump Risk Modelled</span>
+    <span class="pill">🕐 6 Time Horizons</span>
+  </div>
+</div>
+
+<!-- SEARCH -->
+<div class="search-wrap">
+  <div class="search-box">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;opacity:.45"><circle cx="8.5" cy="8.5" r="5.5" stroke="#94A3B8" stroke-width="1.8"/><path d="M13 13l3.5 3.5" stroke="#94A3B8" stroke-width="1.8" stroke-linecap="round"/></svg>
+    <input type="text" id="tickerInput" placeholder="Enter ticker — e.g. AAPL, NVDA, TSLA, MSFT" maxlength="10"
+           autocomplete="off" autocapitalize="characters" spellcheck="false">
+    <button class="search-btn" id="runBtn" onclick="runSpectrum()">Simulate →</button>
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="main">
+  <div id="results">
+    <div class="state-box">
+      <div class="ico">📊</div>
+      <p>Enter a ticker above to see its probability distribution across 6 time horizons.</p>
+    </div>
+  </div>
+</div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-bottom-nav">
+  <ul>
+    <li><a href="https://fintiq.uk"><span>🏠</span>Home</a></li>
+    <li><a href="/bulletin.html"><span>📰</span>Bulletin</a></li>
+    <li><a href="/deep-dive.html"><span>🔬</span>Deep Dive</a></li>
+    <li><a href="/tools.html" class="active"><span>🛠️</span>Tools</a></li>
+    <li><a href="/learn.html"><span>📚</span>Learn</a></li>
+  </ul>
+</nav>
+
+<footer>
+  <div class="f-logo">
+    <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/><line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/><line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/><polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/></svg>
+    Fintiq
+  </div>
+  <p class="f-sub">Institutional-grade analytics for everyone.</p>
+  <div class="f-links">
+    <a href="/tools.html">Tools</a>
+    <a href="/learn.html">Learn</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
+  </div>
+  <p class="f-copy">© 2026 Fintiq. For educational purposes only. Not financial advice.</p>
+</footer>
+
+<script>
+const API = 'https://api.fintiq.uk';
+let _chart = null;
+let _data  = null;
+
+// ── Keyboard shortcut ──
+document.getElementById('tickerInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runSpectrum();
+});
+
+// ── URL param pre-fill ──
+(function(){
+  const p = new URLSearchParams(location.search).get('ticker');
+  if (p) { document.getElementById('tickerInput').value = p.toUpperCase(); runSpectrum(); }
+})();
+
+// ── Helpers ──
+function fmt(v, dp=2){ return v==null?'—':v.toFixed(dp); }
+function fmtPrice(v, cy='$'){ return v==null?'—':cy+(+v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtPct(v){ if(v==null)return'—'; const s=(v*100).toFixed(1); return (v>=0?'+':'')+s+'%'; }
+function pctColor(v){ return v>=0?'#22c55e':'#ef4444'; }
+function probColor(p){ if(p>=0.7)return'#22c55e'; if(p>=0.45)return'#F59E0B'; return'#ef4444'; }
+function currSymbol(c){ return c==='GBP'?'£':c==='EUR'?'€':c==='JPY'?'¥':'$'; }
+
+async function runSpectrum(){
+  const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+  if (!ticker){ document.getElementById('tickerInput').focus(); return; }
+
+  // Update URL
+  history.replaceState(null,'',`?ticker=${ticker}`);
+
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true; btn.textContent = 'Computing…';
+
+  const out = document.getElementById('results');
+  out.innerHTML = `<div class="state-box"><div class="spinner"></div><p>Running 5,000 Monte Carlo paths for <strong>${ticker}</strong>…<br><span style="font-size:0.78rem;color:#475569">Fitting GARCH volatility · estimating jump risk · simulating price paths</span></p></div>`;
+
+  try {
+    const resp = await fetch(`${API}/price-spectrum?ticker=${ticker}`);
+    if (!resp.ok){
+      const err = await resp.json().catch(()=>({detail:'Simulation failed'}));
+      throw new Error(err.detail||'Simulation failed');
+    }
+    _data = await resp.json();
+    renderResults(_data);
+  } catch(e){
+    out.innerHTML = `<div class="error-box">⚠️ ${e.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = 'Simulate →';
+  }
+}
+
+function renderResults(d){
+  const cy = currSymbol(d.currency);
+  const out = document.getElementById('results');
+
+  // ── Info bar ──
+  let infoHtml = `
+    <div class="info-bar">
+      <div>
+        <div class="info-ticker">${d.ticker}</div>
+        <div class="info-name">${d.company_name}</div>
+      </div>
+      <div class="info-sep"></div>
+      <div>
+        <div class="info-price">${cy}${(+d.current_price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div style="font-size:0.7rem;color:#64748B;text-transform:uppercase;letter-spacing:.4px">Current Price</div>
+      </div>
+      <div class="info-sep"></div>
+      <div class="info-stat">
+        <div class="info-stat-val">${(d.vol_current_annual*100).toFixed(1)}%</div>
+        <div class="info-stat-lbl">20-Day Vol (Ann.)</div>
+      </div>
+      <div class="info-stat">
+        <div class="info-stat-val">${(d.vol_longrun_annual*100).toFixed(1)}%</div>
+        <div class="info-stat-lbl">Long-Run Vol</div>
+      </div>
+      <div class="info-stat">
+        <div class="info-stat-val">${d.student_t_df.toFixed(1)}</div>
+        <div class="info-stat-lbl">Tail Heaviness (df)</div>
+      </div>
+      <div class="info-stat">
+        <div class="info-stat-val">${d.jump_lambda_annual.toFixed(1)}</div>
+        <div class="info-stat-lbl">Jumps / Year</div>
+      </div>
+      <div style="margin-left:auto">
+        <span class="regime-badge" style="background:${d.vol_regime_color}18;border-color:${d.vol_regime_color}55;color:${d.vol_regime_color}">${d.vol_regime_label}</span>
+      </div>
+    </div>`;
+
+  // ── Fan chart card ──
+  let fanHtml = `
+    <div class="card">
+      <div class="card-title">📈 Price Probability Fan — 1 Year Horizon</div>
+      <p style="color:#94A3B8;font-size:0.78rem;margin-bottom:14px">Each coloured band represents a probability range. The gold line is the <strong style="color:#F59E0B">median path (50th percentile)</strong>. Green bands = upside scenarios. Red bands = downside scenarios.</p>
+      <div class="fan-wrap"><canvas id="fanChart"></canvas></div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#94A3B8"><span style="width:24px;height:3px;background:#F59E0B;display:inline-block;border-radius:2px"></span> Median (p50)</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#94A3B8"><span style="width:14px;height:10px;background:rgba(34,197,94,0.3);display:inline-block;border-radius:2px"></span> p50–p90 Upside range</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#94A3B8"><span style="width:14px;height:10px;background:rgba(239,68,68,0.25);display:inline-block;border-radius:2px"></span> p10–p50 Downside range</span>
+        <span style="display:flex;align-items:center;gap:5px;font-size:0.72rem;color:#94A3B8"><span style="width:14px;height:10px;background:rgba(239,68,68,0.12);display:inline-block;border-radius:2px"></span> p5–p10 Tail risk</span>
+      </div>
+    </div>`;
+
+  // ── Horizon cards ──
+  const HZ_ORDER = ['1d','1w','1m','3m','6m','1y'];
+  let hzHtml = `<div class="hz-grid" id="hzGrid">`;
+  HZ_ORDER.forEach((k,i) => {
+    const h = d.horizons[k];
+    const med = h.percentiles.p50;
+    const chg = (med - d.current_price) / d.current_price;
+    const lo  = h.percentiles.p10, hi = h.percentiles.p90;
+    hzHtml += `
+      <div class="hz-card${i===0?' active':''}" onclick="selectHorizon('${k}',this)" id="hzcard-${k}">
+        <div class="hz-label">${h.label}</div>
+        <div class="hz-median">${cy}${(+med).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div class="hz-change" style="color:${pctColor(chg)}">${fmtPct(chg)}</div>
+        <div class="hz-range" style="font-size:0.62rem">${cy}${(+lo).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})} – ${cy}${(+hi).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})}<br><span style="color:#334155">p10 – p90</span></div>
+        <div class="hz-prob-bar">
+          <div class="hz-prob-up" style="width:${(h.prob_above*100).toFixed(0)}%"></div>
+          <div class="hz-prob-dn" style="width:${(h.prob_below*100).toFixed(0)}%"></div>
+        </div>
+      </div>`;
+  });
+  hzHtml += `</div>`;
+
+  // ── Detail panel (initially 1D) ──
+  const detailHtml = `<div id="detailPanel" class="card"></div>`;
+
+  // ── Expanders ──
+  const expHtml = `
+    <details class="expander">
+      <summary>📖 How does PriceSpectrum work?</summary>
+      <div class="exp-body">
+        <strong>Three layers of real-world risk modelling:</strong><br><br>
+        <strong>1. GARCH(1,1) Volatility</strong> — Instead of assuming volatility is constant (the GBM mistake), GARCH models tomorrow's volatility as a weighted combination of today's return shock and today's volatility estimate. This captures <em>volatility clustering</em> — the well-documented fact that volatile days tend to follow volatile days. It is the industry standard for bank VaR (Value at Risk) calculations.<br><br>
+        <strong>2. Student-t Return Distribution</strong> — Real stock returns have much fatter tails than the normal (Gaussian) distribution assumes. Extreme moves of 5–10% happen far more often than a bell curve predicts. By fitting a Student-t distribution (with estimated degrees of freedom) to historical returns, PriceSpectrum captures this tail risk and avoids systematically underestimating crash probabilities.<br><br>
+        <strong>3. Jump-Diffusion</strong> — Earnings surprises, macro shocks, acquisitions and FDA decisions cause discrete overnight gaps that continuous models miss. PriceSpectrum detects historically large moves (daily returns beyond 2.5 standard deviations), estimates an annual jump frequency and average jump size, and adds these as rare discrete shocks to each simulated path via a Poisson process.<br><br>
+        The simulation runs <strong>5,000 independent paths</strong> over 252 trading days. Percentile outcomes are computed at each time milestone and reported as the price bands you see.
+      </div>
+    </details>
+    <details class="expander" id="paramsExpander">
+      <summary>⚙️ Model parameters for this simulation</summary>
+      <div class="exp-body" id="paramsBody">Loading…</div>
+    </details>
+    <div class="disclaimer">
+      ⚠️ <strong>Disclaimer:</strong> PriceSpectrum is an <strong>educational and analytical tool only</strong>. Probability estimates are based on historical data and statistical models — they do not predict the future or guarantee any outcome. Past volatility is not a reliable indicator of future volatility. This tool does not constitute financial advice, investment advice, or a recommendation to buy or sell any security. Always conduct your own research and consult a qualified financial adviser before making investment decisions.
+    </div>`;
+
+  out.innerHTML = infoHtml + fanHtml + hzHtml + detailHtml + expHtml;
+
+  // Render fan chart
+  requestAnimationFrame(() => {
+    drawFanChart(d);
+    renderDetail(d, '1d');
+    renderParams(d);
+  });
+}
+
+function drawFanChart(d){
+  if (_chart){ _chart.destroy(); _chart = null; }
+  const ctx = document.getElementById('fanChart');
+  if (!ctx) return;
+
+  const fc = d.fan_chart;
+  const S0 = d.current_price;
+  const cy = currSymbol(d.currency);
+
+  // X-axis labels: convert day index to human label at milestones
+  const MILESTONES = {0:'Now',5:'1W',21:'1M',63:'3M',126:'6M',252:'1Y'};
+  const xLabels = fc.days.map(d => MILESTONES[d] || '');
+
+  const mkDs = (key, color, fill, bw, br) => ({
+    label: key,
+    data: fc[key],
+    borderColor: br||'transparent',
+    borderWidth: bw||0,
+    backgroundColor: color,
+    fill: fill,
+    pointRadius: 0,
+    tension: 0.3,
+  });
+
+  _chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xLabels,
+      datasets: [
+        mkDs('p5',  'transparent', false, 1, 'rgba(239,68,68,0.4)'),
+        mkDs('p10', 'rgba(239,68,68,0.18)', '-1', 0),
+        mkDs('p25', 'rgba(249,115,22,0.15)', '-1', 0),
+        // Median — gold line, fills p25→p50
+        { label:'p50 Median', data: fc.p50, borderColor:'#F59E0B', borderWidth:2.5,
+          backgroundColor:'rgba(245,158,11,0.08)', fill:'-1',
+          pointRadius:0, tension:0.3 },
+        mkDs('p75', 'rgba(34,197,94,0.13)', '-1', 0),
+        mkDs('p90', 'rgba(34,197,94,0.18)', '-1', 0),
+        mkDs('p95', 'transparent', '-1', 1, 'rgba(34,197,94,0.4)'),
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:false },
+        tooltip: {
+          backgroundColor:'#0F2337',
+          borderColor:'rgba(245,158,11,0.25)',
+          borderWidth:1,
+          padding:12,
+          callbacks: {
+            title: items => {
+              const lbl = items[0].label;
+              if(!lbl) return `Day ${items[0].dataIndex * 5}`;
+              return lbl || `Day ${items[0].dataIndex * 5}`;
+            },
+            label: item => {
+              const labels = {p5:'Bear tail',p10:'10th pct',p25:'25th pct','p50 Median':'Median',p75:'75th pct',p90:'90th pct',p95:'Bull tail'};
+              const name = labels[item.dataset.label]||item.dataset.label;
+              return `${name}: ${cy}${(+item.raw).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+            },
+          }
+        },
+      },
+      scales: {
+        x: {
+          grid:{color:'rgba(255,255,255,0.04)'},
+          ticks:{color:'#64748B',font:{size:10},maxRotation:0,
+            callback: function(val,idx){ return this.getLabelForValue(val)||''; }
+          },
+        },
+        y: {
+          grid:{color:'rgba(255,255,255,0.04)'},
+          ticks:{color:'#64748B',font:{size:10},
+            callback: v => cy+(+v).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0})
+          },
+        }
+      }
+    }
+  });
+}
+
+function selectHorizon(key, el){
+  document.querySelectorAll('.hz-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderDetail(_data, key);
+}
+
+function renderDetail(d, key){
+  const h  = d.horizons[key];
+  const cy = currSymbol(d.currency);
+  const S0 = d.current_price;
+
+  const pRows = [
+    {p:'p1',  label:'1st percentile  — extreme bear'},
+    {p:'p5',  label:'5th percentile  — strong bear'},
+    {p:'p10', label:'10th percentile — bear'},
+    {p:'p25', label:'25th percentile — mild bear'},
+    {p:'p50', label:'50th percentile — median',  med:true},
+    {p:'p75', label:'75th percentile — mild bull'},
+    {p:'p90', label:'90th percentile — bull'},
+    {p:'p95', label:'95th percentile — strong bull'},
+    {p:'p99', label:'99th percentile — extreme bull'},
+  ];
+
+  const pTableRows = pRows.map(r => {
+    const price = h.percentiles[r.p];
+    const chg   = (price - S0) / S0;
+    const isUp  = chg >= 0;
+    return `<tr${r.med?' class="pct-row-med"':''}>
+      <td style="color:#64748B;font-size:0.78rem">${r.label}</td>
+      <td class="pct-highlight">${cy}${(+price).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+      <td style="color:${pctColor(chg)};font-weight:600">${fmtPct(chg)}</td>
+    </tr>`;
+  }).join('');
+
+  const probRows = [
+    {label:'Price rises at all',          val:h.prob_above,  color:'#22c55e'},
+    {label:'Price falls at all',           val:h.prob_below,  color:'#ef4444'},
+    {label:'Gains more than +5%',          val:h.prob_up5,    color:'#22c55e'},
+    {label:'Gains more than +10%',         val:h.prob_up10,   color:'#22c55e'},
+    {label:'Gains more than +20%',         val:h.prob_up20,   color:'#4ade80'},
+    {label:'Falls more than −5%',          val:h.prob_down5,  color:'#f97316'},
+    {label:'Falls more than −10%',         val:h.prob_down10, color:'#ef4444'},
+    {label:'Falls more than −20%',         val:h.prob_down20, color:'#dc2626'},
+  ];
+
+  const probTableRows = probRows.map(r => `
+    <tr>
+      <td style="color:#94A3B8;font-size:0.83rem">${r.label}</td>
+      <td>
+        <div class="prob-bar-wrap">
+          <div class="prob-bar-bg">
+            <div class="prob-bar-fill" style="width:${(r.val*100).toFixed(1)}%;background:${r.color}"></div>
+          </div>
+          <span style="font-size:0.83rem;font-weight:700;color:${r.color};min-width:38px;text-align:right">${(r.val*100).toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  document.getElementById('detailPanel').innerHTML = `
+    <div class="card-title">🎯 ${h.label} Detail — Expected move ±${h.expected_move_1s.toFixed(1)}% (1σ)</div>
+    <div class="detail-grid">
+      <div>
+        <div style="font-size:0.73rem;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:600">Price Percentile Table</div>
+        <table class="pct-table">
+          <thead><tr><th>Scenario</th><th>Price</th><th>Change</th></tr></thead>
+          <tbody>${pTableRows}</tbody>
+        </table>
+      </div>
+      <div>
+        <div style="font-size:0.73rem;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;font-weight:600">Probability of each outcome</div>
+        <table class="prob-table">
+          <thead><tr><th>Event</th><th style="min-width:160px">Probability</th></tr></thead>
+          <tbody>${probTableRows}</tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+function renderParams(d){
+  const cy = currSymbol(d.currency);
+  document.getElementById('paramsBody').innerHTML = `
+    <strong>Fitted model parameters for ${d.ticker}:</strong>
+    <div class="exp-params">
+      <div class="exp-param">
+        <div class="exp-param-val">${(d.garch_alpha*100).toFixed(1)}%</div>
+        <div class="exp-param-lbl">GARCH α (shock weight)</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${(d.garch_beta*100).toFixed(1)}%</div>
+        <div class="exp-param-lbl">GARCH β (persistence)</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${(d.garch_persistence*100).toFixed(1)}%</div>
+        <div class="exp-param-lbl">Vol persistence (α+β)</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${d.student_t_df.toFixed(1)}</div>
+        <div class="exp-param-lbl">Student-t degrees of freedom</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${d.jump_lambda_annual.toFixed(1)}/yr</div>
+        <div class="exp-param-lbl">Jump frequency (λ)</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${d.jump_mean_pct > 0 ? '+' : ''}${d.jump_mean_pct.toFixed(1)}%</div>
+        <div class="exp-param-lbl">Avg jump size</div>
+      </div>
+    </div>
+    <p style="margin-top:14px;font-size:0.78rem;color:#475569">
+      <strong style="color:#94A3B8">α+β = ${(d.garch_persistence*100).toFixed(1)}%</strong> — how long volatility shocks persist. Values near 100% mean vol is very persistent (shocks take a long time to decay).
+      Student-t df = ${d.student_t_df.toFixed(1)} — lower values mean heavier tails; df below 6 indicates significant fat-tail risk compared to a normal distribution.
+      ${d.jump_lambda_annual.toFixed(1)} detected jump events per year (moves exceeding 2.5 standard deviations).
+    </p>`;
+}
+</script>
+</body>
+</html>
