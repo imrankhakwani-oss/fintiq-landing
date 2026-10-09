@@ -59,15 +59,15 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .main{max-width:1100px;margin:0 auto;padding:0 24px 80px}
 
 /* ── INFO BAR ── */
-.info-bar{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:18px 24px;display:flex;align-items:center;flex-wrap:wrap;gap:18px;margin-bottom:20px}
-.info-ticker{font-size:1.5rem;font-weight:900;color:#F59E0B}
-.info-name{font-size:0.88rem;color:#94A3B8}
-.info-price{font-size:1.7rem;font-weight:900;color:#F1F5F9}
-.info-sep{width:1px;height:40px;background:rgba(255,255,255,0.08);flex-shrink:0}
-.info-stat{text-align:center}
-.info-stat-val{font-size:1.05rem;font-weight:700;color:#F1F5F9}
-.info-stat-lbl{font-size:0.67rem;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
-.regime-badge{padding:5px 13px;border-radius:20px;font-size:0.78rem;font-weight:700;border:1px solid}
+.info-bar{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 20px;display:flex;align-items:center;flex-wrap:nowrap;gap:12px;margin-bottom:20px;overflow-x:auto}
+.info-ticker{font-size:1.25rem;font-weight:900;color:#F59E0B;white-space:nowrap}
+.info-name{font-size:0.75rem;color:#94A3B8;white-space:nowrap}
+.info-price{font-size:1.3rem;font-weight:900;color:#F1F5F9;white-space:nowrap}
+.info-sep{width:1px;height:32px;background:rgba(255,255,255,0.08);flex-shrink:0}
+.info-stat{text-align:center;flex-shrink:0}
+.info-stat-val{font-size:0.88rem;font-weight:700;color:#F1F5F9;white-space:nowrap}
+.info-stat-lbl{font-size:0.6rem;color:#64748B;text-transform:uppercase;letter-spacing:.4px;margin-top:1px;white-space:nowrap}
+.regime-badge{padding:4px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;border:1px solid;white-space:nowrap}
 
 /* ── CARDS ── */
 .card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:16px;padding:22px 24px;margin-bottom:20px}
@@ -381,9 +381,9 @@ function renderResults(d){
         <div class="info-stat-val">${d.jump_lambda_annual.toFixed(1)}</div>
         <div class="info-stat-lbl">Jumps / Year</div>
       </div>
-      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
         <span class="regime-badge" style="background:${d.vol_regime_color}18;border-color:${d.vol_regime_color}55;color:${d.vol_regime_color}">${d.vol_regime_label}</span>
-        <span style="font-size:0.67rem;color:#334155;text-align:right">Based on <strong style="color:#475569">${d.n_trading_days_used} trading days</strong><br>(${d.data_period_label} of history)</span>
+        <span style="font-size:0.62rem;color:#334155;text-align:right;white-space:nowrap">${d.n_trading_days_used}d · ${d.data_period_label}</span>
       </div>
     </div>`;
 
