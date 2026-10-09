@@ -998,11 +998,16 @@ def _fit_garch11(r: np.ndarray):
     return float(omega), float(alpha), float(beta), float(h)
 
 
-def _compute_price_spectrum(ticker: str) -> dict:
+def _compute_price_spectrum(ticker: str, period: str = "2y") -> dict:
+    ALLOWED_PERIODS = {"6mo", "1y", "2y", "3y", "5y"}
+    if period not in ALLOWED_PERIODS:
+        period = "2y"
     tkr  = yf.Ticker(ticker)
-    hist = tkr.history(period="2y")
+    hist = tkr.history(period=period)
     if len(hist) < 63:
         raise HTTPException(400, detail=f"Not enough data for {ticker} — need at least 3 months.")
+    PERIOD_LABELS = {"6mo": "6 months", "1y": "1 year", "2y": "2 years", "3y": "3 years", "5y": "5 years"}
+    data_period_label = PERIOD_LABELS.get(period, period)
 
     info = {}
     try:
@@ -1109,47 +1114,60 @@ def _compute_price_spectrum(ticker: str) -> dict:
            for p in [5, 10, 25, 50, 75, 90, 95]},
     }
 
+    n_trading_days_used = len(log_returns)
+    mean_daily_ret_pct  = round(float(mu_daily) * 100, 4)
+    std_daily_ret_pct   = round(float(sigma_hist) * 100, 4)
+
     return {
-        "ticker":             ticker,
-        "company_name":       info.get("shortName") or info.get("longName") or ticker,
-        "current_price":      round(S0, 4),
-        "currency":           info.get("currency", "USD"),
-        "vol_regime":         regime,
-        "vol_regime_label":   regime_label,
-        "vol_regime_color":   regime_color,
-        "vol_current_annual": round(vol_20d,  4),
-        "vol_longrun_annual": round(vol_252d, 4),
-        "garch_alpha":        round(alpha_g,  4),
-        "garch_beta":         round(beta_g,   4),
-        "garch_persistence":  round(alpha_g + beta_g, 4),
-        "jump_lambda_annual": round(lambda_ann, 2),
-        "jump_mean_pct":      round(jmp_mean * 100, 2),
-        "jump_std_pct":       round(jmp_std  * 100, 2),
-        "student_t_df":       round(df_t, 2),
-        "n_simulations":      N_SIMS,
-        "horizons":           horizons,
-        "fan_chart":          fan,
-        "computed_at":        time.time(),
+        "ticker":                  ticker,
+        "company_name":            info.get("shortName") or info.get("longName") or ticker,
+        "current_price":           round(S0, 4),
+        "currency":                info.get("currency", "USD"),
+        "vol_regime":              regime,
+        "vol_regime_label":        regime_label,
+        "vol_regime_color":        regime_color,
+        "vol_current_annual":      round(vol_20d,  4),
+        "vol_longrun_annual":      round(vol_252d, 4),
+        "mean_daily_return_pct":   mean_daily_ret_pct,
+        "std_daily_return_pct":    std_daily_ret_pct,
+        "n_trading_days_used":     n_trading_days_used,
+        "data_period":             period,
+        "data_period_label":       data_period_label,
+        "garch_alpha":             round(alpha_g,  4),
+        "garch_beta":              round(beta_g,   4),
+        "garch_persistence":       round(alpha_g + beta_g, 4),
+        "jump_lambda_annual":      round(lambda_ann, 2),
+        "jump_mean_pct":           round(jmp_mean * 100, 2),
+        "jump_std_pct":            round(jmp_std  * 100, 2),
+        "student_t_df":            round(df_t, 2),
+        "n_simulations":           N_SIMS,
+        "horizons":                horizons,
+        "fan_chart":               fan,
+        "computed_at":             time.time(),
     }
 
 
 @app.get("/price-spectrum")
-def get_price_spectrum(ticker: str):
+def get_price_spectrum(ticker: str, period: str = "2y"):
     """
     GARCH(1,1) + Student-t + Jump-Diffusion Monte Carlo for a single ticker.
-    Per-ticker cached in Upstash Redis for 4 hours.
+    period: 6mo | 1y | 2y (default) | 3y | 5y  — how much history to fit on.
+    Per-ticker+period result cached in Upstash Redis for 4 hours.
     """
     ticker = ticker.upper().strip()
     if not ticker or len(ticker) > 10:
         raise HTTPException(400, detail="Invalid ticker symbol.")
+    ALLOWED_PERIODS = {"6mo", "1y", "2y", "3y", "5y"}
+    if period not in ALLOWED_PERIODS:
+        period = "2y"
 
-    cache_key        = f"fintiq:pspectrum:{ticker}"
+    cache_key        = f"fintiq:pspectrum:{ticker}:{period}"
     cached, cached_at = _kv_get(cache_key)
     if cached and time.time() - cached_at < 4 * 3600:
         return cached
 
     try:
-        result = _compute_price_spectrum(ticker)
+        result = _compute_price_spectrum(ticker, period=period)
     except HTTPException:
         raise
     except Exception as e:
