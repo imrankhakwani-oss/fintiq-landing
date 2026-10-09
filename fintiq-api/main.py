@@ -5499,21 +5499,66 @@ def _compute_portfolio(tickers: list[str], period: str, allow_shorts: bool, rf: 
             "annualised_vol":    round(float(np.sqrt(cov_ann.loc[t, t])), 6),
         }
 
+    # ── 6. Ticker names + sectors (parallel yfinance info fetch) ─────────────
+    _ETF_META = {
+        "VOO":("Vanguard S&P 500 ETF","Broad Market ETF"),"SPY":("SPDR S&P 500 ETF","Broad Market ETF"),
+        "VTI":("Vanguard Total Market ETF","Broad Market ETF"),"IWM":("iShares Russell 2000 ETF","Broad Market ETF"),
+        "QQQ":("Invesco Nasdaq-100 ETF","Technology ETF"),"XLK":("Technology Select ETF","Technology ETF"),
+        "SMH":("VanEck Semiconductors ETF","Technology ETF"),"SOXX":("iShares Semiconductor ETF","Technology ETF"),
+        "ARKK":("ARK Innovation ETF","Innovation ETF"),"ARKW":("ARK Next Gen ETF","Innovation ETF"),
+        "XLF":("Financials Select ETF","Financials ETF"),"KRE":("Regional Banks ETF","Financials ETF"),
+        "XLV":("Healthcare Select ETF","Healthcare ETF"),"IBB":("iShares Biotech ETF","Healthcare ETF"),
+        "XLE":("Energy Select ETF","Energy ETF"),"USO":("US Oil Fund","Energy ETF"),
+        "XLU":("Utilities Select ETF","Utilities ETF"),"XLP":("Consumer Staples ETF","Consumer Defensive ETF"),
+        "XLY":("Consumer Discretionary ETF","Consumer Cyclical ETF"),
+        "VNQ":("Vanguard Real Estate ETF","Real Estate ETF"),"IYR":("iShares Real Estate ETF","Real Estate ETF"),
+        "TLT":("iShares 20yr Treasury ETF","Fixed Income"),"IEF":("iShares 10yr Treasury ETF","Fixed Income"),
+        "AGG":("iShares Core Bond ETF","Fixed Income"),"BND":("Vanguard Total Bond ETF","Fixed Income"),
+        "LQD":("iShares Corp Bond ETF","Fixed Income"),"HYG":("iShares High Yield ETF","Fixed Income"),
+        "SHY":("iShares 1-3yr Treasury ETF","Fixed Income"),
+        "GLD":("SPDR Gold ETF","Commodities"),"SLV":("iShares Silver ETF","Commodities"),
+        "PDBC":("Invesco Commodities ETF","Commodities"),
+        "VEA":("Vanguard Developed Markets ETF","International ETF"),
+        "VWO":("Vanguard Emerging Markets ETF","International ETF"),
+        "EFA":("iShares MSCI EAFE ETF","International ETF"),
+        "VYM":("Vanguard High Dividend ETF","Dividend ETF"),"SCHD":("Schwab Dividend ETF","Dividend ETF"),
+        "DVY":("iShares Dividend ETF","Dividend ETF"),
+    }
+    def _fetch_one_meta(t):
+        if t in _ETF_META:
+            return t, _ETF_META[t]
+        try:
+            info   = yf.Ticker(t).info
+            name   = info.get("shortName") or info.get("longName") or t
+            sector = info.get("sector") or "Other"
+            return t, (name, sector)
+        except Exception:
+            return t, (t, "Other")
+
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    ticker_names, ticker_sectors = {}, {}
+    with _TPE(max_workers=6) as ex:
+        for t, (nm, sec) in ex.map(_fetch_one_meta, valid):
+            ticker_names[t]   = nm
+            ticker_sectors[t] = sec
+
     return {
-        "tickers":       valid,
-        "period":        period,
-        "allow_shorts":  allow_shorts,
-        "frontier":      {"vols": frontier_vols, "rets": frontier_rets},
-        "max_sharpe":    {"weights": {t: round(float(w_sharpe[i]), 6) for i, t in enumerate(valid)},
-                          "metrics": metrics_sharpe},
-        "min_vol":       {"weights": {t: round(float(w_minvol[i]), 6) for i, t in enumerate(valid)},
-                          "metrics": metrics_minvol},
-        "equal_weight":  {"weights": {t: round(1/n, 6) for t in valid},
-                          "metrics": metrics_ew},
-        "benchmark_spy": spy_metrics,
-        "correlation":   corr,
-        "ticker_stats":  ticker_stats,
-        "computed_at":   time.time(),
+        "tickers":        valid,
+        "period":         period,
+        "allow_shorts":   allow_shorts,
+        "frontier":       {"vols": frontier_vols, "rets": frontier_rets},
+        "max_sharpe":     {"weights": {t: round(float(w_sharpe[i]), 6) for i, t in enumerate(valid)},
+                           "metrics": metrics_sharpe},
+        "min_vol":        {"weights": {t: round(float(w_minvol[i]), 6) for i, t in enumerate(valid)},
+                           "metrics": metrics_minvol},
+        "equal_weight":   {"weights": {t: round(1/n, 6) for t in valid},
+                           "metrics": metrics_ew},
+        "benchmark_spy":  spy_metrics,
+        "correlation":    corr,
+        "ticker_stats":   ticker_stats,
+        "ticker_names":   ticker_names,
+        "ticker_sectors": ticker_sectors,
+        "computed_at":    time.time(),
     }
 
 
