@@ -961,6 +961,204 @@ def _bg_regenerate():
     finally:
         _bulletin_refreshing = False
 
+# ══════════════════════════════════════════════════════════════════════════════
+# PRICE SPECTRUM — GARCH(1,1) + Student-t + Jump-Diffusion Monte Carlo
+# ══════════════════════════════════════════════════════════════════════════════
+
+import numpy as np
+from scipy import stats as _stats, optimize as _optimize
+
+def _fit_garch11(r: np.ndarray):
+    """MLE fit of GARCH(1,1) on demeaned log returns.
+    Returns (omega, alpha, beta, h_last) — all float."""
+    r = r - r.mean()
+    T    = len(r)
+    var0 = float(np.var(r))
+
+    def neg_ll(params):
+        omega, alpha, beta = params
+        if omega <= 0 or alpha < 0 or beta < 0 or alpha + beta >= 0.9999:
+            return 1e10
+        h = np.empty(T)
+        h[0] = var0
+        for t in range(1, T):
+            h[t] = omega + alpha * r[t-1]**2 + beta * h[t-1]
+        h = np.maximum(h, 1e-14)
+        return 0.5 * float(np.sum(np.log(h) + r**2 / h))
+
+    x0     = [var0 * 0.05, 0.08, 0.88]
+    bounds = [(1e-12, var0), (1e-6, 0.45), (1e-6, 0.9998)]
+    res    = _optimize.minimize(neg_ll, x0, method="L-BFGS-B", bounds=bounds,
+                                options={"maxiter": 600, "ftol": 1e-12})
+    omega, alpha, beta = res.x if res.success else x0
+    # propagate to get h at end of sample
+    h = var0
+    for rv in r:
+        h = omega + alpha * rv**2 + beta * h
+    return float(omega), float(alpha), float(beta), float(h)
+
+
+def _compute_price_spectrum(ticker: str) -> dict:
+    tkr  = yf.Ticker(ticker)
+    hist = tkr.history(period="2y")
+    if len(hist) < 63:
+        raise HTTPException(400, detail=f"Not enough data for {ticker} — need at least 3 months.")
+
+    info = {}
+    try:
+        info = tkr.info or {}
+    except Exception:
+        pass
+
+    closes      = hist["Close"].values.astype(float)
+    S0          = float(closes[-1])
+    log_returns = np.diff(np.log(closes))
+    mu_daily    = float(np.mean(log_returns))
+
+    # ── GARCH(1,1) ──────────────────────────────────────────────────────────
+    try:
+        omega, alpha_g, beta_g, h_last = _fit_garch11(log_returns)
+    except Exception:
+        omega, alpha_g, beta_g = float(np.var(log_returns)) * 0.05, 0.08, 0.88
+        h_last = float(np.var(log_returns))
+
+    # ── Student-t tail fit ───────────────────────────────────────────────────
+    try:
+        df_t, _, _ = _stats.t.fit(log_returns, floc=mu_daily)
+        df_t = float(np.clip(df_t, 2.5, 30.0))
+    except Exception:
+        df_t = 5.0
+
+    # ── Jump detection (|r - μ| > 2.5 σ) ────────────────────────────────────
+    sigma_hist  = float(np.std(log_returns))
+    demeaned    = log_returns - mu_daily
+    jump_mask   = np.abs(demeaned) > 2.5 * sigma_hist
+    jump_days   = demeaned[jump_mask]
+    n_years     = len(log_returns) / 252.0
+    lambda_ann  = float(len(jump_days) / n_years) if n_years > 0 else 0.0
+    jmp_mean    = float(np.mean(jump_days))    if len(jump_days) > 1 else 0.0
+    jmp_std     = float(np.std(jump_days))     if len(jump_days) > 1 else sigma_hist * 2
+
+    # ── Volatility regime ────────────────────────────────────────────────────
+    vol_20d  = float(np.std(log_returns[-20:]) * np.sqrt(252))
+    vol_252d = float(np.std(log_returns)        * np.sqrt(252))
+    ratio    = vol_20d / max(vol_252d, 0.001)
+    if ratio < 0.75:
+        regime, regime_label, regime_color = "calm",     "🟢 Calm",     "#22c55e"
+    elif ratio < 1.35:
+        regime, regime_label, regime_color = "normal",   "🟡 Normal",   "#F59E0B"
+    else:
+        regime, regime_label, regime_color = "elevated", "🔴 Elevated", "#ef4444"
+
+    # ── Monte Carlo ──────────────────────────────────────────────────────────
+    N_SIMS  = 5000
+    N_DAYS  = 252
+    rng     = np.random.default_rng(42)
+
+    # paths[t] = price of each simulation on day t
+    paths = np.zeros((N_DAYS + 1, N_SIMS))
+    paths[0] = S0
+    h         = np.full(N_SIMS, h_last)
+    prev_innov = np.zeros(N_SIMS)
+    t_scale   = np.sqrt((df_t - 2) / df_t) if df_t > 2 else 1.0
+
+    for t in range(1, N_DAYS + 1):
+        h      = np.maximum(omega + alpha_g * prev_innov**2 + beta_g * h, 1e-14)
+        sigma  = np.sqrt(h)
+        z      = rng.standard_t(df=df_t, size=N_SIMS) * t_scale
+        innov  = sigma * z
+        ret    = mu_daily + innov
+        # jumps
+        n_j    = rng.poisson(lambda_ann / 252.0, N_SIMS)
+        ret   += np.where(n_j > 0,
+                          rng.normal(jmp_mean, jmp_std, N_SIMS) * np.minimum(n_j, 3),
+                          0.0)
+        paths[t]   = paths[t - 1] * np.exp(ret)
+        prev_innov = innov
+
+    # ── Per-horizon stats ────────────────────────────────────────────────────
+    HZ = {"1d": 1, "1w": 5, "1m": 21, "3m": 63, "6m": 126, "1y": 252}
+    HZ_LABEL = {"1d": "Tomorrow", "1w": "1 Week", "1m": "1 Month",
+                "3m": "3 Months", "6m": "6 Months", "1y": "1 Year"}
+    horizons = {}
+    for key, d in HZ.items():
+        ep  = paths[d]
+        ret = (ep - S0) / S0
+        pct = {f"p{p}": round(float(np.percentile(ep, p)), 4)
+               for p in [1, 5, 10, 25, 50, 75, 90, 95, 99]}
+        horizons[key] = {
+            "label":        HZ_LABEL[key],
+            "trading_days": d,
+            "percentiles":  pct,
+            "prob_above":   round(float(np.mean(ep > S0)), 4),
+            "prob_below":   round(float(np.mean(ep < S0)), 4),
+            "prob_up5":     round(float(np.mean(ret >  0.05)), 4),
+            "prob_up10":    round(float(np.mean(ret >  0.10)), 4),
+            "prob_up20":    round(float(np.mean(ret >  0.20)), 4),
+            "prob_down5":   round(float(np.mean(ret < -0.05)), 4),
+            "prob_down10":  round(float(np.mean(ret < -0.10)), 4),
+            "prob_down20":  round(float(np.mean(ret < -0.20)), 4),
+            "expected_move_1s": round(float(np.std(ret) * 100), 2),
+        }
+
+    # ── Fan chart (every 5 trading days) ────────────────────────────────────
+    fan_days = list(range(0, N_DAYS + 1, 5))
+    fan = {
+        "days": fan_days,
+        **{f"p{p}": [round(float(np.percentile(paths[d], p)), 4) for d in fan_days]
+           for p in [5, 10, 25, 50, 75, 90, 95]},
+    }
+
+    return {
+        "ticker":             ticker,
+        "company_name":       info.get("shortName") or info.get("longName") or ticker,
+        "current_price":      round(S0, 4),
+        "currency":           info.get("currency", "USD"),
+        "vol_regime":         regime,
+        "vol_regime_label":   regime_label,
+        "vol_regime_color":   regime_color,
+        "vol_current_annual": round(vol_20d,  4),
+        "vol_longrun_annual": round(vol_252d, 4),
+        "garch_alpha":        round(alpha_g,  4),
+        "garch_beta":         round(beta_g,   4),
+        "garch_persistence":  round(alpha_g + beta_g, 4),
+        "jump_lambda_annual": round(lambda_ann, 2),
+        "jump_mean_pct":      round(jmp_mean * 100, 2),
+        "jump_std_pct":       round(jmp_std  * 100, 2),
+        "student_t_df":       round(df_t, 2),
+        "n_simulations":      N_SIMS,
+        "horizons":           horizons,
+        "fan_chart":          fan,
+        "computed_at":        time.time(),
+    }
+
+
+@app.get("/price-spectrum")
+def get_price_spectrum(ticker: str):
+    """
+    GARCH(1,1) + Student-t + Jump-Diffusion Monte Carlo for a single ticker.
+    Per-ticker cached in Upstash Redis for 4 hours.
+    """
+    ticker = ticker.upper().strip()
+    if not ticker or len(ticker) > 10:
+        raise HTTPException(400, detail="Invalid ticker symbol.")
+
+    cache_key        = f"fintiq:pspectrum:{ticker}"
+    cached, cached_at = _kv_get(cache_key)
+    if cached and time.time() - cached_at < 4 * 3600:
+        return cached
+
+    try:
+        result = _compute_price_spectrum(ticker)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, detail=f"Simulation failed: {str(e)}")
+
+    _kv_set(cache_key, result, ttl_seconds=14400)
+    return result
+
+
 @app.on_event("startup")
 async def startup_prewarm():
     """On Railway startup: restore caches from Redis → /tmp → regenerate as fallback."""
