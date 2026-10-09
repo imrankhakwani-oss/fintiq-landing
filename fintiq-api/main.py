@@ -30,6 +30,54 @@ TAVILY_API_KEY    = os.environ.get("TAVILY_API_KEY", "")
 FRED_API_KEY      = os.environ.get("FRED_API_KEY", "")
 FRED_BASE         = "https://api.stlouisfed.org/fred/series/observations"
 
+# ── Upstash Redis — persistent KV cache (survives Railway cold starts) ─────────
+# Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Railway env vars.
+# If not configured the code falls back to in-memory /tmp only (original behaviour).
+_UPSTASH_URL   = os.environ.get("UPSTASH_REDIS_REST_URL", "").rstrip("/")
+_UPSTASH_TOKEN = os.environ.get("UPSTASH_REDIS_REST_TOKEN", "")
+_UPSTASH_OK    = bool(_UPSTASH_URL and _UPSTASH_TOKEN)
+
+def _kv_get(key: str):
+    """Fetch a JSON blob from Upstash Redis.
+    Returns (data_dict, saved_at_float) or (None, 0) if missing / not configured."""
+    if not _UPSTASH_OK:
+        return None, 0
+    try:
+        r = requests.get(
+            f"{_UPSTASH_URL}/get/{key}",
+            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
+            timeout=5,
+        )
+        if r.status_code != 200:
+            return None, 0
+        raw = r.json().get("result")
+        if raw is None:
+            return None, 0
+        blob = json.loads(raw)
+        saved_at = float(blob.pop("_kv_saved_at", 0))
+        return blob, saved_at
+    except Exception:
+        return None, 0
+
+def _kv_set(key: str, data: dict, ttl_seconds: int = 90000):
+    """Store a JSON blob in Upstash Redis with a TTL (default 25 h).
+    Fire-and-forget — failure is silent so it never breaks the request path."""
+    if not _UPSTASH_OK:
+        return
+    def _push():
+        try:
+            blob = json.dumps({**data, "_kv_saved_at": time.time()})
+            requests.post(
+                f"{_UPSTASH_URL}/set/{key}",
+                headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}",
+                         "Content-Type": "application/json"},
+                json={"value": blob, "ex": ttl_seconds},
+                timeout=8,
+            )
+        except Exception:
+            pass
+    threading.Thread(target=_push, daemon=True).start()
+
 # ── FastAPI ────────────────────────────────────────────────────────────────────
 app = FastAPI(title="Fintiq API", version="1.2.0")
 app.add_middleware(
@@ -870,6 +918,7 @@ def _bg_refresh_pair_signals():
         result = _compute_pair_signals()
         _pair_signals_cache     = result
         _pair_signals_cached_at = time.time()
+        _kv_set("fintiq:pair_signals", result, ttl_seconds=50400)  # 14 h TTL in Redis
     except Exception:
         pass
     finally:
@@ -905,7 +954,8 @@ def _bg_regenerate():
         fresh = _generate_bulletin()
         _bulletin_cache = fresh
         _bulletin_cached_at = time.time()
-        _save_bulletin_to_disk(fresh)  # persist so /tmp survives Railway reruns
+        _save_bulletin_to_disk(fresh)           # /tmp — survives within same container
+        _kv_set("fintiq:bulletin", fresh, ttl_seconds=90000)  # Redis — survives cold starts
     except Exception:
         pass
     finally:
@@ -913,27 +963,68 @@ def _bg_regenerate():
 
 @app.on_event("startup")
 async def startup_prewarm():
-    """On Railway startup: restore /tmp caches, pre-warm anything missing or stale."""
+    """On Railway startup: restore caches from Redis → /tmp → regenerate as fallback."""
     global _bulletin_cache, _bulletin_cached_at
     global _earnings_cache, _earnings_cached_at
+    global _fintiq_portfolios_cache, _fintiq_portfolios_cached_at
+    global _pair_signals_cache, _pair_signals_cached_at
 
-    # ── Bulletin ──
-    disk_data, disk_saved_at = _load_bulletin_from_disk()
-    if disk_data:
-        _bulletin_cache = disk_data
-        _bulletin_cached_at = disk_saved_at
-        if time.time() - disk_saved_at >= _BULLETIN_TTL:
+    # ── Bulletin: Redis first, then /tmp disk, then regenerate ──────────────────
+    redis_bulletin, redis_bulletin_at = _kv_get("fintiq:bulletin")
+    if redis_bulletin:
+        _bulletin_cache     = redis_bulletin
+        _bulletin_cached_at = redis_bulletin_at
+        if time.time() - redis_bulletin_at >= _BULLETIN_TTL:
             threading.Thread(target=_bg_regenerate, daemon=True).start()
     else:
-        threading.Thread(target=_bg_regenerate, daemon=True).start()
+        disk_data, disk_saved_at = _load_bulletin_from_disk()
+        if disk_data:
+            _bulletin_cache     = disk_data
+            _bulletin_cached_at = disk_saved_at
+            if time.time() - disk_saved_at >= _BULLETIN_TTL:
+                threading.Thread(target=_bg_regenerate, daemon=True).start()
+        else:
+            threading.Thread(target=_bg_regenerate, daemon=True).start()
 
-    # ── Earnings: restore all 4 indices from disk ──
+    # ── Pair signals: Redis first, then /tmp, then background compute ────────────
+    redis_pairs, redis_pairs_at = _kv_get("fintiq:pair_signals")
+    if redis_pairs:
+        _pair_signals_cache     = redis_pairs
+        _pair_signals_cached_at = redis_pairs_at
+        if time.time() - redis_pairs_at >= _PAIR_SIGNALS_TTL:
+            def _deferred_pairs():
+                time.sleep(5)
+                _bg_refresh_pair_signals()
+            threading.Thread(target=_deferred_pairs, daemon=True).start()
+    else:
+        def _deferred_pair_signals():
+            time.sleep(5)
+            _bg_refresh_pair_signals()
+        threading.Thread(target=_deferred_pair_signals, daemon=True).start()
+
+    # ── Fintiq portfolios: Redis first, then background compute ──────────────────
+    redis_fp, redis_fp_at = _kv_get("fintiq:portfolios")
+    if redis_fp:
+        _fintiq_portfolios_cache     = redis_fp
+        _fintiq_portfolios_cached_at = redis_fp_at
+        if time.time() - redis_fp_at >= _FINTIQ_PORTFOLIOS_TTL:
+            def _deferred_fp():
+                time.sleep(10)
+                _bg_refresh_fintiq_portfolios()
+            threading.Thread(target=_deferred_fp, daemon=True).start()
+    else:
+        # No Redis cache — compute in background (staggered to not compete with bulletin)
+        def _deferred_fp_cold():
+            time.sleep(15)
+            _bg_refresh_fintiq_portfolios()
+        threading.Thread(target=_deferred_fp_cold, daemon=True).start()
+
+    # ── Earnings: restore all 4 indices from disk ──────────────────────────────
     for idx in _INDEX_TICKERS:
         data, saved_at = _load_earnings_from_disk(idx)
         if data:
-            _earnings_cache[idx] = data
+            _earnings_cache[idx]     = data
             _earnings_cached_at[idx] = saved_at
-            # Stale → background refresh (stagger by 30s to avoid hammering yfinance)
             if time.time() - saved_at >= _EARNINGS_TTL:
                 delay = list(_INDEX_TICKERS.keys()).index(idx) * 30
                 def _deferred(i=idx, d=delay):
@@ -941,18 +1032,11 @@ async def startup_prewarm():
                     _bg_refresh_earnings(i)
                 threading.Thread(target=_deferred, daemon=True).start()
         else:
-            # No disk cache — pre-warm S&P 500 first (most used), others staggered
             delay = list(_INDEX_TICKERS.keys()).index(idx) * 60
             def _deferred_fresh(i=idx, d=delay):
                 time.sleep(d)
                 _bg_refresh_earnings(i)
             threading.Thread(target=_deferred_fresh, daemon=True).start()
-
-    # ── Pair signals: pre-warm on startup (staggered 5s to not compete with bulletin) ──
-    def _deferred_pair_signals():
-        time.sleep(5)
-        _bg_refresh_pair_signals()
-    threading.Thread(target=_deferred_pair_signals, daemon=True).start()
 
 @app.get("/bulletin")
 def get_bulletin():
@@ -5500,8 +5584,9 @@ def _bg_refresh_fintiq_portfolios():
                 result[key] = {**meta, **data}
             except Exception as e:
                 result[key] = {**meta, "error": str(e)}
-        _fintiq_portfolios_cache    = result
+        _fintiq_portfolios_cache     = result
         _fintiq_portfolios_cached_at = time.time()
+        _kv_set("fintiq:portfolios", result, ttl_seconds=90000)  # 25 h TTL in Redis
     except Exception:
         pass
     finally:
