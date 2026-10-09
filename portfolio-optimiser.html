@@ -343,7 +343,10 @@ function destroyChart(id){if(_ch[id]){_ch[id].destroy();delete _ch[id];}}
 
 // ── Build results ──────────────────────────────────────────────────────────
 function buildResults(data,container,currentPt,userWeights){
-  const{tickers,max_sharpe,min_vol,equal_weight,frontier,benchmark_spy,correlation,ticker_stats}=data;
+  const{tickers,max_sharpe,min_vol,equal_weight,frontier,benchmark_spy,correlation,ticker_stats,
+        ticker_names={},ticker_sectors={}}=data;
+  // Name resolver: API name → static lookup → ticker itself
+  function tN(t){return ticker_names[t]||NAMES[t]||t;}
   const sfx=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
   container.innerHTML='';
 
@@ -416,6 +419,10 @@ function buildResults(data,container,currentPt,userWeights){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
       <div class="chart-wrap sm"><canvas id="cp-${sfx}"></canvas></div>
       <div id="wt-${sfx}"></div>
+    </div>
+    <div style="margin-top:18px;border-top:1px solid rgba(255,255,255,0.06);padding-top:16px">
+      <div style="font-size:0.82rem;color:#94A3B8;margin-bottom:10px">🗂️ <strong style="color:#F1F5F9">Sector Diversification</strong> — allocation by industry under the optimal portfolio</div>
+      <div class="chart-wrap sm"><canvas id="sp-${sfx}"></canvas></div>
     </div>`;
   r2.appendChild(wc);
 
@@ -447,7 +454,7 @@ function buildResults(data,container,currentPt,userWeights){
             <td>
               <div style="display:flex;align-items:center;gap:7px">
                 <span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${C[i%C.length]};flex-shrink:0"></span>
-                <div><strong style="font-size:0.84rem">${t}</strong>${tName(t)!==t?`<div style="font-size:0.72rem;color:#64748B">${tName(t)}</div>`:''}</div>
+                <div><strong style="font-size:0.84rem">${t}</strong>${tN(t)!==t?`<div style="font-size:0.72rem;color:#64748B">${tN(t)}</div>`:''}</div>
               </div>
             </td>
             <td style="${vStyle(st.annualised_return)}">${fmtSgn(st.annualised_return)}</td>
@@ -476,9 +483,10 @@ function buildResults(data,container,currentPt,userWeights){
 
   requestAnimationFrame(()=>{
     drawFrontier(`cf-${sfx}`,`sl-${sfx}`,data,currentPt);
-    drawPie(`cp-${sfx}`,tickers,max_sharpe.weights);
-    buildWTable(`wt-${sfx}`,tickers,max_sharpe.weights);
-    buildHeatmap(`hm-${sfx}`,tickers,correlation);
+    drawPie(`cp-${sfx}`,tickers,max_sharpe.weights,ticker_names);
+    buildWTable(`wt-${sfx}`,tickers,max_sharpe.weights,ticker_names);
+    drawSectorPie(`sp-${sfx}`,tickers,max_sharpe.weights,ticker_sectors);
+    buildHeatmap(`hm-${sfx}`,tickers,correlation,ticker_names);
   });
 }
 
@@ -579,12 +587,14 @@ function buildSlider(wrapId,chartId,data){
 }
 
 // Pie chart
-function drawPie(canvasId,tickers,weights){
+function drawPie(canvasId,tickers,weights,names){
+  names=names||{};
+  function rN(t){return names[t]||tName(t);}
   const ctx=document.getElementById(canvasId);if(!ctx)return;
   destroyChart(canvasId);
   const labels=tickers.filter(t=>(weights[t]||0)>0.001);
   const vals=labels.map(t=>+(weights[t]*100).toFixed(2));
-  const displayLabels=labels.map(t=>tName(t)!==t?`${t} — ${tName(t)}`:t);
+  const displayLabels=labels.map(t=>rN(t)!==t?`${t} — ${rN(t)}`:t);
   _ch[canvasId]=new Chart(ctx,{
     type:'doughnut',
     data:{labels:displayLabels,datasets:[{data:vals,backgroundColor:labels.map((_,i)=>C[i%C.length]),borderWidth:2,borderColor:'#0F2337',hoverOffset:6}]},
@@ -599,12 +609,13 @@ function drawPie(canvasId,tickers,weights){
   });
 }
 
-function buildWTable(wrapId,tickers,weights){
+function buildWTable(wrapId,tickers,weights,names){
+  names=names||{};
   const wrap=document.getElementById(wrapId);if(!wrap)return;
   const sorted=[...tickers].sort((a,b)=>(weights[b]||0)-(weights[a]||0));
   wrap.innerHTML=`<table class="wtbl"><thead><tr><th>Ticker</th><th>Weight</th></tr></thead><tbody>
     ${sorted.map((t,i)=>{const w=weights[t]||0;if(w<0.001)return'';
-      const name=tName(t);
+      const name=names[t]||tName(t);
       return`<tr><td>
         <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${C[i%C.length]};margin-right:6px"></span>
         <strong>${t}</strong>${name!==t?` <span style="color:#64748B;font-size:0.77em">${name}</span>`:''}
@@ -616,23 +627,65 @@ function buildWTable(wrapId,tickers,weights){
   </tbody></table>`;
 }
 
-function buildHeatmap(wrapId,tickers,corr){
+function buildHeatmap(wrapId,tickers,corr,names){
+  names=names||{};
+  function rN(t){return names[t]||tName(t);}
   const wrap=document.getElementById(wrapId);if(!wrap)return;
   function bg(v){
-    if(v>=0.9)return'rgba(239,68,68,0.55)';if(v>=0.7)return'rgba(249,115,22,0.38)';
-    if(v>=0.4)return'rgba(245,158,11,0.2)';if(v>=0.1)return'rgba(255,255,255,0.04)';
-    if(v>=-0.1)return'rgba(255,255,255,0.02)';if(v>=-0.4)return'rgba(59,130,246,0.18)';
-    return'rgba(59,130,246,0.45)';
+    if(v>=0.9)return'rgba(239,68,68,0.80)';if(v>=0.7)return'rgba(249,115,22,0.65)';
+    if(v>=0.4)return'rgba(245,158,11,0.45)';if(v>=0.1)return'rgba(255,255,255,0.12)';
+    if(v>=-0.1)return'rgba(255,255,255,0.04)';if(v>=-0.4)return'rgba(59,130,246,0.35)';
+    return'rgba(59,130,246,0.65)';
   }
-  let html=`<table class="hm-tbl"><thead><tr><th></th>${tickers.map(t=>`<th title="${tName(t)}">${t}</th>`).join('')}</tr></thead><tbody>`;
+  let html=`<table class="hm-tbl"><thead><tr><th></th>${tickers.map(t=>`<th title="${rN(t)}">${t}</th>`).join('')}</tr></thead><tbody>`;
   tickers.forEach((t,i)=>{
-    html+=`<tr><th style="text-align:right;color:#64748B" title="${tName(t)}">${t}</th>`;
+    html+=`<tr><th style="text-align:right;color:#64748B" title="${rN(t)}">${t}</th>`;
     tickers.forEach((_,j)=>{const v=corr[i][j];const d=i===j;
       html+=`<td style="background:${d?'rgba(245,158,11,0.18)':bg(v)};color:${d?'#F59E0B':'#F1F5F9'};font-weight:${d?700:400}">${v.toFixed(2)}</td>`;
     });
     html+='</tr>';
   });
   html+='</tbody></table>';wrap.innerHTML=html;
+}
+
+// Sector doughnut
+const SECTOR_COLORS={
+  'Technology':'#3B82F6','Healthcare':'#22c55e','Financials':'#F59E0B',
+  'Communication Services':'#06B6D4','Consumer Defensive':'#A855F7',
+  'Consumer Cyclical':'#F97316','Energy':'#EF4444','Real Estate':'#FBBF24',
+  'Utilities':'#4ADE80','Industrials':'#94A3B8',
+  'Fixed Income':'#14B8A6','Commodities':'#EAB308',
+  'Broad Market ETF':'#64748B','Technology ETF':'#3B82F6',
+  'International ETF':'#6366F1','Dividend ETF':'#A3E635',
+  'Innovation ETF':'#F472B6','Financials ETF':'#F59E0B',
+  'Healthcare ETF':'#22c55e','Energy ETF':'#EF4444',
+  'Consumer Defensive ETF':'#A855F7','Consumer Cyclical ETF':'#F97316',
+  'Real Estate ETF':'#FBBF24','Other':'#475569'
+};
+function drawSectorPie(canvasId,tickers,weights,sectors){
+  const ctx=document.getElementById(canvasId);if(!ctx)return;
+  destroyChart(canvasId);
+  const sectorMap={};
+  tickers.forEach(t=>{
+    const w=weights[t]||0;if(w<0.001)return;
+    const s=sectors[t]||'Other';
+    sectorMap[s]=(sectorMap[s]||0)+w;
+  });
+  const labels=Object.keys(sectorMap).sort((a,b)=>sectorMap[b]-sectorMap[a]);
+  const vals=labels.map(s=>+(sectorMap[s]*100).toFixed(2));
+  const colors=labels.map(s=>SECTOR_COLORS[s]||'#475569');
+  _ch[canvasId]=new Chart(ctx,{
+    type:'doughnut',
+    data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:2,borderColor:'#0F2337',hoverOffset:6}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{labels:{color:'#94A3B8',font:{size:10},boxWidth:10},position:'right'},
+        tooltip:{callbacks:{label:p=>`${p.label}: ${p.parsed.toFixed(1)}%`}},
+      },
+      cutout:'48%',
+    }
+  });
 }
 
 // ── Watchlist ─────────────────────────────────────────────────────────────
