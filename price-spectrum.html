@@ -39,13 +39,21 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .pill{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.18);border-radius:20px;padding:4px 13px;font-size:0.73rem;color:#94A3B8}
 
 /* ── SEARCH ── */
-.search-wrap{max-width:600px;margin:0 auto 36px;padding:0 24px}
+.search-wrap{max-width:660px;margin:0 auto 36px;padding:0 24px}
 .search-box{display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,0.25);border-radius:14px;padding:8px 8px 8px 20px}
 .search-box input{flex:1;background:transparent;border:none;outline:none;color:#F1F5F9;font-size:1.05rem;font-family:'Inter',sans-serif;min-width:0}
 .search-box input::placeholder{color:#475569}
 .search-btn{background:#F59E0B;color:#0A1628;border:none;border-radius:10px;padding:11px 26px;font-size:0.92rem;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;transition:opacity .2s}
 .search-btn:hover{opacity:.88}
 .search-btn:disabled{opacity:.5;cursor:wait}
+/* ── PERIOD SELECTOR ── */
+.period-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+.period-lbl{font-size:0.75rem;color:#64748B;font-weight:600;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+.period-btns{display:flex;gap:6px;flex-wrap:wrap}
+.period-btn{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:5px 13px;font-size:0.78rem;font-weight:600;color:#94A3B8;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.period-btn:hover{border-color:rgba(245,158,11,0.4);color:#F59E0B}
+.period-btn.active{background:rgba(245,158,11,0.12);border-color:#F59E0B;color:#F59E0B}
+.period-hint{font-size:0.7rem;color:#334155;margin-left:4px}
 
 /* ── MAIN ── */
 .main{max-width:1100px;margin:0 auto;padding:0 24px 80px}
@@ -210,6 +218,17 @@ document.getElementById('navHamburger').addEventListener('click',function(){
            autocomplete="off" autocapitalize="characters" spellcheck="false">
     <button class="search-btn" id="runBtn" onclick="runSpectrum()">Simulate →</button>
   </div>
+  <div class="period-row">
+    <span class="period-lbl">History window:</span>
+    <div class="period-btns">
+      <button class="period-btn" data-period="6mo" onclick="setPeriod('6mo',this)">6 Months</button>
+      <button class="period-btn" data-period="1y"  onclick="setPeriod('1y',this)">1 Year</button>
+      <button class="period-btn active" data-period="2y" onclick="setPeriod('2y',this)">2 Years ✓</button>
+      <button class="period-btn" data-period="3y"  onclick="setPeriod('3y',this)">3 Years</button>
+      <button class="period-btn" data-period="5y"  onclick="setPeriod('5y',this)">5 Years</button>
+    </div>
+    <span class="period-hint">How much past data the model is trained on</span>
+  </div>
 </div>
 
 <!-- RESULTS -->
@@ -250,8 +269,26 @@ document.getElementById('navHamburger').addEventListener('click',function(){
 
 <script>
 const API = 'https://api.fintiq.uk';
-let _chart = null;
-let _data  = null;
+let _chart  = null;
+let _data   = null;
+let _period = '2y';
+
+// ── Period selector ──
+function setPeriod(p, el){
+  _period = p;
+  document.querySelectorAll('.period-btn').forEach(b => {
+    b.classList.remove('active');
+    b.textContent = b.dataset.period === '6mo' ? '6 Months'
+                  : b.dataset.period === '1y'  ? '1 Year'
+                  : b.dataset.period === '2y'  ? '2 Years'
+                  : b.dataset.period === '3y'  ? '3 Years'
+                  : '5 Years';
+  });
+  el.classList.add('active');
+  el.textContent = el.textContent + ' ✓';
+  // Re-run with new period if we already have a ticker loaded
+  if (_data) runSpectrum();
+}
 
 // ── Keyboard shortcut ──
 document.getElementById('tickerInput').addEventListener('keydown', e => {
@@ -285,10 +322,10 @@ async function runSpectrum(){
   btn.disabled = true; btn.textContent = 'Computing…';
 
   const out = document.getElementById('results');
-  out.innerHTML = `<div class="state-box"><div class="spinner"></div><p>Running 5,000 Monte Carlo paths for <strong>${ticker}</strong>…<br><span style="font-size:0.78rem;color:#475569">Fitting GARCH volatility · estimating jump risk · simulating price paths</span></p></div>`;
+  out.innerHTML = `<div class="state-box"><div class="spinner"></div><p>Running 5,000 Monte Carlo paths for <strong>${ticker}</strong>…<br><span style="font-size:0.78rem;color:#475569">Fitting GARCH volatility on ${_period} of history · estimating jump risk · simulating price paths</span></p></div>`;
 
   try {
-    const resp = await fetch(`${API}/price-spectrum?ticker=${ticker}`);
+    const resp = await fetch(`${API}/price-spectrum?ticker=${ticker}&period=${_period}`);
     if (!resp.ok){
       const err = await resp.json().catch(()=>({detail:'Simulation failed'}));
       throw new Error(err.detail||'Simulation failed');
@@ -307,6 +344,7 @@ function renderResults(d){
   const out = document.getElementById('results');
 
   // ── Info bar ──
+  const meanDir = d.mean_daily_return_pct >= 0 ? '+' : '';
   let infoHtml = `
     <div class="info-bar">
       <div>
@@ -325,7 +363,15 @@ function renderResults(d){
       </div>
       <div class="info-stat">
         <div class="info-stat-val">${(d.vol_longrun_annual*100).toFixed(1)}%</div>
-        <div class="info-stat-lbl">Long-Run Vol</div>
+        <div class="info-stat-lbl">Long-Run Vol (Ann.)</div>
+      </div>
+      <div class="info-stat">
+        <div class="info-stat-val" style="color:${d.mean_daily_return_pct>=0?'#22c55e':'#ef4444'}">${meanDir}${d.mean_daily_return_pct.toFixed(3)}%</div>
+        <div class="info-stat-lbl">Mean Daily Return</div>
+      </div>
+      <div class="info-stat">
+        <div class="info-stat-val">${d.std_daily_return_pct.toFixed(3)}%</div>
+        <div class="info-stat-lbl">Daily Return Std Dev</div>
       </div>
       <div class="info-stat">
         <div class="info-stat-val">${d.student_t_df.toFixed(1)}</div>
@@ -335,8 +381,9 @@ function renderResults(d){
         <div class="info-stat-val">${d.jump_lambda_annual.toFixed(1)}</div>
         <div class="info-stat-lbl">Jumps / Year</div>
       </div>
-      <div style="margin-left:auto">
+      <div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px">
         <span class="regime-badge" style="background:${d.vol_regime_color}18;border-color:${d.vol_regime_color}55;color:${d.vol_regime_color}">${d.vol_regime_label}</span>
+        <span style="font-size:0.67rem;color:#334155;text-align:right">Based on <strong style="color:#475569">${d.n_trading_days_used} trading days</strong><br>(${d.data_period_label} of history)</span>
       </div>
     </div>`;
 
@@ -668,10 +715,27 @@ function renderParams(d){
         <div class="exp-param-lbl">Avg jump size</div>
       </div>
     </div>
+    <div class="exp-params" style="margin-top:10px">
+      <div class="exp-param">
+        <div class="exp-param-val" style="color:${d.mean_daily_return_pct>=0?'#22c55e':'#ef4444'}">${d.mean_daily_return_pct>=0?'+':''}${d.mean_daily_return_pct.toFixed(3)}%</div>
+        <div class="exp-param-lbl">Mean daily return</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${d.std_daily_return_pct.toFixed(3)}%</div>
+        <div class="exp-param-lbl">Daily return std dev (σ)</div>
+      </div>
+      <div class="exp-param">
+        <div class="exp-param-val">${d.n_trading_days_used}</div>
+        <div class="exp-param-lbl">Trading days fitted on</div>
+      </div>
+    </div>
     <p style="margin-top:14px;font-size:0.78rem;color:#475569">
-      <strong style="color:#94A3B8">α+β = ${(d.garch_persistence*100).toFixed(1)}%</strong> — how long volatility shocks persist. Values near 100% mean vol is very persistent (shocks take a long time to decay).
-      Student-t df = ${d.student_t_df.toFixed(1)} — lower values mean heavier tails; df below 6 indicates significant fat-tail risk compared to a normal distribution.
-      ${d.jump_lambda_annual.toFixed(1)} detected jump events per year (moves exceeding 2.5 standard deviations).
+      All parameters fitted on <strong style="color:#94A3B8">${d.data_period_label} of daily closes</strong> (${d.n_trading_days_used} trading days).
+      Mean daily return = ${d.mean_daily_return_pct>=0?'+':''}${d.mean_daily_return_pct.toFixed(3)}% → annualised to ${(d.mean_daily_return_pct*252).toFixed(1)}%.
+      Daily σ = ${d.std_daily_return_pct.toFixed(3)}% → annualised to ${(d.std_daily_return_pct*Math.sqrt(252)).toFixed(1)}%.<br><br>
+      <strong style="color:#94A3B8">α+β = ${(d.garch_persistence*100).toFixed(1)}%</strong> — how long vol shocks persist (values near 100% = very sticky volatility).
+      Student-t df = ${d.student_t_df.toFixed(1)} — lower means heavier tails; below 6 = significant fat-tail risk vs a normal distribution.
+      ${d.jump_lambda_annual.toFixed(1)} jump events detected per year (daily moves > 2.5σ from the mean).
     </p>`;
 }
 </script>
