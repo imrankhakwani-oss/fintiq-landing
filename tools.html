@@ -100,6 +100,17 @@
       "@type": "ListItem", "position": 5,
       "item": {
         "@type": "SoftwareApplication",
+        "name": "PriceSpectrum — Stock Price Probability Simulator",
+        "description": "GARCH(1,1) + Student-t + Jump-Diffusion Monte Carlo simulator. See the full probability distribution of where any stock price could be across 6 time horizons from tomorrow to 1 year.",
+        "url": "https://fintiq.uk/price-spectrum.html",
+        "applicationCategory": "FinanceApplication",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+      }
+    },
+    {
+      "@type": "ListItem", "position": 7,
+      "item": {
+        "@type": "SoftwareApplication",
         "name": "Monte Carlo Risk Simulator",
         "description": "Simulate thousands of future stock price paths using Geometric Brownian Motion. Calculate probability of hitting your target price or stop-loss across any time horizon.",
         "url": "https://fintiq.uk/monte-carlo.html",
@@ -108,7 +119,7 @@
       }
     },
     {
-      "@type": "ListItem", "position": 6,
+      "@type": "ListItem", "position": 8,
       "item": {
         "@type": "SoftwareApplication",
         "name": "Portfolio Optimiser — Efficient Frontier",
@@ -119,7 +130,7 @@
       }
     },
     {
-      "@type": "ListItem", "position": 7,
+      "@type": "ListItem", "position": 9,
       "item": {
         "@type": "SoftwareApplication",
         "name": "Statistical Pairs Trading — Z-Score Analysis",
@@ -385,6 +396,25 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
       <a href="/monte-carlo.html" class="tool-btn">🎲 Open Simulator →</a>
     </div>
     <div class="tool-icon-big">🎲</div>
+  </div>
+
+  <!-- PRICE SPECTRUM -->
+  <div class="tool-featured" style="margin-bottom:28px;background:linear-gradient(135deg,rgba(245,158,11,0.06) 0%,rgba(15,35,55,0.5) 100%);border-color:rgba(245,158,11,0.2)">
+    <div>
+      <div class="tool-featured-tag" style="background:rgba(245,158,11,0.1);color:#F59E0B;border-color:rgba(245,158,11,0.25)">⚡ GARCH + MONTE CARLO</div>
+      <h2>📈 PriceSpectrum — Stock Price Probability Simulator</h2>
+      <p>Where could your stock be in a month? A year? PriceSpectrum runs 5,000 simulated price paths using GARCH(1,1) volatility modelling, fat-tail Student-t return distributions and jump-diffusion to model earnings gaps and macro shocks. See the full probability fan — from bear-tail to bull-tail — across 6 time horizons. The same volatility framework used in bank Value-at-Risk calculations.</p>
+      <div class="tool-features">
+        <span class="tool-feature">5,000 Monte Carlo paths</span>
+        <span class="tool-feature">GARCH(1,1) volatility clustering</span>
+        <span class="tool-feature">Fat-tail Student-t returns</span>
+        <span class="tool-feature">Jump-diffusion risk</span>
+        <span class="tool-feature">6 time horizons (1D → 1Y)</span>
+        <span class="tool-feature">Full percentile fan chart</span>
+      </div>
+      <a href="/price-spectrum.html" class="tool-btn" style="background:#F59E0B;color:#0A1628">📈 Open PriceSpectrum →</a>
+    </div>
+    <div class="tool-icon-big">📈</div>
   </div>
 
   <!-- PORTFOLIO OPTIMISER -->
