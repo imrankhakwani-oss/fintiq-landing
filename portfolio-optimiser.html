@@ -106,6 +106,15 @@ textarea.ticker-input:focus{border-color:#F59E0B}
 .frontier-explainer strong{color:#F1F5F9}
 .frontier-explainer .fe-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
 .fe-item{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.2);border-radius:7px;padding:5px 10px;font-size:0.77rem}
+/* ══ EXPANDER ══ */
+.expander{background:rgba(245,158,11,0.04);border:1px solid rgba(245,158,11,0.14);border-radius:10px;margin-top:18px;overflow:hidden}
+.expander summary{cursor:pointer;padding:12px 16px;font-size:0.82rem;font-weight:600;color:#F59E0B;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
+.expander summary::-webkit-details-marker{display:none}
+.expander summary::before{content:'▶';font-size:0.6rem;transition:transform 0.2s;opacity:0.7}
+.expander[open] summary::before{transform:rotate(90deg)}
+.expander .exp-body{padding:4px 18px 18px;font-size:0.81rem;line-height:1.7;color:#94A3B8}
+.expander .exp-body strong{color:#F1F5F9}
+.chart-wrap.xl{height:460px}
 
 /* ══ SLIDER ══ */
 .range-slider{width:100%;accent-color:#F59E0B;margin:8px 0;cursor:pointer}
@@ -345,51 +354,30 @@ function destroyChart(id){if(_ch[id]){_ch[id].destroy();delete _ch[id];}}
 function buildResults(data,container,currentPt,userWeights){
   const{tickers,max_sharpe,min_vol,equal_weight,frontier,benchmark_spy,correlation,ticker_stats,
         ticker_names={},ticker_sectors={}}=data;
-  // Name resolver: API name → static lookup → ticker itself
   function tN(t){return ticker_names[t]||NAMES[t]||t;}
   const sfx=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
   container.innerHTML='';
+  const mt='margin-top:18px';
 
-  // Row 1: Frontier + Metrics
-  const r1=document.createElement('div');r1.className='rg';r1.style.marginTop='22px';
-
-  // Frontier card
-  const fc=document.createElement('div');fc.className='card';
-  fc.innerHTML=`
-    <div class="card-title">📈 Efficient Frontier <span class="badge badge-amber">60-pt SLSQP optimised</span></div>
-    <div class="chart-wrap"><canvas id="cf-${sfx}"></canvas></div>
-    <div id="sl-${sfx}" style="margin-top:16px"></div>
-    <div class="frontier-explainer" style="margin-top:18px;margin-bottom:0">
-      <strong>What is the Efficient Frontier?</strong> The curved line is the set of all <em>mathematically optimal</em> portfolios — meaning for any level of risk (volatility) you're willing to accept, these portfolios deliver the <em>highest possible expected return</em>. No portfolio can exist above this line; any portfolio below it is "inefficient" because you could earn the same return with less risk, or more return with the same risk.<br><br>
-      <strong>How is it calculated?</strong> We use <em>mean-variance optimisation</em> — the framework pioneered by Harry Markowitz (1952 Nobel Prize). The steps are: (1) compute each asset's historical annualised return and variance from daily price data; (2) build a full <em>covariance matrix</em> — measuring how every pair of assets moves together; (3) run a constrained optimisation (SciPy SLSQP solver) 60 times, each time targeting a different level of portfolio return and minimising the resulting portfolio variance; (4) the 60 optimal {risk, return} pairs trace the curve. The <strong>gold star (★)</strong> maximises the Sharpe ratio — the most return per unit of risk taken. The <strong>green diamond (◆)</strong> sits at the leftmost point — the lowest possible volatility achievable with these assets. Portfolios to the left of the star are "sub-optimal" on a risk-adjusted basis; those to the right accept more risk for incrementally higher expected return.<br><br>
-      <strong>Why does this matter to you?</strong> It shows whether your current allocation is using its risk budget efficiently. If your portfolio sits below the curve, rebalancing can improve your expected return <em>without taking on extra risk</em>. The target-return slider lets you set a personal return goal and instantly see the minimum volatility required to achieve it — a key input for any disciplined asset allocation decision.
-      <div class="fe-row">
-        <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#F59E0B;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)"></span> ★ Max Sharpe = best risk-adjusted return</span>
-        <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;transform:rotate(45deg)"></span> ◆ Min Volatility = lowest possible risk</span>
-        <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#94A3B8;border-radius:50%"></span> Equal Weight = 1/N naive baseline</span>
-        ${currentPt?'<span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#a855f7"></span> ■ Your current portfolio</span>':''}
-      </div>
-    </div>`;
-  r1.appendChild(fc);
-
-  // Metrics card
   const ms=max_sharpe.metrics,mv=min_vol.metrics,ew=equal_weight.metrics,spy=benchmark_spy;
   const hasUser=!!userWeights;
   const uw=hasUser?userWeights.metrics:null;
-  const mc=document.createElement('div');mc.className='card';
+  const userWMap=userWeights?userWeights.rawWeights:{};
+
+  // ── Row 1: Performance Metrics ──
+  const mc=document.createElement('div');mc.className='card';mc.style.marginTop='22px';
   mc.innerHTML=`
     <div class="card-title">📊 Performance Metrics</div>
     <div class="col-explain">
-      <strong>What each column means:</strong><br>
-      <span style="color:#F59E0B">Optimal (Max Sharpe)</span> — the portfolio with the best risk-adjusted return; what the maths says you <em>should</em> hold &nbsp;·&nbsp;
-      <span style="color:#22c55e">Min Volatility</span> — the safest possible mix; lowest portfolio swings &nbsp;·&nbsp;
-      <span style="color:#94A3B8">Equal Weight</span> — a naive 1/N split, the simplest baseline &nbsp;·&nbsp;
-      ${hasUser?'<span style="color:#c084fc">Your Portfolio</span> — your current allocation &nbsp;·&nbsp; ':''}
-      <span style="color:#d97706">S&P 500</span> — can you beat the market?
+      <span style="color:#F59E0B;font-weight:600">Optimal</span> — best risk-adjusted return &nbsp;·&nbsp;
+      <span style="color:#22c55e;font-weight:600">Min Vol</span> — lowest portfolio swings &nbsp;·&nbsp;
+      <span style="color:#94A3B8;font-weight:600">Equal Wt</span> — naive 1/N baseline &nbsp;·&nbsp;
+      ${hasUser?'<span style="color:#c084fc;font-weight:600">Yours</span> — your current allocation &nbsp;·&nbsp; ':''}
+      <span style="color:#d97706;font-weight:600">S&P 500</span> — market benchmark
     </div>
     <table class="perf-tbl">
       <thead><tr>
-        <th style="text-align:left;width:30%">Metric</th>
+        <th style="text-align:left;width:28%">Metric</th>
         <th class="right" style="color:#F59E0B">Optimal</th>
         <th class="right" style="color:#22c55e">Min Vol</th>
         <th class="right" style="color:#94A3B8">Equal Wt</th>
@@ -407,29 +395,37 @@ function buildResults(data,container,currentPt,userWeights){
         ${mRow('Beta','beta',ms,mv,ew,uw,spy,false,'Sensitivity to S&P 500 moves (1.0 = moves with market)')}
       </tbody>
     </table>`;
-  r1.appendChild(mc);
-  container.appendChild(r1);
+  container.appendChild(mc);
 
-  // Row 2: Weights pie + Ticker analysis
-  const r2=document.createElement('div');r2.className='rg';r2.style.marginTop='18px';
+  // ── Row 2: Efficient Frontier (big chart + collapsible explainer) ──
+  const fc=document.createElement('div');fc.className='card';fc.style.cssText=mt;
+  fc.innerHTML=`
+    <div class="card-title">📈 Efficient Frontier <span class="badge badge-amber">60-pt SLSQP optimised</span></div>
+    <div class="chart-wrap xl"><canvas id="cf-${sfx}"></canvas></div>
+    <div id="sl-${sfx}" style="margin-top:14px"></div>
+    <div class="fe-row" style="margin-top:14px">
+      <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#F59E0B;clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%)"></span> ★ Max Sharpe — best risk-adjusted return</span>
+      <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#22c55e;transform:rotate(45deg)"></span> ◆ Min Volatility — lowest possible risk</span>
+      <span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#94A3B8;border-radius:50%"></span> Equal Weight — 1/N naive baseline</span>
+      ${currentPt?'<span class="fe-item"><span style="display:inline-block;width:12px;height:12px;background:#a855f7"></span> ■ Your portfolio</span>':''}
+    </div>
+    <details class="expander">
+      <summary>📖 How is the Efficient Frontier calculated?</summary>
+      <div class="exp-body">
+        <strong>What is this curve?</strong> Every point on the line is a mathematically optimal portfolio — for any level of risk you accept, these deliver the highest possible expected return. No portfolio can sit above the line; any below it is inefficient.<br><br>
+        <strong>The maths:</strong> We use <em>mean-variance optimisation</em> (Harry Markowitz, 1952 Nobel Prize). Steps: (1) compute each asset's historical annualised return and variance; (2) build a full <em>covariance matrix</em> measuring how every pair of assets moves together; (3) run the SciPy SLSQP solver 60 times, each time targeting a different return level and minimising portfolio variance; (4) the 60 optimal {risk, return} pairs trace this curve.<br><br>
+        <strong>Why it matters:</strong> If your portfolio sits below the curve, rebalancing can improve your expected return <em>without taking extra risk</em>. The target-return slider shows the minimum volatility needed to hit any return goal — a key input for disciplined asset allocation.
+      </div>
+    </details>`;
+  container.appendChild(fc);
 
-  const wc=document.createElement('div');wc.className='card';
-  wc.innerHTML=`
-    <div class="card-title">🏆 Optimal Weights <span class="badge badge-amber">Min 3% · Max 40% per ticker</span></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start">
-      <div class="chart-wrap sm"><canvas id="cp-${sfx}"></canvas></div>
-      <div id="wt-${sfx}"></div>
-    </div>`;
-  r2.appendChild(wc);
-
-  // Ticker analysis — 4 columns: return, vol, + weight in each strategy
-  const tc=document.createElement('div');tc.className='card';
-  const userWMap=userWeights?userWeights.rawWeights:{};
+  // ── Row 3: Individual Ticker Analysis ──
+  const tc=document.createElement('div');tc.className='card';tc.style.cssText=mt;
   tc.innerHTML=`
     <div class="card-title">🔬 Individual Ticker Analysis</div>
-    <p style="color:#64748B;font-size:0.79rem;margin-bottom:12px">Shows how each ticker is allocated across all portfolio strategies. Compare the optimal weight vs the equal-weight naive approach vs what the minimum-volatility optimizer chose.</p>
+    <p style="color:#64748B;font-size:0.79rem;margin-bottom:14px">Return, volatility and allocation weight for each ticker across all three portfolio strategies.</p>
     <div style="overflow-x:auto">
-    <table class="wtbl" style="min-width:520px">
+    <table class="wtbl" style="min-width:560px">
       <thead><tr>
         <th>Ticker</th>
         <th>Ann. Return</th>
@@ -464,24 +460,32 @@ function buildResults(data,container,currentPt,userWeights){
       </tbody>
     </table>
     </div>`;
-  r2.appendChild(tc);
-  container.appendChild(r2);
+  container.appendChild(tc);
 
-  // Row 3: Sector pie + Correlation heatmap side by side
-  const r3=document.createElement('div');r3.className='rg';r3.style.marginTop='18px';
+  // ── Row 4: Allocation Pie + Sector Diversification Pie ──
+  const r4=document.createElement('div');r4.className='rg';r4.style.marginTop='18px';
+  const wc=document.createElement('div');wc.className='card';
+  wc.innerHTML=`
+    <div class="card-title">🏆 Optimal Allocation <span class="badge badge-amber">Max Sharpe weights</span></div>
+    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:12px">How the optimiser distributes capital across your tickers to maximise the Sharpe ratio.</p>
+    <div class="chart-wrap sm"><canvas id="cp-${sfx}"></canvas></div>
+    <div id="wt-${sfx}" style="margin-top:14px"></div>`;
+  r4.appendChild(wc);
   const sc=document.createElement('div');sc.className='card';
   sc.innerHTML=`
     <div class="card-title">🗂️ Sector Diversification</div>
-    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:13px">Optimal portfolio allocation broken down by sector. A well-diversified portfolio spreads across multiple industries.</p>
+    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:12px">Optimal weights grouped by industry. A truly diversified portfolio spreads across multiple sectors.</p>
     <div class="chart-wrap sm"><canvas id="sp-${sfx}"></canvas></div>`;
-  r3.appendChild(sc);
-  const cc=document.createElement('div');cc.className='card';
+  r4.appendChild(sc);
+  container.appendChild(r4);
+
+  // ── Row 5: Correlation Matrix ──
+  const cc=document.createElement('div');cc.className='card';cc.style.cssText=mt;
   cc.innerHTML=`
     <div class="card-title">🔗 Correlation Matrix <span class="badge badge-purple">Diversification map</span></div>
-    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:13px"><strong style="color:#F1F5F9">How to read this:</strong> Each cell shows how closely two assets move together. <span style="color:#ef4444">Red = high correlation</span> — move together, less diversification. <span style="color:#3b82f6">Blue = negative</span> — move opposite, great for risk reduction.</p>
+    <p style="color:#94A3B8;font-size:0.8rem;margin-bottom:13px"><strong style="color:#F1F5F9">How to read this:</strong> Each cell shows how two assets move together. <span style="color:#ef4444">Red = high positive correlation</span> — they rise and fall together (less diversification benefit). <span style="color:#3b82f6">Blue = negative correlation</span> — they move in opposite directions (excellent for risk reduction). Diagonal cells are always 1.00 (every asset correlates perfectly with itself).</p>
     <div class="hm-wrap"><div id="hm-${sfx}"></div></div>`;
-  r3.appendChild(cc);
-  container.appendChild(r3);
+  container.appendChild(cc);
 
   requestAnimationFrame(()=>{
     drawFrontier(`cf-${sfx}`,`sl-${sfx}`,data,currentPt);
