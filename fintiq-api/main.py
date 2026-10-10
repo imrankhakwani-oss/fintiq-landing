@@ -1177,6 +1177,188 @@ def get_price_spectrum(ticker: str, period: str = "2y"):
     return result
 
 
+# ── Portfolio Monte Carlo ────────────────────────────────────────────────────
+
+def _compute_portfolio_mc(tickers_list, weights_arr, start_value, monthly_contribution, horizon_years, period="3y"):
+    import pandas as _pd
+    N_SIMS   = 5000
+    N_MONTHS = horizon_years * 12
+    closes   = {}
+    names_map = {}
+
+    for t in tickers_list:
+        tkr = yf.Ticker(t)
+        h   = tkr.history(period=period)
+        if len(h) < 63:
+            raise HTTPException(400, detail=f"Not enough data for {t}. Try a longer history window.")
+        closes[t] = h["Close"]
+        try:
+            info = tkr.info or {}
+            names_map[t] = info.get("shortName") or info.get("longName") or t
+        except Exception:
+            names_map[t] = t
+
+    df_c = _pd.DataFrame(closes).dropna()
+    if len(df_c) < 63:
+        raise HTTPException(400, detail="Insufficient overlapping history. Try fewer assets or a longer window.")
+
+    log_ret  = np.log(df_c / df_c.shift(1)).dropna()
+    n_assets = len(tickers_list)
+    mu_d     = log_ret.mean().values          # (n,)
+    cov_d    = log_ret.cov().values           # (n, n)
+
+    TDM  = 21                                 # trading days per month
+    mu_m = mu_d  * TDM
+    cov_m = cov_d * TDM + np.eye(n_assets) * 1e-9   # regularised
+
+    try:
+        L = np.linalg.cholesky(cov_m)
+    except np.linalg.LinAlgError:
+        cov_m += np.eye(n_assets) * 1e-5
+        L = np.linalg.cholesky(cov_m)
+
+    rng = np.random.default_rng(42)
+    pv  = np.zeros((N_MONTHS + 1, N_SIMS))
+    pv[0] = start_value
+
+    for m in range(1, N_MONTHS + 1):
+        z  = rng.standard_normal((n_assets, N_SIMS))
+        r  = mu_m[:, None] + L @ z            # (n, N_SIMS) asset returns
+        pr = weights_arr @ r                  # (N_SIMS,) portfolio return
+        pv[m] = pv[m - 1] * np.exp(pr) + monthly_contribution
+
+    # ── Horizon stats ────────────────────────────────────────────────────────
+    horizons = {}
+    for y in [1, 3, 5, 10, 20]:
+        if y > horizon_years:
+            continue
+        m  = y * 12
+        fv = pv[m]
+        ti = start_value + monthly_contribution * m
+        med = float(np.percentile(fv, 50))
+        pct = {f"p{p}": round(float(np.percentile(fv, p)), 2)
+               for p in [5, 10, 25, 50, 75, 90, 95]}
+        horizons[f"{y}y"] = {
+            "label":          f"{y} Year{'s' if y > 1 else ''}",
+            "months":         m,
+            "total_invested": round(ti, 2),
+            "percentiles":    pct,
+            "mean_value":     round(float(np.mean(fv)), 2),
+            "prob_profit":    round(float(np.mean(fv > ti)),           4),
+            "prob_loss":      round(float(np.mean(fv < start_value)),  4),
+            "prob_1_5x":      round(float(np.mean(fv > ti * 1.5)),     4),
+            "prob_2x":        round(float(np.mean(fv > ti * 2.0)),     4),
+            "prob_3x":        round(float(np.mean(fv > ti * 3.0)),     4),
+            "cagr_median":    round((med / max(ti, 1)) ** (1 / y) - 1, 4),
+        }
+
+    # ── Fan chart ────────────────────────────────────────────────────────────
+    step = max(1, N_MONTHS // 60)
+    fan_months = list(range(0, N_MONTHS + 1, step))
+    if fan_months[-1] != N_MONTHS:
+        fan_months.append(N_MONTHS)
+    fan = {
+        "months":         fan_months,
+        "total_invested": [round(start_value + monthly_contribution * m, 2) for m in fan_months],
+        **{f"p{p}": [round(float(np.percentile(pv[m], p)), 2) for m in fan_months]
+           for p in [5, 10, 25, 50, 75, 90, 95]},
+    }
+
+    # ── Portfolio & asset metadata ───────────────────────────────────────────
+    port_vol_ann = float(np.std(log_ret.values @ weights_arr) * np.sqrt(252))
+    port_ret_ann = float((weights_arr @ mu_d) * 252)
+    corr_m       = log_ret.corr().round(3).values.tolist()
+
+    asset_stats = {
+        t: {
+            "name":          names_map[t],
+            "weight":        round(float(weights_arr[i]), 4),
+            "annual_return": round(float(mu_d[i] * 252), 4),
+            "annual_vol":    round(float(np.std(log_ret.values[:, i]) * np.sqrt(252)), 4),
+        }
+        for i, t in enumerate(tickers_list)
+    }
+
+    PERIOD_LABELS = {"6mo": "6 months", "1y": "1 year", "2y": "2 years",
+                     "3y": "3 years",   "5y": "5 years"}
+    return {
+        "tickers":                tickers_list,
+        "asset_stats":            asset_stats,
+        "correlation_matrix":     corr_m,
+        "portfolio_annual_vol":   round(port_vol_ann, 4),
+        "portfolio_annual_return": round(port_ret_ann, 4),
+        "start_value":            start_value,
+        "monthly_contribution":   monthly_contribution,
+        "horizon_years":          horizon_years,
+        "data_period":            period,
+        "data_period_label":      PERIOD_LABELS.get(period, period),
+        "n_trading_days_used":    len(log_ret),
+        "n_simulations":          N_SIMS,
+        "horizons":               horizons,
+        "fan_chart":              fan,
+        "computed_at":            time.time(),
+    }
+
+
+@app.get("/portfolio-monte-carlo")
+def get_portfolio_mc(
+    tickers: str,
+    weights: str = "",
+    start_value: float = 10000.0,
+    monthly: float   = 500.0,
+    horizon: int     = 10,
+    period: str      = "3y"
+):
+    """
+    Correlated multi-asset Monte Carlo portfolio simulator.
+    tickers = comma-separated  e.g. AAPL,MSFT,NVDA
+    weights = comma-separated  e.g. 40,30,30  (normalised server-side)
+    """
+    import hashlib as _hl
+    tickers_list = [t.strip().upper() for t in tickers.split(",") if t.strip()][:10]
+    if not tickers_list:
+        raise HTTPException(400, detail="At least one ticker required.")
+
+    if weights.strip():
+        try:
+            w_raw = [float(w.strip()) for w in weights.split(",")]
+        except Exception:
+            w_raw = [1.0] * len(tickers_list)
+    else:
+        w_raw = [1.0] * len(tickers_list)
+
+    if len(w_raw) != len(tickers_list):
+        w_raw = [1.0] * len(tickers_list)
+    total_w = sum(w_raw)
+    if total_w <= 0:
+        raise HTTPException(400, detail="Weights must sum to a positive number.")
+    weights_arr = np.array(w_raw, dtype=float) / total_w
+
+    start_value = max(1.0, float(start_value))
+    monthly     = max(0.0, float(monthly))
+    horizon     = int(max(1, min(horizon, 30)))
+    if period not in {"6mo", "1y", "2y", "3y", "5y"}:
+        period = "3y"
+
+    cache_str = (f"{','.join(tickers_list)}:{','.join(f'{w:.4f}' for w in weights_arr)}"
+                 f":{start_value:.2f}:{monthly:.2f}:{horizon}:{period}")
+    cache_key = f"fintiq:portmc:{_hl.md5(cache_str.encode()).hexdigest()[:16]}"
+
+    cached, cached_at = _kv_get(cache_key)
+    if cached and time.time() - cached_at < 4 * 3600:
+        return cached
+
+    try:
+        result = _compute_portfolio_mc(tickers_list, weights_arr, start_value, monthly, horizon, period)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, detail=f"Simulation failed: {str(e)}")
+
+    _kv_set(cache_key, result, ttl_seconds=14400)
+    return result
+
+
 @app.on_event("startup")
 async def startup_prewarm():
     """On Railway startup: restore caches from Redis → /tmp → regenerate as fallback."""
