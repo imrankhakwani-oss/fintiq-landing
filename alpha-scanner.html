@@ -89,34 +89,14 @@
     min-height: 100vh;
   }
 
-  /* ── Header ── */
-  .header {
-    background: var(--card);
-    border-bottom: 1px solid var(--border);
-    padding: 0 24px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 60px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-  .logo-mark {
-    width: 32px; height: 32px;
-    background: var(--gold);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 800; font-size: 16px; color: #000;
-  }
-  .logo-text { font-weight: 700; font-size: 18px; color: var(--text); }
-  .nav { display: flex; gap: 24px; }
-  .nav a {
-    color: var(--muted); text-decoration: none; font-size: 14px;
-    transition: color .2s;
-  }
-  .nav a:hover, .nav a.active { color: var(--text); }
+  /* ── Nav ── */
+  nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .logo{font-size:1.5rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px;text-decoration:none}
+  .nav-links{display:flex;gap:16px;align-items:center}
+  .nav-links a{color:#94A3B8;font-size:0.88rem;text-decoration:none;transition:color .2s}
+  .nav-links a:hover,.nav-links a.active{color:#F59E0B}
+  .nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#F1F5F9}
+  @media(max-width:600px){nav{padding:10px 16px}.nav-links{display:none;position:absolute;top:56px;left:0;right:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2);flex-direction:column;gap:0}.nav-links.mobile-open{display:flex}.nav-links a{padding:12px 24px;border-bottom:1px solid rgba(255,255,255,0.05)}.nav-hamburger{display:block}}
 
   /* ── Page layout ── */
   .page { max-width: 900px; margin: 0 auto; padding: 32px 20px 80px; }
@@ -415,18 +395,31 @@
 </head>
 <body>
 
-<!-- ── Header ── -->
-<header class="header">
-  <a class="logo" href="https://fintiq.uk">
-    <div class="logo-mark">F</div>
-    <span class="logo-text">Fintiq</span>
+<nav>
+  <a href="https://fintiq.uk" class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
   </a>
-  <nav class="nav">
+  <button class="nav-hamburger" id="navHamburger">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/></svg>
+  </button>
+  <div class="nav-links" id="navLinks">
     <a href="https://fintiq.uk">Home</a>
-    <a href="/tools.html">← All Tools</a>
+    <a href="/bulletin.html">Market Bulletin</a>
     <a href="/deep-dive.html">Stock Deep Dive</a>
-  </nav>
-</header>
+    <a href="/tools.html">Tools</a>
+    <a href="/learn.html">Learn</a>
+  </div>
+</nav>
+<script>document.getElementById('navHamburger').addEventListener('click',()=>document.getElementById('navLinks').classList.toggle('mobile-open'));</script>
 
 <!-- ── Page ── -->
 <main class="page">
