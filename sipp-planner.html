@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIPP Planner — Fintiq</title>
+  <meta name="description" content="Free UK SIPP planner: tax relief calculator, Monte Carlo retirement projection, and drawdown comparison. Built for self-invested pension investors." />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "SIPP Planner",
+    "description": "UK SIPP planner with tax relief calculator, Monte Carlo retirement projection, and drawdown comparison.",
+    "url": "https://fintiq.uk/sipp-planner.html",
+    "applicationCategory": "FinanceApplication",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "GBP" }
+  }
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0A1628;
+      --card: #0F1F35;
+      --border: rgba(255,255,255,0.07);
+      --amber: #F59E0B;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--bg);
+      border-bottom: 2px solid var(--amber);
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: var(--amber);
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-right: auto;
+    }
+    .nav-links { display: flex; gap: 0.25rem; }
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-links a:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-links a.active { color: var(--amber); }
+    .nav-hamburger {
+      display: none;
+      background: none;
+      border: none;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+    @media (max-width: 700px) {
+      .nav-hamburger { display: flex; align-items: center; }
+      .nav-links {
+        display: none;
+        position: absolute;
+        top: 56px; left: 0; right: 0;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+        flex-direction: column;
+        padding: 0.75rem 1rem;
+        gap: 0.25rem;
+      }
+      .nav-links.mobile-open { display: flex; }
+      .nav-links a { padding: 0.6rem 0.75rem; }
+    }
+
+    /* ── HERO ── */
+    .hero {
+      text-align: center;
+      padding: 3rem 1.5rem 2rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .hero-icon { display: inline-flex; margin-bottom: 1.25rem; }
+    .hero h1 {
+      font-size: clamp(1.8rem, 4vw, 2.5rem);
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.5px;
+    }
+    .hero h1 span { color: var(--amber); }
+    .hero p { color: var(--muted); font-size: 1rem; max-width: 520px; margin: 0 auto; }
+    .hero-tags {
+      display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem;
+    }
+    .tag {
+      background: rgba(245,158,11,0.1); color: var(--amber);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 99px; padding: 0.25rem 0.75rem;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .tag.green {
+      background: rgba(34,197,94,0.1); color: var(--green);
+      border-color: rgba(34,197,94,0.2);
+    }
+
+    /* ── LAYOUT ── */
+    .main { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem 3rem; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+    }
+    .card-title {
+      font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin-bottom: 1.25rem;
+    }
+
+    /* ── INPUT GRID ── */
+    .input-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1.25rem; margin-bottom: 1.25rem;
+    }
+    @media (max-width: 720px) { .input-grid { grid-template-columns: 1fr; } }
+
+    .input-group { margin-bottom: 1.25rem; }
+    .input-group:last-child { margin-bottom: 0; }
+
+    .input-label {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.8rem; color: var(--muted); margin-bottom: 0.5rem;
+    }
+    .input-label strong { color: var(--text); font-weight: 700; }
+
+    input[type="range"] {
+      width: 100%; height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 99px; outline: none;
+      -webkit-appearance: none; cursor: pointer;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 16px; height: 16px;
+      border-radius: 50%; background: var(--amber); cursor: pointer;
+    }
+
+    .num-input {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text); font-size: 1rem;
+      padding: 0.6rem 0.75rem; outline: none;
+      transition: border-color 0.15s;
+    }
+    .num-input:focus { border-color: var(--amber); }
+    .pfx { position: relative; }
+    .pfx::before {
+      content: '£'; position: absolute;
+      left: 0.75rem; top: 50%; transform: translateY(-50%);
+      color: var(--muted); pointer-events: none;
+    }
+    .pfx input { padding-left: 1.75rem; }
+
+    /* ── BUTTON GROUP ── */
+    .btn-group { display: flex; gap: 0.25rem; }
+    .bopt {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px; color: var(--muted);
+      cursor: pointer; font-size: 0.8rem;
+      padding: 0.5rem 0.25rem; text-align: center;
+      line-height: 1.4; transition: all 0.15s;
+    }
+    .bopt:hover { border-color: rgba(245,158,11,0.3); color: var(--text); }
+    .bopt.active { background: rgba(245,158,11,0.12); border-color: var(--amber); color: var(--amber); font-weight: 600; }
+    .bopt.active.go { background: rgba(34,197,94,0.1); border-color: var(--green); color: var(--green); }
+
+    /* ── TOGGLE ── */
+    .toggle-row {
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 0.85rem; color: var(--muted);
+    }
+    .toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .tslider {
+      position: absolute; inset: 0;
+      background: rgba(255,255,255,0.1);
+      border-radius: 99px; cursor: pointer; transition: 0.2s;
+    }
+    .tslider::before {
+      content: ''; position: absolute;
+      width: 18px; height: 18px; left: 3px; top: 3px;
+      background: white; border-radius: 50%; transition: 0.2s;
+    }
+    .toggle input:checked + .tslider { background: var(--green); }
+    .toggle input:checked + .tslider::before { transform: translateX(18px); }
+
+    /* ── RUN BUTTON ── */
+    .run-btn {
+      width: 100%; background: var(--amber); color: #0A1628;
+      border: none; border-radius: 8px;
+      font-size: 0.95rem; font-weight: 700;
+      padding: 0.9rem; cursor: pointer;
+      transition: opacity 0.15s; margin-top: 1.25rem;
+    }
+    .run-btn:hover { opacity: 0.9; }
+
+    /* ── TAX PANEL ── */
+    .tax-panel {
+      background: linear-gradient(135deg, rgba(34,197,94,0.04) 0%, rgba(245,158,11,0.04) 100%);
+      border: 1px solid rgba(34,197,94,0.15);
+      border-radius: var(--radius); padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .tax-panel-title {
+      font-size: 0.75rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin-bottom: 1rem;
+    }
+    .tax-flow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+    .tbox {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 0.65rem 0.9rem;
+      text-align: center; flex: 1; min-width: 90px;
+    }
+    .tbox .tbl { font-size: 0.68rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .tbox .tbv { font-size: 1rem; font-weight: 700; }
+    .tbox.g .tbv { color: var(--green); }
+    .tbox.a .tbv { color: var(--amber); }
+    .tax-arrow { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
+
+    .extra-relief {
+      display: none; align-items: center; justify-content: space-between;
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15);
+      border-radius: 8px; padding: 0.7rem 1rem; margin-bottom: 1rem;
+      font-size: 0.825rem;
+    }
+    .extra-relief.show { display: flex; }
+    .erv { font-weight: 700; color: var(--amber); white-space: nowrap; margin-left: 0.5rem; }
+
+    .allow-wrap { margin-top: 0.25rem; }
+    .allow-lbl { display: flex; justify-content: space-between; font-size: 0.73rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .allow-bg { background: rgba(255,255,255,0.07); border-radius: 99px; height: 6px; overflow: hidden; }
+    .allow-fill {
+      height: 100%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--green) 0%, var(--amber) 100%);
+      transition: width 0.4s ease;
+    }
+
+    /* ── NOTICE ── */
+    .notice {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 8px; padding: 0.75rem 1rem;
+      font-size: 0.8rem; margin-bottom: 1.25rem;
+    }
+    .notice strong { color: var(--amber); }
+    .notice.hidden { display: none; }
+
+    /* ── RESULTS ── */
+    .results-section { display: none; margin-top: 2rem; }
+    .results-section.visible { display: block; }
+
+    .section-heading { font-size: 1.1rem; font-weight: 700; margin: 1.75rem 0 1rem; }
+    .section-heading span { color: var(--amber); }
+
+    /* loading */
+    .loading {
+      display: none; align-items: center; justify-content: center;
+      padding: 3rem; color: var(--muted); gap: 0.75rem;
+    }
+    .loading.show { display: flex; }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.1);
+      border-top-color: var(--amber);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* chart */
+    .chart-container { position: relative; height: 340px; }
+    .chart-legend {
+      display: flex; gap: 1.25rem; justify-content: center;
+      flex-wrap: wrap; margin-top: 1rem;
+    }
+    .leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: var(--muted); }
+    .leg-line { width: 18px; height: 2.5px; border-radius: 99px; }
+
+    /* metric cards */
+    .metrics-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1rem; margin-bottom: 1.5rem;
+    }
+    @media (max-width: 600px) { .metrics-grid { grid-template-columns: 1fr; } }
+    .mcard {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem; text-align: center;
+    }
+    .mcard .ml { font-size: 0.73rem; color: var(--muted); margin-bottom: 0.4rem; }
+    .mcard .mv { font-size: 1.6rem; font-weight: 800; }
+    .mcard .ms { font-size: 0.73rem; color: var(--muted); margin-top: 0.25rem; }
+    .mcard.amber { border-color: rgba(245,158,11,0.2); }
+    .mcard.amber .mv { color: var(--amber); }
+    .mcard.green { border-color: rgba(34,197,94,0.2); }
+    .mcard.green .mv { color: var(--green); }
+    .mcard.red { border-color: rgba(239,68,68,0.2); }
+    .mcard.red .mv { color: var(--red); }
+
+    /* drawdown */
+    .dd-tabs { display: flex; gap: 0.25rem; margin-bottom: 1rem; }
+    .ddt {
+      padding: 0.5rem 1rem; border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      color: var(--muted); cursor: pointer;
+      font-size: 0.825rem; transition: all 0.15s;
+    }
+    .ddt.active { background: rgba(245,158,11,0.12); border-color: var(--amber); color: var(--amber); font-weight: 600; }
+
+    .dd-pane { display: none; }
+    .dd-pane.active { display: block; }
+
+    .dd-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 0.7rem 0; border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+    }
+    .dd-row:last-child { border-bottom: none; }
+    .dr-lbl { color: var(--muted); }
+    .dr-val { font-weight: 600; }
+    .dr-val.g { color: var(--green); }
+    .dr-val.a { color: var(--amber); }
+    .dr-val.r { color: var(--red); }
+
+    .dd-tip {
+      margin-top: 0.75rem; padding: 0.75rem 1rem;
+      background: rgba(245,158,11,0.07);
+      border-radius: 8px; font-size: 0.78rem; color: var(--muted);
+    }
+    .dd-tip strong { color: var(--amber); }
+
+    /* lifecycle */
+    .lc-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1rem; margin-bottom: 1.25rem;
+    }
+    @media (max-width: 700px) { .lc-grid { grid-template-columns: 1fr; } }
+
+    .lc-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.25rem;
+    }
+    .lc-card.here { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.03); }
+
+    .lc-badge {
+      display: inline-block; font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      padding: 0.2rem 0.5rem; border-radius: 4px;
+      background: rgba(255,255,255,0.06); color: var(--muted);
+      margin-bottom: 0.7rem;
+    }
+    .lc-card.here .lc-badge { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .lc-name { font-size: 0.9rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .lc-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.5; margin-bottom: 0.75rem; }
+    .lc-links { display: flex; flex-direction: column; gap: 0.3rem; }
+    .lc-link { font-size: 0.775rem; color: var(--green); text-decoration: none; }
+    .lc-link:hover { text-decoration: underline; }
+    .lc-link::before { content: '→ '; }
+
+    .tool-grid {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+    }
+    @media (max-width: 500px) { .tool-grid { grid-template-columns: 1fr; } }
+
+    .tool-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 10px; padding: 1rem;
+      text-decoration: none; color: var(--text);
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .tool-card:hover { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.04); }
+    .tc-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); margin-top: 0.45rem; flex-shrink: 0;
+    }
+    .tc-name { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.1rem; }
+    .tc-desc { font-size: 0.75rem; color: var(--muted); }
+
+    /* expander */
+    .expander { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .exp-toggle {
+      width: 100%; background: rgba(255,255,255,0.02);
+      border: none; color: var(--muted); cursor: pointer;
+      font-size: 0.8rem; padding: 0.75rem 1rem;
+      text-align: left; display: flex; justify-content: space-between;
+    }
+    .exp-toggle:hover { background: rgba(255,255,255,0.04); }
+    .exp-body { display: none; padding: 1rem 1.25rem; font-size: 0.825rem; color: var(--muted); line-height: 1.7; }
+    .exp-body p { margin-bottom: 0.75rem; }
+    .exp-body p:last-child { margin-bottom: 0; }
+    .exp-body.open { display: block; }
+
+    /* disclaimer */
+    .disclaimer {
+      margin-top: 1.5rem; padding: 1rem 1.25rem;
+      background: rgba(255,255,255,0.015);
+      border: 1px solid var(--border); border-radius: 8px;
+      font-size: 0.73rem; color: var(--muted); line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="https://fintiq.uk" class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </a>
+  <button class="nav-hamburger" id="navHamburger">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+      <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+      <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+    </svg>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <a href="https://fintiq.uk">Home</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
+    <a href="/tools.html" class="active">Tools</a>
+    <a href="/learn.html">Learn</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-icon">
+    <svg width="76" height="76" viewBox="0 0 76 76" fill="none">
+      <circle cx="38" cy="38" r="36" fill="rgba(34,197,94,0.07)" stroke="rgba(34,197,94,0.18)" stroke-width="1.5"/>
+      <!-- ascending bars: SIPP pot growing -->
+      <rect x="14" y="50" width="9" height="12" rx="2.5" fill="#22c55e" opacity="0.3"/>
+      <rect x="26" y="41" width="9" height="21" rx="2.5" fill="#22c55e" opacity="0.5"/>
+      <rect x="38" y="30" width="9" height="32" rx="2.5" fill="#22c55e" opacity="0.75"/>
+      <rect x="50" y="20" width="9" height="42" rx="2.5" fill="#22c55e"/>
+      <!-- amber top-up cap on last bar (HMRC relief) -->
+      <rect x="50" y="13" width="9" height="9" rx="2.5" fill="#F59E0B"/>
+      <!-- baseline -->
+      <line x1="12" y1="62" x2="64" y2="62" stroke="rgba(255,255,255,0.08)" stroke-width="1.5"/>
+      <!-- £ on amber cap -->
+      <text x="54.5" y="20.5" fill="#0A1628" font-size="6.5" font-weight="900" text-anchor="middle" font-family="system-ui,sans-serif">£</text>
+    </svg>
+  </div>
+  <h1>SIPP <span>Planner</span></h1>
+  <p>Tax relief optimiser · Retirement projector · Drawdown calculator<br>Free for UK investors. No account. No jargon.</p>
+  <div class="hero-tags">
+    <span class="tag">Tax Relief Calculator</span>
+    <span class="tag green">Monte Carlo Projection</span>
+    <span class="tag">Drawdown Comparison</span>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- INPUT GRID -->
+  <div class="input-grid">
+
+    <!-- Your Profile -->
+    <div class="card">
+      <div class="card-title">Your Profile</div>
+
+      <div class="input-group">
+        <div class="input-label">Current age <strong id="ageVal">35</strong></div>
+        <input type="range" id="currentAge" min="20" max="68" value="35" step="1">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Target retirement age <strong id="retireVal">60</strong></div>
+        <input type="range" id="retireAge" min="50" max="75" value="60" step="1">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Income tax rate</div>
+        <div class="btn-group">
+          <button class="bopt" data-tax="20" onclick="pickTax(this)">Basic<br><small style="opacity:.7">20%</small></button>
+          <button class="bopt active" data-tax="40" onclick="pickTax(this)">Higher<br><small style="opacity:.7">40%</small></button>
+          <button class="bopt" data-tax="45" onclick="pickTax(this)">Additional<br><small style="opacity:.7">45%</small></button>
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <div class="toggle-row">
+          <span>Include State Pension (£11,502/yr from age 67)</span>
+          <label class="toggle" style="margin-left:0.75rem">
+            <input type="checkbox" id="statePension" checked>
+            <span class="tslider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Your SIPP -->
+    <div class="card">
+      <div class="card-title">Your SIPP</div>
+
+      <div class="input-group">
+        <div class="input-label">Current SIPP value</div>
+        <div class="pfx"><input type="number" class="num-input" id="currentPot" value="25000" min="0" step="1000"></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          Monthly contribution — what you pay (net)
+          <span style="font-size:0.68rem">HMRC adds 20% on top</span>
+        </div>
+        <div class="pfx"><input type="number" class="num-input" id="monthlyNet" value="400" min="0" step="50"></div>
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">Target annual income in retirement</div>
+        <div class="pfx"><input type="number" class="num-input" id="targetIncome" value="30000" min="0" step="1000"></div>
+      </div>
+
+      <div class="input-group" style="margin-bottom:0">
+        <div class="input-label">Growth assumption</div>
+        <div class="btn-group">
+          <button class="bopt" data-growth="conservative" onclick="pickGrowth(this)">Conservative<br><small style="opacity:.7">4% / yr</small></button>
+          <button class="bopt active go" data-growth="balanced" onclick="pickGrowth(this)">Balanced<br><small style="opacity:.7">6.5% / yr</small></button>
+          <button class="bopt" data-growth="aggressive" onclick="pickGrowth(this)">Aggressive<br><small style="opacity:.7">9% / yr</small></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAX EFFICIENCY PANEL (live) -->
+  <div class="tax-panel">
+    <div class="tax-panel-title">Tax Efficiency — Monthly Breakdown</div>
+    <div class="tax-flow" id="taxFlow"><!-- JS --></div>
+    <div class="extra-relief" id="extraRelief">
+      <span>Self-assessment refund to claim (higher / additional rate)</span>
+      <span class="erv" id="extraReliefVal">£0</span>
+    </div>
+    <div class="allow-wrap">
+      <div class="allow-lbl">
+        <span>Annual allowance used</span>
+        <span id="allowLbl">— of £60,000</span>
+      </div>
+      <div class="allow-bg"><div class="allow-fill" id="allowFill" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- SA CLAIM NOTICE -->
+  <div class="notice hidden" id="saNotice">
+    <strong>Claim your extra relief:</strong> As a higher or additional rate taxpayer you must claim the additional relief yourself via Self Assessment. Many people miss this — make sure you're not leaving money on the table.
+  </div>
+
+  <!-- RUN BUTTON -->
+  <button class="run-btn" onclick="runProjection()">Run Retirement Projection</button>
+
+  <!-- ═══════════ RESULTS ═══════════ -->
+  <div class="results-section" id="resultsSection">
+
+    <div class="loading" id="loadingSpinner">
+      <div class="spinner"></div>
+      <span>Running 1,000 Monte Carlo paths…</span>
+    </div>
+
+    <div id="resultsContent" style="display:none">
+
+      <!-- Fan Chart -->
+      <h2 class="section-heading">Retirement <span>Projection</span></h2>
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-title" id="chartTitle">SIPP Pot Value Over Time</div>
+        <div class="chart-container">
+          <canvas id="fanChart"></canvas>
+        </div>
+        <div class="chart-legend">
+          <div class="leg-item"><div class="leg-line" style="background:#22c55e"></div> Bull (p90)</div>
+          <div class="leg-item"><div class="leg-line" style="background:#F59E0B;height:3px"></div> Median (p50)</div>
+          <div class="leg-item"><div class="leg-line" style="background:#ef4444"></div> Bear (p10)</div>
+        </div>
+      </div>
+
+      <!-- Metric Cards -->
+      <div class="metrics-grid" id="metricsGrid"><!-- JS --></div>
+
+      <!-- On-track notice -->
+      <div class="notice hidden" id="trackNotice"><!-- JS --></div>
+
+      <!-- Drawdown -->
+      <h2 class="section-heading">Drawdown <span>Options</span></h2>
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="notice" style="margin-bottom:1rem;font-size:0.78rem">
+          Based on your <span id="ddPotNote">median projected pot</span> at retirement. Both options use the same pot — compare net income to decide which suits you.
+        </div>
+        <div class="dd-tabs">
+          <button class="ddt active" onclick="pickDDTab('pcls',this)">Option A — PCLS Upfront</button>
+          <button class="ddt" onclick="pickDDTab('ufpls',this)">Option B — UFPLS Phased</button>
+        </div>
+        <div class="dd-pane active" id="dd-pcls"><!-- JS --></div>
+        <div class="dd-pane" id="dd-ufpls"><!-- JS --></div>
+      </div>
+
+      <!-- Lifecycle -->
+      <h2 class="section-heading">Build Your SIPP Portfolio with <span>Fintiq</span></h2>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.25rem">
+        A SIPP gives you full investment control. Use Fintiq's tools to research, build, and stress-test your portfolio at every stage of the journey.
+      </p>
+      <div class="lc-grid" id="lcGrid"><!-- JS --></div>
+      <div class="tool-grid">
+        <a href="/deep-dive.html" class="tool-card">
+          <div class="tc-dot"></div>
+          <div><div class="tc-name">Stock Deep Dive</div><div class="tc-desc">Research individual equities for your SIPP</div></div>
+        </a>
+        <a href="/factor-screener.html" class="tool-card">
+          <div class="tc-dot"></div>
+          <div><div class="tc-name">Factor Screener</div><div class="tc-desc">Find quality long-term compounders to hold</div></div>
+        </a>
+        <a href="/portfolio-optimiser.html" class="tool-card">
+          <div class="tc-dot"></div>
+          <div><div class="tc-name">Portfolio Optimiser</div><div class="tc-desc">Build an efficient frontier SIPP allocation</div></div>
+        </a>
+        <a href="/portfolio-monte-carlo.html" class="tool-card">
+          <div class="tc-dot"></div>
+          <div><div class="tc-name">Portfolio Monte Carlo</div><div class="tc-desc">Stress-test your SIPP with 5,000 correlated paths</div></div>
+        </a>
+      </div>
+
+    </div><!-- end resultsContent -->
+  </div><!-- end resultsSection -->
+
+  <!-- HOW IT WORKS -->
+  <div class="expander" style="margin-top:1.75rem">
+    <button class="exp-toggle" onclick="toggleExp(this)">
+      <span>How this works</span><span>▼</span>
+    </button>
+    <div class="exp-body">
+      <p><strong style="color:var(--text)">Tax relief (relief at source):</strong> You pay the net amount into your SIPP. HMRC automatically adds 20% basic rate relief, grossing it up. If you pay 40% or 45% income tax, you can claim the additional relief via Self Assessment — this comes back to you as a cash refund, not into the pension pot.</p>
+      <p><strong style="color:var(--text)">Monte Carlo simulation:</strong> 1,000 independent paths are simulated. Each monthly step applies a log-normally distributed return drawn from the selected annual mean and volatility. Your gross monthly contribution is added each step. Results show the spread of outcomes — not a forecast.</p>
+      <p><strong style="color:var(--text)">Drawdown — PCLS vs UFPLS:</strong> PCLS (Pension Commencement Lump Sum) — you take up to 25% of your pot as a one-off tax-free sum (capped at £268,275), then draw down the remainder as taxable income. UFPLS (Uncrystallised Fund Pension Lump Sum) — each withdrawal is 25% tax-free and 75% taxable, spreading the tax-free entitlement across your lifetime.</p>
+      <p><strong style="color:var(--text)">Growth assumptions:</strong> Conservative 4% p.a. / 10% vol · Balanced 6.5% p.a. / 12% vol · Aggressive 9% p.a. / 16% vol. All figures are nominal. Inflation, provider charges, and investment costs are not modelled. The 4% sustainable withdrawal rate is a commonly used rule of thumb and is not guaranteed.</p>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    This tool is for educational and illustrative purposes only and does not constitute financial advice. SIPP rules, tax rates, annual allowances, and the Lump Sum Allowance (£268,275) are subject to change. Tax treatment depends on individual circumstances. You should consult a qualified financial adviser regulated by the FCA before making any pension decision. Past performance is not a reliable guide to future returns. Fintiq is not authorised or regulated by the FCA.
+  </div>
+
+</div><!-- end main -->
+
+<script>
+// ─────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────
+const ANNUAL_ALLOWANCE = 60000;
+const PCLS_CAP = 268275;
+const STATE_PENSION = 11502;
+const SP_AGE = 67;
+const PA = 12570;          // personal allowance
+const BRT = 50270;         // basic rate threshold
+
+const GROWTH = {
+  conservative: { r: 0.04,  v: 0.10 },
+  balanced:     { r: 0.065, v: 0.12 },
+  aggressive:   { r: 0.09,  v: 0.16 }
+};
+
+let taxRate    = 40;
+let growthKey  = 'balanced';
+let chartInst  = null;
+
+// ─────────────────────────────────────────────
+// UTILITIES
+// ─────────────────────────────────────────────
+const gp  = id => document.getElementById(id);
+const fmtK = n => n >= 1e6 ? '£' + (n/1e6).toFixed(2) + 'm'
+                : '£' + Math.round(n).toLocaleString('en-GB');
+const fmtF = n => '£' + Math.round(n).toLocaleString('en-GB');
+
+function randn() {
+  let u=0,v=0;
+  while(!u) u=Math.random();
+  while(!v) v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
+}
+
+function ptile(arr, p) {
+  const s=[...arr].sort((a,b)=>a-b);
+  return s[Math.min(Math.floor(p/100*s.length), s.length-1)];
+}
+
+function incomeTax(gross) {
+  if (gross <= PA) return 0;
+  const t = gross - PA;
+  if (gross <= BRT) return t * 0.20;
+  return (BRT-PA)*0.20 + (gross-BRT)*0.40;
+}
+
+// ─────────────────────────────────────────────
+// INPUT HELPERS
+// ─────────────────────────────────────────────
+function getInputs() {
+  return {
+    age:      +gp('currentAge').value,
+    retire:   +gp('retireAge').value,
+    tax:      taxRate,
+    pot:      +gp('currentPot').value || 0,
+    netMo:    +gp('monthlyNet').value || 0,
+    target:   +gp('targetIncome').value || 30000,
+    sp:       gp('statePension').checked,
+    growth:   growthKey
+  };
+}
+
+function pickTax(btn) {
+  gp('navLinks'); // no-op touch to keep linter happy
+  document.querySelectorAll('[data-tax]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  taxRate = +btn.dataset.tax;
+  livePanel();
+}
+
+function pickGrowth(btn) {
+  document.querySelectorAll('[data-growth]').forEach(b=>b.classList.remove('active','go'));
+  btn.classList.add('active','go');
+  growthKey = btn.dataset.growth;
+}
+
+// sliders
+gp('currentAge').addEventListener('input', function(){
+  gp('ageVal').textContent = this.value;
+  const r=gp('retireAge');
+  if (+r.value <= +this.value) { r.value=+this.value+1; gp('retireVal').textContent=r.value; }
+});
+gp('retireAge').addEventListener('input', function(){ gp('retireVal').textContent=this.value; });
+['currentPot','monthlyNet','targetIncome'].forEach(id=>gp(id).addEventListener('input',livePanel));
+
+// ─────────────────────────────────────────────
+// LIVE TAX PANEL
+// ─────────────────────────────────────────────
+function calcRelief(net, rate) {
+  const gross  = net / 0.8;
+  const basic  = gross - net;
+  const extra  = rate===40 ? gross*0.20 : rate===45 ? gross*0.25 : 0;
+  return { gross, basic, extra, netCost: net-extra };
+}
+
+function livePanel() {
+  const inp = getInputs();
+  const t   = calcRelief(inp.netMo, inp.tax);
+
+  gp('taxFlow').innerHTML = `
+    <div class="tbox">
+      <div class="tbl">You pay (net)</div>
+      <div class="tbv">${fmtF(inp.netMo)}/mo</div>
+    </div>
+    <div class="tax-arrow">+</div>
+    <div class="tbox g">
+      <div class="tbl">HMRC adds (auto)</div>
+      <div class="tbv">${fmtF(t.basic)}/mo</div>
+    </div>
+    <div class="tax-arrow">=</div>
+    <div class="tbox a">
+      <div class="tbl">Into your pot</div>
+      <div class="tbv">${fmtF(t.gross)}/mo</div>
+    </div>
+  `;
+
+  const er = gp('extraRelief');
+  if (inp.tax > 20 && t.extra > 0) {
+    er.classList.add('show');
+    gp('extraReliefVal').textContent = `${fmtF(t.extra)}/mo · ${fmtF(t.extra*12)}/yr`;
+  } else {
+    er.classList.remove('show');
+  }
+
+  gp('saNotice').classList.toggle('hidden', inp.tax === 20);
+
+  const annGross = t.gross * 12;
+  const pct = Math.min(100, (annGross/ANNUAL_ALLOWANCE)*100);
+  gp('allowFill').style.width = pct.toFixed(1)+'%';
+  gp('allowLbl').textContent  = `${fmtF(annGross)} of ${fmtF(ANNUAL_ALLOWANCE)} (${pct.toFixed(0)}%)`;
+}
+
+// ─────────────────────────────────────────────
+// MONTE CARLO
+// ─────────────────────────────────────────────
+function runMC(pot0, grossMo, years, r, v) {
+  const PATHS  = 1000;
+  const mu     = r/12;
+  const sigma  = v/Math.sqrt(12);
+  const drift  = mu - 0.5*sigma*sigma;
+  const snaps  = Array.from({length:years+1}, ()=>[]);
+
+  for (let p=0; p<PATHS; p++) {
+    let w = pot0;
+    snaps[0].push(w);
+    for (let m=0; m<years*12; m++) {
+      w = w * Math.exp(drift + sigma*randn()) + grossMo;
+      if ((m+1)%12===0) snaps[(m+1)/12].push(w);
+    }
+  }
+  return snaps.map(a=>({
+    p5:  ptile(a,5),  p10: ptile(a,10), p25: ptile(a,25),
+    p50: ptile(a,50), p75: ptile(a,75), p90: ptile(a,90), p95: ptile(a,95)
+  }));
+}
+
+// ─────────────────────────────────────────────
+// RUN PROJECTION
+// ─────────────────────────────────────────────
+function runProjection() {
+  const inp   = getInputs();
+  const years = inp.retire - inp.age;
+  if (years <= 0) { alert('Retirement age must be greater than current age.'); return; }
+
+  gp('resultsSection').classList.add('visible');
+  gp('loadingSpinner').classList.add('show');
+  gp('resultsContent').style.display = 'none';
+
+  setTimeout(() => {
+    const t = calcRelief(inp.netMo, inp.tax);
+    const g = GROWTH[inp.growth];
+    const mc = runMC(inp.pot, t.gross, years, g.r, g.v);
+
+    gp('loadingSpinner').classList.remove('show');
+    gp('resultsContent').style.display = '';
+
+    renderChart(mc, inp, years);
+    renderMetrics(mc, inp, years, t);
+    renderLifecycle(inp.age);
+  }, 60);
+}
+
+// ─────────────────────────────────────────────
+// FAN CHART
+// ─────────────────────────────────────────────
+function renderChart(mc, inp, years) {
+  const step   = years > 20 ? 5 : years > 10 ? 2 : 1;
+  const labels = Array.from({length:years+1}, (_,i) => {
+    const age = inp.age+i;
+    if (i===0)     return `Now (${age})`;
+    if (i===years) return `Retire (${inp.retire})`;
+    return (i%step===0) ? `Age ${age}` : '';
+  });
+
+  const ds = [
+    { label:'p95', data:mc.map(d=>d.p95), fill:false,  borderColor:'rgba(34,197,94,0.22)',  borderWidth:1,   pointRadius:0, tension:0.4 },
+    { label:'p90', data:mc.map(d=>d.p90), fill:'-1',   borderColor:'rgba(34,197,94,0.55)',  borderWidth:1.5, pointRadius:0, tension:0.4, backgroundColor:'rgba(34,197,94,0.07)' },
+    { label:'p75', data:mc.map(d=>d.p75), fill:'-1',   borderColor:'rgba(34,197,94,0.75)',  borderWidth:1,   pointRadius:0, tension:0.4, backgroundColor:'rgba(34,197,94,0.06)' },
+    { label:'Median (p50)', data:mc.map(d=>d.p50), fill:false, borderColor:'#F59E0B', borderWidth:3, pointRadius:0, tension:0.4 },
+    { label:'p25', data:mc.map(d=>d.p25), fill:false,  borderColor:'rgba(239,68,68,0.6)',   borderWidth:1,   pointRadius:0, tension:0.4 },
+    { label:'p10', data:mc.map(d=>d.p10), fill:'+1',   borderColor:'rgba(239,68,68,0.55)',  borderWidth:1.5, pointRadius:0, tension:0.4, backgroundColor:'rgba(239,68,68,0.06)' },
+    { label:'p5',  data:mc.map(d=>d.p5),  fill:'+1',   borderColor:'rgba(239,68,68,0.22)',  borderWidth:1,   pointRadius:0, tension:0.4, backgroundColor:'rgba(239,68,68,0.05)' },
+  ];
+
+  if (chartInst) { chartInst.destroy(); chartInst=null; }
+  const ctx = gp('fanChart').getContext('2d');
+  chartInst = new Chart(ctx, {
+    type:'line',
+    data:{ labels, datasets:ds },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      animation:{ duration:500 },
+      interaction:{ mode:'index', intersect:false },
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          backgroundColor:'#0F1F35',
+          borderColor:'rgba(255,255,255,0.08)',
+          borderWidth:1,
+          callbacks:{
+            title: items => items[0].label || '',
+            label: item  => `${item.dataset.label}: ${fmtK(item.raw)}`
+          }
+        }
+      },
+      scales:{
+        x:{ grid:{color:'rgba(255,255,255,0.04)'}, ticks:{color:'#94a3b8', font:{size:11}} },
+        y:{
+          grid:{color:'rgba(255,255,255,0.04)'},
+          ticks:{
+            color:'#94a3b8', font:{size:11},
+            callback: v => v>=1e6 ? '£'+(v/1e6).toFixed(1)+'m' : '£'+(v/1000).toFixed(0)+'k'
+          }
+        }
+      }
+    }
+  });
+
+  gp('chartTitle').textContent =
+    `SIPP Pot Value — Age ${inp.age} to ${inp.retire} (${years} yrs · ${inp.growth})`;
+}
+
+// ─────────────────────────────────────────────
+// METRICS
+// ─────────────────────────────────────────────
+function renderMetrics(mc, inp, years, t) {
+  const fin    = mc[years];
+  const median = fin.p50;
+  const p10    = fin.p10;
+  const p90    = fin.p90;
+
+  const pcls        = Math.min(median*0.25, PCLS_CAP);
+  const drawPot     = median - pcls;
+  const sustIncome  = drawPot * 0.04;
+  const spInc       = inp.sp ? STATE_PENSION : 0;
+  const totalIncome = sustIncome + spInc;
+  const onTrack     = totalIncome >= inp.target;
+
+  const spNote = inp.sp
+    ? (inp.retire < SP_AGE
+        ? `+ £${STATE_PENSION.toLocaleString()} state pension from age ${SP_AGE}`
+        : `incl. £${STATE_PENSION.toLocaleString()} state pension`)
+    : 'state pension excluded';
+
+  gp('metricsGrid').innerHTML = `
+    <div class="mcard amber">
+      <div class="ml">Median pot at retirement</div>
+      <div class="mv">${fmtK(median)}</div>
+      <div class="ms">Range: ${fmtK(p10)} – ${fmtK(p90)}</div>
+    </div>
+    <div class="mcard green">
+      <div class="ml">Sustainable income (4% rule)</div>
+      <div class="mv">${fmtK(sustIncome)}<small style="font-size:0.58em">/yr</small></div>
+      <div class="ms">After ${fmtF(pcls)} tax-free PCLS</div>
+    </div>
+    <div class="mcard ${onTrack ? 'green' : 'red'}">
+      <div class="ml">Total est. income in retirement</div>
+      <div class="mv">${fmtK(totalIncome)}<small style="font-size:0.58em">/yr</small></div>
+      <div class="ms">${spNote}</div>
+    </div>
+  `;
+
+  const tn = gp('trackNotice');
+  if (!onTrack) {
+    const gap = inp.target - totalIncome;
+    tn.classList.remove('hidden');
+    tn.innerHTML = `<strong>Gap to target:</strong> Your estimated income is £${Math.round(gap).toLocaleString()} short of your £${inp.target.toLocaleString()} target. Consider increasing contributions or retiring later.`;
+  } else {
+    tn.classList.add('hidden');
+  }
+
+  renderDrawdown(median, inp);
+  gp('ddPotNote').textContent = `median projected pot of ${fmtF(median)} at age ${inp.retire}`;
+}
+
+// ─────────────────────────────────────────────
+// DRAWDOWN
+// ─────────────────────────────────────────────
+function renderDrawdown(pot, inp) {
+  const pcls        = Math.min(pot*0.25, PCLS_CAP);
+  const capHit      = pcls >= PCLS_CAP;
+  const drawPot     = pot - pcls;
+  const annualDraw  = drawPot * 0.04;
+  const spNow       = (inp.sp && inp.retire >= SP_AGE) ? STATE_PENSION : 0;
+  const spLater     = (inp.sp && inp.retire < SP_AGE)  ? STATE_PENSION : 0;
+
+  // Option A — PCLS upfront
+  const totalTaxableA = annualDraw + spNow;
+  const taxA  = incomeTax(totalTaxableA);
+  const netA  = totalTaxableA - taxA;
+
+  let pclsHtml = `
+    <div class="dd-row"><span class="dr-lbl">Total pot at retirement</span><span class="dr-val">${fmtF(pot)}</span></div>
+    <div class="dd-row"><span class="dr-lbl">Tax-free cash taken upfront (PCLS)</span><span class="dr-val g">${fmtF(pcls)}</span></div>
+    ${capHit ? `<div class="dd-row" style="padding:0.3rem 0 0.5rem;border-bottom:1px solid var(--border)"><span style="font-size:0.72rem;color:var(--amber)">⚠ Capped at £268,275 — 25% of your pot would be ${fmtF(pot*0.25)}</span></div>` : ''}
+    <div class="dd-row"><span class="dr-lbl">Remaining pot for drawdown</span><span class="dr-val">${fmtF(drawPot)}</span></div>
+    <div class="dd-row"><span class="dr-lbl">Annual drawdown at 4%</span><span class="dr-val a">${fmtF(annualDraw)}/yr</span></div>
+  `;
+  if (spNow > 0) pclsHtml += `<div class="dd-row"><span class="dr-lbl">State pension (from age ${SP_AGE})</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
+  if (spLater > 0) pclsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val" style="color:var(--muted)">Starts age ${SP_AGE} — not in Year 1</span></div>`;
+  pclsHtml += `
+    <div class="dd-row"><span class="dr-lbl">Estimated income tax on drawdown</span><span class="dr-val r">−${fmtF(taxA)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl"><strong>Estimated net income (Year 1)</strong></span><span class="dr-val g" style="font-size:1.05rem">${fmtF(netA)}/yr</span></div>
+  `;
+  gp('dd-pcls').innerHTML = pclsHtml;
+
+  // Option B — UFPLS phased
+  const annualUFPLS = pot * 0.04;
+  const ufTFree     = annualUFPLS * 0.25;
+  const ufTaxable   = annualUFPLS * 0.75;
+  const totalTaxB   = ufTaxable + spNow;
+  const taxB        = incomeTax(totalTaxB);
+  const netB        = annualUFPLS - taxB + spNow;
+
+  let ufplsHtml = `
+    <div class="dd-row"><span class="dr-lbl">Annual withdrawal (4% of full pot)</span><span class="dr-val">${fmtF(annualUFPLS)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Tax-free portion (25% of each withdrawal)</span><span class="dr-val g">${fmtF(ufTFree)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Taxable portion (75% of each withdrawal)</span><span class="dr-val a">${fmtF(ufTaxable)}/yr</span></div>
+  `;
+  if (spNow > 0) ufplsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
+  if (spLater > 0) ufplsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val" style="color:var(--muted)">Starts age ${SP_AGE} — not in Year 1</span></div>`;
+  ufplsHtml += `
+    <div class="dd-row"><span class="dr-lbl">Estimated income tax</span><span class="dr-val r">−${fmtF(taxB)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl"><strong>Estimated net income (Year 1)</strong></span><span class="dr-val g" style="font-size:1.05rem">${fmtF(netB)}/yr</span></div>
+  `;
+  ufplsHtml += `
+    <div class="dd-tip">
+      <strong>UFPLS tip:</strong> This preserves your full £${fmtF(PCLS_CAP)} tax-free entitlement over your lifetime rather than taking it upfront. Useful if you don't need a large lump sum immediately. Each year you draw, 25% is automatically tax-free.
+    </div>
+  `;
+  gp('dd-ufpls').innerHTML = ufplsHtml;
+}
+
+function pickDDTab(tab, btn) {
+  document.querySelectorAll('.ddt').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.dd-pane').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  gp('dd-'+tab).classList.add('active');
+}
+
+// ─────────────────────────────────────────────
+// LIFECYCLE
+// ─────────────────────────────────────────────
+function renderLifecycle(age) {
+  const stages = [
+    {
+      label:'Ages 20–44', name:'Accumulation Phase',
+      desc:'Time is your biggest asset. Maximise equity exposure, think global, and let compounding work. Increase contributions whenever you can — even small increases matter over 20+ years.',
+      links:[
+        { t:'Screen for quality compounders',   h:'/factor-screener.html' },
+        { t:'Research individual equities',      h:'/deep-dive.html' }
+      ],
+      here: age < 45
+    },
+    {
+      label:'Ages 45–54', name:'Growth + Protection',
+      desc:'Continue growing but reduce concentration risk. Diversify across geographies and sectors. Review your asset allocation annually. Start modelling retirement scenarios.',
+      links:[
+        { t:'Optimise your portfolio allocation', h:'/portfolio-optimiser.html' },
+        { t:'Stress-test with Monte Carlo',        h:'/portfolio-monte-carlo.html' }
+      ],
+      here: age >= 45 && age < 55
+    },
+    {
+      label:'Ages 55+', name:'Pre-Retirement Glide',
+      desc:'Start de-risking gradually toward bonds and income assets. Model your drawdown scenarios. Note: minimum SIPP access age rises to 57 in 2028. Maximise any remaining carry-forward allowance.',
+      links:[
+        { t:'Model drawdown scenarios',           h:'/portfolio-monte-carlo.html' },
+        { t:'Rebalance toward income assets',     h:'/portfolio-optimiser.html' }
+      ],
+      here: age >= 55
+    }
+  ];
+
+  gp('lcGrid').innerHTML = stages.map(s => `
+    <div class="lc-card ${s.here ? 'here' : ''}">
+      <div class="lc-badge">${s.label}${s.here ? ' ← you are here' : ''}</div>
+      <div class="lc-name">${s.name}</div>
+      <div class="lc-desc">${s.desc}</div>
+      <div class="lc-links">
+        ${s.links.map(l=>`<a class="lc-link" href="${l.h}">${l.t}</a>`).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ─────────────────────────────────────────────
+// EXPANDER
+// ─────────────────────────────────────────────
+function toggleExp(btn) {
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+  btn.querySelector('span:last-child').textContent = body.classList.contains('open') ? '▲' : '▼';
+}
+
+// ─────────────────────────────────────────────
+// NAV HAMBURGER
+// ─────────────────────────────────────────────
+document.getElementById('navHamburger').addEventListener('click', () =>
+  document.getElementById('navLinks').classList.toggle('mobile-open')
+);
+
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+livePanel();
+</script>
+</body>
+</html>
