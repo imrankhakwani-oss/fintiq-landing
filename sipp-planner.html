@@ -632,45 +632,68 @@
 
       <!-- Drawdown -->
       <h2 class="section-heading">Drawdown <span>Options</span></h2>
-      <div class="card" style="margin-bottom:1.5rem">
+      <div class="card" style="margin-bottom:1rem">
         <div class="notice" style="margin-bottom:1rem;font-size:0.78rem">
-          Based on your <span id="ddPotNote">median projected pot</span> at retirement. Both options use the same pot — compare net income to decide which suits you.
+          Based on your <span id="ddPotNote">median projected pot</span> at retirement. Your pot continues to compound during drawdown — the runway table shows this. All three options start from the same pot.
         </div>
         <div class="dd-tabs">
-          <button class="ddt active" onclick="pickDDTab('pcls',this)">Option A — PCLS Upfront</button>
+          <button class="ddt active" onclick="pickDDTab('pcls',this)">Option A — PCLS + Drawdown</button>
           <button class="ddt" onclick="pickDDTab('ufpls',this)">Option B — UFPLS Phased</button>
+          <button class="ddt" onclick="pickDDTab('annuity',this)">Option C — Annuity</button>
         </div>
         <div class="dd-pane active" id="dd-pcls"><!-- JS --></div>
         <div class="dd-pane" id="dd-ufpls"><!-- JS --></div>
+        <div class="dd-pane" id="dd-annuity"><!-- JS --></div>
       </div>
 
-      <!-- Lifecycle -->
-      <h2 class="section-heading">Build Your SIPP Portfolio with <span>Fintiq</span></h2>
-      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.25rem">
-        A SIPP gives you full investment control. Use Fintiq's tools to research, build, and stress-test your portfolio at every stage of the journey.
-      </p>
-      <div class="lc-grid" id="lcGrid"><!-- JS --></div>
-      <div class="tool-grid">
-        <a href="/deep-dive.html" class="tool-card">
-          <div class="tc-dot"></div>
-          <div><div class="tc-name">Stock Deep Dive</div><div class="tc-desc">Research individual equities for your SIPP</div></div>
-        </a>
-        <a href="/factor-screener.html" class="tool-card">
-          <div class="tc-dot"></div>
-          <div><div class="tc-name">Factor Screener</div><div class="tc-desc">Find quality long-term compounders to hold</div></div>
-        </a>
-        <a href="/portfolio-optimiser.html" class="tool-card">
-          <div class="tc-dot"></div>
-          <div><div class="tc-name">Portfolio Optimiser</div><div class="tc-desc">Build an efficient frontier SIPP allocation</div></div>
-        </a>
-        <a href="/portfolio-monte-carlo.html" class="tool-card">
-          <div class="tc-dot"></div>
-          <div><div class="tc-name">Portfolio Monte Carlo</div><div class="tc-desc">Stress-test your SIPP with 5,000 correlated paths</div></div>
-        </a>
+      <!-- IHT BOX -->
+      <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:var(--radius);padding:1.25rem;margin-bottom:1.5rem">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#a78bfa;margin-bottom:0.75rem">Inheritance Tax — A Key SIPP Advantage</div>
+        <p style="font-size:0.825rem;color:var(--text);margin-bottom:0.75rem">
+          Unlike your estate (property, ISAs, savings), a SIPP is <strong>currently outside your estate</strong> for Inheritance Tax purposes. This means your pension pot can be passed to beneficiaries free of the 40% IHT charge that applies to other assets above the nil-rate band.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;font-size:0.8rem">
+          <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:0.75rem">
+            <div style="color:var(--green);font-weight:700;margin-bottom:0.35rem">SIPP (pension pot)</div>
+            <div style="color:var(--muted)">Outside estate — passes IHT-free to nominated beneficiaries. If you die before 75, drawn by beneficiaries tax-free. After 75, taxed as their income but no IHT.</div>
+          </div>
+          <div style="background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;padding:0.75rem">
+            <div style="color:var(--red);font-weight:700;margin-bottom:0.35rem">ISA / Property / Savings</div>
+            <div style="color:var(--muted)">Inside estate — subject to 40% IHT above the nil-rate band (£325,000 + residence nil-rate band up to £175,000).</div>
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;padding:0.65rem 0.9rem;background:rgba(245,158,11,0.07);border-radius:6px;font-size:0.775rem;color:var(--muted)">
+          <strong style="color:var(--amber)">2027 rule change:</strong> The October 2024 Budget announced that SIPPs will be brought into estates for IHT from April 2027. Planning decisions made now should account for this change. Seek specialist IHT advice if this affects you.
+        </div>
       </div>
 
     </div><!-- end resultsContent -->
   </div><!-- end resultsSection -->
+
+  <!-- ═══════════ LIFECYCLE — ALWAYS VISIBLE ═══════════ -->
+  <h2 class="section-heading" style="margin-top:2.5rem">Build Your SIPP Portfolio with <span>Fintiq</span></h2>
+  <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.25rem">
+    A SIPP gives you full investment control. Use Fintiq's tools to research, build, and stress-test your portfolio at every stage of the journey.
+  </p>
+  <div class="lc-grid" id="lcGrid"><!-- JS --></div>
+  <div class="tool-grid" style="margin-bottom:2rem">
+    <a href="/deep-dive.html" class="tool-card">
+      <div class="tc-dot"></div>
+      <div><div class="tc-name">Stock Deep Dive</div><div class="tc-desc">Research individual equities for your SIPP</div></div>
+    </a>
+    <a href="/factor-screener.html" class="tool-card">
+      <div class="tc-dot"></div>
+      <div><div class="tc-name">Factor Screener</div><div class="tc-desc">Find quality long-term compounders to hold</div></div>
+    </a>
+    <a href="/portfolio-optimiser.html" class="tool-card">
+      <div class="tc-dot"></div>
+      <div><div class="tc-name">Portfolio Optimiser</div><div class="tc-desc">Build an efficient frontier SIPP allocation</div></div>
+    </a>
+    <a href="/portfolio-monte-carlo.html" class="tool-card">
+      <div class="tc-dot"></div>
+      <div><div class="tc-name">Portfolio Monte Carlo</div><div class="tc-desc">Stress-test your SIPP with 5,000 correlated paths</div></div>
+    </a>
+  </div>
 
   <!-- HOW IT WORKS -->
   <div class="expander" style="margin-top:1.75rem">
@@ -774,6 +797,7 @@ gp('currentAge').addEventListener('input', function(){
   gp('ageVal').textContent = this.value;
   const r=gp('retireAge');
   if (+r.value <= +this.value) { r.value=+this.value+1; gp('retireVal').textContent=r.value; }
+  renderLifecycle(+this.value);
 });
 gp('retireAge').addEventListener('input', function(){ gp('retireVal').textContent=this.value; });
 ['currentPot','monthlyNet','targetIncome'].forEach(id=>gp(id).addEventListener('input',livePanel));
@@ -989,37 +1013,97 @@ function renderMetrics(mc, inp, years, t) {
 }
 
 // ─────────────────────────────────────────────
+// DRAWDOWN RUNWAY (pot compounds during drawdown)
+// ─────────────────────────────────────────────
+function runwayTable(startPot, annualWithdrawal, annualReturn, retireAge, includesSP) {
+  const checkpoints = [5, 10, 15, 20, 25, 30];
+  let pot = startPot;
+  let rows = '';
+  let depleted = false;
+  let depletedYear = null;
+
+  for (let y = 1; y <= 30; y++) {
+    const spThisYear = (includesSP && (retireAge + y) >= SP_AGE) ? STATE_PENSION : 0;
+    pot = pot * (1 + annualReturn) - annualWithdrawal;
+    if (pot <= 0 && !depleted) { depleted = true; depletedYear = y; }
+
+    if (checkpoints.includes(y)) {
+      const potNow = Math.max(0, pot);
+      const potColor = potNow > startPot*0.8 ? 'var(--green)' : potNow > startPot*0.4 ? 'var(--amber)' : 'var(--red)';
+      const label = depleted && depletedYear <= y ? '💀 Depleted' : fmtF(potNow);
+      rows += `<tr>
+        <td style="padding:0.45rem 0.5rem;color:var(--muted)">Year ${y}</td>
+        <td style="padding:0.45rem 0.5rem;color:var(--muted)">Age ${retireAge+y}</td>
+        <td style="padding:0.45rem 0.5rem;color:${potColor};font-weight:600">${label}</td>
+      </tr>`;
+    }
+  }
+
+  const note = depleted
+    ? `<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--red)">⚠ At this withdrawal rate, the pot depletes around year ${depletedYear}. Consider reducing annual withdrawal or adjusting your growth assumption.</div>`
+    : `<div style="margin-top:0.5rem;font-size:0.75rem;color:var(--green)">Pot is sustainable over 30 years at this withdrawal rate with assumed ${(annualReturn*100).toFixed(1)}% growth.</div>`;
+
+  return `
+    <div style="margin-top:1rem">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:0.5rem">
+        Drawdown Runway — Pot Value with Continued Compounding
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.825rem">
+        <thead><tr>
+          <th style="text-align:left;padding:0.35rem 0.5rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Year</th>
+          <th style="text-align:left;padding:0.35rem 0.5rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Age</th>
+          <th style="text-align:left;padding:0.35rem 0.5rem;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border)">Remaining Pot</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${note}
+    </div>`;
+}
+
+// Rough annuity rate by retirement age (single life, level, 2024 market rates)
+function annuityRate(age) {
+  if (age <= 55) return 0.042;
+  if (age <= 60) return 0.052;
+  if (age <= 65) return 0.062;
+  if (age <= 70) return 0.075;
+  return 0.090;
+}
+
+// ─────────────────────────────────────────────
 // DRAWDOWN
 // ─────────────────────────────────────────────
 function renderDrawdown(pot, inp) {
-  const pcls        = Math.min(pot*0.25, PCLS_CAP);
-  const capHit      = pcls >= PCLS_CAP;
-  const drawPot     = pot - pcls;
-  const annualDraw  = drawPot * 0.04;
-  const spNow       = (inp.sp && inp.retire >= SP_AGE) ? STATE_PENSION : 0;
-  const spLater     = (inp.sp && inp.retire < SP_AGE)  ? STATE_PENSION : 0;
+  const growthReturn = GROWTH[inp.growth].r;
+  const pcls         = Math.min(pot*0.25, PCLS_CAP);
+  const capHit       = pcls >= PCLS_CAP;
+  const drawPot      = pot - pcls;
+  const annualDrawA  = drawPot * 0.04;
+  const spNow        = (inp.sp && inp.retire >= SP_AGE) ? STATE_PENSION : 0;
+  const spLater      = (inp.sp && inp.retire < SP_AGE)  ? STATE_PENSION : 0;
 
-  // Option A — PCLS upfront
-  const totalTaxableA = annualDraw + spNow;
+  // ── Option A — PCLS + Drawdown ──
+  const totalTaxableA = annualDrawA + spNow;
   const taxA  = incomeTax(totalTaxableA);
   const netA  = totalTaxableA - taxA;
 
   let pclsHtml = `
     <div class="dd-row"><span class="dr-lbl">Total pot at retirement</span><span class="dr-val">${fmtF(pot)}</span></div>
     <div class="dd-row"><span class="dr-lbl">Tax-free cash taken upfront (PCLS)</span><span class="dr-val g">${fmtF(pcls)}</span></div>
-    ${capHit ? `<div class="dd-row" style="padding:0.3rem 0 0.5rem;border-bottom:1px solid var(--border)"><span style="font-size:0.72rem;color:var(--amber)">⚠ Capped at £268,275 — 25% of your pot would be ${fmtF(pot*0.25)}</span></div>` : ''}
+    ${capHit ? `<div class="dd-row" style="padding:0.3rem 0 0.4rem;border-bottom:1px solid var(--border)"><span style="font-size:0.72rem;color:var(--amber)">⚠ Capped at £268,275 — 25% would be ${fmtF(pot*0.25)}</span></div>` : ''}
     <div class="dd-row"><span class="dr-lbl">Remaining pot for drawdown</span><span class="dr-val">${fmtF(drawPot)}</span></div>
-    <div class="dd-row"><span class="dr-lbl">Annual drawdown at 4%</span><span class="dr-val a">${fmtF(annualDraw)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Annual drawdown at 4% of drawdown pot</span><span class="dr-val a">${fmtF(annualDrawA)}/yr</span></div>
   `;
-  if (spNow > 0) pclsHtml += `<div class="dd-row"><span class="dr-lbl">State pension (from age ${SP_AGE})</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
+  if (spNow > 0)  pclsHtml += `<div class="dd-row"><span class="dr-lbl">State pension (from age ${SP_AGE})</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
   if (spLater > 0) pclsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val" style="color:var(--muted)">Starts age ${SP_AGE} — not in Year 1</span></div>`;
   pclsHtml += `
-    <div class="dd-row"><span class="dr-lbl">Estimated income tax on drawdown</span><span class="dr-val r">−${fmtF(taxA)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Estimated income tax (Year 1)</span><span class="dr-val r">−${fmtF(taxA)}/yr</span></div>
     <div class="dd-row"><span class="dr-lbl"><strong>Estimated net income (Year 1)</strong></span><span class="dr-val g" style="font-size:1.05rem">${fmtF(netA)}/yr</span></div>
   `;
+  pclsHtml += runwayTable(drawPot, annualDrawA, growthReturn, inp.retire, inp.sp);
+  pclsHtml += `<div class="dd-tip"><strong>What most retirees do:</strong> Flexi-access drawdown (keeping investments in equities and bonds, drawing income as needed) is now the most popular choice — chosen by ~60% of SIPP holders. It preserves upside, but requires active management and sequence-of-returns risk.</div>`;
   gp('dd-pcls').innerHTML = pclsHtml;
 
-  // Option B — UFPLS phased
+  // ── Option B — UFPLS ──
   const annualUFPLS = pot * 0.04;
   const ufTFree     = annualUFPLS * 0.25;
   const ufTaxable   = annualUFPLS * 0.75;
@@ -1028,22 +1112,69 @@ function renderDrawdown(pot, inp) {
   const netB        = annualUFPLS - taxB + spNow;
 
   let ufplsHtml = `
+    <div class="dd-row"><span class="dr-lbl">Full pot remains invested at retirement</span><span class="dr-val">${fmtF(pot)}</span></div>
     <div class="dd-row"><span class="dr-lbl">Annual withdrawal (4% of full pot)</span><span class="dr-val">${fmtF(annualUFPLS)}/yr</span></div>
-    <div class="dd-row"><span class="dr-lbl">Tax-free portion (25% of each withdrawal)</span><span class="dr-val g">${fmtF(ufTFree)}/yr</span></div>
-    <div class="dd-row"><span class="dr-lbl">Taxable portion (75% of each withdrawal)</span><span class="dr-val a">${fmtF(ufTaxable)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Tax-free portion of each withdrawal (25%)</span><span class="dr-val g">${fmtF(ufTFree)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Taxable portion (75%)</span><span class="dr-val a">${fmtF(ufTaxable)}/yr</span></div>
   `;
-  if (spNow > 0) ufplsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
+  if (spNow > 0)  ufplsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
   if (spLater > 0) ufplsHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val" style="color:var(--muted)">Starts age ${SP_AGE} — not in Year 1</span></div>`;
   ufplsHtml += `
-    <div class="dd-row"><span class="dr-lbl">Estimated income tax</span><span class="dr-val r">−${fmtF(taxB)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl">Estimated income tax (Year 1)</span><span class="dr-val r">−${fmtF(taxB)}/yr</span></div>
     <div class="dd-row"><span class="dr-lbl"><strong>Estimated net income (Year 1)</strong></span><span class="dr-val g" style="font-size:1.05rem">${fmtF(netB)}/yr</span></div>
   `;
-  ufplsHtml += `
-    <div class="dd-tip">
-      <strong>UFPLS tip:</strong> This preserves your full £${fmtF(PCLS_CAP)} tax-free entitlement over your lifetime rather than taking it upfront. Useful if you don't need a large lump sum immediately. Each year you draw, 25% is automatically tax-free.
+  ufplsHtml += runwayTable(pot, annualUFPLS, growthReturn, inp.retire, inp.sp);
+  ufplsHtml += `<div class="dd-tip"><strong>UFPLS tip:</strong> Preserves your full ${fmtF(PCLS_CAP)} tax-free entitlement spread over your lifetime rather than taken upfront. Best when you don't need a lump sum immediately. No "crystallisation event" — the whole pot remains uncrystallised until each withdrawal.</div>`;
+  gp('dd-ufpls').innerHTML = ufplsHtml;
+
+  // ── Option C — Annuity ──
+  const rate    = annuityRate(inp.retire);
+  const rateInf = rate - 0.015; // inflation-linked ~1.5% less
+  const annLevel  = pot * rate;
+  const annInf    = pot * rateInf;
+  const totalLevel = annLevel + spNow;
+  const totalInf   = annInf + spNow;
+  const taxLevel   = incomeTax(totalLevel);
+  const taxInf     = incomeTax(totalInf);
+  const netLevel   = totalLevel - taxLevel;
+  const netInf     = totalInf - taxInf;
+
+  let annuityHtml = `
+    <div class="dd-row"><span class="dr-lbl">Pot exchanged for annuity</span><span class="dr-val">${fmtF(pot)}</span></div>
+    <div class="dd-row"><span class="dr-lbl">Annuity rate used (age ${inp.retire} level, est.)</span><span class="dr-val a">${(rate*100).toFixed(1)}%</span></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin:0.75rem 0">
+      <div style="background:rgba(34,197,94,0.07);border:1px solid rgba(34,197,94,0.15);border-radius:8px;padding:0.85rem">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem">Level (fixed income)</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--green)">${fmtF(annLevel)}/yr</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.2rem">Same amount every year for life</div>
+      </div>
+      <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.15);border-radius:8px;padding:0.85rem">
+        <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.3rem">Inflation-linked (RPI)</div>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--amber)">${fmtF(annInf)}/yr</div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.2rem">Rises with inflation each year</div>
+      </div>
     </div>
   `;
-  gp('dd-ufpls').innerHTML = ufplsHtml;
+  if (spNow > 0) annuityHtml += `<div class="dd-row"><span class="dr-lbl">State pension</span><span class="dr-val g">${fmtF(spNow)}/yr</span></div>`;
+  annuityHtml += `
+    <div class="dd-row"><span class="dr-lbl">Est. income tax (level annuity + SP)</span><span class="dr-val r">−${fmtF(taxLevel)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl"><strong>Est. net income — level annuity</strong></span><span class="dr-val g" style="font-size:1.05rem">${fmtF(netLevel)}/yr</span></div>
+    <div class="dd-row"><span class="dr-lbl"><strong>Est. net income — inflation-linked</strong></span><span class="dr-val a" style="font-size:1.05rem">${fmtF(netInf)}/yr</span></div>
+  `;
+  annuityHtml += `
+    <div style="margin-top:1rem;display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;font-size:0.78rem">
+      <div style="padding:0.65rem;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.12);border-radius:7px">
+        <div style="color:var(--green);font-weight:700;margin-bottom:0.25rem">Annuity pros</div>
+        <div style="color:var(--muted)">Guaranteed for life — you cannot outlive it. No investment risk. No management needed. Can add death-in-service guarantee (e.g. 5 or 10 yrs).</div>
+      </div>
+      <div style="padding:0.65rem;background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.12);border-radius:7px">
+        <div style="color:var(--red);font-weight:700;margin-bottom:0.25rem">Annuity cons</div>
+        <div style="color:var(--muted)">Pot is gone — no inheritance value (unless guaranteed period). No flexibility. If you die early, the insurer keeps the money. Decision is irreversible.</div>
+      </div>
+    </div>
+    <div class="dd-tip" style="margin-top:0.75rem"><strong>What most retirees do with annuities:</strong> Only ~20% buy a full annuity (down from 75% pre-2015 pension freedoms). Many use a blend — annuity for fixed baseline income (covering bills), drawdown for discretionary spending. Enhanced annuities (for those with health conditions) can pay 10–30% more than standard rates.</div>
+  `;
+  gp('dd-annuity').innerHTML = annuityHtml;
 }
 
 function pickDDTab(tab, btn) {
@@ -1119,6 +1250,7 @@ document.getElementById('navHamburger').addEventListener('click', () =>
 // INIT
 // ─────────────────────────────────────────────
 livePanel();
+renderLifecycle(+gp('currentAge').value);
 </script>
 </body>
 </html>
