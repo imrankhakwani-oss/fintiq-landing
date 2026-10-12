@@ -139,6 +139,17 @@
         "applicationCategory": "FinanceApplication",
         "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
       }
+    },
+    {
+      "@type": "ListItem", "position": 10,
+      "item": {
+        "@type": "SoftwareApplication",
+        "name": "SIPP Planner — UK Pension Tool",
+        "description": "Free UK SIPP planner with tax relief calculator, Monte Carlo retirement projection, and PCLS vs UFPLS drawdown comparison. Built for self-invested pension investors.",
+        "url": "https://fintiq.uk/sipp-planner.html",
+        "applicationCategory": "FinanceApplication",
+        "offers": {"@type": "Offer", "price": "0", "priceCurrency": "GBP"}
+      }
     }
   ]
 }
@@ -486,6 +497,40 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
       <a href="/pairs-trading.html" class="tool-btn" style="background:#a78bfa;color:#0A1628">🔗 Open Pairs Tool →</a>
     </div>
     <div class="tool-icon-big">🔗</div>
+  </div>
+
+  <!-- SIPP PLANNER -->
+  <div class="tool-featured" style="margin-bottom:28px;background:linear-gradient(135deg,rgba(245,158,11,0.05) 0%,rgba(15,31,53,0.5) 100%);border-color:rgba(245,158,11,0.18)">
+    <div>
+      <div class="tool-featured-tag" style="background:rgba(245,158,11,0.1);color:#F59E0B;border-color:rgba(245,158,11,0.25)">UK PENSION · SIPP</div>
+      <h2>SIPP Planner</h2>
+      <p>The only free UK SIPP tool that combines tax relief optimisation, Monte Carlo retirement projection, and drawdown comparison in one place. See exactly what your contributions really cost after HMRC top-up, whether you're on track for your target income, and how PCLS upfront compares to UFPLS phased withdrawal — at any tax rate.</p>
+      <div class="tool-features">
+        <span class="tool-feature">Live tax relief calculator</span>
+        <span class="tool-feature">Self-assessment refund estimator</span>
+        <span class="tool-feature">1,000-path Monte Carlo fan chart</span>
+        <span class="tool-feature">PCLS vs UFPLS drawdown comparison</span>
+        <span class="tool-feature">State pension integration</span>
+        <span class="tool-feature">Age-based lifecycle guidance</span>
+      </div>
+      <a href="/sipp-planner.html" class="tool-btn" style="background:#F59E0B;color:#0A1628">Open SIPP Planner →</a>
+    </div>
+    <div class="tool-icon-big">
+      <svg width="96" height="96" viewBox="0 0 96 96" fill="none">
+        <circle cx="48" cy="48" r="44" fill="rgba(245,158,11,0.07)" stroke="rgba(245,158,11,0.18)" stroke-width="1.5"/>
+        <!-- ascending bars -->
+        <rect x="16" y="62" width="11" height="14" rx="3" fill="#22c55e" opacity="0.3"/>
+        <rect x="31" y="51" width="11" height="25" rx="3" fill="#22c55e" opacity="0.5"/>
+        <rect x="46" y="38" width="11" height="38" rx="3" fill="#22c55e" opacity="0.75"/>
+        <rect x="61" y="26" width="11" height="50" rx="3" fill="#22c55e"/>
+        <!-- amber HMRC top-up cap -->
+        <rect x="61" y="18" width="11" height="10" rx="3" fill="#F59E0B"/>
+        <!-- baseline -->
+        <line x1="14" y1="76" x2="82" y2="76" stroke="rgba(255,255,255,0.07)" stroke-width="1.5"/>
+        <!-- £ on amber cap -->
+        <text x="66.5" y="26" fill="#0A1628" font-size="8" font-weight="900" text-anchor="middle" font-family="system-ui,sans-serif">£</text>
+      </svg>
+    </div>
   </div>
 
   <div class="cta-box">
