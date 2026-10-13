@@ -87,6 +87,13 @@ app.add_middleware(
     allow_credentials=True, allow_methods=["GET","POST"], allow_headers=["*"],
 )
 
+# Block search engines from indexing API endpoints
+@app.middleware("http")
+async def add_noindex_header(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
 # ── Caches ─────────────────────────────────────────────────────────────────────
 _bulletin_cache: dict = {}; _bulletin_cached_at: float = 0.0; _BULLETIN_TTL = 12*3600  # 2× per day max (agreed 04/09)
 _bulletin_refreshing: bool = False  # True while background regeneration is in progress
