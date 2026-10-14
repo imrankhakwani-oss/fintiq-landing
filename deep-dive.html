@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock Deep Dive — Free Fundamental, Valuation &amp; Technical Analysis | Fintiq</title>
-<meta name="description" content="Free stock analysis tool: fundamental data, DCF valuation, technical analysis (RSI, MACD, Bollinger), catalyst tracking and AI-guided decision analysis for any US or UK stock. No sign-up needed.">
+<title>Stock Deep Dive — Fundamental, Valuation &amp; Technical Analysis | Fintiq</title>
+<meta name="description" content="Institutional-grade stock analysis: fundamental data, DCF valuation, technical analysis (RSI, MACD, Bollinger), catalyst tracking and AI-guided Investment Committee report for any stock.">
 <meta name="robots" content="index, follow">
 <meta name="author" content="Fintiq">
-<link rel="canonical" href="https://www.fintiq.uk/deep-dive.html" />
+<link rel="canonical" href="https://fintiq.uk/deep-dive.html" />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://www.fintiq.uk/deep-dive.html" />
-<meta property="og:title" content="Stock Deep Dive — Free Fundamental, Valuation &amp; Technical Analysis | Fintiq" />
-<meta property="og:description" content="Free stock analysis: DCF valuation, Monte Carlo simulation, RSI/MACD/Bollinger, catalyst tracking and AI decision analysis for any stock. No sign-up." />
+<meta property="og:title" content="Stock Deep Dive — Institutional-Grade Stock Analysis | Fintiq" />
+<meta property="og:description" content="DCF valuation, Monte Carlo simulation, RSI/MACD/Bollinger, catalyst tracking and AI Investment Committee report for any stock." />
 <meta property="og:image" content="https://www.fintiq.uk/og-image.png" />
 <meta property="og:site_name" content="Fintiq" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@fintiq" />
-<meta name="twitter:title" content="Stock Deep Dive — Free Stock Analysis Tool | Fintiq" />
-<meta name="twitter:description" content="Free: DCF valuation, Monte Carlo, RSI/MACD, catalyst tracking and AI analysis for any US or UK stock." />
+<meta name="twitter:title" content="Stock Deep Dive — Institutional Stock Analysis | Fintiq" />
+<meta name="twitter:description" content="DCF valuation, Monte Carlo, RSI/MACD, catalyst tracking and AI Investment Committee report for any stock." />
 <meta name="twitter:image" content="https://www.fintiq.uk/og-image.png" />
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  "name": "Stock Deep Dive — Free Fundamental, Valuation & Technical Analysis",
-  "description": "Free stock analysis tool covering DCF valuation, Monte Carlo simulation, technical analysis, catalyst tracking and AI-guided decision analysis for any US or UK stock.",
+  "name": "Stock Deep Dive — Fundamental, Valuation & Technical Analysis",
+  "description": "Institutional-grade stock analysis covering DCF valuation, Monte Carlo simulation, technical analysis, catalyst tracking and AI Investment Committee report for any stock.",
   "url": "https://www.fintiq.uk/deep-dive.html",
   "publisher": {
     "@type": "Organization",
@@ -649,9 +649,120 @@ a{color:var(--gold);text-decoration:none}
   .tsr-simple{grid-template-columns:repeat(3,1fr)}
   .metrics-2col{grid-template-columns:1fr}
 }
+
+/* ── Auth / Paywall Modals ── */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,15,28,0.88);z-index:2000;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.modal-overlay.active{display:flex}
+.modal-box{background:#0d1f35;border:1.5px solid var(--border);border-radius:14px;padding:32px;width:100%;max-width:420px;position:relative}
+.modal-logo{color:var(--gold);font-weight:800;font-size:1rem;letter-spacing:-0.02em;margin-bottom:20px;display:flex;align-items:center;gap:7px}
+.modal-title{font-size:1.2rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+.modal-sub{color:var(--dim);font-size:0.83rem;line-height:1.5;margin-bottom:24px}
+.modal-input{width:100%;background:var(--card2);border:1.5px solid var(--border);border-radius:8px;padding:11px 14px;font-size:0.95rem;color:var(--text);font-family:var(--font);outline:none;transition:border .2s;margin-bottom:12px}
+.modal-input:focus{border-color:var(--gold)}
+.modal-btn{width:100%;background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:12px;font-weight:700;font-size:0.95rem;cursor:pointer;font-family:var(--font);transition:opacity .2s;margin-bottom:8px}
+.modal-btn:hover{opacity:.88}
+.modal-btn:disabled{opacity:.45;cursor:not-allowed}
+.modal-btn-ghost{width:100%;background:transparent;color:var(--dim);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:0.82rem;cursor:pointer;font-family:var(--font);transition:all .2s}
+.modal-btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+.modal-err{color:#ef4444;font-size:0.78rem;min-height:18px;margin-bottom:8px}
+.modal-note{color:var(--muted);font-size:0.72rem;text-align:center;margin-top:8px;line-height:1.5}
+.modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;line-height:1;padding:4px}
+.modal-close:hover{color:var(--text)}
+.otp-input{letter-spacing:8px;font-size:1.4rem;font-weight:700;text-align:center;font-family:monospace}
+/* Paywall modal */
+.pw-price{background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.25);border-radius:10px;padding:18px;text-align:center;margin-bottom:20px}
+.pw-amount{font-size:2rem;font-weight:800;color:var(--gold);letter-spacing:-0.03em}
+.pw-period{color:var(--dim);font-size:0.82rem}
+.pw-features{list-style:none;margin-bottom:20px;display:flex;flex-direction:column;gap:7px}
+.pw-features li{color:var(--dim);font-size:0.82rem;display:flex;align-items:center;gap:8px}
+.pw-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
 </style>
 </head>
 <body>
+
+<!-- ── Auth: Email Modal ── -->
+<div class="modal-overlay" id="modal-email">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-email')">✕</button>
+    <div class="modal-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+        <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+        <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      </svg>
+      Fintiq
+    </div>
+    <h2 class="modal-title">Start your analysis</h2>
+    <p class="modal-sub">Enter your email to access Stock Deep Dive. Your first analysis is on us — no card needed.</p>
+    <input class="modal-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email"
+      onkeydown="if(event.key==='Enter')submitEmail()">
+    <div class="modal-err" id="email-err"></div>
+    <button class="modal-btn" id="email-btn" onclick="submitEmail()">Send access code →</button>
+    <p class="modal-note">We'll send a 6-digit code to verify your email. No spam, ever.</p>
+  </div>
+</div>
+
+<!-- ── Auth: OTP Modal ── -->
+<div class="modal-overlay" id="modal-otp">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-otp');openModal('modal-email')">✕</button>
+    <div class="modal-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+        <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+        <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      </svg>
+      Fintiq
+    </div>
+    <h2 class="modal-title">Check your email</h2>
+    <p class="modal-sub" id="otp-sub">We've sent a 6-digit code to your email. Enter it below.</p>
+    <input class="modal-input otp-input" id="auth-otp" type="text" placeholder="000000" maxlength="6" inputmode="numeric"
+      onkeydown="if(event.key==='Enter')submitOTP()">
+    <div class="modal-err" id="otp-err"></div>
+    <button class="modal-btn" id="otp-btn" onclick="submitOTP()">Verify code →</button>
+    <button class="modal-btn-ghost" onclick="closeModal('modal-otp');openModal('modal-email')">← Change email</button>
+    <p class="modal-note">Didn't receive it? Check spam, or go back and re-enter your email.</p>
+  </div>
+</div>
+
+<!-- ── Auth: Paywall Modal ── -->
+<div class="modal-overlay" id="modal-paywall">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-paywall')">✕</button>
+    <div class="modal-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+        <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+        <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      </svg>
+      Fintiq
+    </div>
+    <h2 class="modal-title">Unlock unlimited Deep Dives</h2>
+    <p class="modal-sub">You've used your free analysis. Subscribe to continue with any stock, any time.</p>
+    <div class="pw-price">
+      <div class="pw-amount">£7<span style="font-size:1rem;color:var(--dim)">/month</span></div>
+      <div class="pw-period">or $9 / month &nbsp;·&nbsp; Cancel any time</div>
+    </div>
+    <ul class="pw-features">
+      <li>Unlimited stock Deep Dives</li>
+      <li>AI Copilot across all 6 analysis sections</li>
+      <li>Investment Committee Reports</li>
+      <li>AI Challenge — stress-test your thesis</li>
+      <li>All tools: Alpha Scanner, Portfolio Optimiser, Pairs Trading & more</li>
+    </ul>
+    <button class="modal-btn" onclick="paywallSubscribe()">Subscribe — £7 / month</button>
+    <p class="modal-note" id="pw-note" style="color:var(--gold)">Early access — subscriptions opening soon. Click to join the waitlist.</p>
+  </div>
+</div>
 
 <!-- Nav -->
 <nav class="nav">
@@ -942,18 +1053,20 @@ window.addEventListener('DOMContentLoaded', () => {
   const t = (params.get('ticker') || 'AAPL').toUpperCase();
   document.getElementById('ticker-input').value = t;
 
-  // Restore previous session if same ticker — avoids re-fetching all sections
-  const restored = _tryRestoreSession(t);
-  if (restored) {
-    // Show a brief "session restored" toast
-    const toast = document.createElement('div');
-    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid rgba(99,102,241,0.3);color:#e2e8f0;padding:8px 16px;border-radius:20px;font-size:0.72rem;z-index:9999;pointer-events:none';
-    toast.textContent = '↺ Session restored — sections reloaded from cache';
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
+  // Only auto-run analysis if user already has a session token.
+  // New visitors see the search bar and click Analyse themselves.
+  if (localStorage.getItem('fintiq_session')) {
+    // Restore previous Deep Dive session data if same ticker
+    const restored = _tryRestoreSession(t);
+    if (restored) {
+      const toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid rgba(99,102,241,0.3);color:#e2e8f0;padding:8px 16px;border-radius:20px;font-size:0.72rem;z-index:9999;pointer-events:none';
+      toast.textContent = '↺ Session restored — sections reloaded from cache';
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3500);
+    }
+    startAnalysis();
   }
-
-  startAnalysis();
 });
 
 function quickTicker(t) {
@@ -961,10 +1074,127 @@ function quickTicker(t) {
   startAnalysis();
 }
 
+// ── Auth state ────────────────────────────────────────────────────────────────
+const API = 'https://api.fintiq.uk';
+let _pendingTicker = null;
+let _authEmail = '';
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+function _setErr(id, msg) { document.getElementById(id).textContent = msg || ''; }
+function _setBusy(btnId, busy, label) {
+  const b = document.getElementById(btnId);
+  b.disabled = busy;
+  b.textContent = busy ? 'Please wait…' : label;
+}
+
+async function submitEmail() {
+  const email = (document.getElementById('auth-email').value || '').trim().toLowerCase();
+  _setErr('email-err', '');
+  if (!email || !email.includes('@')) { _setErr('email-err', 'Please enter a valid email.'); return; }
+  _setBusy('email-btn', true, 'Send access code →');
+  try {
+    const r = await fetch(`${API}/auth/request-otp`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email})
+    });
+    const d = await r.json();
+    if (!r.ok) { _setErr('email-err', d.detail || 'Could not send code. Please retry.'); return; }
+    _authEmail = email;
+    document.getElementById('otp-sub').textContent = `We've sent a 6-digit code to ${email}. Enter it below.`;
+    document.getElementById('auth-otp').value = '';
+    closeModal('modal-email');
+    openModal('modal-otp');
+    setTimeout(() => document.getElementById('auth-otp').focus(), 100);
+  } catch(e) {
+    _setErr('email-err', 'Network error. Please check your connection.');
+  } finally {
+    _setBusy('email-btn', false, 'Send access code →');
+  }
+}
+
+async function submitOTP() {
+  const code = (document.getElementById('auth-otp').value || '').trim();
+  _setErr('otp-err', '');
+  if (code.length !== 6 || !/^\d{6}$/.test(code)) { _setErr('otp-err', 'Enter the 6-digit code from your email.'); return; }
+  _setBusy('otp-btn', true, 'Verify code →');
+  try {
+    const r = await fetch(`${API}/auth/verify-otp`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email: _authEmail, code})
+    });
+    const d = await r.json();
+    if (!r.ok) { _setErr('otp-err', d.detail || 'Incorrect code. Please try again.'); return; }
+    // Store session token
+    localStorage.setItem('fintiq_session', d.session_token);
+    closeModal('modal-otp');
+    if (d.user.free_used) {
+      // Already used free session on a previous visit
+      openModal('modal-paywall');
+    } else {
+      // First time — proceed and consume the free session
+      if (_pendingTicker) _doAnalysis(_pendingTicker);
+    }
+  } catch(e) {
+    _setErr('otp-err', 'Network error. Please check your connection.');
+  } finally {
+    _setBusy('otp-btn', false, 'Verify code →');
+  }
+}
+
+function paywallSubscribe() {
+  // Placeholder until Stripe is wired up — opens mailto waitlist
+  window.open('mailto:contactfintiq@gmail.com?subject=Fintiq%20Subscription%20Waitlist&body=Hi%2C%20I%27d%20like%20to%20subscribe%20to%20Fintiq.%20Please%20add%20me%20to%20the%20waitlist.', '_blank');
+}
+
+// ── startAnalysis — auth gate ─────────────────────────────────────────────────
 function startAnalysis() {
   const input = document.getElementById('ticker-input');
   const ticker = input.value.trim().toUpperCase();
   if (!ticker) { input.focus(); return; }
+  _pendingTicker = ticker;
+
+  const token = localStorage.getItem('fintiq_session');
+  if (!token) {
+    openModal('modal-email');
+    return;
+  }
+
+  // Validate session async
+  fetch(`${API}/auth/session`, { headers: {'Authorization': `Bearer ${token}`} })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.authenticated) {
+        localStorage.removeItem('fintiq_session');
+        openModal('modal-email');
+        return;
+      }
+      if (!d.user.subscribed && d.user.free_used) {
+        openModal('modal-paywall');
+        return;
+      }
+      // Authenticated — consume free session if first time, then proceed
+      if (!d.user.subscribed && !d.user.free_used) {
+        fetch(`${API}/auth/use-session`, {
+          method: 'POST',
+          headers: {'Authorization': `Bearer ${token}`}
+        }).then(r => {
+          if (r.status === 402) { openModal('modal-paywall'); return; }
+          _doAnalysis(ticker);
+        }).catch(() => _doAnalysis(ticker)); // fail-open: let them through on network error
+      } else {
+        _doAnalysis(ticker);
+      }
+    })
+    .catch(() => {
+      // Network error checking session — fail-open so tool remains usable
+      _doAnalysis(ticker);
+    });
+}
+
+// ── _doAnalysis — core analysis logic (was startAnalysis) ─────────────────────
+function _doAnalysis(ticker) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Update URL without reload

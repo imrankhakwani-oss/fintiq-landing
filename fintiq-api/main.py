@@ -9,7 +9,7 @@ from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 import yfinance as yf
 import pandas as pd
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
 import anthropic
 
@@ -6061,3 +6061,268 @@ def get_fintiq_portfolios():
     if not _fintiq_portfolios_refreshing:
         threading.Thread(target=_bg_refresh_fintiq_portfolios, daemon=True).start()
     raise HTTPException(status_code=503, detail="Fintiq portfolios are being computed — ready in ~30 seconds. Please retry.")
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# AUTH SYSTEM — Email OTP + Session tokens
+# Storage: Upstash Redis (same infra as cache, persistent across Railway restarts)
+# Email:   Resend.com (add RESEND_API_KEY env var in Railway)
+# Flow:    email → OTP (10 min TTL) → session token (30 day TTL) → user record
+# ══════════════════════════════════════════════════════════════════════════════
+
+import hashlib as _hashlib
+import secrets as _secrets
+import random as _random
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+
+
+# ── Redis key helpers ──────────────────────────────────────────────────────────
+
+def _user_key(email: str) -> str:
+    h = _hashlib.sha256(email.lower().strip().encode()).hexdigest()[:20]
+    return f"fintiq:auth:user:{h}"
+
+def _otp_key(email: str) -> str:
+    h = _hashlib.sha256(email.lower().strip().encode()).hexdigest()[:20]
+    return f"fintiq:auth:otp:{h}"
+
+def _sess_key(token: str) -> str:
+    return f"fintiq:auth:sess:{token}"
+
+
+# ── Synchronous Redis helpers for auth (must not be fire-and-forget) ──────────
+
+def _auth_get(key: str) -> dict | None:
+    """Synchronous Redis GET. Returns parsed dict or None."""
+    if not _UPSTASH_OK:
+        return None
+    try:
+        r = requests.get(
+            f"{_UPSTASH_URL}/get/{key}",
+            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
+            timeout=5,
+        )
+        raw = r.json().get("result")
+        if not raw:
+            return None
+        return json.loads(raw)
+    except Exception:
+        return None
+
+
+def _auth_set(key: str, data: dict, ttl: int | None = None) -> bool:
+    """Synchronous Redis SET. Returns True on success."""
+    if not _UPSTASH_OK:
+        return False
+    try:
+        blob = json.dumps(data)
+        payload: dict = {"value": blob}
+        if ttl:
+            payload["ex"] = ttl
+        r = requests.post(
+            f"{_UPSTASH_URL}/set/{key}",
+            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}",
+                     "Content-Type": "application/json"},
+            json=payload,
+            timeout=5,
+        )
+        return r.status_code == 200
+    except Exception:
+        return False
+
+
+def _auth_del(key: str):
+    """Delete a Redis key (synchronous)."""
+    if not _UPSTASH_OK:
+        return
+    try:
+        requests.get(
+            f"{_UPSTASH_URL}/del/{key}",
+            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
+            timeout=3,
+        )
+    except Exception:
+        pass
+
+
+# ── Email via Resend ──────────────────────────────────────────────────────────
+
+def _send_otp_email(to_email: str, code: str) -> bool:
+    """Send OTP email via Resend. Prints code to logs if RESEND_API_KEY not set (dev mode)."""
+    if not RESEND_API_KEY:
+        print(f"[Auth] DEV MODE — OTP for {to_email}: {code}")
+        return True
+    html = f"""
+<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;background:#050f1c;color:#e2e8f0;padding:32px 32px 24px;border-radius:12px;border:1px solid #1e3a5f">
+  <div style="margin-bottom:24px">
+    <span style="color:#f5a623;font-size:18px;font-weight:800;letter-spacing:-0.02em">Fintiq</span>
+  </div>
+  <h2 style="color:#e2e8f0;font-size:20px;margin:0 0 8px">Your access code</h2>
+  <p style="color:#94a3b8;font-size:14px;margin:0 0 28px">Enter this code to start your stock analysis. It expires in 10&nbsp;minutes.</p>
+  <div style="background:#0d1f35;border:2px solid #f5a623;border-radius:10px;padding:24px;text-align:center;margin-bottom:28px">
+    <span style="font-size:40px;font-weight:800;letter-spacing:12px;color:#f5a623;font-family:monospace">{code}</span>
+  </div>
+  <p style="color:#475569;font-size:12px;margin:0 0 20px">If you didn&rsquo;t request this, you can safely ignore this email.</p>
+  <hr style="border:none;border-top:1px solid #1e3a5f;margin:0 0 20px">
+  <p style="color:#334155;font-size:11px;margin:0">Fintiq &mdash; Institutional-grade investing tools for every investor &mdash;
+     <a href="https://fintiq.uk" style="color:#f5a623;text-decoration:none">fintiq.uk</a></p>
+</div>"""
+    try:
+        r = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}",
+                     "Content-Type": "application/json"},
+            json={
+                "from": "Fintiq <noreply@fintiq.uk>",
+                "to": [to_email],
+                "subject": f"Your Fintiq code: {code}",
+                "html": html,
+            },
+            timeout=10,
+        )
+        if r.status_code not in (200, 201):
+            print(f"[Auth] Resend error {r.status_code}: {r.text[:200]}")
+            return False
+        return True
+    except Exception as e:
+        print(f"[Auth] Email send error: {e}")
+        return False
+
+
+# ── Session extraction helper ─────────────────────────────────────────────────
+
+def _get_session_user(request: Request) -> dict | None:
+    """Extract Bearer token from Authorization header and return user dict or None."""
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    token = auth[7:].strip()
+    if not token:
+        return None
+    sess = _auth_get(_sess_key(token))
+    if not sess:
+        return None
+    email = sess.get("email", "")
+    if not email:
+        return None
+    return _auth_get(_user_key(email))
+
+
+# ── Auth endpoints ─────────────────────────────────────────────────────────────
+
+@app.post("/auth/request-otp")
+def auth_request_otp(payload: dict):
+    """
+    Step 1 — User submits email.
+    Generates 6-digit OTP, stores in Redis (TTL 10 min), sends via Resend.
+    """
+    email = (payload.get("email") or "").strip().lower()
+    if not email or "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    if not _UPSTASH_OK:
+        raise HTTPException(status_code=503, detail="Auth service temporarily unavailable.")
+
+    code = str(_random.randint(100000, 999999))
+    saved = _auth_set(_otp_key(email), {"code": code, "email": email}, ttl=600)
+    if not saved:
+        raise HTTPException(status_code=503, detail="Could not store code. Please retry.")
+
+    sent = _send_otp_email(email, code)
+    if not sent:
+        raise HTTPException(status_code=503, detail="Could not send email. Please retry.")
+
+    return {"status": "sent", "email": email}
+
+
+@app.post("/auth/verify-otp")
+def auth_verify_otp(payload: dict):
+    """
+    Step 2 — User submits email + 6-digit code.
+    Verifies OTP, creates or retrieves user record, returns session token.
+    Response: {session_token, user: {email, free_used, subscribed}}
+    """
+    email = (payload.get("email") or "").strip().lower()
+    code  = (payload.get("code") or "").strip()
+
+    if not email or not code:
+        raise HTTPException(status_code=400, detail="Email and code are required.")
+    if not _UPSTASH_OK:
+        raise HTTPException(status_code=503, detail="Auth service temporarily unavailable.")
+
+    stored = _auth_get(_otp_key(email))
+    if not stored:
+        raise HTTPException(status_code=400, detail="Code expired or not found. Request a new one.")
+    if stored.get("code") != code:
+        raise HTTPException(status_code=400, detail="Incorrect code. Please check and try again.")
+
+    # OTP valid — delete it (single use)
+    _auth_del(_otp_key(email))
+
+    # Get or create user record (no TTL — permanent)
+    user = _auth_get(_user_key(email))
+    if not user:
+        user = {
+            "email": email,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "free_used": False,
+            "subscribed": False,
+            "subscription_expires": None,
+        }
+    _auth_set(_user_key(email), user)
+
+    # Create session token — 30 days TTL
+    token = _secrets.token_urlsafe(32)
+    _auth_set(_sess_key(token), {"email": email}, ttl=2592000)
+
+    return {
+        "session_token": token,
+        "user": {
+            "email": user["email"],
+            "free_used": bool(user.get("free_used", False)),
+            "subscribed": bool(user.get("subscribed", False)),
+        },
+    }
+
+
+@app.get("/auth/session")
+def auth_check_session(request: Request):
+    """
+    Validate session token (Authorization: Bearer <token>).
+    Returns {authenticated, user} or {authenticated: false}.
+    """
+    user = _get_session_user(request)
+    if not user:
+        return {"authenticated": False}
+    return {
+        "authenticated": True,
+        "user": {
+            "email": user["email"],
+            "free_used": bool(user.get("free_used", False)),
+            "subscribed": bool(user.get("subscribed", False)),
+        },
+    }
+
+
+@app.post("/auth/use-session")
+def auth_use_session(request: Request):
+    """
+    Called the moment Deep Dive loads for a ticker — marks free_used=True.
+    - Subscribed users: always allowed, no mark.
+    - First-time users: mark free_used=True, return ok.
+    - Already used + not subscribed: raise 402 (paywall).
+    """
+    user = _get_session_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    if bool(user.get("subscribed", False)):
+        return {"ok": True, "subscribed": True}
+
+    if bool(user.get("free_used", False)):
+        raise HTTPException(status_code=402, detail="Free session already used.")
+
+    # Mark free session consumed
+    user["free_used"] = True
+    _auth_set(_user_key(user["email"]), user)
+    return {"ok": True, "free_used_now": True}
