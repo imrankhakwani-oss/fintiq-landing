@@ -6065,85 +6065,165 @@ def get_fintiq_portfolios():
 
 # ══════════════════════════════════════════════════════════════════════════════
 # AUTH SYSTEM — Email OTP + Session tokens
-# Storage: Upstash Redis (same infra as cache, persistent across Railway restarts)
-# Email:   Resend.com (add RESEND_API_KEY env var in Railway)
-# Flow:    email → OTP (10 min TTL) → session token (30 day TTL) → user record
+# Storage: SQLite on Railway volume (/data/auth.db) — same persistent disk as Alpha Scanner
+# Email:   Resend.com (RESEND_API_KEY env var in Railway)
+# Flow:    email → OTP (10 min expiry) → session token (30 day expiry) → user record
 # ══════════════════════════════════════════════════════════════════════════════
 
 import hashlib as _hashlib
 import secrets as _secrets
 import random as _random
+import sqlite3 as _sqlite3
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 
-
-# ── Redis key helpers ──────────────────────────────────────────────────────────
-
-def _user_key(email: str) -> str:
-    h = _hashlib.sha256(email.lower().strip().encode()).hexdigest()[:20]
-    return f"fintiq:auth:user:{h}"
-
-def _otp_key(email: str) -> str:
-    h = _hashlib.sha256(email.lower().strip().encode()).hexdigest()[:20]
-    return f"fintiq:auth:otp:{h}"
-
-def _sess_key(token: str) -> str:
-    return f"fintiq:auth:sess:{token}"
+# Auth DB path — same volume as Alpha Scanner
+_AUTH_DB = "/data/auth.db" if os.path.isdir("/data") else "/tmp/auth.db"
 
 
-# ── Synchronous Redis helpers for auth (must not be fire-and-forget) ──────────
+def _auth_db():
+    """Get auth SQLite connection. Creates tables if they don't exist."""
+    conn = _sqlite3.connect(_AUTH_DB)
+    conn.row_factory = _sqlite3.Row
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS users (
+            email       TEXT PRIMARY KEY,
+            created_at  TEXT NOT NULL,
+            free_used   INTEGER DEFAULT 0,
+            subscribed  INTEGER DEFAULT 0,
+            subscription_expires TEXT
+        );
+        CREATE TABLE IF NOT EXISTS otps (
+            email      TEXT PRIMARY KEY,
+            code       TEXT NOT NULL,
+            expires_at TEXT NOT NULL
+        );
+        CREATE TABLE IF NOT EXISTS sessions (
+            token      TEXT PRIMARY KEY,
+            email      TEXT NOT NULL,
+            expires_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions(email);
+    """)
+    conn.commit()
+    return conn
 
-def _auth_get(key: str) -> dict | None:
-    """Synchronous Redis GET. Returns parsed dict or None."""
-    if not _UPSTASH_OK:
-        return None
+
+def _auth_get_user(email: str) -> dict | None:
+    """Fetch user record by email. Returns dict or None."""
     try:
-        r = requests.get(
-            f"{_UPSTASH_URL}/get/{key}",
-            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
-            timeout=5,
-        )
-        raw = r.json().get("result")
-        if not raw:
+        conn = _auth_db()
+        row = conn.execute("SELECT * FROM users WHERE email=?", (email.lower().strip(),)).fetchone()
+        conn.close()
+        if not row:
             return None
-        return json.loads(raw)
-    except Exception:
+        return dict(row)
+    except Exception as e:
+        print(f"[Auth] _auth_get_user error: {e}")
         return None
 
 
-def _auth_set(key: str, data: dict, ttl: int | None = None) -> bool:
-    """Synchronous Redis SET. Returns True on success."""
-    if not _UPSTASH_OK:
-        return False
+def _auth_save_user(user: dict) -> bool:
+    """Insert or update user record."""
     try:
-        blob = json.dumps(data)
-        payload: dict = {"value": blob}
-        if ttl:
-            payload["ex"] = ttl
-        r = requests.post(
-            f"{_UPSTASH_URL}/set/{key}",
-            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}",
-                     "Content-Type": "application/json"},
-            json=payload,
-            timeout=5,
-        )
-        return r.status_code == 200
-    except Exception:
+        conn = _auth_db()
+        conn.execute("""
+            INSERT INTO users (email, created_at, free_used, subscribed, subscription_expires)
+            VALUES (:email, :created_at, :free_used, :subscribed, :subscription_expires)
+            ON CONFLICT(email) DO UPDATE SET
+                free_used=excluded.free_used,
+                subscribed=excluded.subscribed,
+                subscription_expires=excluded.subscription_expires
+        """, {
+            "email": user["email"].lower().strip(),
+            "created_at": user.get("created_at", datetime.now(timezone.utc).isoformat()),
+            "free_used": 1 if user.get("free_used") else 0,
+            "subscribed": 1 if user.get("subscribed") else 0,
+            "subscription_expires": user.get("subscription_expires"),
+        })
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[Auth] _auth_save_user error: {e}")
         return False
 
 
-def _auth_del(key: str):
-    """Delete a Redis key (synchronous)."""
-    if not _UPSTASH_OK:
-        return
+def _auth_set_otp(email: str, code: str, ttl_seconds: int = 600) -> bool:
+    """Store OTP for email with expiry."""
     try:
-        requests.get(
-            f"{_UPSTASH_URL}/del/{key}",
-            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
-            timeout=3,
-        )
+        expires = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
+        conn = _auth_db()
+        conn.execute("""
+            INSERT INTO otps (email, code, expires_at) VALUES (?,?,?)
+            ON CONFLICT(email) DO UPDATE SET code=excluded.code, expires_at=excluded.expires_at
+        """, (email.lower().strip(), code, expires))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[Auth] _auth_set_otp error: {e}")
+        return False
+
+
+def _auth_get_otp(email: str) -> str | None:
+    """Fetch OTP code if not expired. Returns code string or None."""
+    try:
+        conn = _auth_db()
+        row = conn.execute("SELECT code, expires_at FROM otps WHERE email=?",
+                           (email.lower().strip(),)).fetchone()
+        conn.close()
+        if not row:
+            return None
+        if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+            return None  # expired
+        return row["code"]
+    except Exception as e:
+        print(f"[Auth] _auth_get_otp error: {e}")
+        return None
+
+
+def _auth_del_otp(email: str):
+    """Delete OTP after use."""
+    try:
+        conn = _auth_db()
+        conn.execute("DELETE FROM otps WHERE email=?", (email.lower().strip(),))
+        conn.commit()
+        conn.close()
     except Exception:
         pass
+
+
+def _auth_create_session(email: str, ttl_seconds: int = 2592000) -> str:
+    """Create session token (default 30 days). Returns token string."""
+    token = _secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
+    try:
+        conn = _auth_db()
+        conn.execute("INSERT INTO sessions (token, email, expires_at) VALUES (?,?,?)",
+                     (token, email.lower().strip(), expires))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[Auth] _auth_create_session error: {e}")
+    return token
+
+
+def _auth_get_session_user(token: str) -> dict | None:
+    """Validate session token and return user dict or None."""
+    try:
+        conn = _auth_db()
+        row = conn.execute("SELECT email, expires_at FROM sessions WHERE token=?",
+                           (token,)).fetchone()
+        conn.close()
+        if not row:
+            return None
+        if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+            return None  # expired
+        return _auth_get_user(row["email"])
+    except Exception as e:
+        print(f"[Auth] _auth_get_session_user error: {e}")
+        return None
 
 
 # ── Email via Resend ──────────────────────────────────────────────────────────
@@ -6200,13 +6280,7 @@ def _get_session_user(request: Request) -> dict | None:
     token = auth[7:].strip()
     if not token:
         return None
-    sess = _auth_get(_sess_key(token))
-    if not sess:
-        return None
-    email = sess.get("email", "")
-    if not email:
-        return None
-    return _auth_get(_user_key(email))
+    return _auth_get_session_user(token)
 
 
 # ── Auth endpoints ─────────────────────────────────────────────────────────────
@@ -6215,21 +6289,17 @@ def _get_session_user(request: Request) -> dict | None:
 def auth_request_otp(payload: dict):
     """
     Step 1 — User submits email.
-    Generates 6-digit OTP, stores in Redis (TTL 10 min), sends via Resend.
+    Generates 6-digit OTP, stores in SQLite (/data/auth.db, 10 min expiry), sends via Resend.
     """
     email = (payload.get("email") or "").strip().lower()
     if not email or "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(status_code=400, detail="Please enter a valid email address.")
-    if not _UPSTASH_OK:
-        raise HTTPException(status_code=503, detail="Auth service temporarily unavailable.")
 
     code = str(_random.randint(100000, 999999))
-    saved = _auth_set(_otp_key(email), {"code": code, "email": email}, ttl=600)
-    if not saved:
+    if not _auth_set_otp(email, code, ttl_seconds=600):
         raise HTTPException(status_code=503, detail="Could not store code. Please retry.")
 
-    sent = _send_otp_email(email, code)
-    if not sent:
+    if not _send_otp_email(email, code):
         raise HTTPException(status_code=503, detail="Could not send email. Please retry.")
 
     return {"status": "sent", "email": email}
@@ -6247,20 +6317,18 @@ def auth_verify_otp(payload: dict):
 
     if not email or not code:
         raise HTTPException(status_code=400, detail="Email and code are required.")
-    if not _UPSTASH_OK:
-        raise HTTPException(status_code=503, detail="Auth service temporarily unavailable.")
 
-    stored = _auth_get(_otp_key(email))
-    if not stored:
+    stored_code = _auth_get_otp(email)
+    if not stored_code:
         raise HTTPException(status_code=400, detail="Code expired or not found. Request a new one.")
-    if stored.get("code") != code:
+    if stored_code != code:
         raise HTTPException(status_code=400, detail="Incorrect code. Please check and try again.")
 
     # OTP valid — delete it (single use)
-    _auth_del(_otp_key(email))
+    _auth_del_otp(email)
 
-    # Get or create user record (no TTL — permanent)
-    user = _auth_get(_user_key(email))
+    # Get or create user record
+    user = _auth_get_user(email)
     if not user:
         user = {
             "email": email,
@@ -6269,11 +6337,10 @@ def auth_verify_otp(payload: dict):
             "subscribed": False,
             "subscription_expires": None,
         }
-    _auth_set(_user_key(email), user)
+    _auth_save_user(user)
 
-    # Create session token — 30 days TTL
-    token = _secrets.token_urlsafe(32)
-    _auth_set(_sess_key(token), {"email": email}, ttl=2592000)
+    # Create session token (30 days)
+    token = _auth_create_session(email, ttl_seconds=2592000)
 
     return {
         "session_token": token,
@@ -6324,5 +6391,5 @@ def auth_use_session(request: Request):
 
     # Mark free session consumed
     user["free_used"] = True
-    _auth_set(_user_key(user["email"]), user)
+    _auth_save_user(user)
     return {"ok": True, "free_used_now": True}
