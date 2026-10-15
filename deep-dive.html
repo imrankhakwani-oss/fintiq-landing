@@ -841,7 +841,7 @@ a{color:var(--gold);text-decoration:none}
 </div>
 
 <!-- Main -->
-<div class="main" id="main-content" style="display:none">
+<div class="main" id="main-content">
 
   <!-- 1. Fundamentals -->
   <div class="section-accordion" id="acc-fundamentals">
@@ -1228,7 +1228,6 @@ function _doAnalysis(ticker) {
   document.getElementById('analyst-pill-wrap').innerHTML = '';
 
   // Show UI
-  document.getElementById('main-content').style.display = 'block';
   document.getElementById('co-header').classList.add('visible');
   document.getElementById('session-strip').classList.add('visible');
   updateSessionBadges();
@@ -1240,7 +1239,6 @@ function _doAnalysis(ticker) {
 function resetSession() {
   _session.ticker = null;
   document.getElementById('ticker-input').value = '';
-  document.getElementById('main-content').style.display = 'none';
   document.getElementById('co-header').classList.remove('visible');
   document.getElementById('session-strip').classList.remove('visible');
   // Close all sections
