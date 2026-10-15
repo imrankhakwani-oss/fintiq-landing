@@ -6254,7 +6254,7 @@ def _send_otp_email(to_email: str, code: str) -> bool:
             headers={"Authorization": f"Bearer {RESEND_API_KEY}",
                      "Content-Type": "application/json"},
             json={
-                "from": "Fintiq <noreply@fintiq.uk>",
+                "from": "Fintiq <onboarding@resend.dev>",
                 "to": [to_email],
                 "subject": f"Your Fintiq code: {code}",
                 "html": html,
