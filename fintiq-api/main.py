@@ -6066,7 +6066,7 @@ def get_fintiq_portfolios():
 # ══════════════════════════════════════════════════════════════════════════════
 # AUTH SYSTEM — Email OTP + Session tokens
 # Storage: SQLite on Railway volume (/data/auth.db) — same persistent disk as Alpha Scanner
-# Email:   Gmail SMTP via contactfintiq@gmail.com (GMAIL_APP_PASSWORD env var in Railway)
+# Email:   Resend.com HTTP API (RESEND_API_KEY env var in Railway)
 # Flow:    email → OTP (10 min expiry) → session token (30 day expiry) → user record
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -6074,11 +6074,8 @@ import hashlib as _hashlib
 import secrets as _secrets
 import random as _random
 import sqlite3 as _sqlite3
-import smtplib as _smtplib
-from email.mime.multipart import MIMEMultipart as _MIMEMultipart
-from email.mime.text import MIMEText as _MIMEText
 
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "").replace(" ", "")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
 
 # Auth DB path — same volume as Alpha Scanner
 _AUTH_DB = "/data/auth.db" if os.path.isdir("/data") else "/tmp/auth.db"
@@ -6232,8 +6229,8 @@ def _auth_get_session_user(token: str) -> dict | None:
 # ── Email via Resend ──────────────────────────────────────────────────────────
 
 def _send_otp_email(to_email: str, code: str) -> bool:
-    """Send OTP email via Gmail SMTP from contactfintiq@gmail.com."""
-    if not GMAIL_APP_PASSWORD:
+    """Send OTP email via Resend HTTP API."""
+    if not RESEND_API_KEY:
         print(f"[Auth] DEV MODE — OTP for {to_email}: {code}")
         return True
     html = f"""
@@ -6252,17 +6249,24 @@ def _send_otp_email(to_email: str, code: str) -> bool:
      <a href="https://fintiq.uk" style="color:#f5a623;text-decoration:none">fintiq.uk</a></p>
 </div>"""
     try:
-        msg = _MIMEMultipart("alternative")
-        msg["Subject"] = f"Your Fintiq code: {code}"
-        msg["From"] = "Fintiq <contactfintiq@gmail.com>"
-        msg["To"] = to_email
-        msg.attach(_MIMEText(html, "html"))
-        with _smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login("contactfintiq@gmail.com", GMAIL_APP_PASSWORD)
-            smtp.sendmail("contactfintiq@gmail.com", to_email, msg.as_string())
+        r = requests.post(
+            "https://api.resend.com/emails",
+            headers={"Authorization": f"Bearer {RESEND_API_KEY}",
+                     "Content-Type": "application/json"},
+            json={
+                "from": "Fintiq <onboarding@resend.dev>",
+                "to": [to_email],
+                "subject": f"Your Fintiq code: {code}",
+                "html": html,
+            },
+            timeout=10,
+        )
+        if r.status_code not in (200, 201):
+            print(f"[Auth] Resend error {r.status_code}: {r.text[:200]}")
+            return False
         return True
     except Exception as e:
-        print(f"[Auth] Gmail send error: {e}")
+        print(f"[Auth] Email send error: {e}")
         return False
 
 
