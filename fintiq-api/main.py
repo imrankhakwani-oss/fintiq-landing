@@ -6254,7 +6254,7 @@ def _send_otp_email(to_email: str, code: str) -> bool:
             headers={"api-key": BREVO_API_KEY,
                      "Content-Type": "application/json"},
             json={
-                "sender": {"name": "Fintiq", "email": "contactfintiq@gmail.com"},
+                "sender": {"name": "Fintiq", "email": "hello@fintiq.uk"},
                 "to": [{"email": to_email}],
                 "subject": f"Your Fintiq code: {code}",
                 "htmlContent": html,
