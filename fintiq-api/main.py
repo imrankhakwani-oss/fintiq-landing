@@ -6066,7 +6066,7 @@ def get_fintiq_portfolios():
 # ══════════════════════════════════════════════════════════════════════════════
 # AUTH SYSTEM — Email OTP + Session tokens
 # Storage: SQLite on Railway volume (/data/auth.db) — same persistent disk as Alpha Scanner
-# Email:   Resend.com HTTP API (RESEND_API_KEY env var in Railway)
+# Email:   Brevo HTTP API from contactfintiq@gmail.com (BREVO_API_KEY env var in Railway)
 # Flow:    email → OTP (10 min expiry) → session token (30 day expiry) → user record
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -6075,7 +6075,7 @@ import secrets as _secrets
 import random as _random
 import sqlite3 as _sqlite3
 
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "")
+BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
 
 # Auth DB path — same volume as Alpha Scanner
 _AUTH_DB = "/data/auth.db" if os.path.isdir("/data") else "/tmp/auth.db"
@@ -6226,11 +6226,11 @@ def _auth_get_session_user(token: str) -> dict | None:
         return None
 
 
-# ── Email via Resend ──────────────────────────────────────────────────────────
+# ── Email via Brevo ───────────────────────────────────────────────────────────
 
 def _send_otp_email(to_email: str, code: str) -> bool:
-    """Send OTP email via Resend HTTP API."""
-    if not RESEND_API_KEY:
+    """Send OTP email via Brevo HTTP API from contactfintiq@gmail.com."""
+    if not BREVO_API_KEY:
         print(f"[Auth] DEV MODE — OTP for {to_email}: {code}")
         return True
     html = f"""
@@ -6250,19 +6250,19 @@ def _send_otp_email(to_email: str, code: str) -> bool:
 </div>"""
     try:
         r = requests.post(
-            "https://api.resend.com/emails",
-            headers={"Authorization": f"Bearer {RESEND_API_KEY}",
+            "https://api.brevo.com/v3/smtp/email",
+            headers={"api-key": BREVO_API_KEY,
                      "Content-Type": "application/json"},
             json={
-                "from": "Fintiq <onboarding@resend.dev>",
-                "to": [to_email],
+                "sender": {"name": "Fintiq", "email": "contactfintiq@gmail.com"},
+                "to": [{"email": to_email}],
                 "subject": f"Your Fintiq code: {code}",
-                "html": html,
+                "htmlContent": html,
             },
             timeout=10,
         )
         if r.status_code not in (200, 201):
-            print(f"[Auth] Resend error {r.status_code}: {r.text[:200]}")
+            print(f"[Auth] Brevo error {r.status_code}: {r.text[:200]}")
             return False
         return True
     except Exception as e:
