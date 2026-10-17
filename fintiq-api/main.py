@@ -6414,6 +6414,24 @@ def auth_use_session(request: Request):
     return {"ok": True, "free_used_now": True}
 
 
+@app.get("/auth/admin/set-subscribed")
+def auth_admin_set_subscribed(email: str, token: str, value: int = 1):
+    """Admin endpoint — manually set subscribed flag for an email."""
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    email = email.strip().lower()
+    user = _auth_get_user(email) or {
+        "email": email,
+        "created_at": datetime.utcnow().isoformat(),
+        "free_used": True,
+        "subscribed": bool(value),
+        "subscription_expires": None,
+    }
+    user["subscribed"] = bool(value)
+    _auth_save_user(user)
+    return {"ok": True, "email": email, "subscribed": bool(value)}
+
+
 # ── Stripe — Checkout + Webhook ───────────────────────────────────────────────
 import hmac as _hmac, hashlib as _hashlib2
 
