@@ -6075,7 +6075,11 @@ import secrets as _secrets
 import random as _random
 import sqlite3 as _sqlite3
 
-BREVO_API_KEY = os.environ.get("BREVO_API_KEY", "")
+BREVO_API_KEY         = os.environ.get("BREVO_API_KEY", "")
+STRIPE_SECRET_KEY     = os.environ.get("STRIPE_SECRET_KEY", "")
+STRIPE_WEBHOOK_SECRET = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+STRIPE_PRICE_GBP      = "price_1URcWIFSQ5tKKNExDcY6pHie"   # £3.50/month
+STRIPE_PRICE_USD      = "price_1URcWIFSQ5tKKNExCAchLzVg"   # $5.00/month
 
 # Auth DB path — same volume as Alpha Scanner
 _AUTH_DB = "/data/auth.db" if os.path.isdir("/data") else "/tmp/auth.db"
@@ -6408,3 +6412,112 @@ def auth_use_session(request: Request):
     user["free_used"] = True
     _auth_save_user(user)
     return {"ok": True, "free_used_now": True}
+
+
+# ── Stripe — Checkout + Webhook ───────────────────────────────────────────────
+import hmac as _hmac, hashlib as _hashlib2
+
+def _stripe_verify_signature(payload: bytes, sig_header: str, secret: str) -> bool:
+    """Verify Stripe webhook HMAC-SHA256 signature without the stripe library."""
+    try:
+        parts: dict[str, list] = {}
+        for item in sig_header.split(","):
+            k, v = item.split("=", 1)
+            parts.setdefault(k.strip(), []).append(v.strip())
+        timestamp = parts.get("t", [""])[0]
+        signatures = parts.get("v1", [])
+        signed = f"{timestamp}.{payload.decode('utf-8')}"
+        expected = _hmac.new(
+            secret.encode("utf-8"), signed.encode("utf-8"), _hashlib2.sha256
+        ).hexdigest()
+        return any(_hmac.compare_digest(expected, s) for s in signatures)
+    except Exception:
+        return False
+
+
+@app.post("/create-checkout-session")
+async def create_checkout_session(request: Request):
+    """Creates a Stripe Checkout session for the paywall Subscribe button."""
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Stripe not configured.")
+    body = await request.json()
+    email    = body.get("email", "").strip().lower()
+    currency = body.get("currency", "gbp").lower()
+    price_id = STRIPE_PRICE_USD if currency == "usd" else STRIPE_PRICE_GBP
+    if not email:
+        raise HTTPException(status_code=400, detail="email required")
+
+    ticker = body.get("ticker", "")
+    success_url = f"https://fintiq.uk/deep-dive.html?subscribed=success&ticker={ticker}" if ticker else "https://fintiq.uk/deep-dive.html?subscribed=success"
+
+    r = requests.post(
+        "https://api.stripe.com/v1/checkout/sessions",
+        auth=(STRIPE_SECRET_KEY, ""),
+        data={
+            "mode": "subscription",
+            "customer_email": email,
+            "line_items[0][price]": price_id,
+            "line_items[0][quantity]": "1",
+            "success_url": success_url,
+            "cancel_url": "https://fintiq.uk/deep-dive.html",
+            "metadata[fintiq_email]": email,
+            "allow_promotion_codes": "true",
+        },
+        timeout=10,
+    )
+    if r.status_code not in (200, 201):
+        print(f"[Stripe] Checkout error {r.status_code}: {r.text[:300]}")
+        raise HTTPException(status_code=500, detail="Could not create checkout session.")
+    return {"checkout_url": r.json()["url"]}
+
+
+@app.post("/stripe/webhook")
+async def stripe_webhook(request: Request):
+    """Handles Stripe events — flips subscribed flag in auth.db."""
+    payload    = await request.body()
+    sig_header = request.headers.get("stripe-signature", "")
+
+    if STRIPE_WEBHOOK_SECRET:
+        if not _stripe_verify_signature(payload, sig_header, STRIPE_WEBHOOK_SECRET):
+            raise HTTPException(status_code=400, detail="Invalid Stripe signature.")
+
+    event      = json.loads(payload)
+    event_type = event.get("type", "")
+    print(f"[Stripe] Webhook: {event_type}")
+
+    if event_type == "checkout.session.completed":
+        session = event["data"]["object"]
+        email   = (session.get("customer_email") or
+                   session.get("metadata", {}).get("fintiq_email", "")).strip().lower()
+        if email:
+            user = _auth_get_user(email) or {
+                "email": email,
+                "created_at": datetime.utcnow().isoformat(),
+                "free_used": True,
+                "subscribed": True,
+                "subscription_expires": None,
+            }
+            user["subscribed"] = True
+            _auth_save_user(user)
+            print(f"[Stripe] ✓ Subscribed: {email}")
+
+    elif event_type in ("customer.subscription.deleted", "customer.subscription.paused"):
+        customer_id = event["data"]["object"].get("customer", "")
+        if customer_id and STRIPE_SECRET_KEY:
+            try:
+                cr = requests.get(
+                    f"https://api.stripe.com/v1/customers/{customer_id}",
+                    auth=(STRIPE_SECRET_KEY, ""),
+                    timeout=5,
+                )
+                if cr.status_code == 200:
+                    email = cr.json().get("email", "").strip().lower()
+                    user  = _auth_get_user(email)
+                    if user and email:
+                        user["subscribed"] = False
+                        _auth_save_user(user)
+                        print(f"[Stripe] ✗ Unsubscribed: {email}")
+            except Exception as e:
+                print(f"[Stripe] Webhook unsubscribe error: {e}")
+
+    return {"ok": True}
