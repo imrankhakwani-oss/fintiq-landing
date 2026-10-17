@@ -132,13 +132,6 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .row-detail{display:none;padding:0 16px 20px;background:rgba(10,22,40,0.5)}
 .row-detail.open{display:table-row}
 
-/* PAYWALL SECTION */
-.paywall-row{position:relative;overflow:hidden}
-.paywall-blur-overlay{position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,rgba(13,27,42,0.5) 30%,#0D1B2A 70%);z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px}
-.paywall-cta-box{text-align:center;max-width:420px}
-.paywall-cta-box h3{font-size:1.25rem;font-weight:800;color:#F1F5F9;margin-bottom:10px}
-.paywall-cta-box p{color:#94A3B8;font-size:0.9rem;margin-bottom:20px}
-.paywall-btn{display:inline-block;background:#F59E0B;color:#0A1628!important;padding:13px 32px;border-radius:8px;font-weight:700;font-size:0.95rem}
 
 /* INDEX TAGS */
 .idx-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
@@ -471,32 +464,6 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
     </tbody>
   </table>
 
-  <!-- PAYWALL SECTION -->
-  <div style="position:relative;margin-top:-1px">
-    <div id="paywall-blur" style="filter:blur(3px);pointer-events:none;user-select:none;max-height:380px;overflow:hidden">
-      <!-- Blurred rows placeholder — rendered by JS, then blurred -->
-      <table class="screener-table" style="opacity:0.6">
-        <tbody id="tbl-blurred"></tbody>
-      </table>
-    </div>
-    <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 0%,rgba(13,27,42,0.6) 25%,#0D1B2A 65%);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:48px">
-      <div class="paywall-cta-box">
-        <h3>See all 500+ stocks — full factor breakdown, updated every Sunday</h3>
-        <p>You're seeing the top 3 signals. Unlock the complete ranked universe with all factor exposures and the alpha decomposition breakdown.</p>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px">
-          <div style="text-align:center">
-            <a href="https://buy.stripe.com/3cI14na8G96m8o8bfmaZi0a" class="paywall-btn" style="background:#F59E0B;display:block;margin-bottom:6px" onclick="gtag('event','screener_oneoff_click',{value:0.99})">One-Off Access + Download — £0.99 →</a>
-            <div style="font-size:0.7rem;color:#64748B">View all · Download CSV/Excel · One time</div>
-          </div>
-          <div style="text-align:center">
-            <a href="https://buy.stripe.com/bJe14n6WufuK33O5V2aZi0b" class="paywall-btn" style="background:#1E3A5F;border:2px solid #F59E0B;color:#F59E0B!important;display:block;margin-bottom:6px" onclick="gtag('event','screener_subscribe_click',{value:3.99})">Monthly Access — £3.99/mo →</a>
-            <div style="font-size:0.7rem;color:#64748B">Unlimited access · Updated every Sunday · Cancel anytime</div>
-          </div>
-        </div>
-        <p style="font-size:0.72rem;color:#475569;margin-top:14px">3 free signals every week · No card required to browse</p>
-      </div>
-    </div>
-  </div>
 
 </div>
 
@@ -743,9 +710,8 @@ function renderTable() {
   const med    = alphas[Math.floor(alphas.length/2)];
   document.getElementById('median-alpha').textContent = (med>=0?'+':'')+med.toFixed(1)+'%';
 
-  // Render visible rows (top 15 shown, rest blurred)
-  const visible = IS_FULL ? data : data.slice(0,3);
-  const blurred = IS_FULL ? [] : data.slice(3,12);
+  // Render all rows
+  const visible = data;
 
   const tbody = document.getElementById('tbl-body');
   tbody.innerHTML = visible.map((s,i) => `
@@ -763,18 +729,6 @@ function renderTable() {
     </tr>
   `).join('');
 
-  // Blurred rows (decorative only)
-  const tblBlur = document.getElementById('tbl-blurred');
-  tblBlur.innerHTML = blurred.map((s,i) => `
-    <tr>
-      <td><div class="rank">${3+i+1}</div></td>
-      <td><div class="ticker">${s.ticker}</div><div class="company">${s.name}</div></td>
-      <td>${alphaHTML(s.alpha)}</td>
-      <td>${signalHTML(s.signal)}</td>
-      <td>${factorBars(s)}</td>
-      <td>${decompHTML(s)}</td>
-    </tr>
-  `).join('');
 }
 
 // ─── SORT ────────────────────────────────────────────────────────────────────
@@ -820,24 +774,11 @@ function toggleExplainer() {
   icon.style.transform = open ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
-// ─── ACCESS CONTROL ──────────────────────────────────────────────────────────
-const _params   = new URLSearchParams(window.location.search);
-const IS_OWNER   = _params.get('owner') === 'fintiq2026';
-const IS_ONEOFF  = _params.get('access') === 'oneoff';
-const IS_MONTHLY = _params.get('access') === 'monthly';
-const IS_FULL    = IS_OWNER || IS_ONEOFF || IS_MONTHLY;
-
-if (IS_FULL) {
-  document.addEventListener('DOMContentLoaded', () => {
-    const blur = document.getElementById('paywall-blur');
-    if (blur) blur.parentElement.style.display = 'none';
-    // Show download button for one-off users only
-    if (IS_ONEOFF) {
-      const dlBtn = document.getElementById('download-btn');
-      if (dlBtn) dlBtn.style.display = 'inline-flex';
-    }
-  });
-}
+// Show download button for all users
+document.addEventListener('DOMContentLoaded', () => {
+  const dlBtn = document.getElementById('download-btn');
+  if (dlBtn) dlBtn.style.display = 'inline-flex';
+});
 
 function downloadCSV() {
   if (!STOCKS.length) return;
