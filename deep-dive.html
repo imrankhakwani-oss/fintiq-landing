@@ -1916,7 +1916,7 @@ function renderCopilot(section) {
       <button onclick="alert('Credits coming soon!')" style="background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:9px 22px;font-size:0.82rem;font-weight:700;cursor:pointer">Use 1 Credit to Unlock</button>
     </div>` : '';
 
-  const betaBadge = !_paywallActive ? `<span style="font-size:0.6rem;background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:2px 8px;margin-left:8px;font-weight:700;letter-spacing:.05em">BETA · FREE</span>` : '';
+  const betaBadge = !_paywallActive ? `<span style="font-size:0.6rem;background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:2px 8px;margin-left:8px;font-weight:700;letter-spacing:.05em">BETA</span>` : '';
 
   return `<div class="copilot-wrap${_paywallActive ? ' copilot-locked' : ''}" id="copilot-${section}">
     ${lockedOverlay}
@@ -5006,7 +5006,7 @@ function _fmtLarge(n) {
 // ══════════════════════════════════════════════════════
 
 function _renderCommitteeCard() {
-  const betaBadge = !_paywallActive ? `<span class="committee-beta">BETA · FREE</span>` : '';
+  const betaBadge = !_paywallActive ? `<span class="committee-beta">BETA</span>` : '';
   const pillars = [
     { label: 'Thesis Review', desc: 'Bull & Bear case stress-tested' },
     { label: 'Contradictions', desc: 'Flags conflicts in your analysis' },
