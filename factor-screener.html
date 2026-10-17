@@ -458,6 +458,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
         <th>Signal</th>
         <th>Factor Exposures</th>
         <th>Interpretation</th>
+        <th>Research</th>
       </tr>
     </thead>
     <tbody id="tbl-body">
@@ -726,6 +727,7 @@ function renderTable() {
       <td>${signalHTML(s.signal)}</td>
       <td>${factorBars(s)}</td>
       <td>${decompHTML(s)}</td>
+      <td><a href="https://fintiq.uk/deep-dive.html?ticker=${s.ticker}" target="_blank" style="display:inline-block;padding:6px 12px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.4);color:#F59E0B;border-radius:6px;font-size:0.75rem;font-weight:700;text-decoration:none;white-space:nowrap;transition:background 0.2s" onmouseover="this.style.background='rgba(245,158,11,0.25)'" onmouseout="this.style.background='rgba(245,158,11,0.12)'">Deep Dive →</a></td>
     </tr>
   `).join('');
 
