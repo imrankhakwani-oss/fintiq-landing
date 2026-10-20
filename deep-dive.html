@@ -677,7 +677,7 @@ a{color:var(--gold);text-decoration:none}
 .pw-features li{color:var(--dim);font-size:0.82rem;display:flex;align-items:center;gap:8px}
 .pw-features li::before{content:'✓';color:var(--green);font-weight:700;flex-shrink:0}
 
-/* ── Portfolio Builder Panel ──────────────────────────────────────────── */
+/* ── Trading Journal Panel ────────────────────────────────────────────── */
 .portfolio-panel{margin:32px auto;max-width:1200px;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .portfolio-panel-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(245,158,11,.02));border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
 .portfolio-panel-header h3{margin:0;font-size:1rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:10px}
@@ -694,63 +694,97 @@ a{color:var(--gold);text-decoration:none}
 .portfolio-lock-cta p{color:var(--muted);font-size:0.85rem;margin-bottom:12px}
 .portfolio-lock-btn{background:var(--gold);color:#000;border:none;padding:10px 28px;border-radius:8px;font-weight:700;font-size:0.88rem;cursor:pointer}
 
+/* sub-section (Watch / Open / Closed) */
+.tj-sub{border-bottom:1px solid var(--border)}
+.tj-sub:last-child{border-bottom:none}
+.tj-sub-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;cursor:pointer;user-select:none;background:rgba(255,255,255,.02)}
+.tj-sub-header:hover{background:rgba(255,255,255,.04)}
+.tj-sub-title{font-size:0.85rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.tj-sub-chevron{font-size:0.8rem;color:var(--muted);transition:transform .2s}
+.tj-sub-chevron.open{transform:rotate(180deg)}
+.tj-sub-body{display:none;border-top:1px solid var(--border)}
+.tj-sub-body.open{display:block}
+
+/* sub-section banner stats */
+.tj-banner{display:flex;align-items:center;gap:0;padding:10px 20px;background:rgba(255,255,255,.015);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:6px}
+.tj-stat{display:flex;flex-direction:column;align-items:center;padding:6px 14px;border-right:1px solid var(--border);min-width:80px}
+.tj-stat:last-child{border-right:none}
+.tj-stat-val{font-size:1rem;font-weight:800;color:var(--text)}
+.tj-stat-lbl{font-size:0.62rem;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;margin-top:2px;white-space:nowrap}
+.tj-stat-val.pos{color:var(--green)}
+.tj-stat-val.neg{color:var(--red)}
+.tj-stat-val.amber{color:var(--gold)}
+
+/* watch status badges */
+.tj-ready{background:rgba(34,197,94,.15);color:#4ade80;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+.tj-not-yet{background:rgba(148,163,184,.12);color:var(--muted);font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+.tj-passed{background:rgba(245,158,11,.15);color:var(--gold);font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:20px}
+
 /* table */
-.portfolio-table-wrap{overflow-x:auto;padding:0 0 8px}
-.portfolio-tbl{width:100%;border-collapse:collapse;font-size:0.75rem;min-width:900px}
-.portfolio-tbl th{background:rgba(255,255,255,.04);color:var(--dim);text-transform:uppercase;font-size:0.63rem;letter-spacing:.03em;padding:7px 8px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-.portfolio-tbl td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;color:var(--text);white-space:nowrap}
+.portfolio-table-wrap{overflow-x:auto;padding:0 0 4px}
+.portfolio-tbl{width:100%;border-collapse:collapse;font-size:0.75rem}
+.portfolio-tbl th{background:rgba(255,255,255,.03);color:var(--dim);text-transform:uppercase;font-size:0.62rem;letter-spacing:.03em;padding:7px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.portfolio-tbl td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;color:var(--text);white-space:nowrap}
 .portfolio-tbl tr:last-child td{border-bottom:none}
-.portfolio-tbl tr:hover td{background:rgba(255,255,255,.03)}
-.pt-edit{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 7px;width:78px;font-size:0.78rem;text-align:right}
+.portfolio-tbl tr:hover td{background:rgba(255,255,255,.025)}
+.pt-edit{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text);padding:3px 6px;width:74px;font-size:0.76rem;text-align:right}
 .pt-edit:focus{outline:none;border-color:var(--gold)}
-.pt-trade{font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(245,158,11,.15);color:var(--gold)}
+.pt-trade{font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(245,158,11,.15);color:var(--gold)}
 .pt-trade.short{background:rgba(239,68,68,.12);color:#f87171}
 .pt-pnl-pos{color:var(--green);font-weight:600}
 .pt-pnl-neg{color:var(--red);font-weight:600}
-.pt-session-link{color:var(--gold);font-size:0.75rem;cursor:pointer;text-decoration:none}
+.pt-session-link{color:var(--gold);font-size:0.72rem;cursor:pointer;text-decoration:none}
 .pt-session-link:hover{text-decoration:underline}
-.pt-icon-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:4px 8px;cursor:pointer;font-size:0.78rem}
+.pt-icon-btn{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);padding:3px 7px;cursor:pointer;font-size:0.75rem}
 .pt-icon-btn:hover{border-color:var(--text);color:var(--text)}
-.pt-del-btn{background:transparent;border:1px solid rgba(239,68,68,.25);border-radius:6px;color:#f87171;padding:4px 8px;cursor:pointer;font-size:0.75rem}
+.pt-action-btn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:6px;color:var(--gold);padding:3px 10px;cursor:pointer;font-size:0.72rem;font-weight:600;white-space:nowrap}
+.pt-action-btn:hover{background:rgba(245,158,11,.2)}
+.pt-sell-btn{background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);border-radius:6px;color:#4ade80;padding:3px 10px;cursor:pointer;font-size:0.72rem;font-weight:600}
+.pt-sell-btn:hover{background:rgba(34,197,94,.2)}
+.pt-del-btn{background:transparent;border:1px solid rgba(239,68,68,.2);border-radius:6px;color:#f87171;padding:3px 7px;cursor:pointer;font-size:0.72rem}
 .pt-del-btn:hover{background:rgba(239,68,68,.1)}
-.pt-checkbox{accent-color:var(--gold);width:14px;height:14px;cursor:pointer}
+.pt-checkbox{accent-color:var(--gold);width:13px;height:13px;cursor:pointer}
+.pt-empty{padding:32px 20px;text-align:center;color:var(--muted);font-size:0.8rem}
+.pt-loading{padding:24px 20px;text-align:center;color:var(--muted);font-size:0.78rem}
 
-/* portfolio empty + loading */
-.pt-empty{padding:48px 24px;text-align:center;color:var(--muted);font-size:0.83rem}
-.pt-loading{padding:32px 24px;text-align:center;color:var(--muted);font-size:0.8rem}
-
-/* bottom action bar */
-.portfolio-actions{display:flex;align-items:center;gap:10px;padding:14px 24px;border-top:1px solid var(--border);flex-wrap:wrap}
-.portfolio-actions .pa-label{font-size:0.75rem;color:var(--muted);margin-right:4px}
-.pa-btn{background:rgba(245,158,11,.12);color:var(--gold);border:1px solid rgba(245,158,11,.3);border-radius:7px;padding:7px 16px;font-size:0.8rem;font-weight:600;cursor:pointer}
-.pa-btn:hover{background:rgba(245,158,11,.22)}
-.pa-refresh-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px 12px;font-size:0.78rem;cursor:pointer;margin-left:auto}
+/* action bar */
+.tj-actions{display:flex;align-items:center;gap:8px;padding:12px 20px;border-top:1px solid var(--border);flex-wrap:wrap}
+.tj-actions .pa-label{font-size:0.73rem;color:var(--muted)}
+.pa-btn{background:rgba(245,158,11,.1);color:var(--gold);border:1px solid rgba(245,158,11,.25);border-radius:7px;padding:6px 14px;font-size:0.78rem;font-weight:600;cursor:pointer}
+.pa-btn:hover{background:rgba(245,158,11,.2)}
+.pa-refresh-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:6px 11px;font-size:0.76rem;cursor:pointer;margin-left:auto}
 .pa-refresh-btn:hover{color:var(--text)}
 
-/* Add-to-portfolio modal */
+/* Modals — shared base */
 .atp-modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:1010;padding:16px}
 .atp-modal.open{display:flex}
-.atp-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px 32px;width:100%;max-width:460px}
-.atp-box h3{margin:0 0 18px;font-size:1rem;color:var(--text)}
-.atp-row{margin-bottom:13px}
-.atp-row label{display:block;font-size:0.75rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
-.atp-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:8px 12px;color:var(--text);font-size:0.85rem}
+.atp-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px 28px;width:100%;max-width:440px}
+.atp-box h3{margin:0 0 16px;font-size:0.95rem;color:var(--text)}
+.atp-row{margin-bottom:12px}
+.atp-row label{display:block;font-size:0.72rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.atp-input{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:7px;padding:8px 11px;color:var(--text);font-size:0.83rem}
 .atp-input:focus{outline:none;border-color:var(--gold)}
 .atp-input[readonly]{opacity:.55;cursor:not-allowed}
-.atp-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.atp-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .atp-trade-row{display:flex;gap:8px}
 .atp-trade-btn{flex:1;border:1px solid var(--border);background:transparent;border-radius:7px;padding:7px;font-size:0.8rem;color:var(--muted);cursor:pointer;transition:.15s}
 .atp-trade-btn.active{background:rgba(245,158,11,.15);border-color:var(--gold);color:var(--gold);font-weight:700}
 .atp-trade-btn.active.short{background:rgba(239,68,68,.12);border-color:#f87171;color:#f87171}
-.atp-footer{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
-.atp-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:8px 18px;font-size:0.83rem;cursor:pointer}
-.atp-save{background:var(--gold);color:#000;border:none;border-radius:7px;padding:8px 22px;font-size:0.83rem;font-weight:700;cursor:pointer}
+.atp-footer{display:flex;gap:10px;margin-top:18px;justify-content:flex-end}
+.atp-cancel{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:7px;padding:7px 16px;font-size:0.82rem;cursor:pointer}
+.atp-save{background:var(--gold);color:#000;border:none;border-radius:7px;padding:7px 20px;font-size:0.82rem;font-weight:700;cursor:pointer}
 .atp-save:disabled{opacity:.45;cursor:not-allowed}
-.atp-note{font-size:0.72rem;color:var(--muted);margin-top:10px;text-align:center}
+.atp-note{font-size:0.7rem;color:var(--muted);margin-top:8px;text-align:center}
 
-/* Add to portfolio button (injected into decision section) */
-.add-to-portfolio-btn{display:inline-flex;align-items:center;gap:8px;margin-top:20px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:11px 24px;font-size:0.88rem;font-weight:700;cursor:pointer;transition:.15s}
+/* Add to watchlist button */
+.add-to-portfolio-btn{display:inline-flex;align-items:center;gap:8px;margin-top:20px;background:var(--gold);color:#000;border:none;border-radius:8px;padding:10px 22px;font-size:0.85rem;font-weight:700;cursor:pointer;transition:.15s}
 .add-to-portfolio-btn:hover{opacity:.88}
+
+/* Re-analysis banner in decision section */
+.tj-reanalyse-banner{margin:0 0 16px;padding:10px 14px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:0.8rem;color:var(--muted)}
+.tj-reanalyse-banner strong{color:var(--gold)}
+.tj-reanalyse-banner button{background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:var(--gold);border-radius:6px;padding:4px 12px;font-size:0.75rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.tj-reanalyse-banner button:hover{background:rgba(245,158,11,.25)}
 </style>
 </head>
 <body>
@@ -1044,21 +1078,21 @@ a{color:var(--gold);text-decoration:none}
 
 </div><!-- /main -->
 
-<!-- ── Portfolio Builder Panel ─────────────────────────────────────────── -->
+<!-- ── Trading Journal Panel ──────────────────────────────────────────── -->
 <div class="portfolio-panel" id="portfolio-panel" style="display:none">
   <div class="portfolio-panel-header" onclick="togglePortfolioPanel()">
-    <h3><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;margin-right:2px"><rect width="20" height="20" rx="5" fill="#1a2535"/><text x="3" y="9" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">£</text><text x="10.5" y="9" font-size="6.5" fill="#fbbf24" font-family="Georgia,serif" font-weight="700">$</text><text x="3" y="17" font-size="6.5" fill="#fcd34d" font-family="Georgia,serif" font-weight="700">€</text><text x="10.5" y="17" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">¥</text></svg> My Portfolio <span class="pp-sub">Track your positions</span></h3>
+    <h3><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="20" height="20" rx="5" fill="#1a2535"/><text x="3" y="9" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">£</text><text x="10.5" y="9" font-size="6.5" fill="#fbbf24" font-family="Georgia,serif" font-weight="700">$</text><text x="3" y="17" font-size="6.5" fill="#fcd34d" font-family="Georgia,serif" font-weight="700">€</text><text x="10.5" y="17" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">¥</text></svg> Trading Journal <span class="pp-sub">Watch · Open · Closed</span></h3>
     <span class="portfolio-panel-chevron" id="pp-chevron">▼</span>
   </div>
   <div class="portfolio-panel-body" id="pp-body">
-    <!-- Content injected by JS: locked state or live table -->
+    <!-- Content injected by JS -->
   </div>
 </div>
 
-<!-- ── Add-to-Portfolio Modal ─────────────────────────────────────────── -->
+<!-- ── Add to Watch List Modal ────────────────────────────────────────── -->
 <div class="atp-modal" id="atp-modal">
   <div class="atp-box">
-    <h3>➕ Add to My Portfolio</h3>
+    <h3>👁 Add to Watch List</h3>
     <div class="atp-row">
       <label>Ticker</label>
       <input class="atp-input" id="atp-ticker" readonly />
@@ -1086,7 +1120,7 @@ a{color:var(--gold);text-decoration:none}
     </div>
     <div class="atp-cols">
       <div class="atp-row">
-        <label>Buy Price</label>
+        <label>Target Entry Price</label>
         <input class="atp-input" id="atp-target" type="number" step="0.01" placeholder="e.g. 150.00" />
       </div>
       <div class="atp-row">
@@ -1094,21 +1128,65 @@ a{color:var(--gold);text-decoration:none}
         <input class="atp-input" id="atp-stoploss" type="number" step="0.01" placeholder="e.g. 135.00" />
       </div>
     </div>
-    <div class="atp-cols">
-      <div class="atp-row">
-        <label>No. of Shares</label>
-        <input class="atp-input" id="atp-shares" type="number" step="1" min="0" placeholder="0" value="0" />
-      </div>
-      <div class="atp-row">
-        <label>DCF Value <small style="text-transform:none;color:var(--gold);font-size:0.67rem">(saved for P&L calc)</small></label>
-        <input class="atp-input" id="atp-dcf" readonly />
-      </div>
+    <div class="atp-row">
+      <label>DCF Intrinsic Value <small style="text-transform:none;color:var(--gold);font-size:0.65rem">(auto — used for P&L vs DCF later)</small></label>
+      <input class="atp-input" id="atp-dcf" readonly />
     </div>
     <div class="atp-footer">
       <button class="atp-cancel" onclick="_closeAddToPortfolioModal()">Cancel</button>
-      <button class="atp-save" id="atp-save-btn" onclick="_confirmAddToPortfolio()">Save to Portfolio</button>
+      <button class="atp-save" id="atp-save-btn" onclick="_confirmAddToPortfolio()">Add to Watch List</button>
     </div>
-    <p class="atp-note">Session summary will be saved automatically after you click Save.</p>
+    <p class="atp-note">Session summary saved automatically. Enter actual buy price when you execute the trade.</p>
+  </div>
+</div>
+
+<!-- ── Mark as Bought Modal ───────────────────────────────────────────── -->
+<div class="atp-modal" id="mb-modal">
+  <div class="atp-box">
+    <h3>✅ Mark as Bought</h3>
+    <input type="hidden" id="mb-id" />
+    <div class="atp-cols">
+      <div class="atp-row">
+        <label>Actual Entry Price</label>
+        <input class="atp-input" id="mb-price" type="number" step="0.01" placeholder="Price you paid" />
+      </div>
+      <div class="atp-row">
+        <label>No. of Shares</label>
+        <input class="atp-input" id="mb-shares" type="number" step="1" min="1" placeholder="e.g. 100" />
+      </div>
+    </div>
+    <div class="atp-row">
+      <label>Entry Date</label>
+      <input class="atp-input" id="mb-date" type="date" />
+    </div>
+    <div class="atp-footer">
+      <button class="atp-cancel" onclick="_closeMarkBoughtModal()">Cancel</button>
+      <button class="atp-save" id="mb-save-btn" onclick="_confirmMarkBought()">Confirm Buy</button>
+    </div>
+    <p class="atp-note">This moves the position from Watch List to Open Trades.</p>
+  </div>
+</div>
+
+<!-- ── Mark as Sold Modal ────────────────────────────────────────────── -->
+<div class="atp-modal" id="ms-modal">
+  <div class="atp-box">
+    <h3>💰 Mark as Sold</h3>
+    <input type="hidden" id="ms-id" />
+    <div class="atp-cols">
+      <div class="atp-row">
+        <label>Exit Price</label>
+        <input class="atp-input" id="ms-price" type="number" step="0.01" placeholder="Price you sold at" />
+      </div>
+      <div class="atp-row">
+        <label>Exit Date</label>
+        <input class="atp-input" id="ms-date" type="date" />
+      </div>
+    </div>
+    <div class="atp-footer">
+      <button class="atp-cancel" onclick="_closeMarkSoldModal()">Cancel</button>
+      <button class="atp-save" id="ms-save-btn" style="background:#4ade80" onclick="_confirmMarkSold()">Confirm Sale</button>
+    </div>
+    <p class="atp-note">Realised P&L locks in. Trade moves to Closed history.</p>
   </div>
 </div>
 
@@ -4605,17 +4683,22 @@ function renderDecision() {
   // ── Investment Committee (last — needs full user + copilot context) ──
   html += _renderCommitteeCard();
 
-  // ── Add to Portfolio button ──
-  html += `<div style="padding:0 0 24px;margin-top:8px">
+  // ── Add to Watch List button + re-analysis banner ──
+  html += `<div style="padding:0 0 24px;margin-top:8px" id="tj-decision-btns">
+    <div id="tj-reanalyse-banner" class="tj-reanalyse-banner" style="display:none">
+      <span class="tj-rb-label"></span>
+      <button onclick="_updateJournalSessionFromDecision()">📝 Update Session Summary</button>
+    </div>
     <button class="add-to-portfolio-btn" onclick="_openAddToPortfolioModal()">
-      📊 Add to My Portfolio
+      👁 Add to Watch List
     </button>
   </div>`;
 
   document.getElementById('decision-content').innerHTML = html;
   setStatus('decision', 'done');
-  // Show portfolio panel after decision is rendered
   _showPortfolioPanel();
+  // Check if current ticker is already in journal, show re-analysis banner
+  _checkJournalTicker(_session.ticker);
 }
 
 function _setDirection(dir) {
@@ -5573,16 +5656,18 @@ function _saveCaptureInput(sectionId, idx, value) {
 
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PORTFOLIO BUILDER — JavaScript
+// TRADING JOURNAL — JavaScript
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Show the portfolio panel — called on page load AND after decision section renders
+// In-memory cache of journal tickers (populated on load for re-analysis banner)
+let _journalItems = [];
+
+// Show the Trading Journal panel — called on page load AND after decision renders
 function _showPortfolioPanel() {
   const panel = document.getElementById('portfolio-panel');
   if (panel) panel.style.display = 'block';
 }
 
-// Show panel on page load if user has a session token
 document.addEventListener('DOMContentLoaded', function() {
   if (localStorage.getItem('fintiq_session')) {
     _showPortfolioPanel();
@@ -5651,8 +5736,6 @@ function _openAddToPortfolioModal() {
   // Target price defaults to current price
   const curPrice = (_vs && _vs.price) ? _vs.price.toFixed(2) : '';
   document.getElementById('atp-target').value = curPrice;
-
-  document.getElementById('atp-shares').value = '0';
 
   // Reset trade direction
   _atpTrade = 'long';
@@ -5739,9 +5822,9 @@ async function _confirmAddToPortfolio() {
   }
 }
 
-// ── Load & render portfolio ────────────────────────────────────────────────────
+// ── Load & render Trading Journal ─────────────────────────────────────────────
 async function _loadPortfolio() {
-  const body  = document.getElementById('pp-body');
+  const body = document.getElementById('pp-body');
   if (!body) return;
 
   const token = localStorage.getItem('fintiq_session');
@@ -5750,116 +5833,417 @@ async function _loadPortfolio() {
     return;
   }
 
-  body.innerHTML = `<div class="pt-loading">Loading portfolio…</div>`;
-
+  body.innerHTML = `<div class="pt-loading">Loading Trading Journal…</div>`;
   try {
-    const res = await fetch(`${API}/portfolio`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await fetch(`${API}/portfolio`, { headers: { 'Authorization': `Bearer ${token}` } });
     if (res.status === 403) { body.innerHTML = _portfolioLockedHTML(); return; }
     if (!res.ok) throw new Error(await res.text());
     const data = await res.json();
-    _renderPortfolioTable(data.items || []);
+    _journalItems = data.items || [];
+    _renderTradingJournal(_journalItems);
   } catch(e) {
-    body.innerHTML = `<div class="pt-empty">⚠️ Could not load portfolio. Please try again.<br><small>${e.message}</small></div>`;
+    body.innerHTML = `<div class="pt-empty">⚠️ Could not load Trading Journal.<br><small>${e.message}</small></div>`;
   }
 }
 
 function _portfolioLockedHTML() {
   return `<div class="portfolio-locked">
     <div class="portfolio-locked-blur">
-      <table class="portfolio-tbl" style="margin:0 24px">
-        <tr><th>Ticker</th><th>Trade</th><th>Target</th><th>Stop</th><th>DCF</th><th>Current</th><th>P&L</th></tr>
-        <tr><td>AAPL</td><td>Long</td><td>$180</td><td>$160</td><td>$195</td><td>$178</td><td style="color:#4ade80">+2.1%</td></tr>
-        <tr><td>MSFT</td><td>Long</td><td>$380</td><td>$340</td><td>$410</td><td>$375</td><td style="color:#f87171">-1.3%</td></tr>
+      <table class="portfolio-tbl" style="margin:0 20px;min-width:0">
+        <tr><th>Ticker</th><th>Trade</th><th>Target</th><th>Status</th><th>P&L</th></tr>
+        <tr><td>AAPL</td><td>Long</td><td>$180</td><td><span class="tj-ready">Ready</span></td><td style="color:#4ade80">+2.1%</td></tr>
+        <tr><td>MSFT</td><td>Long</td><td>$380</td><td><span class="tj-not-yet">Not Yet</span></td><td>—</td></tr>
       </table>
     </div>
     <div class="portfolio-lock-cta">
-      <p>Subscribe to track your positions, P&L and session history.</p>
-      <button class="portfolio-lock-btn" onclick="openModal('modal-paywall')">🔒 Unlock Portfolio Builder</button>
+      <p>Subscribe to track your positions, P&L and full session history.</p>
+      <button class="portfolio-lock-btn" onclick="openModal('modal-paywall')">🔒 Unlock Trading Journal</button>
     </div>
   </div>`;
 }
 
-function _renderPortfolioTable(items) {
+function _renderTradingJournal(items) {
   const body = document.getElementById('pp-body');
   if (!body) return;
-
-  if (!items.length) {
-    body.innerHTML = `<div class="pt-empty">No positions yet.<br><small>Run an analysis and click "Add to My Portfolio" to start tracking.</small></div>`;
-    return;
-  }
-
-  const cs = (_vs && _vs.currSym) || '$';
-
-  const rows = items.map(it => {
-    const pnlMoney = it.pnl_money;
-    const pnlPct   = it.pnl_pct;
-    const pnlDcf   = it.pnl_vs_dcf_pct;
-
-    const pnlCls   = pnlMoney === null ? '' : (pnlMoney >= 0 ? 'pt-pnl-pos' : 'pt-pnl-neg');
-    const pnlStr   = pnlMoney !== null ? `${cs}${Math.abs(pnlMoney).toFixed(0)} (${pnlPct >= 0 ? '+':''}${(pnlPct||0).toFixed(1)}%)` : '—';
-    const dcfStr   = pnlDcf !== null ? `${pnlDcf >= 0 ? '+':''}${pnlDcf.toFixed(1)}%` : '—';
-    const dcfCls   = pnlDcf === null ? '' : (pnlDcf >= 0 ? 'pt-pnl-pos' : 'pt-pnl-neg');
-    const invStr   = it.investment_value ? `${cs}${it.investment_value.toFixed(0)}` : '—';
-    const curValStr= it.current_value !== null ? `${cs}${it.current_value.toFixed(0)}` : '—';
-
-    const sessionCell = it.has_session
-      ? `<a class="pt-session-link" onclick="_openSessionSummary(${it.id})" title="View session summary">📄 View</a>`
-      : `<span style="color:var(--dim);font-size:0.72rem">—</span>`;
-
-    return `<tr>
-      <td><input type="checkbox" class="pt-checkbox" id="ptck-${it.id}" checked /></td>
-      <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.68rem">${it.name || ''}</span></td>
-      <td style="color:var(--muted);font-size:0.7rem;max-width:100px;white-space:normal;line-height:1.3">${it.sector || '—'}</td>
-      <td><span class="pt-trade${it.trade === 'short' ? ' short' : ''}">${(it.trade||'long').toUpperCase()}</span></td>
-      <td><input class="pt-edit" type="number" value="${it.target_price || ''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Buy Price" /></td>
-      <td><input class="pt-edit" type="number" value="${it.stop_loss || ''}" onchange="_portfolioUpdateField(${it.id},'stop_loss',this.value)" title="Stop Loss" /></td>
-      <td>${it.current_price !== null ? `${cs}${it.current_price.toFixed(2)}` : '—'}</td>
-      <td><input class="pt-edit" type="number" value="${it.shares || 0}" onchange="_portfolioUpdateField(${it.id},'shares',this.value)" title="No. of Shares" style="width:60px" /></td>
-      <td>${invStr}</td>
-      <td>${curValStr}</td>
-      <td class="${pnlCls}">${pnlStr}</td>
-      <td class="${dcfCls}" title="P&L vs DCF intrinsic value">${dcfStr}</td>
-      <td>${sessionCell}</td>
-      <td><button class="pt-icon-btn" onclick="_portfolioReanalyse('${it.ticker}')" title="Re-analyse">🔄</button></td>
-      <td><button class="pt-del-btn" onclick="_deletePortfolioItem(${it.id})" title="Remove">✕</button></td>
-    </tr>`;
-  }).join('');
-
+  const watching = items.filter(i => (i.status||'watching') === 'watching');
+  const open     = items.filter(i => i.status === 'open');
+  const closed   = items.filter(i => i.status === 'closed');
   body.innerHTML = `
-    <div class="portfolio-table-wrap">
-      <table class="portfolio-tbl">
-        <thead><tr>
-          <th title="Include in tools"></th>
-          <th>Name / Ticker</th>
-          <th>Sector</th>
-          <th>Trade</th>
-          <th>Buy Price</th>
-          <th>Stop Loss</th>
-          <th>Current</th>
-          <th>Shares</th>
-          <th>Inv. Value</th>
-          <th>Cur. Value</th>
-          <th>P&L</th>
-          <th title="P&L vs DCF intrinsic value">vs DCF</th>
-          <th>Session</th>
-          <th></th>
-          <th></th>
-        </tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    </div>
-    <div class="portfolio-actions">
-      <span class="pa-label">Run checked stocks in:</span>
-      <button class="pa-btn" onclick="_portfolioRunOptimiser()">📈 Portfolio Optimiser →</button>
-      <button class="pa-btn" onclick="_portfolioRunMonteCarlo()">🎲 Portfolio Monte Carlo →</button>
-      <button class="pa-refresh-btn" onclick="_loadPortfolio()">↻ Refresh Prices</button>
+    ${_renderTJSection('watch',  '👁 Watch List',   watching, watching.length)}
+    ${_renderTJSection('open',   '📈 Open Trades',  open,     open.length)}
+    ${_renderTJSection('closed', '✅ Closed Trades', closed,   closed.length)}`;
+}
+
+function _renderTJSection(key, label, items, count) {
+  const banner = key === 'watch'  ? _watchBanner(items)  :
+                 key === 'open'   ? _openBanner(items)   : _closedBanner(items);
+  const table  = key === 'watch'  ? _watchTable(items)   :
+                 key === 'open'   ? _openTable(items)    : _closedTable(items);
+  return `
+    <div class="tj-sub">
+      <div class="tj-sub-header" onclick="_toggleTJSection('${key}')">
+        <span class="tj-sub-title">${label} <span style="font-size:0.72rem;color:var(--dim);font-weight:400;margin-left:4px">${count} position${count!==1?'s':''}</span></span>
+        <span class="tj-sub-chevron" id="tjc-${key}">▼</span>
+      </div>
+      <div class="tj-sub-body" id="tjb-${key}">
+        <div class="tj-banner">${banner}</div>
+        ${table}
+      </div>
     </div>`;
 }
 
-async function _deletePortfolioItem(id) {
-  if (!confirm('Remove this position from your portfolio?')) return;
+function _toggleTJSection(key) {
+  const body    = document.getElementById(`tjb-${key}`);
+  const chevron = document.getElementById(`tjc-${key}`);
+  if (!body) return;
+  const open = body.classList.toggle('open');
+  if (chevron) open ? chevron.classList.add('open') : chevron.classList.remove('open');
+}
+
+// ── Banner calculators ────────────────────────────────────────────────────────
+function _tjStat(val, lbl, cls='') {
+  return `<div class="tj-stat"><span class="tj-stat-val ${cls}">${val}</span><span class="tj-stat-lbl">${lbl}</span></div>`;
+}
+
+function _watchBanner(items) {
+  if (!items.length) return _tjStat('—','Watching');
+  let ready=0, notYet=0, passed=0;
+  items.forEach(it => {
+    const s = _watchStatus(it);
+    if (s==='ready') ready++; else if (s==='not-yet') notYet++; else passed++;
+  });
+  return _tjStat(items.length,'Watching') +
+         _tjStat(ready,'Ready','amber') +
+         _tjStat(notYet,'Not Yet') +
+         _tjStat(passed,'Passed');
+}
+
+function _openBanner(items) {
+  if (!items.length) return _tjStat('—','Open');
+  let profit=0, loss=0, netPnl=0, invested=0;
+  const cs = (_vs&&_vs.currSym)||'$';
+  items.forEach(it => {
+    const p = it.pnl_money || 0;
+    netPnl += p;
+    if (p >= 0) profit++; else loss++;
+    invested += it.investment_value || 0;
+  });
+  const pnlCls = netPnl >= 0 ? 'pos' : 'neg';
+  const invStr = invested ? cs + Math.round(invested).toLocaleString() : '—';
+  return _tjStat(items.length,'Open') +
+         _tjStat(profit,'In Profit','pos') +
+         _tjStat(loss,'At Loss','neg') +
+         _tjStat((netPnl>=0?'+':'')+cs+Math.abs(Math.round(netPnl)).toLocaleString(),'Net P&L',pnlCls) +
+         _tjStat(invStr,'Invested');
+}
+
+function _closedBanner(items) {
+  if (!items.length) return _tjStat('—','Closed');
+  let winners=0, losers=0, total=0;
+  const cs = (_vs&&_vs.currSym)||'$';
+  items.forEach(it => {
+    const p = it.pnl_money || 0;
+    total += p;
+    if (p >= 0) winners++; else losers++;
+  });
+  const wr = items.length ? Math.round(winners/items.length*100)+'%' : '—';
+  const totalCls = total >= 0 ? 'pos' : 'neg';
+  return _tjStat(items.length,'Closed') +
+         _tjStat(winners,'Winners','pos') +
+         _tjStat(losers,'Losers','neg') +
+         _tjStat(wr,'Win Rate','amber') +
+         _tjStat((total>=0?'+':'')+cs+Math.abs(Math.round(total)).toLocaleString(),'Total Realised',totalCls);
+}
+
+// ── Watch status ──────────────────────────────────────────────────────────────
+function _watchStatus(it) {
+  const cp = it.current_price, tp = it.target_price, trade = it.trade || 'long';
+  if (!cp || !tp) return 'not-yet';
+  const diff = (cp - tp) / tp;  // positive = price above target
+  if (Math.abs(diff) <= 0.03) return 'ready';
+  // For long: want price to DROP to target. "Not Yet" = price still above, "Passed" = price went below target
+  // For short: want price to RISE to target. "Not Yet" = price still below, "Passed" = price went above
+  if (trade === 'long') return diff > 0.03 ? 'not-yet' : 'passed';
+  else return diff < -0.03 ? 'not-yet' : 'passed';
+}
+
+// ── Watch table ───────────────────────────────────────────────────────────────
+function _watchTable(items) {
+  if (!items.length) return `<div class="pt-empty">No stocks on watch list.<br><small>Analyse a stock and click "Add to Watch List" in the Decision section.</small></div>`;
+  const cs = (_vs&&_vs.currSym)||'$';
+  const rows = items.map(it => {
+    const ws = _watchStatus(it);
+    const badge = ws==='ready' ? `<span class="tj-ready">Ready</span>` : ws==='passed' ? `<span class="tj-passed">Passed</span>` : `<span class="tj-not-yet">Not Yet</span>`;
+    const vt = it.vs_target_pct;
+    const vtStr = vt !== null && vt !== undefined ? `<span style="color:${Math.abs(vt)<=3?'var(--gold)':vt<0?'var(--green)':'var(--muted)'}">${vt>0?'+':''}${vt.toFixed(1)}%</span>` : '—';
+    const sess = it.has_session ? `<a class="pt-session-link" onclick="_openSessionSummary(${it.id})">📄 View</a>` : `<span style="color:var(--dim)">—</span>`;
+    return `<tr>
+      <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.67rem">${it.name||''}</span></td>
+      <td><span class="pt-trade${it.trade==='short'?' short':''}">${(it.trade||'long').toUpperCase()}</span></td>
+      <td><input class="pt-edit" type="number" value="${it.target_price||''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Target Entry Price"/></td>
+      <td><input class="pt-edit" type="number" value="${it.stop_loss||''}" onchange="_portfolioUpdateField(${it.id},'stop_loss',this.value)" title="Stop Loss"/></td>
+      <td>${it.current_price!==null ? cs+it.current_price.toFixed(2) : '—'}</td>
+      <td>${vtStr}</td>
+      <td>${badge}</td>
+      <td>${sess}</td>
+      <td><button class="pt-action-btn" onclick="_openMarkBoughtModal(${it.id}, ${it.target_price||0})">✅ Bought</button></td>
+      <td><button class="pt-icon-btn" onclick="_portfolioReanalyse('${it.ticker}')" title="Re-analyse">🔄</button></td>
+      <td><button class="pt-del-btn" onclick="_deletePortfolioItem(${it.id},'watch')" title="Remove">✕</button></td>
+    </tr>`;
+  }).join('');
+  return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
+    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th>Stop Loss</th><th>Current</th><th>vs Target</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+// ── Open trades table ─────────────────────────────────────────────────────────
+function _openTable(items) {
+  if (!items.length) return `<div class="pt-empty">No open trades.<br><small>Click "✅ Bought" on a watch list entry when you execute the trade.</small></div>`;
+  const cs = (_vs&&_vs.currSym)||'$';
+  const rows = items.map(it => {
+    const pnlCls = it.pnl_money===null ? '' : it.pnl_money>=0 ? 'pt-pnl-pos' : 'pt-pnl-neg';
+    const pnlStr = it.pnl_money!==null ? `${it.pnl_money>=0?'+':''}${cs}${Math.abs(it.pnl_money).toFixed(0)} (${it.pnl_pct>=0?'+':''}${(it.pnl_pct||0).toFixed(1)}%)` : '—';
+    const dcfStr = it.pnl_vs_dcf_pct!==null ? `${it.pnl_vs_dcf_pct>=0?'+':''}${it.pnl_vs_dcf_pct.toFixed(1)}%` : '—';
+    const dcfCls = it.pnl_vs_dcf_pct===null ? '' : it.pnl_vs_dcf_pct>=0 ? 'pt-pnl-pos' : 'pt-pnl-neg';
+    const invStr = it.investment_value!=null ? cs+Math.round(it.investment_value).toLocaleString() : '—';
+    const curStr = it.current_value!=null ? cs+Math.round(it.current_value).toLocaleString() : '—';
+    const sess = it.has_session ? `<a class="pt-session-link" onclick="_openSessionSummary(${it.id})">📄</a>` : `<span style="color:var(--dim)">—</span>`;
+    const ed = it.entry_date ? it.entry_date.slice(0,10) : '—';
+    return `<tr>
+      <td><input type="checkbox" class="pt-checkbox ptck-open" id="ptck-${it.id}" data-ticker="${it.ticker}" checked/></td>
+      <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.67rem">${it.name||''}</span></td>
+      <td><span class="pt-trade${it.trade==='short'?' short':''}">${(it.trade||'long').toUpperCase()}</span></td>
+      <td>${it.entry_price!=null ? cs+it.entry_price.toFixed(2) : '—'}</td>
+      <td style="color:var(--muted);font-size:0.72rem">${ed}</td>
+      <td><input class="pt-edit" type="number" value="${it.stop_loss||''}" onchange="_portfolioUpdateField(${it.id},'stop_loss',this.value)" title="Stop Loss"/></td>
+      <td>${it.current_price!=null ? cs+it.current_price.toFixed(2) : '—'}</td>
+      <td><input class="pt-edit" type="number" value="${it.shares||0}" onchange="_portfolioUpdateField(${it.id},'shares',this.value)" title="Shares" style="width:60px"/></td>
+      <td>${invStr}</td>
+      <td>${curStr}</td>
+      <td class="${pnlCls}">${pnlStr}</td>
+      <td class="${dcfCls}" title="vs DCF intrinsic value">${dcfStr}</td>
+      <td>${sess}</td>
+      <td><button class="pt-sell-btn" onclick="_openMarkSoldModal(${it.id})">💰 Sell</button></td>
+      <td><button class="pt-icon-btn" onclick="_portfolioReanalyse('${it.ticker}')" title="Re-analyse">🔄</button></td>
+      <td><button class="pt-del-btn" onclick="_deletePortfolioItem(${it.id},'open')" title="Remove">✕</button></td>
+    </tr>`;
+  }).join('');
+  return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
+    <thead><tr><th></th><th>Ticker</th><th>Trade</th><th>Entry Price</th><th>Entry Date</th><th>Stop Loss</th><th>Current</th><th>Shares</th><th>Invested</th><th>Cur. Value</th><th>Unreal. P&L</th><th title="vs DCF intrinsic value">vs DCF</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>
+  <div class="tj-actions">
+    <span class="pa-label">Run checked in:</span>
+    <button class="pa-btn" onclick="_portfolioRunOptimiser()">📊 Portfolio Optimiser →</button>
+    <button class="pa-btn" onclick="_portfolioRunMonteCarlo()">🎲 Monte Carlo →</button>
+    <button class="pa-refresh-btn" onclick="_loadPortfolio()">↻ Refresh</button>
+  </div>`;
+}
+
+// ── Closed trades table ───────────────────────────────────────────────────────
+function _closedTable(items) {
+  if (!items.length) return `<div class="pt-empty">No closed trades yet.<br><small>Click "💰 Sell" on an open trade when you exit the position.</small></div>`;
+  const cs = (_vs&&_vs.currSym)||'$';
+  const rows = items.map(it => {
+    const pnlCls = it.pnl_money===null ? '' : it.pnl_money>=0 ? 'pt-pnl-pos' : 'pt-pnl-neg';
+    const pnlStr = it.pnl_money!==null ? `${it.pnl_money>=0?'+':''}${cs}${Math.abs(it.pnl_money).toFixed(0)}` : '—';
+    const pnlPctStr = it.pnl_pct!==null ? `${it.pnl_pct>=0?'+':''}${it.pnl_pct.toFixed(1)}%` : '';
+    const ed = it.entry_date ? it.entry_date.slice(0,10) : '—';
+    const xd = it.exit_date  ? it.exit_date.slice(0,10)  : '—';
+    const sess = it.has_session ? `<a class="pt-session-link" onclick="_openSessionSummary(${it.id})">📄 View</a>` : `<span style="color:var(--dim)">—</span>`;
+    const days = it.holding_days != null ? `${it.holding_days}d` : '—';
+    return `<tr>
+      <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.67rem">${it.name||''}</span></td>
+      <td><span class="pt-trade${it.trade==='short'?' short':''}">${(it.trade||'long').toUpperCase()}</span></td>
+      <td>${it.entry_price!=null ? cs+it.entry_price.toFixed(2) : '—'}</td>
+      <td>${it.exit_price!=null ? cs+it.exit_price.toFixed(2) : '—'}</td>
+      <td>${it.shares||'—'}</td>
+      <td style="color:var(--muted);font-size:0.72rem">${ed}</td>
+      <td style="color:var(--muted);font-size:0.72rem">${xd}</td>
+      <td style="color:var(--dim)">${days}</td>
+      <td class="${pnlCls}" style="font-weight:700">${pnlStr}</td>
+      <td class="${pnlCls}">${pnlPctStr}</td>
+      <td>${sess}</td>
+      <td><button class="pt-del-btn" onclick="_deletePortfolioItem(${it.id},'closed')" title="Delete from history">✕</button></td>
+    </tr>`;
+  }).join('');
+  return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
+    <thead><tr><th>Ticker</th><th>Trade</th><th>Entry</th><th>Exit</th><th>Shares</th><th>Entry Date</th><th>Exit Date</th><th>Held</th><th>Realised P&L</th><th>P&L %</th><th>Session</th><th></th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+
+// ── Add to Watch List — modal functions ───────────────────────────────────────
+async function _confirmAddToPortfolio() {
+  const btn   = document.getElementById('atp-save-btn');
+  const token = localStorage.getItem('fintiq_session');
+  if (!token) return;
+
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  const payload = {
+    ticker:       document.getElementById('atp-ticker').value.trim().toUpperCase(),
+    name:         document.getElementById('atp-name').value.trim(),
+    sector:       document.getElementById('atp-sector').value.trim(),
+    industry:     document.getElementById('atp-industry').value.trim(),
+    trade:        _atpTrade,
+    target_price: parseFloat(document.getElementById('atp-target').value) || null,
+    stop_loss:    parseFloat(document.getElementById('atp-stoploss').value) || null,
+    dcf_value:    parseFloat(document.getElementById('atp-dcf').value) || null,
+  };
+
+  try {
+    const res = await fetch(`${API}/portfolio/add`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const data = await res.json();
+    const newId = data.id;
+
+    // Save session HTML
+    try {
+      const html = _doGenerateReport(true);
+      await fetch(`${API}/portfolio/session/${newId}`, {
+        method:  'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ html }),
+      });
+    } catch(e) { console.warn('[Journal] Session save failed:', e); }
+
+    _closeAddToPortfolioModal();
+    const body = document.getElementById('pp-body');
+    const chev = document.getElementById('pp-chevron');
+    if (body && !body.classList.contains('open')) { body.classList.add('open'); if(chev) chev.classList.add('open'); }
+    _loadPortfolio();
+  } catch(e) {
+    alert('Could not add to watch list: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add to Watch List';
+  }
+}
+
+// ── Mark as Bought modal ──────────────────────────────────────────────────────
+let _mbItemId = null;
+function _openMarkBoughtModal(id, targetPrice) {
+  _mbItemId = id;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('mb-price').value = targetPrice || '';
+  document.getElementById('mb-shares').value = '';
+  document.getElementById('mb-date').value = today;
+  document.getElementById('mb-modal').classList.add('open');
+}
+function _closeMarkBoughtModal() {
+  document.getElementById('mb-modal').classList.remove('open');
+  _mbItemId = null;
+}
+async function _confirmMarkBought() {
+  const btn   = document.getElementById('mb-save-btn');
+  const token = localStorage.getItem('fintiq_session');
+  if (!token || !_mbItemId) return;
+  const ep = parseFloat(document.getElementById('mb-price').value);
+  const sh = parseFloat(document.getElementById('mb-shares').value);
+  const ed = document.getElementById('mb-date').value;
+  if (!ep || !sh || !ed) { alert('Please fill in all fields.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${API}/portfolio/${_mbItemId}/buy`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry_price: ep, shares: sh, entry_date: ed }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    _closeMarkBoughtModal();
+    _loadPortfolio();
+  } catch(e) {
+    alert('Could not mark as bought: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirm Buy';
+  }
+}
+
+// ── Mark as Sold modal ────────────────────────────────────────────────────────
+let _msItemId = null;
+function _openMarkSoldModal(id) {
+  _msItemId = id;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('ms-price').value = '';
+  document.getElementById('ms-date').value = today;
+  document.getElementById('ms-modal').classList.add('open');
+}
+function _closeMarkSoldModal() {
+  document.getElementById('ms-modal').classList.remove('open');
+  _msItemId = null;
+}
+async function _confirmMarkSold() {
+  const btn   = document.getElementById('ms-save-btn');
+  const token = localStorage.getItem('fintiq_session');
+  if (!token || !_msItemId) return;
+  const xp = parseFloat(document.getElementById('ms-price').value);
+  const xd = document.getElementById('ms-date').value;
+  if (!xp || !xd) { alert('Please fill in all fields.'); return; }
+
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch(`${API}/portfolio/${_msItemId}/sell`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ exit_price: xp, exit_date: xd }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    _closeMarkSoldModal();
+    _loadPortfolio();
+  } catch(e) {
+    alert('Could not mark as sold: ' + e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Confirm Sell';
+  }
+}
+
+// ── Re-analysis banner in Decision section ────────────────────────────────────
+function _checkJournalTicker(ticker) {
+  if (!ticker || !_journalItems.length) return;
+  const match = _journalItems.find(i => i.ticker === ticker.toUpperCase() && i.status !== 'closed');
+  const banner = document.getElementById('tj-reanalyse-banner');
+  if (!banner) return;
+  if (match) {
+    banner.style.display = 'block';
+    const statusLabel = match.status === 'open' ? 'Open Trade' : 'Watch List';
+    banner.querySelector('.tj-rb-label').textContent = `${ticker.toUpperCase()} is in your ${statusLabel}.`;
+  } else {
+    banner.style.display = 'none';
+  }
+}
+
+async function _updateJournalSessionFromDecision() {
+  if (!_session || !_session.ticker) return;
+  const match = _journalItems.find(i => i.ticker === _session.ticker.toUpperCase() && i.status !== 'closed');
+  if (!match) return;
+  await _updateJournalSession(match.id);
+}
+
+async function _updateJournalSession(id) {
+  const token = localStorage.getItem('fintiq_session');
+  if (!token) return;
+  try {
+    const html = _doGenerateReport(true);
+    await fetch(`${API}/portfolio/session/${id}`, {
+      method:  'POST',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ html }),
+    });
+    alert('Session summary updated.');
+  } catch(e) { alert('Could not update session: ' + e.message); }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+async function _deletePortfolioItem(id, status) {
+  const warn = status === 'closed'
+    ? 'Permanently delete this closed trade from your journal history? This cannot be undone.'
+    : 'Remove this position from your Trading Journal?';
+  if (!confirm(warn)) return;
   const token = localStorage.getItem('fintiq_session');
   try {
     await fetch(`${API}/portfolio/${id}`, {
@@ -5872,6 +6256,7 @@ async function _deletePortfolioItem(id) {
   }
 }
 
+// ── Field update (inline edits) ───────────────────────────────────────────────
 async function _portfolioUpdateField(id, field, value) {
   const token = localStorage.getItem('fintiq_session');
   try {
@@ -5881,16 +6266,13 @@ async function _portfolioUpdateField(id, field, value) {
       headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
       body:    JSON.stringify({ [field]: isNaN(parsed) ? value : parsed }),
     });
-  } catch(e) {
-    console.warn('[Portfolio] update failed:', e);
-  }
+  } catch(e) { console.warn('[Journal] update failed:', e); }
 }
 
+// ── Session summary viewer ────────────────────────────────────────────────────
 function _openSessionSummary(id) {
   const token = localStorage.getItem('fintiq_session');
   if (!token) return;
-  const url = `${API}/portfolio/session/${id}?token=${encodeURIComponent(token)}`;
-  // We open via fetch to honour Bearer auth, then blob URL
   fetch(`${API}/portfolio/session/${id}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   }).then(r => r.text()).then(html => {
@@ -5901,16 +6283,17 @@ function _openSessionSummary(id) {
   }).catch(e => alert('Could not load session: ' + e.message));
 }
 
+// ── Re-analyse ────────────────────────────────────────────────────────────────
 function _portfolioReanalyse(ticker) {
-  // Navigate to deep dive with ticker pre-loaded — same tab
   const url = new URL(window.location.href);
   url.searchParams.set('ticker', ticker.toUpperCase());
   window.location.href = url.toString();
 }
 
+// ── Optimiser tools (run checked open-trade tickers) ─────────────────────────
 function _portfolioRunOptimiser() {
   const checked = _getCheckedTickers();
-  if (!checked.length) { alert('No stocks selected. Use the checkboxes to pick stocks.'); return; }
+  if (!checked.length) { alert('No stocks selected. Check the boxes in Open Trades.'); return; }
   const params = new URLSearchParams();
   params.set('tickers', checked.join(','));
   window.open(`portfolio-optimiser.html?${params.toString()}`, '_blank');
@@ -5918,7 +6301,7 @@ function _portfolioRunOptimiser() {
 
 function _portfolioRunMonteCarlo() {
   const checked = _getCheckedTickers();
-  if (!checked.length) { alert('No stocks selected. Use the checkboxes to pick stocks.'); return; }
+  if (!checked.length) { alert('No stocks selected. Check the boxes in Open Trades.'); return; }
   const params = new URLSearchParams();
   params.set('tickers', checked.join(','));
   window.open(`portfolio-monte-carlo.html?${params.toString()}`, '_blank');
@@ -5926,24 +6309,23 @@ function _portfolioRunMonteCarlo() {
 
 function _getCheckedTickers() {
   const tickers = [];
-  document.querySelectorAll('.pt-checkbox').forEach(cb => {
+  document.querySelectorAll('.ptck-open').forEach(cb => {
     if (cb.checked) {
-      const id = cb.id.replace('ptck-', '');
-      // find ticker from table row
-      const row = cb.closest('tr');
-      if (row) {
-        const nameCell = row.querySelector('td:nth-child(2) strong');
-        if (nameCell) tickers.push(nameCell.textContent.trim());
-      }
+      const ticker = cb.getAttribute('data-ticker');
+      if (ticker) tickers.push(ticker);
     }
   });
   return tickers;
 }
 
-// Close ATP modal on backdrop click
+// ── Modal backdrop click handlers ─────────────────────────────────────────────
 document.addEventListener('click', function(e) {
-  const modal = document.getElementById('atp-modal');
-  if (modal && e.target === modal) _closeAddToPortfolioModal();
+  const atp = document.getElementById('atp-modal');
+  if (atp && e.target === atp) _closeAddToPortfolioModal();
+  const mb = document.getElementById('mb-modal');
+  if (mb && e.target === mb) _closeMarkBoughtModal();
+  const ms = document.getElementById('ms-modal');
+  if (ms && e.target === ms) _closeMarkSoldModal();
 });
 </script>
 
