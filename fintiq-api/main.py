@@ -6108,6 +6108,22 @@ def _auth_db():
             expires_at TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_sessions_email ON sessions(email);
+        CREATE TABLE IF NOT EXISTS portfolio (
+            id           INTEGER PRIMARY KEY AUTOINCREMENT,
+            email        TEXT NOT NULL,
+            ticker       TEXT NOT NULL,
+            name         TEXT,
+            sector       TEXT,
+            industry     TEXT,
+            trade        TEXT DEFAULT 'long',
+            target_price REAL,
+            stop_loss    REAL,
+            dcf_value    REAL,
+            shares       REAL DEFAULT 0,
+            added_at     TEXT NOT NULL,
+            updated_at   TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_portfolio_email ON portfolio(email);
     """)
     conn.commit()
     return conn
@@ -6538,4 +6554,241 @@ async def stripe_webhook(request: Request):
             except Exception as e:
                 print(f"[Stripe] Webhook unsubscribe error: {e}")
 
+    return {"ok": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PORTFOLIO BUILDER — endpoints
+# ══════════════════════════════════════════════════════════════════════════════
+
+_SESSIONS_DIR = "/data/sessions" if os.path.isdir("/data") else "/tmp/sessions"
+os.makedirs(_SESSIONS_DIR, exist_ok=True)
+
+
+def _get_current_prices_bulk(tickers: list[str]) -> dict[str, float | None]:
+    """Fetch live prices for a list of tickers in parallel via yfinance."""
+    def _fetch_one(t):
+        try:
+            info = yf.Ticker(t).fast_info
+            return t, getattr(info, "last_price", None) or getattr(info, "regularMarketLastPrice", None)
+        except Exception:
+            return t, None
+
+    results = {}
+    with ThreadPoolExecutor(max_workers=min(len(tickers), 10)) as ex:
+        futures = {ex.submit(_fetch_one, t): t for t in tickers}
+        for f in futures:
+            t, price = f.result()
+            results[t] = price
+    return results
+
+
+# ── POST /portfolio/add ────────────────────────────────────────────────────────
+@app.post("/portfolio/add")
+async def portfolio_add(request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not user.get("subscribed"):
+        raise HTTPException(status_code=403, detail="Subscription required")
+
+    body = await request.json()
+    ticker = (body.get("ticker") or "").strip().upper()
+    if not ticker:
+        raise HTTPException(status_code=400, detail="ticker required")
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn = _auth_db()
+    cur = conn.execute(
+        """INSERT INTO portfolio
+           (email, ticker, name, sector, industry, trade, target_price, stop_loss, dcf_value, shares, added_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+        (
+            user["email"],
+            ticker,
+            body.get("name"),
+            body.get("sector"),
+            body.get("industry"),
+            body.get("trade", "long"),
+            body.get("target_price"),
+            body.get("stop_loss"),
+            body.get("dcf_value"),
+            body.get("shares", 0),
+            now,
+            now,
+        ),
+    )
+    conn.commit()
+    new_id = cur.lastrowid
+    conn.close()
+    return {"ok": True, "id": new_id}
+
+
+# ── GET /portfolio ─────────────────────────────────────────────────────────────
+@app.get("/portfolio")
+async def portfolio_get(request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not user.get("subscribed"):
+        raise HTTPException(status_code=403, detail="Subscription required")
+
+    conn = _auth_db()
+    rows = conn.execute(
+        "SELECT * FROM portfolio WHERE email=? ORDER BY added_at DESC",
+        (user["email"],),
+    ).fetchall()
+    conn.close()
+
+    items = [dict(r) for r in rows]
+    if not items:
+        return {"items": []}
+
+    # Bulk live prices
+    tickers = list({i["ticker"] for i in items})
+    prices = _get_current_prices_bulk(tickers)
+
+    result = []
+    for it in items:
+        cp = prices.get(it["ticker"])
+        inv = (it["shares"] or 0) * (it["target_price"] or 0)
+        cur_val = (it["shares"] or 0) * cp if cp is not None else None
+        pnl_money = (cur_val - inv) if (cur_val is not None and inv is not None) else None
+        pnl_pct = (pnl_money / inv * 100) if (pnl_money is not None and inv) else None
+        dcf = it["dcf_value"]
+        pnl_vs_dcf = ((cp - dcf) / dcf * 100) if (cp and dcf) else None
+
+        # Check if session file exists
+        session_file = os.path.join(_SESSIONS_DIR, f"{it['id']}.html")
+        has_session = os.path.isfile(session_file)
+
+        result.append({
+            **it,
+            "current_price": cp,
+            "investment_value": round(inv, 2) if inv else 0,
+            "current_value": round(cur_val, 2) if cur_val is not None else None,
+            "pnl_money": round(pnl_money, 2) if pnl_money is not None else None,
+            "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
+            "pnl_vs_dcf_pct": round(pnl_vs_dcf, 2) if pnl_vs_dcf is not None else None,
+            "has_session": has_session,
+        })
+    return {"items": result}
+
+
+# ── DELETE /portfolio/{item_id} ────────────────────────────────────────────────
+@app.delete("/portfolio/{item_id}")
+async def portfolio_delete(item_id: int, request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = _auth_db()
+    row = conn.execute("SELECT email FROM portfolio WHERE id=?", (item_id,)).fetchone()
+    if not row or row["email"] != user["email"]:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Not found")
+
+    conn.execute("DELETE FROM portfolio WHERE id=?", (item_id,))
+    conn.commit()
+    conn.close()
+
+    # Remove session file if present
+    session_file = os.path.join(_SESSIONS_DIR, f"{item_id}.html")
+    try:
+        if os.path.isfile(session_file):
+            os.remove(session_file)
+    except Exception:
+        pass
+
+    return {"ok": True}
+
+
+# ── PATCH /portfolio/{item_id} ─────────────────────────────────────────────────
+@app.patch("/portfolio/{item_id}")
+async def portfolio_update(item_id: int, request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = _auth_db()
+    row = conn.execute("SELECT email FROM portfolio WHERE id=?", (item_id,)).fetchone()
+    if not row or row["email"] != user["email"]:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Not found")
+
+    body = await request.json()
+    allowed = {"target_price", "stop_loss", "shares", "trade", "name", "sector", "industry", "dcf_value"}
+    updates = {k: v for k, v in body.items() if k in allowed}
+    if not updates:
+        conn.close()
+        return {"ok": True}
+
+    updates["updated_at"] = datetime.now(timezone.utc).isoformat()
+    set_clause = ", ".join(f"{k}=?" for k in updates)
+    values = list(updates.values()) + [item_id]
+    conn.execute(f"UPDATE portfolio SET {set_clause} WHERE id=?", values)
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+
+# ── GET /portfolio/session/{item_id} ──────────────────────────────────────────
+@app.get("/portfolio/session/{item_id}")
+async def portfolio_session_get(item_id: int, request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = _auth_db()
+    row = conn.execute("SELECT email FROM portfolio WHERE id=?", (item_id,)).fetchone()
+    conn.close()
+    if not row or row["email"] != user["email"]:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    session_file = os.path.join(_SESSIONS_DIR, f"{item_id}.html")
+    if not os.path.isfile(session_file):
+        raise HTTPException(status_code=404, detail="No session saved")
+
+    from fastapi.responses import HTMLResponse
+    with open(session_file, "r", encoding="utf-8") as f:
+        html = f.read()
+    return HTMLResponse(content=html)
+
+
+# ── POST /portfolio/session/{item_id} ─────────────────────────────────────────
+@app.post("/portfolio/session/{item_id}")
+async def portfolio_session_save(item_id: int, request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    if not user.get("subscribed"):
+        raise HTTPException(status_code=403, detail="Subscription required")
+
+    conn = _auth_db()
+    row = conn.execute("SELECT email FROM portfolio WHERE id=?", (item_id,)).fetchone()
+    conn.close()
+    if not row or row["email"] != user["email"]:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    body = await request.json()
+    html_content = body.get("html", "")
+    if not html_content:
+        raise HTTPException(status_code=400, detail="html required")
+
+    session_file = os.path.join(_SESSIONS_DIR, f"{item_id}.html")
+    with open(session_file, "w", encoding="utf-8") as f:
+        f.write(html_content)
+
+    # Update updated_at on portfolio row
+    conn = _auth_db()
+    conn.execute("UPDATE portfolio SET updated_at=? WHERE id=?",
+                 (datetime.now(timezone.utc).isoformat(), item_id))
+    conn.commit()
+    conn.close()
     return {"ok": True}
