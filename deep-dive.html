@@ -737,8 +737,9 @@ a{color:var(--gold);text-decoration:none}
 .portfolio-tbl td{padding:7px 10px;border-bottom:1px solid rgba(255,255,255,.03);vertical-align:middle;color:var(--text);white-space:nowrap}
 .portfolio-tbl tr:last-child td{border-bottom:none}
 .portfolio-tbl tr:hover td{background:rgba(255,255,255,.025)}
-.pt-edit{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text);padding:3px 6px;width:74px;font-size:0.76rem;text-align:right}
+.pt-edit{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text);padding:3px 6px;width:74px;font-size:0.76rem;text-align:right;-moz-appearance:textfield}
 .pt-edit:focus{outline:none;border-color:var(--gold)}
+.pt-edit::-webkit-inner-spin-button,.pt-edit::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .pt-trade{font-size:0.68rem;font-weight:700;padding:2px 7px;border-radius:20px;background:rgba(245,158,11,.15);color:var(--gold)}
 .pt-trade.short{background:rgba(239,68,68,.12);color:#f87171}
 .pt-pnl-pos{color:var(--green);font-weight:600}
@@ -1143,7 +1144,7 @@ a{color:var(--gold);text-decoration:none}
       </div>
     </div>
     <div class="atp-row">
-      <label>Price Target <small style="text-transform:none;color:var(--muted);font-size:0.65rem">(upside exit — used to calculate R:R ratio)</small></label>
+      <label>Take Profit (TP) <small style="text-transform:none;color:var(--muted);font-size:0.65rem">(upside exit target — used to calculate R:R ratio)</small></label>
       <input class="atp-input" id="atp-dcf" type="number" step="0.01" placeholder="e.g. 200.00" />
     </div>
     <div class="atp-footer">
@@ -5977,17 +5978,33 @@ function _calcRR(trade, entry, pTarget, stop) {
   return reward / risk;
 }
 
-// R:R field changed → recalculate stop loss
+// R:R field changed → smart bidirectional:
+//   If TP is known  → recalculate Stop Loss
+//   If TP is empty  → recalculate TP from Entry + Stop + R:R
 function _rrChanged(id, trade, entry, pTarget, newRR, rowEl) {
   newRR = parseFloat(newRR); entry = parseFloat(entry); pTarget = parseFloat(pTarget);
-  if (!newRR || !entry || !pTarget) return;
-  let newStop;
-  const reward = trade === 'short' ? entry - pTarget : pTarget - entry;
-  newStop = trade === 'short' ? entry + reward / newRR : entry - reward / newRR;
-  if (newStop <= 0) return;
-  const slEl = rowEl.querySelector('.pt-sl-input');
-  if (slEl) slEl.value = newStop.toFixed(2);
-  _portfolioUpdateField(id, 'stop_loss', newStop);
+  if (!newRR || !entry) return;
+
+  if (!pTarget) {
+    // TP unknown — derive TP from entry + stop + R:R
+    const slEl = rowEl.querySelector('.pt-sl-input');
+    const stop = parseFloat(slEl?.value);
+    if (!stop) return;
+    const risk   = trade === 'short' ? stop - entry : entry - stop;
+    if (risk <= 0) return;
+    const newTP = trade === 'short' ? entry - newRR * risk : entry + newRR * risk;
+    const tpEl = rowEl.querySelector('.pt-tp-input');
+    if (tpEl) tpEl.value = newTP.toFixed(2);
+    _portfolioUpdateField(id, 'dcf_value', newTP);
+  } else {
+    // TP known — derive Stop Loss
+    const reward = trade === 'short' ? entry - pTarget : pTarget - entry;
+    const newStop = trade === 'short' ? entry + reward / newRR : entry - reward / newRR;
+    if (newStop <= 0) return;
+    const slEl = rowEl.querySelector('.pt-sl-input');
+    if (slEl) slEl.value = newStop.toFixed(2);
+    _portfolioUpdateField(id, 'stop_loss', newStop);
+  }
 }
 
 // Stop loss field changed → recalculate R:R
@@ -5998,15 +6015,15 @@ function _slChanged(id, trade, entry, pTarget, newSL, rowEl) {
   _portfolioUpdateField(id, 'stop_loss', parseFloat(newSL));
 }
 
-// Price target field changed → recalculate R:R display
-function _ptChanged(id, trade, entry, newPT, rowEl) {
+// Take Profit field changed → recalculate R:R display
+function _ptChanged(id, trade, entry, newTP, rowEl) {
   const slEl = rowEl.querySelector('.pt-sl-input');
   const rrEl = rowEl.querySelector('.pt-rr-input');
   if (rrEl && slEl) {
-    const rr = _calcRR(trade, entry, newPT, slEl.value);
+    const rr = _calcRR(trade, entry, newTP, slEl.value);
     rrEl.value = rr ? rr.toFixed(2) : '';
   }
-  _portfolioUpdateField(id, 'dcf_value', parseFloat(newPT));
+  _portfolioUpdateField(id, 'dcf_value', parseFloat(newTP));
 }
 
 // ── Watch table ───────────────────────────────────────────────────────────────
@@ -6014,7 +6031,7 @@ function _watchTable(items) {
   const cs = (_vs&&_vs.currSym)||'$';
   if (!items.length) {
     return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
-      <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th>Price Target</th><th>Stop Loss</th><th>R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th title="Take Profit — upside exit target">TP</th><th>Stop Loss</th><th title="Risk:Reward ratio">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
       <tbody><tr><td colspan="12" class="pt-empty-cell">No stocks on watch list — analyse a stock and click <strong>👁 Add to Watch List</strong> in the Decision section.</td></tr></tbody>
     </table></div>`;
   }
@@ -6027,10 +6044,10 @@ function _watchTable(items) {
     return `<tr data-row-id="${it.id}">
       <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.67rem">${it.name||''}</span></td>
       <td><span class="pt-trade${it.trade==='short'?' short':''}">${(it.trade||'long').toUpperCase()}</span></td>
-      <td><input class="pt-edit" type="number" value="${it.target_price||''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Target Entry Price"/></td>
-      <td><input class="pt-edit" type="number" value="${it.dcf_value||''}" onchange="_ptChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},this.value,this.closest('tr'))" title="Price Target (exit upside)"/></td>
-      <td><input class="pt-edit pt-sl-input" type="number" value="${it.stop_loss||''}" onchange="_slChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Stop Loss"/></td>
-      <td><input class="pt-edit pt-rr-input" type="number" step="0.1" value="${rrDisplay}" onchange="_rrChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Risk:Reward ratio (e.g. 2 = 2:1)"/></td>
+      <td><input class="pt-edit" type="text" inputmode="decimal" value="${it.target_price||''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Target Entry Price"/></td>
+      <td><input class="pt-edit pt-tp-input" type="text" inputmode="decimal" value="${it.dcf_value||''}" onchange="_ptChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},this.value,this.closest('tr'))" title="Take Profit — your upside exit target"/></td>
+      <td><input class="pt-edit pt-sl-input" type="text" inputmode="decimal" value="${it.stop_loss||''}" onchange="_slChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Stop Loss"/></td>
+      <td><input class="pt-edit pt-rr-input" type="text" inputmode="decimal" value="${rrDisplay}" onchange="_rrChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Risk:Reward — enter to calculate Stop Loss or Take Profit"/></td>
       <td>${it.current_price!==null ? cs+it.current_price.toFixed(2) : '—'}</td>
       <td>${badge}</td>
       <td>${sess}</td>
@@ -6040,7 +6057,7 @@ function _watchTable(items) {
     </tr>`;
   }).join('');
   return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
-    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th>Price Target</th><th>Stop Loss</th><th title="Risk:Reward ratio">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th title="Take Profit — upside exit target">TP</th><th>Stop Loss</th><th title="Risk:Reward ratio (e.g. 2.0 = 2:1)">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
