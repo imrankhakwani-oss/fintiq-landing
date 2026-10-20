@@ -702,6 +702,16 @@ a{color:var(--gold);text-decoration:none}
 .tj-sub-title{font-size:0.85rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
 .tj-sub-chevron{font-size:0.8rem;color:var(--muted);transition:transform .2s}
 .tj-sub-chevron.open{transform:rotate(180deg)}
+.tj-sub-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.tj-count-chip{background:rgba(255,255,255,.08);color:var(--muted);font-size:0.68rem;font-weight:700;padding:1px 7px;border-radius:10px}
+.tj-hs-wrap{display:flex;gap:6px;flex-wrap:wrap}
+.tj-hs-ready{background:rgba(34,197,94,.15);color:#4ade80;font-size:0.68rem;font-weight:700;padding:1px 7px;border-radius:10px}
+.tj-hs-wait{background:rgba(148,163,184,.1);color:var(--muted);font-size:0.68rem;font-weight:700;padding:1px 7px;border-radius:10px}
+.tj-hs-passed{background:rgba(245,158,11,.15);color:var(--gold);font-size:0.68rem;font-weight:700;padding:1px 7px;border-radius:10px}
+.tj-hs-pos{background:rgba(34,197,94,.12);color:#4ade80;font-size:0.68rem;font-weight:700;padding:1px 8px;border-radius:10px}
+.tj-hs-neg{background:rgba(248,113,113,.12);color:#f87171;font-size:0.68rem;font-weight:700;padding:1px 8px;border-radius:10px}
+.tj-hs-dim{color:var(--dim);font-size:0.68rem}
+.pt-empty-cell{text-align:center;color:var(--dim);padding:20px;font-size:0.8rem;font-style:italic}
 .tj-sub-body{display:none;border-top:1px solid var(--border)}
 .tj-sub-body.open{display:block}
 
@@ -1056,7 +1066,7 @@ a{color:var(--gold);text-decoration:none}
     </div>
   </div>
 
-  <!-- 5. Decision -->
+  <!-- 6. Decision -->
   <div class="section-accordion" id="acc-decision">
     <div class="section-header" onclick="toggleSection('decision')">
       <div class="section-icon">🎯</div>
@@ -1076,18 +1086,22 @@ a{color:var(--gold);text-decoration:none}
     </div>
   </div>
 
-</div><!-- /main -->
+  <!-- 7. Trading Journal -->
+  <div class="section-accordion" id="portfolio-panel" style="display:none">
+    <div class="section-header" onclick="togglePortfolioPanel()">
+      <div class="section-icon">📒</div>
+      <div style="flex:1;min-width:0">
+        <div class="section-title">Trading Journal</div>
+        <div class="section-desc" id="tj-header-stats">Watch · Open · Closed</div>
+      </div>
+      <span class="section-chevron" id="pp-chevron">▼</span>
+    </div>
+    <div class="section-body" id="pp-body">
+      <!-- Content injected by JS -->
+    </div>
+  </div>
 
-<!-- ── Trading Journal Panel ──────────────────────────────────────────── -->
-<div class="portfolio-panel" id="portfolio-panel" style="display:none">
-  <div class="portfolio-panel-header" onclick="togglePortfolioPanel()">
-    <h3><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="20" height="20" rx="5" fill="#1a2535"/><text x="3" y="9" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">£</text><text x="10.5" y="9" font-size="6.5" fill="#fbbf24" font-family="Georgia,serif" font-weight="700">$</text><text x="3" y="17" font-size="6.5" fill="#fcd34d" font-family="Georgia,serif" font-weight="700">€</text><text x="10.5" y="17" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">¥</text></svg> Trading Journal <span class="pp-sub">Watch · Open · Closed</span></h3>
-    <span class="portfolio-panel-chevron" id="pp-chevron">▼</span>
-  </div>
-  <div class="portfolio-panel-body" id="pp-body">
-    <!-- Content injected by JS -->
-  </div>
-</div>
+</div><!-- /main -->
 
 <!-- ── Add to Watch List Modal ────────────────────────────────────────── -->
 <div class="atp-modal" id="atp-modal">
@@ -1129,8 +1143,8 @@ a{color:var(--gold);text-decoration:none}
       </div>
     </div>
     <div class="atp-row">
-      <label>DCF Intrinsic Value <small style="text-transform:none;color:var(--gold);font-size:0.65rem">(auto — used for P&L vs DCF later)</small></label>
-      <input class="atp-input" id="atp-dcf" readonly />
+      <label>Price Target <small style="text-transform:none;color:var(--muted);font-size:0.65rem">(upside exit — used to calculate R:R ratio)</small></label>
+      <input class="atp-input" id="atp-dcf" type="number" step="0.01" placeholder="e.g. 200.00" />
     </div>
     <div class="atp-footer">
       <button class="atp-cancel" onclick="_closeAddToPortfolioModal()">Cancel</button>
@@ -5664,8 +5678,16 @@ let _journalItems = [];
 
 // Show the Trading Journal panel — called on page load AND after decision renders
 function _showPortfolioPanel() {
-  const panel = document.getElementById('portfolio-panel');
-  if (panel) panel.style.display = 'block';
+  const panel   = document.getElementById('portfolio-panel');
+  const body    = document.getElementById('pp-body');
+  const chevron = document.getElementById('pp-chevron');
+  if (!panel) return;
+  panel.style.display = 'block';
+  if (body && !body.classList.contains('open')) {
+    body.classList.add('open');
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
+    _loadPortfolio();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -5682,10 +5704,10 @@ function togglePortfolioPanel() {
   const isOpen = body.classList.contains('open');
   if (isOpen) {
     body.classList.remove('open');
-    if (chevron) chevron.classList.remove('open');
+    if (chevron) chevron.style.transform = '';
   } else {
     body.classList.add('open');
-    if (chevron) chevron.classList.add('open');
+    if (chevron) chevron.style.transform = 'rotate(180deg)';
     _loadPortfolio();
   }
 }
@@ -5713,16 +5735,15 @@ function _openAddToPortfolioModal() {
   document.getElementById('atp-sector').value  = ov.sector || '';
   document.getElementById('atp-industry').value = ov.industry || '';
 
-  // DCF value — try to get from _vs
-  let dcfVal = '';
+  // Price Target — pre-fill from DCF if available (user can override)
+  let priceTargetVal = '';
   if (_vs && _vs.price) {
-    // compute DCF using the same function
     try {
       const dcfResult = _computeDCF(_vs);
-      if (dcfResult && dcfResult > 0) dcfVal = dcfResult.toFixed(2);
+      if (dcfResult && dcfResult > 0) priceTargetVal = dcfResult.toFixed(2);
     } catch(e) {}
   }
-  document.getElementById('atp-dcf').value = dcfVal;
+  document.getElementById('atp-dcf').value = priceTargetVal;
 
   // Stop loss from technical (support level if available)
   let stopLoss = '';
@@ -5868,25 +5889,32 @@ function _renderTradingJournal(items) {
   const watching = items.filter(i => (i.status||'watching') === 'watching');
   const open     = items.filter(i => i.status === 'open');
   const closed   = items.filter(i => i.status === 'closed');
+  // Update top-level header desc
+  const hdr = document.getElementById('tj-header-stats');
+  if (hdr) hdr.textContent = `Watch: ${watching.length}  ·  Open: ${open.length}  ·  Closed: ${closed.length}`;
   body.innerHTML = `
-    ${_renderTJSection('watch',  '👁 Watch List',   watching, watching.length)}
-    ${_renderTJSection('open',   '📈 Open Trades',  open,     open.length)}
-    ${_renderTJSection('closed', '✅ Closed Trades', closed,   closed.length)}`;
+    ${_renderTJSection('watch',  '👁 Watch List',   watching)}
+    ${_renderTJSection('open',   '📈 Open Trades',  open)}
+    ${_renderTJSection('closed', '✅ Closed Trades', closed)}`;
 }
 
-function _renderTJSection(key, label, items, count) {
-  const banner = key === 'watch'  ? _watchBanner(items)  :
-                 key === 'open'   ? _openBanner(items)   : _closedBanner(items);
-  const table  = key === 'watch'  ? _watchTable(items)   :
-                 key === 'open'   ? _openTable(items)    : _closedTable(items);
+function _renderTJSection(key, label, items) {
+  const count = items.length;
+  const hs    = key === 'watch'  ? _watchHeaderStats(items)  :
+                key === 'open'   ? _openHeaderStats(items)   : _closedHeaderStats(items);
+  const table = key === 'watch'  ? _watchTable(items)   :
+                key === 'open'   ? _openTable(items)    : _closedTable(items);
   return `
     <div class="tj-sub">
       <div class="tj-sub-header" onclick="_toggleTJSection('${key}')">
-        <span class="tj-sub-title">${label} <span style="font-size:0.72rem;color:var(--dim);font-weight:400;margin-left:4px">${count} position${count!==1?'s':''}</span></span>
+        <div class="tj-sub-left">
+          <span class="tj-sub-title">${label}</span>
+          <span class="tj-count-chip">${count}</span>
+          <span class="tj-hs-wrap">${hs}</span>
+        </div>
         <span class="tj-sub-chevron" id="tjc-${key}">▼</span>
       </div>
       <div class="tj-sub-body" id="tjb-${key}">
-        <div class="tj-banner">${banner}</div>
         ${table}
       </div>
     </div>`;
@@ -5896,63 +5924,35 @@ function _toggleTJSection(key) {
   const body    = document.getElementById(`tjb-${key}`);
   const chevron = document.getElementById(`tjc-${key}`);
   if (!body) return;
-  const open = body.classList.toggle('open');
-  if (chevron) open ? chevron.classList.add('open') : chevron.classList.remove('open');
+  const isOpen = body.classList.toggle('open');
+  if (chevron) isOpen ? chevron.classList.add('open') : chevron.classList.remove('open');
 }
 
-// ── Banner calculators ────────────────────────────────────────────────────────
-function _tjStat(val, lbl, cls='') {
-  return `<div class="tj-stat"><span class="tj-stat-val ${cls}">${val}</span><span class="tj-stat-lbl">${lbl}</span></div>`;
-}
-
-function _watchBanner(items) {
-  if (!items.length) return _tjStat('—','Watching');
+// ── Header stat chips (always visible on the sub-header row) ──────────────────
+function _watchHeaderStats(items) {
+  if (!items.length) return `<span class="tj-hs-dim">0 positions</span>`;
   let ready=0, notYet=0, passed=0;
-  items.forEach(it => {
-    const s = _watchStatus(it);
-    if (s==='ready') ready++; else if (s==='not-yet') notYet++; else passed++;
-  });
-  return _tjStat(items.length,'Watching') +
-         _tjStat(ready,'Ready','amber') +
-         _tjStat(notYet,'Not Yet') +
-         _tjStat(passed,'Passed');
+  items.forEach(it => { const s=_watchStatus(it); if(s==='ready')ready++; else if(s==='not-yet')notYet++; else passed++; });
+  return (ready  ? `<span class="tj-hs-ready">${ready} ready</span>` : '') +
+         (notYet ? `<span class="tj-hs-wait">${notYet} waiting</span>` : '') +
+         (passed ? `<span class="tj-hs-passed">${passed} passed</span>` : '');
 }
 
-function _openBanner(items) {
-  if (!items.length) return _tjStat('—','Open');
-  let profit=0, loss=0, netPnl=0, invested=0;
+function _openHeaderStats(items) {
+  if (!items.length) return `<span class="tj-hs-dim">0 positions</span>`;
   const cs = (_vs&&_vs.currSym)||'$';
-  items.forEach(it => {
-    const p = it.pnl_money || 0;
-    netPnl += p;
-    if (p >= 0) profit++; else loss++;
-    invested += it.investment_value || 0;
-  });
-  const pnlCls = netPnl >= 0 ? 'pos' : 'neg';
-  const invStr = invested ? cs + Math.round(invested).toLocaleString() : '—';
-  return _tjStat(items.length,'Open') +
-         _tjStat(profit,'In Profit','pos') +
-         _tjStat(loss,'At Loss','neg') +
-         _tjStat((netPnl>=0?'+':'')+cs+Math.abs(Math.round(netPnl)).toLocaleString(),'Net P&L',pnlCls) +
-         _tjStat(invStr,'Invested');
+  let profit=0, loss=0, net=0;
+  items.forEach(it => { const p=it.pnl_money||0; net+=p; if(p>=0)profit++; else loss++; });
+  return `<span class="${net>=0?'tj-hs-pos':'tj-hs-neg'}">${profit}↑ ${loss}↓  Net: ${net>=0?'+':''}${cs}${Math.abs(Math.round(net)).toLocaleString()}</span>`;
 }
 
-function _closedBanner(items) {
-  if (!items.length) return _tjStat('—','Closed');
-  let winners=0, losers=0, total=0;
+function _closedHeaderStats(items) {
+  if (!items.length) return `<span class="tj-hs-dim">0 positions</span>`;
   const cs = (_vs&&_vs.currSym)||'$';
-  items.forEach(it => {
-    const p = it.pnl_money || 0;
-    total += p;
-    if (p >= 0) winners++; else losers++;
-  });
-  const wr = items.length ? Math.round(winners/items.length*100)+'%' : '—';
-  const totalCls = total >= 0 ? 'pos' : 'neg';
-  return _tjStat(items.length,'Closed') +
-         _tjStat(winners,'Winners','pos') +
-         _tjStat(losers,'Losers','neg') +
-         _tjStat(wr,'Win Rate','amber') +
-         _tjStat((total>=0?'+':'')+cs+Math.abs(Math.round(total)).toLocaleString(),'Total Realised',totalCls);
+  const w = items.filter(i=>(i.pnl_money||0)>=0).length;
+  const total = items.reduce((s,i)=>s+(i.pnl_money||0), 0);
+  const wr = Math.round(w/items.length*100);
+  return `<span class="${total>=0?'tj-hs-pos':'tj-hs-neg'}">Win: ${wr}%  ·  ${total>=0?'+':''}${cs}${Math.abs(Math.round(total)).toLocaleString()}</span>`;
 }
 
 // ── Watch status ──────────────────────────────────────────────────────────────
@@ -5967,23 +5967,71 @@ function _watchStatus(it) {
   else return diff < -0.03 ? 'not-yet' : 'passed';
 }
 
+// ── R:R helpers ───────────────────────────────────────────────────────────────
+function _calcRR(trade, entry, pTarget, stop) {
+  entry = parseFloat(entry); pTarget = parseFloat(pTarget); stop = parseFloat(stop);
+  if (!entry || !pTarget || !stop) return null;
+  const reward = trade === 'short' ? entry - pTarget : pTarget - entry;
+  const risk   = trade === 'short' ? stop - entry   : entry - stop;
+  if (risk <= 0 || reward <= 0) return null;
+  return reward / risk;
+}
+
+// R:R field changed → recalculate stop loss
+function _rrChanged(id, trade, entry, pTarget, newRR, rowEl) {
+  newRR = parseFloat(newRR); entry = parseFloat(entry); pTarget = parseFloat(pTarget);
+  if (!newRR || !entry || !pTarget) return;
+  let newStop;
+  const reward = trade === 'short' ? entry - pTarget : pTarget - entry;
+  newStop = trade === 'short' ? entry + reward / newRR : entry - reward / newRR;
+  if (newStop <= 0) return;
+  const slEl = rowEl.querySelector('.pt-sl-input');
+  if (slEl) slEl.value = newStop.toFixed(2);
+  _portfolioUpdateField(id, 'stop_loss', newStop);
+}
+
+// Stop loss field changed → recalculate R:R
+function _slChanged(id, trade, entry, pTarget, newSL, rowEl) {
+  const rr = _calcRR(trade, entry, pTarget, newSL);
+  const rrEl = rowEl.querySelector('.pt-rr-input');
+  if (rrEl) rrEl.value = rr ? rr.toFixed(2) : '';
+  _portfolioUpdateField(id, 'stop_loss', parseFloat(newSL));
+}
+
+// Price target field changed → recalculate R:R display
+function _ptChanged(id, trade, entry, newPT, rowEl) {
+  const slEl = rowEl.querySelector('.pt-sl-input');
+  const rrEl = rowEl.querySelector('.pt-rr-input');
+  if (rrEl && slEl) {
+    const rr = _calcRR(trade, entry, newPT, slEl.value);
+    rrEl.value = rr ? rr.toFixed(2) : '';
+  }
+  _portfolioUpdateField(id, 'dcf_value', parseFloat(newPT));
+}
+
 // ── Watch table ───────────────────────────────────────────────────────────────
 function _watchTable(items) {
-  if (!items.length) return `<div class="pt-empty">No stocks on watch list.<br><small>Analyse a stock and click "Add to Watch List" in the Decision section.</small></div>`;
   const cs = (_vs&&_vs.currSym)||'$';
+  if (!items.length) {
+    return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
+      <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th>Price Target</th><th>Stop Loss</th><th>R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+      <tbody><tr><td colspan="12" class="pt-empty-cell">No stocks on watch list — analyse a stock and click <strong>👁 Add to Watch List</strong> in the Decision section.</td></tr></tbody>
+    </table></div>`;
+  }
   const rows = items.map(it => {
     const ws = _watchStatus(it);
     const badge = ws==='ready' ? `<span class="tj-ready">Ready</span>` : ws==='passed' ? `<span class="tj-passed">Passed</span>` : `<span class="tj-not-yet">Not Yet</span>`;
-    const vt = it.vs_target_pct;
-    const vtStr = vt !== null && vt !== undefined ? `<span style="color:${Math.abs(vt)<=3?'var(--gold)':vt<0?'var(--green)':'var(--muted)'}">${vt>0?'+':''}${vt.toFixed(1)}%</span>` : '—';
+    const rr  = _calcRR(it.trade||'long', it.target_price, it.dcf_value, it.stop_loss);
+    const rrDisplay = rr ? rr.toFixed(2) : '';
     const sess = it.has_session ? `<a class="pt-session-link" onclick="_openSessionSummary(${it.id})">📄 View</a>` : `<span style="color:var(--dim)">—</span>`;
-    return `<tr>
+    return `<tr data-row-id="${it.id}">
       <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.67rem">${it.name||''}</span></td>
       <td><span class="pt-trade${it.trade==='short'?' short':''}">${(it.trade||'long').toUpperCase()}</span></td>
       <td><input class="pt-edit" type="number" value="${it.target_price||''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Target Entry Price"/></td>
-      <td><input class="pt-edit" type="number" value="${it.stop_loss||''}" onchange="_portfolioUpdateField(${it.id},'stop_loss',this.value)" title="Stop Loss"/></td>
+      <td><input class="pt-edit" type="number" value="${it.dcf_value||''}" onchange="_ptChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},this.value,this.closest('tr'))" title="Price Target (exit upside)"/></td>
+      <td><input class="pt-edit pt-sl-input" type="number" value="${it.stop_loss||''}" onchange="_slChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Stop Loss"/></td>
+      <td><input class="pt-edit pt-rr-input" type="number" step="0.1" value="${rrDisplay}" onchange="_rrChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Risk:Reward ratio (e.g. 2 = 2:1)"/></td>
       <td>${it.current_price!==null ? cs+it.current_price.toFixed(2) : '—'}</td>
-      <td>${vtStr}</td>
       <td>${badge}</td>
       <td>${sess}</td>
       <td><button class="pt-action-btn" onclick="_openMarkBoughtModal(${it.id}, ${it.target_price||0})">✅ Bought</button></td>
@@ -5992,13 +6040,13 @@ function _watchTable(items) {
     </tr>`;
   }).join('');
   return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
-    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th>Stop Loss</th><th>Current</th><th>vs Target</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th>Price Target</th><th>Stop Loss</th><th title="Risk:Reward ratio">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
 // ── Open trades table ─────────────────────────────────────────────────────────
 function _openTable(items) {
-  if (!items.length) return `<div class="pt-empty">No open trades.<br><small>Click "✅ Bought" on a watch list entry when you execute the trade.</small></div>`;
+  const emptyRow = !items.length ? `<tr><td colspan="16" class="pt-empty-cell">No open trades yet — click <strong>✅ Bought</strong> on a Watch List entry when you execute the trade.</td></tr>` : '';
   const cs = (_vs&&_vs.currSym)||'$';
   const rows = items.map(it => {
     const pnlCls = it.pnl_money===null ? '' : it.pnl_money>=0 ? 'pt-pnl-pos' : 'pt-pnl-neg';
@@ -6030,7 +6078,7 @@ function _openTable(items) {
   }).join('');
   return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
     <thead><tr><th></th><th>Ticker</th><th>Trade</th><th>Entry Price</th><th>Entry Date</th><th>Stop Loss</th><th>Current</th><th>Shares</th><th>Invested</th><th>Cur. Value</th><th>Unreal. P&L</th><th title="vs DCF intrinsic value">vs DCF</th><th>Session</th><th></th><th></th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>
+    <tbody>${emptyRow || rows}</tbody></table></div>
   <div class="tj-actions">
     <span class="pa-label">Run checked in:</span>
     <button class="pa-btn" onclick="_portfolioRunOptimiser()">📊 Portfolio Optimiser →</button>
@@ -6041,7 +6089,7 @@ function _openTable(items) {
 
 // ── Closed trades table ───────────────────────────────────────────────────────
 function _closedTable(items) {
-  if (!items.length) return `<div class="pt-empty">No closed trades yet.<br><small>Click "💰 Sell" on an open trade when you exit the position.</small></div>`;
+  const emptyRow = !items.length ? `<tr><td colspan="12" class="pt-empty-cell">No closed trades yet — click <strong>💰 Sell</strong> on an open trade when you exit the position.</td></tr>` : '';
   const cs = (_vs&&_vs.currSym)||'$';
   const rows = items.map(it => {
     const pnlCls = it.pnl_money===null ? '' : it.pnl_money>=0 ? 'pt-pnl-pos' : 'pt-pnl-neg';
@@ -6068,7 +6116,7 @@ function _closedTable(items) {
   }).join('');
   return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
     <thead><tr><th>Ticker</th><th>Trade</th><th>Entry</th><th>Exit</th><th>Shares</th><th>Entry Date</th><th>Exit Date</th><th>Held</th><th>Realised P&L</th><th>P&L %</th><th>Session</th><th></th></tr></thead>
-    <tbody>${rows}</tbody></table></div>`;
+    <tbody>${emptyRow || rows}</tbody></table></div>`;
 }
 
 // ── Add to Watch List — modal functions ───────────────────────────────────────
