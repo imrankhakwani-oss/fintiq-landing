@@ -642,12 +642,147 @@ a{color:var(--gold);text-decoration:none}
 
 /* ── Responsive ── */
 @media(max-width:640px){
-  .hero-title{font-size:1.25rem}
-  .co-card{gap:12px}
-  .search-bar{flex-direction:column}
+  /* Nav */
+  .nav{padding:10px 14px;gap:10px}
+  .nav-logo{font-size:1rem}
+  .nav-links{gap:8px}
+  .nav-links a{font-size:0.72rem}
+
+  /* Hero */
+  .hero{padding:20px 14px 0}
+  .hero-title{font-size:1.2rem}
+  .hero-sub{font-size:0.78rem;margin-bottom:18px}
+  .search-bar{flex-direction:column;gap:8px}
+  .search-btn{padding:12px;font-size:0.9rem;text-align:center}
+  .search-input{font-size:0.9rem}
+
+  /* Company header + session strip */
+  .co-header{padding:0 14px}
+  .session-strip{padding:0 14px}
+  .co-card{gap:10px}
+  .co-name-block{min-width:0}
+  .co-price{font-size:1.2rem}
+  .co-price-block{text-align:left}
+
+  /* Main layout */
+  .main{padding:0 14px;margin:14px auto 36px}
+
+  /* Section accordions — touch-friendly */
+  .section-header{padding:14px 14px;gap:10px}
+  .section-title{font-size:0.9rem}
+
+  /* Overview grid — 2 cols already set, keep */
   .overview-grid{grid-template-columns:repeat(2,1fr)}
-  .tsr-simple{grid-template-columns:repeat(3,1fr)}
+
+  /* Two-col metrics — stack */
   .metrics-2col{grid-template-columns:1fr}
+
+  /* Modals — full-width */
+  .modal-overlay{padding:10px}
+  .modal-box{padding:24px 18px;max-width:100%;border-radius:12px}
+  .atp-modal{padding:10px}
+  .atp-box{padding:18px;max-width:100%;border-radius:12px}
+  .atp-cols{grid-template-columns:1fr}
+
+  /* Auth modal OTP input */
+  .otp-input{font-size:1.1rem;letter-spacing:4px}
+
+  /* Decision section */
+  .dec-signal-grid{grid-template-columns:repeat(3,1fr);gap:6px}
+  .dec-score-grid{grid-template-columns:repeat(3,1fr);gap:6px}
+  .dec-verdict-rows{grid-template-columns:1fr}
+  .dec-direction-toggle{gap:6px}
+
+  /* Risk section */
+  .risk-outcome-grid{grid-template-columns:repeat(3,1fr);gap:5px}
+  .risk-inputs-grid{grid-template-columns:1fr}
+  .risk-dashboard-body{grid-template-columns:1fr 1fr}
+  .risk-horizon-tabs{overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px}
+  .risk-tab{white-space:nowrap;flex-shrink:0}
+  .risk-fan-wrap canvas{max-height:180px}
+
+  /* Catalyst section */
+  .cat-surprise-grid{grid-template-columns:repeat(2,1fr);gap:6px}
+  .cat-analyst-grid{grid-template-columns:1fr 1fr}
+
+  /* Technical section */
+  .tech-grid{grid-template-columns:1fr}
+  .opt-grid{grid-template-columns:1fr 1fr}
+  .tsr-simple{grid-template-columns:repeat(3,1fr)}
+  .trade-row{grid-template-columns:90px 1fr}
+
+  /* Valuation section */
+  .slider-grid{grid-template-columns:1fr}
+  .method-cards{grid-template-columns:1fr 1fr}
+  .phase-boxes{grid-template-columns:1fr 1fr}
+  .fixed-grid{grid-template-columns:1fr 1fr}
+  .mc-results{grid-template-columns:1fr 1fr}
+  .waterfall-label{width:110px;font-size:0.65rem}
+
+  /* Conviction Calibrator */
+  .cc-kelly-inputs{grid-template-columns:1fr 1fr}
+
+  /* Investment Committee */
+  .committee-pillars{grid-template-columns:1fr 1fr}
+  .committee-body{padding:12px 14px}
+  .committee-header{padding:12px 14px}
+
+  /* FF4 + options */
+  .ff4-grid{grid-template-columns:repeat(2,1fr)}
+  .options-grid{grid-template-columns:repeat(2,1fr)}
+
+  /* TSR tables */
+  .tsr-exp-header{font-size:0.75rem}
+
+  /* Trading Journal panel */
+  .tj-sub-header{padding:10px 14px}
+  .tj-banner{padding:8px 12px}
+  .tj-stat{padding:5px 10px;min-width:60px}
+  .tj-actions{padding:10px 14px;gap:6px}
+  .portfolio-tbl th,.portfolio-tbl td{padding:6px 8px;font-size:0.7rem}
+  .pt-edit{width:62px;font-size:0.72rem;height:28px}
+  /* Hint that table scrolls horizontally */
+  .portfolio-table-wrap{position:relative}
+  .portfolio-table-wrap::after{content:'';position:absolute;top:0;right:0;bottom:4px;width:28px;background:linear-gradient(to left,rgba(5,15,28,.7),transparent);pointer-events:none;border-radius:0 0 0 0}
+
+  /* Action buttons in TJ - stack on very narrow */
+  .pt-action-btn,.pt-sell-btn,.pt-del-btn,.pt-icon-btn{padding:4px 8px;font-size:0.68rem}
+
+  /* Chat section */
+  .chat-input-row{gap:6px}
+  .chat-send{padding:10px 12px;font-size:0.78rem}
+  .chat-messages{max-height:280px}
+  .chat-starters{gap:5px}
+  .chat-chip{font-size:0.7rem;padding:4px 10px}
+
+  /* AI expanders */
+  .ai-expander-title{font-size:0.68rem}
+  .sec-pad{padding:14px}
+
+  /* Paywall */
+  .pw-amount{font-size:1.6rem}
+}
+
+/* Very small phones (≤ 420px) */
+@media(max-width:420px){
+  .nav-links{display:none}
+  .hero-title{font-size:1.05rem}
+  .dec-signal-grid{grid-template-columns:repeat(2,1fr)}
+  .dec-score-grid{grid-template-columns:repeat(2,1fr)}
+  .risk-outcome-grid{grid-template-columns:repeat(2,1fr)}
+  .cat-surprise-grid{grid-template-columns:1fr 1fr}
+  .method-cards{grid-template-columns:1fr}
+  .phase-boxes{grid-template-columns:1fr}
+  .mc-results{grid-template-columns:1fr}
+  .cc-kelly-inputs{grid-template-columns:1fr}
+  .committee-pillars{grid-template-columns:1fr}
+  .ff4-grid{grid-template-columns:repeat(2,1fr)}
+  .tsr-simple{grid-template-columns:repeat(2,1fr)}
+  .dec-verdict-card{padding:14px 16px}
+  .portfolio-tbl th,.portfolio-tbl td{padding:5px 6px;font-size:0.65rem}
+  .pt-edit{width:54px}
+  .tj-count-chip{display:none}
+  .section-header{padding:12px 12px}
 }
 
 /* ── Auth / Paywall Modals ── */
