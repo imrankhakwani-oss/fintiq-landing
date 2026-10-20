@@ -5679,16 +5679,9 @@ let _journalItems = [];
 
 // Show the Trading Journal panel — called on page load AND after decision renders
 function _showPortfolioPanel() {
-  const panel   = document.getElementById('portfolio-panel');
-  const body    = document.getElementById('pp-body');
-  const chevron = document.getElementById('pp-chevron');
-  if (!panel) return;
-  panel.style.display = 'block';
-  if (body && !body.classList.contains('open')) {
-    body.classList.add('open');
-    if (chevron) chevron.style.transform = 'rotate(180deg)';
-    _loadPortfolio();
-  }
+  // Just reveal the section header — starts collapsed, user clicks to open
+  const panel = document.getElementById('portfolio-panel');
+  if (panel) panel.style.display = 'block';
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -5895,8 +5888,8 @@ function _renderTradingJournal(items) {
   if (hdr) hdr.textContent = `Watch: ${watching.length}  ·  Open: ${open.length}  ·  Closed: ${closed.length}`;
   body.innerHTML = `
     ${_renderTJSection('watch',  '👁 Watch List',   watching)}
-    ${_renderTJSection('open',   '📈 Open Trades',  open)}
-    ${_renderTJSection('closed', '✅ Closed Trades', closed)}`;
+    ${_renderTJSection('open',   '⚡ Open Trades',  open)}
+    ${_renderTJSection('closed', '🏁 Closed Trades', closed)}`;
 }
 
 function _renderTJSection(key, label, items) {
@@ -6031,7 +6024,7 @@ function _watchTable(items) {
   const cs = (_vs&&_vs.currSym)||'$';
   if (!items.length) {
     return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
-      <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th title="Take Profit — upside exit target">TP</th><th>Stop Loss</th><th title="Risk:Reward ratio">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+      <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th title="Take Profit — upside exit target">Take Profit</th><th>Stop Loss</th><th title="Risk:Reward ratio" style="text-align:center">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
       <tbody><tr><td colspan="12" class="pt-empty-cell">No stocks on watch list — analyse a stock and click <strong>👁 Add to Watch List</strong> in the Decision section.</td></tr></tbody>
     </table></div>`;
   }
@@ -6047,7 +6040,7 @@ function _watchTable(items) {
       <td><input class="pt-edit" type="text" inputmode="decimal" value="${it.target_price||''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Target Entry Price"/></td>
       <td><input class="pt-edit pt-tp-input" type="text" inputmode="decimal" value="${it.dcf_value||''}" onchange="_ptChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},this.value,this.closest('tr'))" title="Take Profit — your upside exit target"/></td>
       <td><input class="pt-edit pt-sl-input" type="text" inputmode="decimal" value="${it.stop_loss||''}" onchange="_slChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Stop Loss"/></td>
-      <td><input class="pt-edit pt-rr-input" type="text" inputmode="decimal" value="${rrDisplay}" onchange="_rrChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Risk:Reward — enter to calculate Stop Loss or Take Profit"/></td>
+      <td style="text-align:center"><input class="pt-edit pt-rr-input" type="text" inputmode="decimal" value="${rrDisplay}" onchange="_rrChanged(${it.id},'${it.trade||'long'}',${it.target_price||0},${it.dcf_value||0},this.value,this.closest('tr'))" title="Risk:Reward — enter to calculate Stop Loss or Take Profit" style="text-align:center"/></td>
       <td>${it.current_price!==null ? cs+it.current_price.toFixed(2) : '—'}</td>
       <td>${badge}</td>
       <td>${sess}</td>
@@ -6057,7 +6050,7 @@ function _watchTable(items) {
     </tr>`;
   }).join('');
   return `<div class="portfolio-table-wrap"><table class="portfolio-tbl">
-    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th title="Take Profit — upside exit target">TP</th><th>Stop Loss</th><th title="Risk:Reward ratio (e.g. 2.0 = 2:1)">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
+    <thead><tr><th>Ticker</th><th>Trade</th><th>Target Entry</th><th title="Take Profit — upside exit target">Take Profit</th><th>Stop Loss</th><th title="Risk:Reward ratio (e.g. 2.0 = 2:1)" style="text-align:center">R:R</th><th>Current</th><th>Status</th><th>Session</th><th></th><th></th><th></th></tr></thead>
     <tbody>${rows}</tbody></table></div>`;
 }
 
@@ -6177,10 +6170,7 @@ async function _confirmAddToPortfolio() {
     } catch(e) { console.warn('[Journal] Session save failed:', e); }
 
     _closeAddToPortfolioModal();
-    const body = document.getElementById('pp-body');
-    const chev = document.getElementById('pp-chevron');
-    if (body && !body.classList.contains('open')) { body.classList.add('open'); if(chev) chev.classList.add('open'); }
-    _loadPortfolio();
+    _loadPortfolio(); // refreshes data; panel stays at its current open/closed state
   } catch(e) {
     alert('Could not add to watch list: ' + e.message);
   } finally {
