@@ -1524,8 +1524,8 @@ function _doAnalysis(ticker) {
   document.getElementById('session-strip').classList.add('visible');
   updateSessionBadges();
 
-  // Auto-open fundamentals and load
-  openSection('fundamentals');
+  // Start loading fundamentals in background — section stays collapsed
+  _triggerSectionLoad('fundamentals');
 }
 
 function resetSession() {
@@ -1564,6 +1564,11 @@ function openSection(name) {
   body.classList.add('open');
   chev.classList.add('open');
   setStatus(name, 'active');
+  _triggerSectionLoad(name);
+}
+
+// Load a section's data without opening the accordion
+function _triggerSectionLoad(name) {
   if (!_sectionOpened[name]) {
     _sectionOpened[name] = true;
     if (name === 'fundamentals') loadFundamentals();
