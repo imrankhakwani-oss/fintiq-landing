@@ -84,7 +84,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://fintiq.uk","https://www.fintiq.uk","https://app.fintiq.uk",
                    "http://localhost:3000","http://localhost:8080","http://127.0.0.1:5500"],
-    allow_credentials=True, allow_methods=["GET","POST"], allow_headers=["*"],
+    allow_credentials=True, allow_methods=["GET","POST","DELETE","PATCH"], allow_headers=["*"],
 )
 
 # Block search engines from indexing API endpoints
