@@ -696,9 +696,9 @@ a{color:var(--gold);text-decoration:none}
 
 /* table */
 .portfolio-table-wrap{overflow-x:auto;padding:0 0 8px}
-.portfolio-tbl{width:100%;border-collapse:collapse;font-size:0.78rem;min-width:1100px}
-.portfolio-tbl th{background:rgba(255,255,255,.04);color:var(--dim);text-transform:uppercase;font-size:0.67rem;letter-spacing:.04em;padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-.portfolio-tbl td{padding:9px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;color:var(--text);white-space:nowrap}
+.portfolio-tbl{width:100%;border-collapse:collapse;font-size:0.75rem;min-width:900px}
+.portfolio-tbl th{background:rgba(255,255,255,.04);color:var(--dim);text-transform:uppercase;font-size:0.63rem;letter-spacing:.03em;padding:7px 8px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+.portfolio-tbl td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;color:var(--text);white-space:nowrap}
 .portfolio-tbl tr:last-child td{border-bottom:none}
 .portfolio-tbl tr:hover td{background:rgba(255,255,255,.03)}
 .pt-edit{background:transparent;border:1px solid var(--border);border-radius:5px;color:var(--text);padding:4px 7px;width:78px;font-size:0.78rem;text-align:right}
@@ -1047,7 +1047,7 @@ a{color:var(--gold);text-decoration:none}
 <!-- ── Portfolio Builder Panel ─────────────────────────────────────────── -->
 <div class="portfolio-panel" id="portfolio-panel" style="display:none">
   <div class="portfolio-panel-header" onclick="togglePortfolioPanel()">
-    <h3>📊 My Portfolio <span class="pp-sub">Track your positions from this session</span></h3>
+    <h3><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;margin-right:2px"><rect width="20" height="20" rx="5" fill="#1a2535"/><text x="3" y="9" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">£</text><text x="10.5" y="9" font-size="6.5" fill="#fbbf24" font-family="Georgia,serif" font-weight="700">$</text><text x="3" y="17" font-size="6.5" fill="#fcd34d" font-family="Georgia,serif" font-weight="700">€</text><text x="10.5" y="17" font-size="6.5" fill="#f59e0b" font-family="Georgia,serif" font-weight="700">¥</text></svg> My Portfolio <span class="pp-sub">Track your positions</span></h3>
     <span class="portfolio-panel-chevron" id="pp-chevron">▼</span>
   </div>
   <div class="portfolio-panel-body" id="pp-body">
@@ -1086,7 +1086,7 @@ a{color:var(--gold);text-decoration:none}
     </div>
     <div class="atp-cols">
       <div class="atp-row">
-        <label>Target / Entry Price</label>
+        <label>Buy Price</label>
         <input class="atp-input" id="atp-target" type="number" step="0.01" placeholder="e.g. 150.00" />
       </div>
       <div class="atp-row">
@@ -1096,12 +1096,12 @@ a{color:var(--gold);text-decoration:none}
     </div>
     <div class="atp-cols">
       <div class="atp-row">
-        <label>DCF Intrinsic Value <small style="text-transform:none;color:var(--gold)">(auto)</small></label>
-        <input class="atp-input" id="atp-dcf" readonly />
-      </div>
-      <div class="atp-row">
         <label>No. of Shares</label>
         <input class="atp-input" id="atp-shares" type="number" step="1" min="0" placeholder="0" value="0" />
+      </div>
+      <div class="atp-row">
+        <label>DCF Value <small style="text-transform:none;color:var(--gold);font-size:0.67rem">(saved for P&L calc)</small></label>
+        <input class="atp-input" id="atp-dcf" readonly />
       </div>
     </div>
     <div class="atp-footer">
@@ -5576,11 +5576,18 @@ function _saveCaptureInput(sectionId, idx, value) {
 // PORTFOLIO BUILDER — JavaScript
 // ══════════════════════════════════════════════════════════════════════════════
 
-// Show the portfolio panel (called after decision section renders)
+// Show the portfolio panel — called on page load AND after decision section renders
 function _showPortfolioPanel() {
   const panel = document.getElementById('portfolio-panel');
   if (panel) panel.style.display = 'block';
 }
+
+// Show panel on page load if user has a session token
+document.addEventListener('DOMContentLoaded', function() {
+  if (localStorage.getItem('fintiq_session')) {
+    _showPortfolioPanel();
+  }
+});
 
 // Toggle expand/collapse
 function togglePortfolioPanel() {
@@ -5803,20 +5810,19 @@ function _renderPortfolioTable(items) {
 
     return `<tr>
       <td><input type="checkbox" class="pt-checkbox" id="ptck-${it.id}" checked /></td>
-      <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.7rem">${it.name || ''}</span></td>
-      <td style="color:var(--muted);font-size:0.73rem">${it.sector || '—'}<br>${it.industry || ''}</td>
+      <td><strong>${it.ticker}</strong><br><span style="color:var(--muted);font-size:0.68rem">${it.name || ''}</span></td>
+      <td style="color:var(--muted);font-size:0.7rem;max-width:100px;white-space:normal;line-height:1.3">${it.sector || '—'}</td>
       <td><span class="pt-trade${it.trade === 'short' ? ' short' : ''}">${(it.trade||'long').toUpperCase()}</span></td>
-      <td><input class="pt-edit" type="number" value="${it.target_price || ''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Target / Entry Price" /></td>
+      <td><input class="pt-edit" type="number" value="${it.target_price || ''}" onchange="_portfolioUpdateField(${it.id},'target_price',this.value)" title="Buy Price" /></td>
       <td><input class="pt-edit" type="number" value="${it.stop_loss || ''}" onchange="_portfolioUpdateField(${it.id},'stop_loss',this.value)" title="Stop Loss" /></td>
-      <td>${it.dcf_value ? `${cs}${it.dcf_value.toFixed(2)}` : '—'}</td>
       <td>${it.current_price !== null ? `${cs}${it.current_price.toFixed(2)}` : '—'}</td>
-      <td><input class="pt-edit" type="number" value="${it.shares || 0}" onchange="_portfolioUpdateField(${it.id},'shares',this.value)" title="No. of Shares" style="width:64px" /></td>
+      <td><input class="pt-edit" type="number" value="${it.shares || 0}" onchange="_portfolioUpdateField(${it.id},'shares',this.value)" title="No. of Shares" style="width:60px" /></td>
       <td>${invStr}</td>
       <td>${curValStr}</td>
       <td class="${pnlCls}">${pnlStr}</td>
-      <td class="${dcfCls}">${dcfStr}</td>
+      <td class="${dcfCls}" title="P&L vs DCF intrinsic value">${dcfStr}</td>
       <td>${sessionCell}</td>
-      <td><button class="pt-icon-btn" onclick="_portfolioReanalyse('${it.ticker}')" title="Re-analyse in Deep Dive">🔄</button></td>
+      <td><button class="pt-icon-btn" onclick="_portfolioReanalyse('${it.ticker}')" title="Re-analyse">🔄</button></td>
       <td><button class="pt-del-btn" onclick="_deletePortfolioItem(${it.id})" title="Remove">✕</button></td>
     </tr>`;
   }).join('');
@@ -5829,17 +5835,16 @@ function _renderPortfolioTable(items) {
           <th>Name / Ticker</th>
           <th>Sector</th>
           <th>Trade</th>
-          <th>Target Price</th>
+          <th>Buy Price</th>
           <th>Stop Loss</th>
-          <th>DCF Value</th>
-          <th>Current Price</th>
+          <th>Current</th>
           <th>Shares</th>
           <th>Inv. Value</th>
           <th>Cur. Value</th>
           <th>P&L</th>
-          <th>P&L vs DCF</th>
+          <th title="P&L vs DCF intrinsic value">vs DCF</th>
           <th>Session</th>
-          <th>Re-analyse</th>
+          <th></th>
           <th></th>
         </tr></thead>
         <tbody>${rows}</tbody>
