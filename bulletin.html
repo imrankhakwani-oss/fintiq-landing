@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Daily Market Bulletin | S&P 500, Macro Analysis & Trade Ideas — Fintiq</title>
-<meta name="description" content="Fintiq's free daily market bulletin — institutional-grade analysis covering The Call, Risk Radar, Macro Pulse, Equity Flow and Trade Ideas. Updated twice daily at 08:00 and 20:00 GMT.">
+<meta name="description" content="Fintiq's daily market bulletin in plain English — S&P 500, Risk Radar, Macro Pulse, and 10 trade ideas covering stocks, commodities and sector ETFs. Updated with live market data.">
 <meta name="robots" content="index, follow">
 <meta name="author" content="Fintiq">
 <link rel="canonical" href="https://www.fintiq.uk/bulletin.html" />
@@ -50,16 +50,15 @@
 }
 </script>
 <script>
-// Update JSON-LD dates dynamically on load
-(function(){
+// JSON-LD dates are updated in render(d) using the API's generated_at timestamp
+function _updateJsonLd(isoTimestamp) {
   try {
     var el = document.getElementById('bulletin-jsonld');
-    var d = new Date().toISOString();
     var obj = JSON.parse(el.textContent);
-    obj.datePublished = d; obj.dateModified = d;
+    obj.datePublished = isoTimestamp; obj.dateModified = isoTimestamp;
     el.textContent = JSON.stringify(obj);
   } catch(e){}
-})();
+}
 </script>
 <style>
   :root {
@@ -122,15 +121,15 @@
     margin-top: 8px;
   }
   .session-badge {
-    background: rgba(245,158,11,0.15);
-    border: 1px solid var(--border);
-    color: var(--gold);
-    padding: 2px 10px;
+    background: rgba(245,158,11,0.18);
+    border: 1px solid rgba(245,158,11,0.45);
+    color: #F59E0B;
+    padding: 5px 16px;
     border-radius: 20px;
-    font-size: 0.75rem;
-    font-weight: 600;
+    font-size: 0.85rem;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
   }
   .refresh-btn {
     background: none;
@@ -235,7 +234,7 @@
   }
 
   /* ── Trade Ideas ── */
-  .trade-ideas { display: flex; flex-direction: column; gap: 8px; margin-bottom: 24px; }
+  .trade-ideas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px; }
   .trade-card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -429,6 +428,7 @@
   }
   @media (max-width: 640px) {
     .risk-radar { grid-template-columns: 1fr; }
+    .trade-ideas { grid-template-columns: 1fr; }
     .trade-metrics { grid-template-columns: repeat(2, 1fr); }
     nav .nav-links { display: none; }
     .macro-grid { grid-template-columns: repeat(2,1fr); }
@@ -464,11 +464,12 @@
 
 <div class="bulletin-header">
   <h1>Daily Market <span>Bulletin</span></h1>
+  <h2 id="session-title" style="font-size:1rem;font-weight:500;color:var(--muted);margin:4px 0 0;letter-spacing:0.02em">Loading…</h2>
   <!-- SSR content stub: visible to crawlers; hidden to users by JS below -->
   <noscript>
-    <p>Fintiq's Daily Market Bulletin delivers institutional-grade cross-asset analysis updated twice daily at 08:00 and 20:00 GMT. Each edition covers: market regime classification (risk-on / risk-off / transition), S&amp;P 500 and global equity outlook, VIX term structure and credit market signals (HYG/LQD), yield curve analysis, sector rotation, overnight wires from Asia and Europe, today's key earnings and macro catalysts, and three specific trade ideas with entry, stop, target, and risk/reward levels. Powered by live market data and AI analysis.</p>
+    <p>Fintiq's Daily Market Bulletin delivers plain-English cross-asset market analysis covering the S&amp;P 500, global equity outlook, fear gauge (VIX), bond yields, sector rotation, overnight wires from Asia and Europe, today's key earnings and economic data, and 10 specific trade ideas with entry, stop, target, and risk/reward levels. Powered by live market data and AI analysis.</p>
   </noscript>
-  <p class="bulletin-seo-desc" style="display:none">Institutional-grade daily market analysis covering S&amp;P 500, macro pulse, risk radar and trade ideas — updated twice daily at 08:00 and 20:00 GMT.</p>
+  <p class="bulletin-seo-desc" style="display:none">Daily market analysis in plain English — S&amp;P 500, macro pulse, risk radar and 10 trade ideas covering stocks, commodities and sector ETFs.</p>
   <div class="bulletin-meta">
     <span id="session-badge" class="session-badge">Loading…</span>
     <span id="timestamp">—</span>
@@ -501,18 +502,18 @@
   <div id="content" style="display:none">
 
     <!-- The Call -->
-    <div class="section-label">📢 The Call</div>
+    <h2 class="section-label">📢 The Call</h2>
     <div class="the-call">
       <div id="call-headline" class="the-call-headline"></div>
       <ul id="call-bullets" class="call-bullets"></ul>
     </div>
 
     <!-- Risk Radar -->
-    <div class="section-label">🚨 Risk Radar</div>
+    <h2 class="section-label">🚨 Risk Radar</h2>
     <div id="risk-radar" class="risk-radar"></div>
 
     <!-- Macro Pulse -->
-    <div class="section-label">🌍 Macro Pulse</div>
+    <h2 class="section-label">🌍 Macro Pulse</h2>
     <div id="macro-pulse" class="text-card"></div>
 
     <!-- Equity Flow -->
@@ -532,7 +533,7 @@
     <div id="movers-content"></div>
 
     <!-- Trade Ideas -->
-    <div class="section-label">💡 Trade Ideas</div>
+    <h2 class="section-label">💡 Trade Ideas</h2>
     <div id="trade-ideas" class="trade-ideas"></div>
 
     <!-- Macro Indicators -->
@@ -568,7 +569,7 @@
     </div>
 
     <!-- EPS Earnings Tracker -->
-    <div class="section-label">📋 EPS Earnings Tracker</div>
+    <h2 class="section-label">📋 EPS Earnings Tracker</h2>
     <div class="eps-container">
       <div class="eps-tabs">
         <button class="eps-tab active"  onclick="loadEarnings('sp500',this)">🇺🇸 S&amp;P 500</button>
@@ -707,8 +708,12 @@
     // Meta
     const badge = document.getElementById('session-badge');
     badge.textContent = d.session || 'Bulletin';
+    const sessionTitle = document.getElementById('session-title');
+    if (sessionTitle) sessionTitle.textContent = `${d.session || ''} Market Bulletin · ${d.timestamp || ''}`;
     document.getElementById('timestamp').textContent =
-      d.cached ? `Last updated ${d.timestamp} · ${d.age_minutes}m ago` : `Updated ${d.timestamp}`;
+      d.cached ? `Generated ${d.timestamp} · ${d.age_minutes}m ago` : `Generated ${d.timestamp}`;
+    // Update JSON-LD with actual bulletin generation time (not page load time)
+    if (d.generated_at) _updateJsonLd(d.generated_at);
 
     // The Call
     const call = d.the_call || {};
@@ -752,6 +757,9 @@
       const bodyId = `trade-body-${idx}`;
       const chevId = `trade-chev-${idx}`;
       const previewText = (t.thesis || '').slice(0, 80) + ((t.thesis || '').length > 80 ? '…' : '');
+      const deepDiveLink = typeKey === 'stock'
+        ? `<a href="/deep-dive.html?ticker=${encodeURIComponent(t.setup)}" target="_blank" style="font-size:0.65rem;color:var(--gold);border:1px solid rgba(245,158,11,0.35);border-radius:4px;padding:1px 7px;white-space:nowrap;text-decoration:none;opacity:0.85" onclick="event.stopPropagation()">Deep Dive →</a>`
+        : '';
       ti.innerHTML += `
         <div class="trade-card">
           <div class="trade-header" onclick="toggleTrade('${bodyId}','${chevId}')">
@@ -759,6 +767,7 @@
               <span class="trade-setup">${t.setup}</span>
               ${typeLabel ? `<span class="trade-type-badge" style="background:${typeColor}22;color:${typeColor}">${typeLabel}</span>` : ''}
               ${t.risk_reward ? `<span class="trade-rr-badge">R:R ${t.risk_reward}</span>` : ''}
+              ${deepDiveLink}
             </div>
             <span class="trade-chevron" id="${chevId}">▼</span>
           </div>
@@ -1178,15 +1187,16 @@
       document.getElementById('eps-content').innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No data available</div>';
       return;
     }
-    // Build header from first row quarters
-    const sample = data[0];
-    const qDates = (sample.quarters||[]).map(q=>q.date);
-    const estDates = (sample.estimates||[]).map(e=>e.date);
+    // Generic column headers — each company reports on its own calendar,
+    // so date-based shared headers are misleading. Each cell shows its own quarter label.
+    const numQ = Math.max(...data.map(r => (r.quarters||[]).length));
+    const numE = Math.max(...data.map(r => (r.estimates||[]).length));
+    const qLabels = numQ === 4 ? ['Q-4','Q-3','Q-2','Q-1 (Latest)'] : Array.from({length:numQ},(_,i)=>i===numQ-1?'Latest':`Q-${numQ-1-i}`);
 
     let thead = '<tr><th>Ticker</th>';
-    qDates.forEach(d => thead += `<th>${qLabel(d)}</th>`);
-    estDates.forEach(d => thead += `<th style="opacity:0.6">${qLabel(d)} est</th>`);
-    thead += '</tr>';
+    qLabels.forEach(l => thead += `<th>${l}</th>`);
+    for (let i=0;i<numE;i++) thead += `<th style="opacity:0.6">Est ${i+1}</th>`;
+    thead += '<th style="opacity:0.6">Next Report</th></tr>';
 
     const rows = data.map(row => {
       const coName = _COMPANY_NAMES[row.symbol] || row.symbol;
@@ -1206,6 +1216,11 @@
           <div class="eq-beat" style="color:var(--muted);font-size:0.6rem">FORECAST</div>
         </div></td>`;
       });
+      // Next Report date — derived from next_date field (nearest upcoming earnings)
+      const nextRpt = row.next_date
+        ? `<span style="color:var(--gold);font-size:0.75rem;font-weight:600">${qLabel(row.next_date)}</span><div style="font-size:0.65rem;color:var(--muted);margin-top:2px">${row.next_date}</div>`
+        : '<span style="color:var(--muted);font-size:0.75rem">—</span>';
+      cells += `<td class="eps-cell" style="text-align:center">${nextRpt}</td>`;
       return `<tr>${cells}</tr>`;
     }).join('');
 

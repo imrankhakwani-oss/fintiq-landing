@@ -535,10 +535,23 @@ def _generate_bulletin() -> dict:
     session = "Pre-Market" if hour<8 else "Morning" if hour<12 else "Midday" if hour<14 else "Close Watch" if hour<16 else "After-Hours"
 
     prompt = (
-        f"You are a Senior Portfolio Manager and Cross-Asset Strategist at a tier-1 hedge fund, writing the {session.upper()} MARKET BULLETIN for active retail investors and everyday traders.\n"
-        f"THINKING: Apply full institutional-grade analytical rigour — classify the market regime, analyse cross-asset flows, credit signals, VIX term structure, and yield curve. This is how hedge fund analysts actually read markets.\n"
-        f"WRITING: Translate that thinking into plain, clear English that a retail investor can understand and act on. Explain what each signal MEANS for their trades and portfolio. Define any technical concept the first time you use it (e.g. 'HYG — the high-yield bond ETF that signals credit risk appetite'). No jargon without explanation. No filler phrases.\n"
-        f"CRITICAL: Classify the current market regime (risk-on / risk-off / transition), explain what it means in plain terms, and anchor ALL analysis to it.\n\n"
+        f"You are a market analyst writing the {session.upper()} MARKET BULLETIN for everyday retail investors — people who check markets before the trading day, during lunch, or after work. They want to know what is happening and what to do about it, in plain English.\n\n"
+        f"YOUR JOB: Study the live data below. Identify the single most important thing happening in markets right now. Explain it so clearly that a busy person who reads the FT or Wall Street Journal — but is not a professional trader — instantly understands it and can decide how to act.\n\n"
+        f"WRITING RULES — FOLLOW THESE EXACTLY OR THE BULLETIN FAILS:\n\n"
+        f"1. PLAIN ENGLISH ONLY. Write as if explaining to a smart friend who reads the financial news but is not a finance professional.\n\n"
+        f"2. BANNED WORDS AND PHRASES — do NOT use any of these (they confuse retail investors and make the bulletin worthless):\n"
+        f"   'risk-off', 'risk-on', 'regime shift', 'regime change', 'defensive rotation', 'institutional repositioning', 'fractured session', 'fractured risk-on', 'contango', 'backwardation', 'softer open', 'cross-asset dynamics', 'bid/offer', 'rate differential', 'policy divergence', 'reflationary', 'stagflationary', 'equity risk premium', 'duration risk', 'convexity', 'macro headwinds', 'macro tailwinds', 'repricing risk', 'dangerous internal split', 'confirming overnight pressure', 'repositioning', 'technical setup', 'risk appetite'.\n"
+        f"   Instead use plain words: say 'investors are cautious and selling stocks' instead of 'risk-off rotation'; say 'borrowing costs are rising' instead of 'rate differential widening'; say 'markets fell at the open' instead of 'softer open'.\n\n"
+        f"3. EXPLAIN JARGON IN BRACKETS. If you must use a technical term, immediately explain it in plain brackets the FIRST time you use it. Examples:\n"
+        f"   Write: 'VIX (the market fear gauge — higher means more worry)' not just 'VIX'.\n"
+        f"   Write: 'HYG (an ETF tracking junk bonds — when it falls, it means investors are nervous about lending to risky companies)' not just 'HYG'.\n"
+        f"   Write: 'yield curve (the gap between short and long-term government bond rates — when it inverts, recessions often follow)' not just 'yield curve'.\n"
+        f"   Write: '25 basis points (0.25%)' not just '25bps'.\n\n"
+        f"4. THE CALL HEADLINE: Write like a newspaper front page. Punchy, clear, one real data point.\n"
+        f"   GOOD examples: 'Tech stocks slide 1.5% as strong jobs data kills hopes for a rate cut' | 'S&P 500 at 5,420 — earnings season off to a strong start but AI spending worries cap the rally' | 'Gold hits $2,700 as the dollar weakens and the Fed signals patience'\n"
+        f"   BAD examples (never write like this): 'A fractured risk-on session with dangerous internal split confirms overnight pressure' | 'Defensive rotation with institutional repositioning into quality' | 'Regime shift from transition to risk-off confirmed by VIX contango'\n\n"
+        f"5. SPECIFIC NUMBERS. Always cite exact figures from the data below. Never make vague statements.\n\n"
+        f"6. EXPLAIN THE 'SO WHAT'. For every signal, tell the investor what it means for their money — not just what the signal is.\n\n"
         f"LIVE MARKET DATA (reference specific figures throughout):\n{mkt}\n"
         f"SECTOR PERFORMANCE:\n{sector_txt}\n\n"
         f"ASIA / EUROPE OVERNIGHT:\n{region_txt}\n\n"
@@ -546,30 +559,35 @@ def _generate_bulletin() -> dict:
         f"ECONOMIC CALENDAR:\n{econ_txt}\n\n"
         f"TODAY'S EARNINGS:\n{earnings_txt}\n\n"
         f"LIVE WEB RESEARCH (cite specific events, data points, and analyst views from here):\n{web_context}\n\n"
-        f"PRE-BUILT CATALYSTS (use EXACTLY these in the catalysts array — do NOT add fictional ones):\n{catalysts_json}\n\n"
+        f"PRE-BUILT CATALYSTS (use EXACTLY these in the catalysts array — do NOT invent fictional ones):\n{catalysts_json}\n\n"
         "Respond ONLY with valid JSON. No markdown fences, no text outside the JSON object. "
         "NEVER use double-quote characters inside string values — use single quotes or dashes instead. "
         "No newline characters inside string values.\n\n"
-        '{{"the_call":{{"headline":"One precise sentence naming the dominant market force and its directional implication — include a specific data point (e.g. index level, VIX, spread).",'
-        '"bullets":["Regime: [risk-on/risk-off/transition] and the single clearest signal",'
-        '"Futures: exact level and % with directional read",'
-        '"Vol/Credit: VIX term structure signal + HYG/LQD direction as risk-appetite proxy",'
-        '"Rates: 10Y-2Y curve spread and steepening/flattening implication for equities",'
-        '"Catalyst 1: specific event with expected market impact",'
-        '"Catalyst 2: second event or data release",'
-        '"Key level: one specific S&P 500 support or resistance level to watch"]}},'
-        '"risk_radar":[{{"flag":"🔴","title":"4-6 word title","detail":"2-3 sentences with specific price levels or data points."}},'
+        '{{"the_call":{{"headline":"One punchy newspaper-style sentence naming the most important market move right now — include one real data point (index level, % move, or price). No jargon.",'
+        '"bullets":["Market direction: plain-English summary of where stocks are heading today and the single biggest reason why",'
+        '"Futures: exact S&P 500 and Nasdaq futures level and % change",'
+        '"Fear gauge: what the VIX (market fear gauge) is reading today and what it means for investors",'
+        '"Bond yields: what 10-year government bond yields are doing and whether that is good or bad for stocks right now",'
+        '"Key event today: the single most important earnings report, economic data, or news event happening today",'
+        '"Sectors: which sector is leading and which is lagging today and the plain-English reason why",'
+        '"Level to watch: one specific S&P 500 price level investors should watch today — state whether it is support (floor) or resistance (ceiling)"]}},'
+        '"risk_radar":[{{"flag":"🔴","title":"4-6 word plain-English title","detail":"2-3 sentences. What is the risk, why does it matter to a retail investor, and what price or event would make it worse."}},'
         '{{"flag":"🟡","title":"...","detail":"..."}},{{"flag":"🟢","title":"...","detail":"..."}},'
         '{{"flag":"🔵","title":"...","detail":"..."}}],'
-        '"macro_pulse":"6-8 sentences. Name the market regime explicitly. Explain cross-asset dynamics: credit spreads (HYG/LQD), VIX term structure, yield curve. Identify the dominant macro driver. Reference specific data from web context — no generic observations. End with the primary risk to the current regime.",'
-        '"equity_flow":"6-8 sentences. Name specific sectors rotating in/out with ETF performance figures. Growth vs value, quality vs cyclical dynamics. Reference institutional positioning or analyst upgrades/downgrades from web context. Name 1-2 stocks driving key sector narratives.",'
-        '"overnight_wires":"3-4 sentences. Specific Asian and European index levels, key drivers, and the transmission mechanism to US session today.",'
+        '"macro_pulse":"6-8 sentences in plain English. Start by stating clearly whether markets are broadly rising or falling today and the single biggest reason. Explain what is moving bond yields, the dollar, and gold and why each matters to stock investors. Use specific data points from the live data and web research — avoid vague generalisations. End by naming the biggest risk investors face right now and what would need to happen for it to go away.",'
+        '"equity_flow":"6-8 sentences in plain English. Name which sectors are rising and falling today with specific ETF percentage figures. Explain in everyday language why money is moving this way — which earnings, news events, or economic data are driving it. Name 1-2 specific stocks that are making headlines and explain what they did and why it matters.",'
+        '"overnight_wires":"3-4 sentences in plain English. What happened in Asian and European markets last night, with specific index levels. Explain what this tells us about how US markets are likely to open today.",'
         '"trade_ideas":['
-        '{{"setup":"Individual stock ticker (e.g. NVDA)","type":"stock","thesis":"Plain English explanation of the opportunity — what catalyst, earnings, or news event makes this timely. Written so a retail investor immediately understands the logic.","entry":"Price level only — SHORT, e.g. $220 or $215-220 (no explanation — put reasons in thesis)","stop":"Price level only — SHORT, e.g. $208","target":"Price level only — SHORT, e.g. $245","risk_reward":"e.g. 1:2.5","risk":"What would invalidate this trade — one sentence"}},'
-        '{{"setup":"Individual stock ticker (e.g. AAPL)","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Index or macro instrument (e.g. S&P 500, Gold, GBP/USD)","type":"macro","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Sector ETF or thematic (e.g. XLK, XLE)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Any — stock, commodity, FX or index","type":"stock or macro","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}}],'
+        '{{"setup":"US-listed stock ticker symbol (e.g. NVDA)","type":"stock","thesis":"Plain English explanation of the opportunity — what is happening with this company right now, what catalyst makes this timely today, and why a retail investor should pay attention. Reference a specific event or data point. No jargon.","entry":"Price level only (e.g. $220 or $215-220)","stop":"Price level only (e.g. $208)","target":"Price level only (e.g. $245)","risk_reward":"e.g. 1:2.5","risk":"One plain-English sentence — what specific event or price move would prove this trade wrong"}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol (can include a non-US ADR such as BABA, TSM, ASML, SAP)","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"Materials or commodity-linked stock (gold miner, copper, lithium, or energy — e.g. NEM, FCX, ALB, SLB, FSLR)","type":"stock","thesis":"Link this to the gold, copper, or oil price move in the live data above. Explain in plain English why the commodity price is moving and what it means for this stock.","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"Materials or commodity-linked stock (different commodity or sub-sector from the one above)","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"Sector ETF ticker (e.g. XLK, XLE, XLF, XBI, XLI)","type":"sector","thesis":"In plain English, explain why this sector is moving today — name which individual stocks inside the ETF are driving it and what news or data triggered the move.","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"Sector ETF ticker (e.g. XLV, XLU, XLB, XLRE, XLC — choose a DIFFERENT sector from the one above)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
+        '{{"setup":"Sector or thematic ETF ticker (e.g. SMH, GDX, KWEB, ARKK, IYT — choose a thematic not already used above)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}}],'
         f'"catalysts":{catalysts_json}}}'
     )
 
@@ -721,8 +739,11 @@ def _fetch_single_earnings(symbol: str) -> Optional[dict]:
             return None
         quarters = []
         estimates = []
+        cutoff = "2023-01"  # Skip data older than 2023 — avoids stale/wrong historical rows
         for idx, row in df.iterrows():
             date_str = str(idx)[:7]
+            if date_str < cutoff:
+                continue
             actual = _safe(row.get("Reported EPS"))
             est    = _safe(row.get("EPS Estimate"))
             surp   = _safe(row.get("Surprise(%)"))
@@ -737,7 +758,9 @@ def _fetch_single_earnings(symbol: str) -> Optional[dict]:
                 break
         if not quarters:
             return None
-        return {"symbol": symbol, "quarters": quarters[:4], "estimates": estimates[:2]}
+        # next_date: the nearest upcoming earnings date (first estimate date if available)
+        next_date = estimates[0]["date"] if estimates else None
+        return {"symbol": symbol, "quarters": quarters[:4], "estimates": estimates[:2], "next_date": next_date}
     except:
         return None
 
@@ -751,6 +774,8 @@ def _fetch_index_earnings(index: str) -> list:
                 r = fut.result(timeout=25)
                 if r: results.append(r)
             except: pass
+    # Sort by nearest upcoming earnings date — companies reporting soonest appear first
+    results.sort(key=lambda r: r.get("next_date") or "9999-99")
     return results
 
 _BULLETIN_CACHE_FILE = "/tmp/fintiq_bulletin_cache.json"
@@ -6120,12 +6145,30 @@ def _auth_db():
             stop_loss    REAL,
             dcf_value    REAL,
             shares       REAL DEFAULT 0,
+            status       TEXT DEFAULT 'watching',
+            entry_price  REAL,
+            entry_date   TEXT,
+            exit_price   REAL,
+            exit_date    TEXT,
             added_at     TEXT NOT NULL,
             updated_at   TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_portfolio_email ON portfolio(email);
     """)
     conn.commit()
+    # ── Schema migrations for existing deployments ──
+    for _col_sql in [
+        "ALTER TABLE portfolio ADD COLUMN status TEXT DEFAULT 'watching'",
+        "ALTER TABLE portfolio ADD COLUMN entry_price REAL",
+        "ALTER TABLE portfolio ADD COLUMN entry_date TEXT",
+        "ALTER TABLE portfolio ADD COLUMN exit_price REAL",
+        "ALTER TABLE portfolio ADD COLUMN exit_date TEXT",
+    ]:
+        try:
+            conn.execute(_col_sql)
+            conn.commit()
+        except Exception:
+            pass  # column already exists
     return conn
 
 
@@ -6602,8 +6645,8 @@ async def portfolio_add(request: Request):
     conn = _auth_db()
     cur = conn.execute(
         """INSERT INTO portfolio
-           (email, ticker, name, sector, industry, trade, target_price, stop_loss, dcf_value, shares, added_at, updated_at)
-           VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+           (email, ticker, name, sector, industry, trade, target_price, stop_loss, dcf_value, shares, status, added_at, updated_at)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (
             user["email"],
             ticker,
@@ -6615,6 +6658,7 @@ async def portfolio_add(request: Request):
             body.get("stop_loss"),
             body.get("dcf_value"),
             body.get("shares", 0),
+            "watching",
             now,
             now,
         ),
@@ -6646,32 +6690,67 @@ async def portfolio_get(request: Request):
     if not items:
         return {"items": []}
 
-    # Bulk live prices
-    tickers = list({i["ticker"] for i in items})
-    prices = _get_current_prices_bulk(tickers)
+    # Only fetch live prices for watching + open items (not needed for closed)
+    live_needed = [i["ticker"] for i in items if (i.get("status") or "watching") != "closed"]
+    prices = _get_current_prices_bulk(list(set(live_needed))) if live_needed else {}
 
     result = []
     for it in items:
-        cp = prices.get(it["ticker"])
-        inv = (it["shares"] or 0) * (it["target_price"] or 0)
-        cur_val = (it["shares"] or 0) * cp if cp is not None else None
-        pnl_money = (cur_val - inv) if (cur_val is not None and inv is not None) else None
-        pnl_pct = (pnl_money / inv * 100) if (pnl_money is not None and inv) else None
-        dcf = it["dcf_value"]
-        pnl_vs_dcf = ((cp - dcf) / dcf * 100) if (cp and dcf) else None
+        status = it.get("status") or "watching"
+        cp = prices.get(it["ticker"]) if status != "closed" else None
+        dcf = it.get("dcf_value")
+        ep  = it.get("entry_price")   # actual execution price
+        xp  = it.get("exit_price")    # exit price
+        sh  = it.get("shares") or 0
 
-        # Check if session file exists
+        # --- P&L logic per lifecycle stage ---
+        if status == "watching":
+            # No trade placed yet — show distance to target entry
+            tp = it.get("target_price")
+            vs_target_pct = ((cp - tp) / tp * 100) if (cp and tp) else None
+            inv = cur_val = pnl_money = pnl_pct = pnl_vs_dcf = None
+
+        elif status == "open":
+            # Unrealised P&L based on actual entry price
+            inv      = sh * ep if ep else None
+            cur_val  = sh * cp if (cp and sh) else None
+            pnl_money= (cur_val - inv) if (cur_val is not None and inv is not None) else None
+            pnl_pct  = (pnl_money / inv * 100) if (pnl_money is not None and inv) else None
+            pnl_vs_dcf = ((cp - dcf) / dcf * 100) if (cp and dcf) else None
+            vs_target_pct = None
+
+        else:  # closed
+            # Realised P&L locked — based on actual entry vs exit
+            inv       = sh * ep if ep else None
+            cur_val   = sh * xp if xp else None
+            pnl_money = (cur_val - inv) if (cur_val is not None and inv is not None) else None
+            pnl_pct   = (pnl_money / inv * 100) if (pnl_money is not None and inv) else None
+            # P&L vs DCF at time of exit
+            pnl_vs_dcf = ((xp - dcf) / dcf * 100) if (xp and dcf) else None
+            vs_target_pct = None
+            # Calculate holding days
+            try:
+                from datetime import date
+                ed = date.fromisoformat(it["entry_date"][:10]) if it.get("entry_date") else None
+                xd = date.fromisoformat(it["exit_date"][:10]) if it.get("exit_date") else None
+                holding_days = (xd - ed).days if (ed and xd) else None
+            except Exception:
+                holding_days = None
+            it["holding_days"] = holding_days
+
         session_file = os.path.join(_SESSIONS_DIR, f"{it['id']}.html")
         has_session = os.path.isfile(session_file)
 
         result.append({
             **it,
-            "current_price": cp,
-            "investment_value": round(inv, 2) if inv else 0,
+            "status": status,
+            "current_price": round(cp, 4) if cp is not None else None,
+            "investment_value": round(inv, 2) if inv is not None else None,
             "current_value": round(cur_val, 2) if cur_val is not None else None,
             "pnl_money": round(pnl_money, 2) if pnl_money is not None else None,
             "pnl_pct": round(pnl_pct, 2) if pnl_pct is not None else None,
             "pnl_vs_dcf_pct": round(pnl_vs_dcf, 2) if pnl_vs_dcf is not None else None,
+            "vs_target_pct": round(vs_target_pct, 2) if vs_target_pct is not None else None,
             "has_session": has_session,
         })
     return {"items": result}
@@ -6789,6 +6868,77 @@ async def portfolio_session_save(item_id: int, request: Request):
     conn = _auth_db()
     conn.execute("UPDATE portfolio SET updated_at=? WHERE id=?",
                  (datetime.now(timezone.utc).isoformat(), item_id))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+
+# ── POST /portfolio/{item_id}/buy — Watch → Open ───────────────────────────────
+@app.post("/portfolio/{item_id}/buy")
+async def portfolio_mark_bought(item_id: int, request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = _auth_db()
+    row = conn.execute("SELECT email, status FROM portfolio WHERE id=?", (item_id,)).fetchone()
+    if not row or row["email"] != user["email"]:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Not found")
+    if row["status"] == "closed":
+        conn.close()
+        raise HTTPException(status_code=400, detail="Trade is already closed")
+
+    body = await request.json()
+    entry_price = body.get("entry_price")
+    entry_date  = body.get("entry_date") or datetime.now(timezone.utc).date().isoformat()
+    shares      = body.get("shares", 0)
+
+    if not entry_price:
+        conn.close()
+        raise HTTPException(status_code=400, detail="entry_price required")
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "UPDATE portfolio SET status='open', entry_price=?, entry_date=?, shares=?, updated_at=? WHERE id=?",
+        (entry_price, entry_date, shares, now, item_id),
+    )
+    conn.commit()
+    conn.close()
+    return {"ok": True}
+
+
+# ── POST /portfolio/{item_id}/sell — Open → Closed ────────────────────────────
+@app.post("/portfolio/{item_id}/sell")
+async def portfolio_mark_sold(item_id: int, request: Request):
+    token = (request.headers.get("Authorization") or "").replace("Bearer ", "").strip()
+    user = _auth_get_session_user(token)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+
+    conn = _auth_db()
+    row = conn.execute("SELECT email, status FROM portfolio WHERE id=?", (item_id,)).fetchone()
+    if not row or row["email"] != user["email"]:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Not found")
+    if row["status"] != "open":
+        conn.close()
+        raise HTTPException(status_code=400, detail="Trade must be open before closing")
+
+    body = await request.json()
+    exit_price = body.get("exit_price")
+    exit_date  = body.get("exit_date") or datetime.now(timezone.utc).date().isoformat()
+
+    if not exit_price:
+        conn.close()
+        raise HTTPException(status_code=400, detail="exit_price required")
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "UPDATE portfolio SET status='closed', exit_price=?, exit_date=?, updated_at=? WHERE id=?",
+        (exit_price, exit_date, now, item_id),
+    )
     conn.commit()
     conn.close()
     return {"ok": True}
