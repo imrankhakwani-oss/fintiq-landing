@@ -1223,7 +1223,7 @@ a{color:var(--gold);text-decoration:none}
   </div>
 
   <!-- 7. Trading Journal -->
-  <div class="section-accordion" id="portfolio-panel" style="display:none">
+  <div class="section-accordion" id="portfolio-panel">
     <div class="section-header" onclick="togglePortfolioPanel()">
       <div class="section-icon">📒</div>
       <div style="flex:1;min-width:0">
@@ -5825,9 +5825,8 @@ function _showPortfolioPanel() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  if (localStorage.getItem('fintiq_session')) {
-    _showPortfolioPanel();
-  }
+  // Always show TJ panel — auth check happens when user opens/expands it
+  _showPortfolioPanel();
 });
 
 // Toggle expand/collapse
