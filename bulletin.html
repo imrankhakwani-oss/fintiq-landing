@@ -916,24 +916,58 @@ function _updateJsonLd(isoTimestamp) {
 
     // Today's Drivers — earnings, econ, Fed/CB policy, geopolitical, WSJ/FT/Bloomberg headlines
     const catEl = document.getElementById('catalysts-content');
-    const cats = d.drivers || d.catalysts || [];  // fallback for cached bulletins using old field name
-    const _typeColor = {earnings:'#F59E0B', macro:'#3B82F6', policy:'#8B5CF6', geopolitical:'#EF4444', news:'#10B981'};
-    const _typeLabel = {earnings:'Earnings', macro:'Economic Data', policy:'Central Bank / Policy', geopolitical:'Geopolitical', news:'Markets News'};
+    const cats = d.drivers || d.catalysts || [];
+    const _typeColor = {earnings:'#F59E0B', macro:'#3B82F6', policy:'#8B5CF6', geopolitical:'#EF4444', news:'#10B981', watch:'#64748B'};
+    const _typeLabel = {earnings:'Earnings', macro:'Economic Data', policy:'Central Bank / Policy', geopolitical:'Geopolitical', news:'Markets News', watch:'Watch Ahead'};
     if (cats.length) {
-      catEl.innerHTML = cats.map((c,i) => {
+      // Separate news items from watch-ahead items
+      const newsItems  = cats.filter(c => c.type !== 'watch');
+      const watchItems = cats.filter(c => c.type === 'watch');
+
+      const renderItem = (c, i, arr) => {
         const color = _typeColor[c.type] || 'var(--gold)';
         const label = _typeLabel[c.type] || (c.type||'Event');
-        const icon = c.icon || (c.type==='earnings'?'📊':c.type==='macro'?'📈':c.type==='policy'?'🏛️':c.type==='geopolitical'?'🌍':'📰');
-        const sep = i < cats.length-1 ? ' style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border)"' : '';
-        return `<div${sep}>
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px">
-            <span style="font-size:1rem">${icon}</span>
-            <span style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${color};background:${color}22;padding:2px 8px;border-radius:4px">${label}</span>
+        const icon  = c.icon || (c.type==='earnings'?'📊':c.type==='macro'?'📈':c.type==='policy'?'🏛️':c.type==='geopolitical'?'🌍':c.type==='watch'?'📅':'📰');
+        const sep   = i < arr.length-1 ? 'margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)' : '';
+
+        if (c.type === 'watch') {
+          // Watch Ahead: muted calendar style
+          return `<div style="${sep}">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+              <span style="font-size:0.95rem">${icon}</span>
+              <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${color};background:${color}22;padding:2px 8px;border-radius:4px">${label}</span>
+            </div>
+            <div style="font-size:0.85rem;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:6px">${c.event}</div>
+            ${c.context ? `<div style="font-size:0.78rem;color:#94a3b8;line-height:1.55;margin-bottom:4px"><span style="font-weight:600;color:#64748b;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.05em">Pricing · </span>${c.context}</div>` : ''}
+            ${c.impact  ? `<div style="font-size:0.78rem;color:var(--muted);line-height:1.55"><span style="font-weight:600;color:#64748b;text-transform:uppercase;font-size:0.62rem;letter-spacing:0.05em">Scenarios · </span>${c.impact}</div>` : ''}
+          </div>`;
+        }
+
+        // News / policy / geopolitical: 3-layer card
+        return `<div style="${sep}">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px">
+            <span style="font-size:0.95rem">${icon}</span>
+            <span style="font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:${color};background:${color}22;padding:2px 8px;border-radius:4px">${label}</span>
           </div>
-          <div style="font-size:0.875rem;font-weight:600;color:var(--text);line-height:1.4">${c.event}</div>
-          <div style="color:var(--muted);font-size:0.82rem;margin-top:4px;line-height:1.5">${c.impact}</div>
+          <div style="font-size:0.88rem;font-weight:700;color:var(--text);line-height:1.4;margin-bottom:8px">${c.event}</div>
+          ${c.context ? `<div style="font-size:0.78rem;line-height:1.6;margin-bottom:5px;padding:6px 10px;background:rgba(255,255,255,0.03);border-left:2px solid ${color}44;border-radius:0 4px 4px 0"><span style="font-weight:700;color:${color};text-transform:uppercase;font-size:0.6rem;letter-spacing:0.06em">Context · </span><span style="color:#94a3b8">${c.context}</span></div>` : ''}
+          ${c.impact  ? `<div style="font-size:0.8rem;color:var(--muted);line-height:1.6;padding:6px 10px;background:rgba(255,255,255,0.02);border-left:2px solid ${color}66;border-radius:0 4px 4px 0"><span style="font-weight:700;color:${color};text-transform:uppercase;font-size:0.6rem;letter-spacing:0.06em">Impact · </span>${c.impact}</div>` : ''}
         </div>`;
-      }).join('');
+      };
+
+      let html = newsItems.map((c,i) => renderItem(c, i, newsItems)).join('');
+
+      // Watch Ahead section separator
+      if (watchItems.length) {
+        html += `<div style="margin:20px 0 14px;display:flex;align-items:center;gap:8px">
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+          <span style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#64748b">📅 Watch Ahead</span>
+          <div style="flex:1;height:1px;background:var(--border)"></div>
+        </div>`;
+        html += watchItems.map((c,i) => renderItem(c, i, watchItems)).join('');
+      }
+
+      catEl.innerHTML = html;
     } else { catEl.textContent = 'No major market drivers identified for today.'; }
 
     document.getElementById('loading').style.display = 'none';

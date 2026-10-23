@@ -471,93 +471,122 @@ def _is_bad_title(title: str) -> bool:
     return False
 
 def _fetch_policy_and_news() -> list:
-    """Fetch raw news via Tavily, then use Claude to synthesise into clean market-impact items."""
+    """
+    3-layer news intelligence for Today's Drivers:
+      Layer 1 — Context: why this story has weight (historical backdrop, prior data)
+      Layer 2 — News: what specifically happened today/yesterday (with figures)
+      Layer 3 — Impact: market consequences now and ahead (named assets, direction)
+    Plus a 'watch' category for upcoming scheduled events clearly labelled as future.
+    """
     if not TAVILY_API_KEY or not ANTHROPIC_API_KEY: return []
 
-    # ── Step 1: Collect raw Tavily results across 3 parallel searches ────────────
-    queries = [
-        ("central bank interest rate decision Fed ECB Bank of England policy statement", "policy", "🏛️"),
-        ("geopolitical conflict trade tariffs sanctions energy oil supply markets", "geopolitical", "🌍"),
-        ("stock market financial earnings economic data breaking news", "news", "📰"),
+    # ── Step 1: 4 parallel Tavily searches ───────────────────────────────────────
+    # 3 queries for things that HAVE happened; 1 for upcoming scheduled events
+    searches = [
+        ("central bank interest rate decision statement Fed ECB Bank of England announced", "policy",     "news", 2),
+        ("geopolitical conflict sanctions trade tariffs oil energy announced today",         "geopolitical","news", 2),
+        ("earnings economic data released GDP inflation jobs announced markets today",       "news",        "news", 2),
+        ("Fed meeting ECB meeting earnings date economic data release scheduled this week",  "watch",       "general", 3),
     ]
-    raw_blocks = []
-    def _fetch(q, qtype, icon):
-        results = _tavily_search(q, max_results=5, topic="news", days=1)
+    raw_blocks = {}
+    def _fetch(q, qtype, topic, days):
+        kw = {"topic": topic}
+        if days: kw["days"] = days
+        results = _tavily_search(q, max_results=5, **kw)
         snippets = []
         for r in results[:5]:
             title   = (r.get('title') or '').strip()
             content = (r.get('content') or '').strip()
+            url     = (r.get('url') or '')
             if not title or not content: continue
-            snippets.append(f"TITLE: {title}\nSNIPPET: {content[:600]}")
-        return (qtype, icon, "\n\n".join(snippets))
-    with ThreadPoolExecutor(max_workers=3) as ex:
-        futures = [ex.submit(_fetch, q, t, i) for q, t, i in queries]
+            snippets.append(f"TITLE: {title}\nURL: {url}\nSNIPPET: {content[:700]}")
+        return qtype, "\n\n".join(snippets)
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        futures = [ex.submit(_fetch, q, qt, tp, d) for q, qt, tp, d in searches]
         for fut in futures:
-            try: raw_blocks.append(fut.result(timeout=15))
+            try:
+                qtype, block = fut.result(timeout=18)
+                if block: raw_blocks[qtype] = block
             except: pass
 
     if not raw_blocks: return []
 
-    # ── Step 2: Claude synthesises raw snippets into clean market-impact items ───
     today = datetime.now().strftime("%A %d %B %Y")
-    context_text = ""
-    type_map = {}  # track qtype+icon by position
-    for qtype, icon, block in raw_blocks:
-        if not block: continue
-        context_text += f"\n\n--- {qtype.upper()} SEARCH RESULTS ---\n{block}"
-        type_map[qtype] = icon
+    context_text = "\n\n".join(f"=== {k.upper()} ===\n{v}" for k, v in raw_blocks.items())
 
-    if not context_text.strip(): return []
+    # ── Step 2: Claude synthesises into 3-layer structured items ─────────────────
+    synthesis_prompt = f"""Today is {today}. You are a senior financial markets editor — think Bloomberg terminal meets FT Markets desk.
 
-    synthesis_prompt = f"""Today is {today}. You are a senior markets editor at a financial news desk. Below are raw web snippets covering central bank policy, geopolitical events, and financial markets news.
+You have raw web snippets from 4 searches: policy news, geopolitical news, markets/economic news, and upcoming scheduled events.
 
-Your task: identify the 4–6 items most likely to move markets today and write them up with genuine analytical depth. Each item must meet ALL of these standards:
+YOUR OUTPUT: a JSON array of 5–8 items split into two categories:
 
-HEADLINE (event field):
-- A real, specific news headline — not a web page title
-- Must include a concrete detail: a rate, a number, a name, a country, an asset
-- Under 14 words. Example: "Fed holds at 5.25%; signals one more hike in 2024 dot plot"
+━━━ CATEGORY A: NEWS ITEMS (things that have ALREADY happened or are unfolding NOW) ━━━
+Type must be: "policy", "geopolitical", or "news"
+Each item needs THREE fields that tell the complete story:
 
-IMPACT (impact field):
-- 2–3 sentences. First sentence: what specifically happened, with any numbers/figures from the snippets (rates, prices, %, basis points, barrel price, GDP reading, etc.)
-- Second sentence: historical context or vs-expectation context ("first hike since...", "above the 3.8% consensus", "lowest since...")
-- Third sentence: specific market/asset impact — name the sectors, instruments or currencies affected and the likely direction (e.g. "pressures growth stocks via higher discount rates; watch XLK and ARKK", "supportive for GBP/USD but risks gilt yields rising further")
-- Do NOT write vague generalities like "this may affect markets" or "investors will watch closely"
-- If the snippets contain actual numbers, use them. If they don't, say what the key unknown is.
+"event" — The headline (max 14 words). Must be specific: include a number, rate, country, or named entity. NOT a web page title. Examples of good headlines:
+  • "Fed holds rates at 3.875%; dots signal one more hike by year-end"
+  • "Israel sanctions Lebanese oil firm Coral Oil linked to Iran supply chain"
+  • "US Q3 GDP prints 2.8%, above 2.5% consensus; core PCE at 2.7%"
 
-TYPE: "policy" (central bank / rate decisions), "geopolitical" (conflict / sanctions / trade), or "news" (earnings / economic data / market events)
+"context" — 1 sentence of background. Why does this story have weight? Historical backdrop, prior related events, what was expected. Examples:
+  • "The Fed last hiked in September 2026 (+25bp), its first move since July 2023, taking rates to 3.875%."
+  • "US-Iran tensions have escalated throughout 2026 following reimposed sanctions; Brent crude is up 18% YTD partly on Hormuz risk."
 
-Respond ONLY with a valid JSON array. No other text, no markdown fences.
-Format: [{{"type":"...", "event":"...", "impact":"..."}}]
+"impact" — 2 sentences of forward analysis. Sentence 1: immediate market consequence with specific instruments. Sentence 2: forward-looking risk/opportunity. Must name assets (tickers, currencies, commodities). Examples:
+  • "A hold keeps the 10yr Treasury yield range-bound near 4.97%; growth stocks (XLK, ARKK) get relief but financials (XLF) face NIM pressure. The key unknown is December — a hot PCE print on Thursday could force the market to reprice one more hike, pushing yields back toward 5%."
+  • "Sanctions on Coral Oil compound existing supply tightness; XLE and OXY are direct beneficiaries while airlines (UAL, IAG) face rising fuel costs. A Hormuz disruption scenario — still tail-risk — could spike Brent above $95 and add ~0.3pp to US CPI."
 
-Raw snippets:
-{context_text[:5000]}"""
+━━━ CATEGORY B: WATCH AHEAD (scheduled future events investors must prepare for) ━━━
+Type must be: "watch"
+Use for central bank meetings, major economic data releases, and earnings this week.
+
+"event" — "📅 [Event] — [Day/Date]" e.g. "📅 Fed FOMC Decision — Tuesday 28 Oct"
+"context" — Current market pricing/expectation: "Markets pricing 92% probability of hold; dot plot will be the focus."
+"impact" — What to watch for and the two scenarios (hawkish vs dovish): "A hold with hawkish language could push 10yr yields back to 5%; a dovish tone would support SPY and TLT. Key data: core PCE due Thursday, consensus 2.6% vs prior 2.7%."
+
+━━━ STRICT RULES ━━━
+- ONLY report events that are confirmed in the snippets. Do NOT invent data.
+- If a snippet mentions a number (rate, price, %, date) — USE IT.
+- Never write "investors will watch" or "markets may be affected" — say WHAT will be affected and HOW.
+- Calendar pages and schedule listings are ONLY valid for Category B (watch), never Category A.
+- If a snippet is clearly a schedule/calendar page, use it only for watch items.
+
+Respond ONLY with a valid JSON array. No markdown, no explanation.
+Each element: {{"type":"policy|geopolitical|news|watch", "event":"...", "context":"...", "impact":"..."}}
+
+RAW SNIPPETS:
+{context_text[:6000]}"""
 
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         resp = client.messages.create(
             model="claude-haiku-4-5",
-            max_tokens=1800,
+            max_tokens=2500,
             messages=[{"role": "user", "content": synthesis_prompt}]
         )
         raw = next(b.text for b in resp.content if hasattr(b, 'text')).strip()
-        # Parse JSON — strip any markdown fences
         import re as _re
         raw = _re.sub(r'^```(?:json)?\s*', '', raw, flags=_re.M)
         raw = _re.sub(r'\s*```$', '', raw, flags=_re.M).strip()
         parsed = json.loads(raw)
-        _ICONS = {"policy": "🏛️", "geopolitical": "🌍", "news": "📰"}
+        _ICONS = {"policy": "🏛️", "geopolitical": "🌍", "news": "📰", "watch": "📅"}
         items = []
         for item in parsed:
             if not isinstance(item, dict): continue
             qtype = item.get("type", "news")
             items.append({
-                "type":   qtype,
-                "icon":   _ICONS.get(qtype, "📰"),
-                "event":  (item.get("event") or "").strip(),
-                "impact": (item.get("impact") or "").strip(),
+                "type":    qtype,
+                "icon":    _ICONS.get(qtype, "📰"),
+                "event":   (item.get("event") or "").strip(),
+                "context": (item.get("context") or "").strip(),
+                "impact":  (item.get("impact") or "").strip(),
             })
-        return items[:6]
+        # News items first, watch items at the end
+        news_items  = [i for i in items if i["type"] != "watch"][:5]
+        watch_items = [i for i in items if i["type"] == "watch"][:3]
+        return news_items + watch_items
     except Exception:
         return []
 
