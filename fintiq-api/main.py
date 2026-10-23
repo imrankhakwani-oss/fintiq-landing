@@ -426,6 +426,46 @@ def _tavily_search(query: str, max_results: int = 5) -> list:
     except: pass
     return []
 
+def _source_from_url(url: str) -> str:
+    """Extract readable source name from a URL for attribution."""
+    for domain, name in [
+        ('wsj.com','WSJ'),('ft.com','FT'),('bloomberg.com','Bloomberg'),
+        ('reuters.com','Reuters'),('cnbc.com','CNBC'),('marketwatch.com','MarketWatch'),
+        ('federalreserve.gov','Federal Reserve'),('bankofengland.co.uk','Bank of England'),
+        ('ecb.europa.eu','ECB'),('apnews.com','AP'),('bbc.co.uk','BBC'),
+    ]:
+        if domain in url: return name
+    return ''
+
+def _fetch_policy_and_news() -> list:
+    """Fetch market-moving policy and headline news via Tavily — Fed/CB, geopolitical, top financial press."""
+    if not TAVILY_API_KEY: return []
+    today = datetime.now().strftime("%B %d %Y")
+    queries = [
+        (f"Federal Reserve Bank of England ECB central bank interest rate policy statement speech {today}", "policy", "🏛️"),
+        (f"geopolitical political events trade tariffs sanctions oil supply affecting markets {today}", "geopolitical", "🌍"),
+        (f"breaking financial market news Wall Street Journal Financial Times Bloomberg {today}", "news", "📰"),
+    ]
+    items = []
+    def _run(q, qtype, icon):
+        results = _tavily_search(q, max_results=3)
+        out = []
+        for r in results[:2]:
+            title = r.get('title','').strip(); content = r.get('content','').strip()
+            url = r.get('url','')
+            if not title or len(title) < 15: continue
+            source = _source_from_url(url)
+            impact = content[:250].rstrip() if content else ''
+            if source: impact = f"[{source}] {impact}"
+            out.append({"type": qtype, "icon": icon, "event": title, "impact": impact})
+        return out
+    with ThreadPoolExecutor(max_workers=3) as ex:
+        futures = [ex.submit(_run, q, t, i) for q, t, i in queries]
+        for fut in futures:
+            try: items.extend(fut.result(timeout=12))
+            except: pass
+    return items[:6]  # cap at 6 news/policy items
+
 def _fetch_web_context(earnings_today: list = None, econ: list = None) -> str:
     if not TAVILY_API_KEY: return "Web search not configured."
     today = datetime.now().strftime("%B %d %Y")
@@ -459,19 +499,30 @@ def _fetch_2y_yield() -> float | None:
         except: pass
     return None
 
-# ── Pre-build catalysts from actual data ───────────────────────────────────────
-def _build_catalysts(earnings_today: list, econ: list) -> list:
-    cats = []
-    for e in (earnings_today or [])[:3]:
+# ── Pre-build Today's Drivers from real data (earnings + econ + news/policy) ───
+def _build_drivers(earnings_today: list, econ: list, news_items: list = None) -> list:
+    drivers = []
+    # 1. Earnings — most concrete, company-specific
+    for e in (earnings_today or [])[:4]:
         sym = e.get("symbol",""); name = e.get("name", sym)
         eps_est = e.get("epsEstimated","?")
-        cats.append({"type":"earnings","event":f"{name} ({sym}) reports earnings","impact":f"EPS est {eps_est} — watch guidance and margin commentary"})
+        timing = e.get("time","")
+        timing_str = " (before open)" if timing=="bmo" else " (after close)" if timing=="amc" else ""
+        drivers.append({"type":"earnings","icon":"📊",
+            "event":f"{name} ({sym}) earnings{timing_str}",
+            "impact":f"EPS estimate: {eps_est} — watch guidance, margins and forward outlook"})
+    # 2. Economic data releases
     for e in (econ or [])[:3]:
         ev = e.get("event",""); country = e.get("country","")
         est = e.get("estimate","?"); prev = e.get("previous","?")
         if ev:
-            cats.append({"type":"macro","event":f"[{country}] {ev}","impact":f"Est: {est} vs prev: {prev}"})
-    return cats
+            drivers.append({"type":"macro","icon":"📈",
+                "event":f"[{country}] {ev}",
+                "impact":f"Estimate: {est} | Previous: {prev}"})
+    # 3. Policy & news headlines from Tavily (Fed, geopolitical, WSJ/FT/Bloomberg)
+    for item in (news_items or [])[:6]:
+        drivers.append(item)
+    return drivers
 
 # ── Bulletin generation ────────────────────────────────────────────────────────
 def _generate_bulletin() -> dict:
@@ -526,10 +577,11 @@ def _generate_bulletin() -> dict:
     earnings_txt = "\n".join(f"- {e.get('symbol','')} ({e.get('name','')}) — EPS est: {e.get('epsEstimated','?')}"
                               for e in (earnings_today or [])) or "No major earnings today"
 
-    # Pre-build catalysts from real data (so AI doesn't hallucinate them)
+    # Pre-build Today's Drivers from real data — earnings + econ + policy/news headlines
     import json as _json
-    catalysts_prebuilt = _build_catalysts(earnings_today, econ)
-    catalysts_json = _json.dumps(catalysts_prebuilt, ensure_ascii=False)
+    news_items = _fetch_policy_and_news()
+    drivers_prebuilt = _build_drivers(earnings_today, econ, news_items)
+    drivers_json = _json.dumps(drivers_prebuilt, ensure_ascii=False)
 
     now = datetime.now(); hour = now.hour
     session = "Pre-Market" if hour<8 else "Morning" if hour<12 else "Midday" if hour<14 else "Close Watch" if hour<16 else "After-Hours"
@@ -559,7 +611,7 @@ def _generate_bulletin() -> dict:
         f"ECONOMIC CALENDAR:\n{econ_txt}\n\n"
         f"TODAY'S EARNINGS:\n{earnings_txt}\n\n"
         f"LIVE WEB RESEARCH (cite specific events, data points, and analyst views from here):\n{web_context}\n\n"
-        f"PRE-BUILT CATALYSTS (use EXACTLY these in the catalysts array — do NOT invent fictional ones):\n{catalysts_json}\n\n"
+        f"PRE-BUILT DRIVERS (use EXACTLY these in the drivers array — do NOT add, remove or modify them — they come from live data and real news sources):\n{drivers_json}\n\n"
         "Respond ONLY with valid JSON. No markdown fences, no text outside the JSON object. "
         "NEVER use double-quote characters inside string values — use single quotes or dashes instead. "
         "No newline characters inside string values.\n\n"
@@ -588,7 +640,7 @@ def _generate_bulletin() -> dict:
         '{{"setup":"Sector ETF ticker (e.g. XLK, XLE, XLF, XBI, XLI)","type":"sector","thesis":"In plain English, explain why this sector is moving today — name which individual stocks inside the ETF are driving it and what news or data triggered the move.","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
         '{{"setup":"Sector ETF ticker (e.g. XLV, XLU, XLB, XLRE, XLC — choose a DIFFERENT sector from the one above)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
         '{{"setup":"Sector or thematic ETF ticker (e.g. SMH, GDX, KWEB, ARKK, IYT — choose a thematic not already used above)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}}],'
-        f'"catalysts":{catalysts_json}}}'
+        f'"drivers":{drivers_json}}}'
     )
 
     if not ANTHROPIC_API_KEY: raise RuntimeError("ANTHROPIC_API_KEY not set")
@@ -1406,20 +1458,26 @@ async def startup_prewarm():
     global _pair_signals_cache, _pair_signals_cached_at
 
     # ── Bulletin: Redis first, then /tmp disk, then regenerate ──────────────────
+    # ── Bulletin: restore from cache only — cron handles scheduled regeneration ─────
+    # Never regenerate on startup/deployment restart (that would waste money on every push).
+    # Only exception: truly cold start with no cache anywhere (first-ever deployment).
+    _STARTUP_REGEN_THRESHOLD = 20 * 3600  # 20 hours — cron definitely missed if this old
     redis_bulletin, redis_bulletin_at = _kv_get("fintiq:bulletin")
     if redis_bulletin:
         _bulletin_cache     = redis_bulletin
         _bulletin_cached_at = redis_bulletin_at
-        if time.time() - redis_bulletin_at >= _BULLETIN_TTL:
+        # Only regenerate if cache is genuinely stale beyond any cron window (20h+)
+        if time.time() - redis_bulletin_at >= _STARTUP_REGEN_THRESHOLD:
             threading.Thread(target=_bg_regenerate, daemon=True).start()
     else:
         disk_data, disk_saved_at = _load_bulletin_from_disk()
         if disk_data:
             _bulletin_cache     = disk_data
             _bulletin_cached_at = disk_saved_at
-            if time.time() - disk_saved_at >= _BULLETIN_TTL:
+            if time.time() - disk_saved_at >= _STARTUP_REGEN_THRESHOLD:
                 threading.Thread(target=_bg_regenerate, daemon=True).start()
         else:
+            # No cache anywhere — first-ever deployment, generate once to bootstrap
             threading.Thread(target=_bg_regenerate, daemon=True).start()
 
     # ── Pair signals: Redis first, then /tmp, then background compute ────────────
@@ -1476,8 +1534,10 @@ async def startup_prewarm():
 
     # ── Bulletin cron: auto-regenerate at 07:30 and 15:30 UTC ────────────────────
     def _bulletin_cron():
-        """Background thread — fires bulletin refresh at 07:30 and 15:30 UTC daily."""
-        TARGET_BUCKETS = {7 * 60 + 30, 15 * 60 + 30}  # minutes since midnight UTC
+        """Background thread — fires bulletin refresh at 07:30 and 14:00 UTC daily.
+        07:30 UTC = 30 mins before UK market open (08:00 GMT)
+        14:00 UTC = 30 mins before US market open (14:30 GMT / 09:30 ET)"""
+        TARGET_BUCKETS = {7 * 60 + 30, 14 * 60 + 0}  # minutes since midnight UTC
         last_fired: set = set()
         while True:
             now_utc = datetime.utcnow()
