@@ -415,13 +415,14 @@ def _fetch_earnings_today():
     except: pass
     return []
 
-def _tavily_search(query: str, max_results: int = 5) -> list:
+def _tavily_search(query: str, max_results: int = 5, topic: str = "general", days: int = None) -> list:
     if not TAVILY_API_KEY: return []
     try:
-        r = requests.post("https://api.tavily.com/search",
-            json={"api_key":TAVILY_API_KEY,"query":query,"max_results":max_results,
-                  "search_depth":"basic","include_answer":False,"include_raw_content":False},
-            timeout=10)
+        payload = {"api_key": TAVILY_API_KEY, "query": query, "max_results": max_results,
+                   "search_depth": "advanced", "include_answer": False, "include_raw_content": False,
+                   "topic": topic}
+        if days: payload["days"] = days
+        r = requests.post("https://api.tavily.com/search", json=payload, timeout=12)
         if r.status_code == 200: return r.json().get("results", [])
     except: pass
     return []
@@ -437,32 +438,117 @@ def _source_from_url(url: str) -> str:
         if domain in url: return name
     return ''
 
+def _clean_news_content(text: str) -> str:
+    """Strip raw markdown, table rows and boilerplate from Tavily snippets."""
+    if not text: return ''
+    lines = []
+    for line in text.splitlines():
+        s = line.strip()
+        if not s: continue
+        if s.startswith('#'): continue          # markdown headings
+        if s.startswith('|'): continue          # table rows
+        if s.startswith('–') and len(s) < 5: continue
+        lines.append(s)
+    cleaned = ' '.join(lines)
+    # Collapse whitespace
+    import re as _re
+    cleaned = _re.sub(r'\s{2,}', ' ', cleaned).strip()
+    return cleaned[:280]
+
+def _is_bad_title(title: str) -> bool:
+    """Return True for web-page titles, listicles, and non-headline strings."""
+    if not title or len(title) < 20: return True
+    t = title.strip()
+    # Homepage / site titles often contain pipe or dash separators
+    if ' | ' in t or ' – ' in t and len(t.split(' – ')[-1]) < 30: return True
+    # Listicles / comparison articles
+    import re as _re
+    if _re.match(r'^\d+\s+(best|top|ways|things|reasons)', t, _re.I): return True
+    # Pure date strings
+    if _re.match(r'^(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d', t, _re.I): return True
+    # Calendar / schedule pages
+    if any(w in t.lower() for w in ['meeting calendar', 'full test', 'full rating', 'since 2008', 'since 200']): return True
+    return False
+
 def _fetch_policy_and_news() -> list:
-    """Fetch market-moving policy and headline news via Tavily — Fed/CB, geopolitical, top financial press."""
-    if not TAVILY_API_KEY: return []
-    today = datetime.now().strftime("%B %d %Y")
+    """Fetch raw news via Tavily, then use Claude to synthesise into clean market-impact items."""
+    if not TAVILY_API_KEY or not ANTHROPIC_API_KEY: return []
+
+    # ── Step 1: Collect raw Tavily results across 3 parallel searches ────────────
     queries = [
-        (f"Federal Reserve Bank of England ECB central bank interest rate policy statement speech {today}", "policy", "🏛️"),
-        (f"geopolitical political events trade tariffs sanctions oil supply affecting markets {today}", "geopolitical", "🌍"),
-        (f"breaking financial market news Wall Street Journal Financial Times Bloomberg {today}", "news", "📰"),
+        ("central bank interest rate decision Fed ECB Bank of England policy statement", "policy", "🏛️"),
+        ("geopolitical conflict trade tariffs sanctions energy oil supply markets", "geopolitical", "🌍"),
+        ("stock market financial earnings economic data breaking news", "news", "📰"),
     ]
-    items = []
-    def _run(q, qtype, icon):
-        results = _tavily_search(q, max_results=3)
-        out = []
-        for r in results[:2]:
-            title = r.get('title','').strip(); content = r.get('content','').strip()
-            url = r.get('url','')
-            if not title or len(title) < 15: continue
-            impact = content[:250].rstrip() if content else ''
-            out.append({"type": qtype, "icon": icon, "event": title, "impact": impact})
-        return out
+    raw_blocks = []
+    def _fetch(q, qtype, icon):
+        results = _tavily_search(q, max_results=5, topic="news", days=1)
+        snippets = []
+        for r in results[:5]:
+            title   = (r.get('title') or '').strip()
+            content = (r.get('content') or '').strip()
+            if not title or not content: continue
+            snippets.append(f"TITLE: {title}\nSNIPPET: {content[:400]}")
+        return (qtype, icon, "\n\n".join(snippets))
     with ThreadPoolExecutor(max_workers=3) as ex:
-        futures = [ex.submit(_run, q, t, i) for q, t, i in queries]
+        futures = [ex.submit(_fetch, q, t, i) for q, t, i in queries]
         for fut in futures:
-            try: items.extend(fut.result(timeout=12))
+            try: raw_blocks.append(fut.result(timeout=15))
             except: pass
-    return items[:6]  # cap at 6 news/policy items
+
+    if not raw_blocks: return []
+
+    # ── Step 2: Claude synthesises raw snippets into clean market-impact items ───
+    today = datetime.now().strftime("%A %d %B %Y")
+    context_text = ""
+    type_map = {}  # track qtype+icon by position
+    for qtype, icon, block in raw_blocks:
+        if not block: continue
+        context_text += f"\n\n--- {qtype.upper()} SEARCH RESULTS ---\n{block}"
+        type_map[qtype] = icon
+
+    if not context_text.strip(): return []
+
+    synthesis_prompt = f"""Today is {today}. Below are raw news snippets retrieved from the web across three categories: central bank/policy, geopolitical, and financial markets news.
+
+Your job is to read all of this and identify the 4 to 6 items that are most likely to move financial markets today. For each item:
+- Write a clean, specific headline (not a web page title — a real news headline, under 12 words)
+- Write 1–2 sentences explaining what happened and why it matters for investors or markets
+- Assign a type: "policy", "geopolitical", or "news"
+
+Respond ONLY with a JSON array, no other text. Each element:
+{{"type": "policy|geopolitical|news", "event": "Clean headline here", "impact": "1-2 sentence market impact explanation."}}
+
+Raw snippets:
+{context_text[:4000]}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5",  # cheap — just editorial synthesis
+            max_tokens=1200,
+            messages=[{"role": "user", "content": synthesis_prompt}]
+        )
+        raw = next(b.text for b in resp.content if hasattr(b, 'text')).strip()
+        # Parse JSON — strip any markdown fences
+        import re as _re
+        raw = _re.sub(r'^```(?:json)?\s*', '', raw, flags=_re.M)
+        raw = _re.sub(r'\s*```$', '', raw, flags=_re.M).strip()
+        parsed = json.loads(raw)
+        _ICONS = {"policy": "🏛️", "geopolitical": "🌍", "news": "📰"}
+        items = []
+        for item in parsed:
+            if not isinstance(item, dict): continue
+            qtype = item.get("type", "news")
+            items.append({
+                "type":   qtype,
+                "icon":   _ICONS.get(qtype, "📰"),
+                "event":  (item.get("event") or "").strip(),
+                "impact": (item.get("impact") or "").strip(),
+            })
+        return items[:6]
+    except Exception:
+        return []
 
 def _fetch_web_context(earnings_today: list = None, econ: list = None) -> str:
     if not TAVILY_API_KEY: return "Web search not configured."
