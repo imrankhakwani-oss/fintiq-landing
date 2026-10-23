@@ -488,7 +488,7 @@ def _fetch_policy_and_news() -> list:
             title   = (r.get('title') or '').strip()
             content = (r.get('content') or '').strip()
             if not title or not content: continue
-            snippets.append(f"TITLE: {title}\nSNIPPET: {content[:400]}")
+            snippets.append(f"TITLE: {title}\nSNIPPET: {content[:600]}")
         return (qtype, icon, "\n\n".join(snippets))
     with ThreadPoolExecutor(max_workers=3) as ex:
         futures = [ex.submit(_fetch, q, t, i) for q, t, i in queries]
@@ -509,24 +509,35 @@ def _fetch_policy_and_news() -> list:
 
     if not context_text.strip(): return []
 
-    synthesis_prompt = f"""Today is {today}. Below are raw news snippets retrieved from the web across three categories: central bank/policy, geopolitical, and financial markets news.
+    synthesis_prompt = f"""Today is {today}. You are a senior markets editor at a financial news desk. Below are raw web snippets covering central bank policy, geopolitical events, and financial markets news.
 
-Your job is to read all of this and identify the 4 to 6 items that are most likely to move financial markets today. For each item:
-- Write a clean, specific headline (not a web page title — a real news headline, under 12 words)
-- Write 1–2 sentences explaining what happened and why it matters for investors or markets
-- Assign a type: "policy", "geopolitical", or "news"
+Your task: identify the 4–6 items most likely to move markets today and write them up with genuine analytical depth. Each item must meet ALL of these standards:
 
-Respond ONLY with a JSON array, no other text. Each element:
-{{"type": "policy|geopolitical|news", "event": "Clean headline here", "impact": "1-2 sentence market impact explanation."}}
+HEADLINE (event field):
+- A real, specific news headline — not a web page title
+- Must include a concrete detail: a rate, a number, a name, a country, an asset
+- Under 14 words. Example: "Fed holds at 5.25%; signals one more hike in 2024 dot plot"
+
+IMPACT (impact field):
+- 2–3 sentences. First sentence: what specifically happened, with any numbers/figures from the snippets (rates, prices, %, basis points, barrel price, GDP reading, etc.)
+- Second sentence: historical context or vs-expectation context ("first hike since...", "above the 3.8% consensus", "lowest since...")
+- Third sentence: specific market/asset impact — name the sectors, instruments or currencies affected and the likely direction (e.g. "pressures growth stocks via higher discount rates; watch XLK and ARKK", "supportive for GBP/USD but risks gilt yields rising further")
+- Do NOT write vague generalities like "this may affect markets" or "investors will watch closely"
+- If the snippets contain actual numbers, use them. If they don't, say what the key unknown is.
+
+TYPE: "policy" (central bank / rate decisions), "geopolitical" (conflict / sanctions / trade), or "news" (earnings / economic data / market events)
+
+Respond ONLY with a valid JSON array. No other text, no markdown fences.
+Format: [{{"type":"...", "event":"...", "impact":"..."}}]
 
 Raw snippets:
-{context_text[:4000]}"""
+{context_text[:5000]}"""
 
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         resp = client.messages.create(
-            model="claude-haiku-4-5",  # cheap — just editorial synthesis
-            max_tokens=1200,
+            model="claude-haiku-4-5",
+            max_tokens=1800,
             messages=[{"role": "user", "content": synthesis_prompt}]
         )
         raw = next(b.text for b in resp.content if hasattr(b, 'text')).strip()
