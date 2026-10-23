@@ -834,8 +834,9 @@ def _fetch_index_earnings(index: str) -> list:
     results.sort(key=lambda r: r.get("next_date") or "9999-99")
     return results
 
-_BULLETIN_CACHE_FILE = "/tmp/fintiq_bulletin_cache.json"
-_EARNINGS_CACHE_DIR  = "/tmp/fintiq_earnings"
+_DATA_DIR            = "/data" if os.path.isdir("/data") else "/tmp"
+_BULLETIN_CACHE_FILE = f"{_DATA_DIR}/fintiq_bulletin_cache.json"
+_EARNINGS_CACHE_DIR  = f"{_DATA_DIR}/fintiq_earnings"
 
 def _save_earnings_to_disk(index: str, data: list):
     try:
@@ -1042,8 +1043,7 @@ def _bg_regenerate():
         fresh = _generate_bulletin()
         _bulletin_cache = fresh
         _bulletin_cached_at = time.time()
-        _save_bulletin_to_disk(fresh)           # /tmp — survives within same container
-        _kv_set("fintiq:bulletin", fresh, ttl_seconds=90000)  # Redis — survives cold starts
+        _save_bulletin_to_disk(fresh)           # /data volume — persists across deploys
     except Exception:
         pass
     finally:
@@ -1449,34 +1449,25 @@ def get_portfolio_mc(
 
 @app.on_event("startup")
 async def startup_prewarm():
-    """On Railway startup: restore caches from Redis → /tmp → regenerate as fallback."""
+    """On Railway startup: restore caches from /data volume → regenerate only if truly stale."""
     global _bulletin_cache, _bulletin_cached_at
     global _earnings_cache, _earnings_cached_at
     global _fintiq_portfolios_cache, _fintiq_portfolios_cached_at
     global _pair_signals_cache, _pair_signals_cached_at
 
-    # ── Bulletin: Redis first, then /tmp disk, then regenerate ──────────────────
-    # ── Bulletin: restore from cache only — cron handles scheduled regeneration ─────
-    # Never regenerate on startup/deployment restart (that would waste money on every push).
-    # Only exception: truly cold start with no cache anywhere (first-ever deployment).
-    _STARTUP_REGEN_THRESHOLD = 20 * 3600  # 20 hours — cron definitely missed if this old
-    redis_bulletin, redis_bulletin_at = _kv_get("fintiq:bulletin")
-    if redis_bulletin:
-        _bulletin_cache     = redis_bulletin
-        _bulletin_cached_at = redis_bulletin_at
-        # Only regenerate if cache is genuinely stale beyond any cron window (20h+)
-        if time.time() - redis_bulletin_at >= _STARTUP_REGEN_THRESHOLD:
+    # ── Bulletin: load from Railway /data volume (persists across deploys) ────────
+    # Cron handles scheduled regeneration; only regenerate here if cache is very stale
+    # (>20h = cron definitely missed) or completely absent (first-ever deployment).
+    _STARTUP_REGEN_THRESHOLD = 20 * 3600
+    disk_data, disk_saved_at = _load_bulletin_from_disk()
+    if disk_data:
+        _bulletin_cache     = disk_data
+        _bulletin_cached_at = disk_saved_at
+        if time.time() - disk_saved_at >= _STARTUP_REGEN_THRESHOLD:
             threading.Thread(target=_bg_regenerate, daemon=True).start()
     else:
-        disk_data, disk_saved_at = _load_bulletin_from_disk()
-        if disk_data:
-            _bulletin_cache     = disk_data
-            _bulletin_cached_at = disk_saved_at
-            if time.time() - disk_saved_at >= _STARTUP_REGEN_THRESHOLD:
-                threading.Thread(target=_bg_regenerate, daemon=True).start()
-        else:
-            # No cache anywhere — first-ever deployment, generate once to bootstrap
-            threading.Thread(target=_bg_regenerate, daemon=True).start()
+        # No cache on volume — first-ever deployment or volume was cleared
+        threading.Thread(target=_bg_regenerate, daemon=True).start()
 
     # ── Pair signals: Redis first, then /tmp, then background compute ────────────
     redis_pairs, redis_pairs_at = _kv_get("fintiq:pair_signals")
@@ -1542,7 +1533,9 @@ async def startup_prewarm():
             bucket = now_utc.hour * 60 + now_utc.minute
             if bucket in TARGET_BUCKETS and bucket not in last_fired:
                 last_fired.add(bucket)
-                if not _bulletin_refreshing:
+                age_h = (time.time() - _bulletin_cached_at) / 3600
+                # Skip if bulletin was generated within the last 4 hours (e.g. just bootstrapped after a deploy)
+                if not _bulletin_refreshing and age_h >= 4:
                     threading.Thread(target=_bg_regenerate, daemon=True).start()
             elif bucket not in TARGET_BUCKETS:
                 last_fired.discard(bucket)
