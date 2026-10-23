@@ -454,9 +454,7 @@ def _fetch_policy_and_news() -> list:
             title = r.get('title','').strip(); content = r.get('content','').strip()
             url = r.get('url','')
             if not title or len(title) < 15: continue
-            source = _source_from_url(url)
             impact = content[:250].rstrip() if content else ''
-            if source: impact = f"[{source}] {impact}"
             out.append({"type": qtype, "icon": icon, "event": title, "impact": impact})
         return out
     with ThreadPoolExecutor(max_workers=3) as ex:
