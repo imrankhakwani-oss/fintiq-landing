@@ -422,20 +422,91 @@ function _updateJsonLd(isoTimestamp) {
   .eps-q.inline-bg { border-left: 2px solid #64748B; }
   .eps-q.forecast  { border-left: 2px solid #64748B; opacity: 0.7; }
 
+  /* ── Hamburger button (mobile only) ── */
+  .nav-hamburger {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 11px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    line-height: 1;
+  }
+  .nav-hamburger:hover { border-color: var(--gold); }
+  /* Mobile nav dropdown */
+  .nav-links.mobile-open {
+    display: flex !important;
+    flex-direction: column;
+    position: fixed;
+    top: 64px; left: 0; right: 0;
+    background: rgba(8,18,32,0.98);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    gap: 18px;
+    z-index: 99;
+    backdrop-filter: blur(10px);
+  }
+  .nav-links.mobile-open a { font-size: 1rem; padding: 4px 0; }
+
   @media (max-width: 900px) {
     .macro-grid { grid-template-columns: repeat(2,1fr); }
     .markets-grid { grid-template-columns: repeat(2,1fr); }
   }
   @media (max-width: 640px) {
+    /* Nav */
+    .nav-hamburger { display: block; }
+    nav .nav-links { display: none; }
+
+    /* Header */
+    .bulletin-header { padding: 80px 16px 20px; }
+    .bulletin-header h1 { font-size: 1.4rem; }
+    .bulletin-header h2 { font-size: 0.85rem; }
+    .bulletin-meta { gap: 8px; flex-direction: column; align-items: center; }
+    .session-badge { font-size: 0.78rem; padding: 4px 14px; }
+
+    /* Layout */
+    .container { padding: 18px 14px; }
+
+    /* Sections */
     .risk-radar { grid-template-columns: 1fr; }
     .trade-ideas { grid-template-columns: 1fr; }
-    .trade-metrics { grid-template-columns: repeat(2, 1fr); }
-    nav .nav-links { display: none; }
+    .trade-metrics { flex-wrap: wrap; }
+    .trade-metric { min-width: 48%; }
     .macro-grid { grid-template-columns: repeat(2,1fr); }
     .markets-grid { grid-template-columns: 1fr 1fr; }
-    .eps-tabs { gap: 4px; }
-    .eps-tab { font-size: 0.72rem; padding: 4px 10px; }
+    .sector-snap-row { gap: 6px; }
+    .sector-chip { min-width: 80px; padding: 6px 8px; }
+
+    /* The Call */
+    .the-call { padding: 16px; }
+    .the-call-headline { font-size: 1rem; }
+    .call-bullets li { font-size: 0.82rem; }
+
+    /* Text cards */
+    .text-card { padding: 14px 16px; font-size: 0.83rem; }
+
+    /* EPS tracker */
+    .eps-tabs { gap: 4px; flex-wrap: wrap; }
+    .eps-tab { font-size: 0.72rem; padding: 5px 10px; min-height: 36px; }
+    .eps-table-wrap { -webkit-overflow-scrolling: touch; }
+    .eps-q { min-width: 72px; padding: 4px 6px; }
+    .eps-q .eq-val { font-size: 0.75rem; }
+    .eps-search-wrap { width: 100%; }
+    #eps-search { width: 100%; min-width: unset; }
+
+    /* EPS meta legend wraps onto 2 lines neatly */
+    .eps-meta-row { flex-direction: column; align-items: flex-start !important; gap: 8px !important; }
+
+    /* Touch targets */
+    .refresh-btn { min-height: 36px; padding: 6px 16px; }
+    button, .eps-tab { touch-action: manipulation; }
+
+    /* Section labels */
+    .section-label { font-size: 0.68rem; }
   }
+
 </style>
 </head>
 <body>
@@ -453,13 +524,18 @@ function _updateJsonLd(isoTimestamp) {
     </svg>
     Fintiq
   </a>
-  <div class="nav-links">
+  <div class="nav-links" id="nav-links">
     <a href="/index.html">Home</a>
     <a href="/bulletin.html" class="active">Market Bulletin</a>
     <a href="/deep-dive.html">Stock Deep Dive</a>
     <a href="/tools.html">Tools</a>
     <a href="/learn.html">Learn</a>
   </div>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation" onclick="
+    var nl=document.getElementById('nav-links');
+    nl.classList.toggle('mobile-open');
+    this.textContent = nl.classList.contains('mobile-open') ? '✕' : '☰';
+  ">☰</button>
 </nav>
 
 <div class="bulletin-header">
@@ -508,9 +584,21 @@ function _updateJsonLd(isoTimestamp) {
       <ul id="call-bullets" class="call-bullets"></ul>
     </div>
 
+    <!-- Today's Catalysts — moved up: most time-sensitive, users want to know what's due today -->
+    <h2 class="section-label">📅 Today's Catalysts</h2>
+    <div id="catalysts-content" class="text-card"></div>
+
+    <!-- Trade Ideas — moved up: actionable picks while attention is highest -->
+    <h2 class="section-label">💡 Trade Ideas</h2>
+    <div id="trade-ideas" class="trade-ideas"></div>
+
     <!-- Risk Radar -->
     <h2 class="section-label">🚨 Risk Radar</h2>
     <div id="risk-radar" class="risk-radar"></div>
+
+    <!-- Market Movers (live data) -->
+    <div class="section-label">🚀 Market Movers</div>
+    <div id="movers-content"></div>
 
     <!-- Macro Pulse -->
     <h2 class="section-label">🌍 Macro Pulse</h2>
@@ -523,18 +611,6 @@ function _updateJsonLd(isoTimestamp) {
     <!-- Overnight Wires -->
     <div class="section-label">🌙 Overnight Wires</div>
     <div id="overnight-wires" class="text-card"></div>
-
-    <!-- Today's Catalysts -->
-    <div class="section-label">📅 Today's Catalysts</div>
-    <div id="catalysts-content" class="text-card"></div>
-
-    <!-- Market Movers (live data) -->
-    <div class="section-label">🚀 Market Movers</div>
-    <div id="movers-content"></div>
-
-    <!-- Trade Ideas -->
-    <h2 class="section-label">💡 Trade Ideas</h2>
-    <div id="trade-ideas" class="trade-ideas"></div>
 
     <!-- Macro Indicators -->
     <div class="section-label">📊 Macro Indicators</div>
@@ -577,9 +653,11 @@ function _updateJsonLd(isoTimestamp) {
         <button class="eps-tab"         onclick="loadEarnings('ftse100',this)">🇬🇧 FTSE 100</button>
         <button class="eps-tab"         onclick="loadEarnings('stoxx50',this)">🇪🇺 Euro Stoxx 50</button>
       </div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
+      <div class="eps-meta-row" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <div class="eps-meta" style="margin-bottom:0">Actual vs Estimate · <span class="beat-dot beat">▲ Beat &gt;+2%</span> <span class="beat-dot miss">▼ Miss &lt;-2%</span> <span class="beat-dot inline">≈ In-line</span> · Grey = forecast</div>
-        <input id="eps-search" type="text" placeholder="Search ticker or company…" oninput="filterEarnings()" style="margin-left:auto;background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;min-width:200px">
+        <div class="eps-search-wrap" style="margin-left:auto">
+          <input id="eps-search" type="text" placeholder="Search ticker or company…" oninput="filterEarnings()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;min-width:200px;width:100%">
+        </div>
       </div>
       <div id="eps-loading" class="eps-loading" style="display:none"><div class="spinner" style="width:24px;height:24px;border-width:2px"></div> Loading earnings data…</div>
       <div id="eps-content" class="eps-table-wrap"></div>
