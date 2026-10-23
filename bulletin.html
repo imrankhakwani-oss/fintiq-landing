@@ -1227,13 +1227,15 @@ function _updateJsonLd(isoTimestamp) {
     // Generic column headers — each company reports on its own calendar,
     // so date-based shared headers are misleading. Each cell shows its own quarter label.
     const numQ = Math.max(...data.map(r => (r.quarters||[]).length));
-    const numE = Math.max(...data.map(r => (r.estimates||[]).length));
-    const qLabels = numQ === 4 ? ['Q-4','Q-3','Q-2','Q-1 (Latest)'] : Array.from({length:numQ},(_,i)=>i===numQ-1?'Latest':`Q-${numQ-1-i}`);
+    // Cap at 1 estimate column — EST 2 is rarely populated and creates empty columns
+    const numE = Math.min(1, Math.max(...data.map(r => (r.estimates||[]).length)));
+    // Q-4, Q-3, Q-2, Q-1 — oldest to most recent, consistent numbering
+    const qLabels = Array.from({length:numQ}, (_,i) => `Q-${numQ - i}`);
 
     let thead = '<tr><th>Ticker</th>';
     qLabels.forEach(l => thead += `<th>${l}</th>`);
-    for (let i=0;i<numE;i++) thead += `<th style="opacity:0.6">Est ${i+1}</th>`;
-    thead += '<th style="opacity:0.6">Next Report</th></tr>';
+    if (numE > 0) thead += '<th style="opacity:0.6">Next Est.</th>';
+    thead += '<th style="opacity:0.6">Next Report</th><th style="opacity:0.6">Deep Dive</th></tr>';
 
     const rows = data.map(row => {
       const coName = _COMPANY_NAMES[row.symbol] || row.symbol;
@@ -1246,7 +1248,8 @@ function _updateJsonLd(isoTimestamp) {
           <div class="eq-beat">${beatLabel(q.beat_pct)}</div>
         </div></td>`;
       });
-      (row.estimates||[]).forEach(e => {
+      // Only show 1 estimate column
+      (row.estimates||[]).slice(0, numE).forEach(e => {
         cells += `<td class="eps-cell"><div class="eps-q forecast">
           <div class="eq-date">${qLabel(e.date)}</div>
           <div class="eq-val" style="color:var(--muted)">${e.eps_est!=null ? e.eps_est.toFixed(2) : '—'}</div>
@@ -1258,6 +1261,13 @@ function _updateJsonLd(isoTimestamp) {
         ? `<span style="color:var(--gold);font-size:0.75rem;font-weight:600">${qLabel(row.next_date)}</span><div style="font-size:0.65rem;color:var(--muted);margin-top:2px">${row.next_date}</div>`
         : '<span style="color:var(--muted);font-size:0.75rem">—</span>';
       cells += `<td class="eps-cell" style="text-align:center">${nextRpt}</td>`;
+      // Deep Dive button
+      cells += `<td class="eps-cell" style="text-align:center">
+        <a href="/deep-dive.html?ticker=${encodeURIComponent(row.symbol)}" target="_blank"
+           style="display:inline-block;font-size:0.7rem;color:var(--gold);border:1px solid rgba(245,158,11,0.4);border-radius:5px;padding:3px 10px;text-decoration:none;white-space:nowrap;font-weight:600;transition:background 0.15s"
+           onmouseover="this.style.background='rgba(245,158,11,0.12)'" onmouseout="this.style.background=''"
+        >Deep Dive →</a>
+      </td>`;
       return `<tr>${cells}</tr>`;
     }).join('');
 

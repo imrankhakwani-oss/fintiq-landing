@@ -775,6 +775,11 @@ def _fetch_index_earnings(index: str) -> list:
                 r = fut.result(timeout=25)
                 if r: results.append(r)
             except: pass
+    # Filter out delisted/acquired companies whose next earnings date is >90 days in the past
+    # (e.g. ANSS acquired by Synopsys Jan 2025 — still in some index lists but no longer reports)
+    from datetime import date as _dt_date
+    cutoff_past = (_dt_date.today() - timedelta(days=90)).isoformat()
+    results = [r for r in results if (r.get("next_date") or "9999-99") >= cutoff_past]
     # Sort by nearest upcoming earnings date — companies reporting soonest appear first
     results.sort(key=lambda r: r.get("next_date") or "9999-99")
     return results
