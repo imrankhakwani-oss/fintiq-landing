@@ -741,7 +741,8 @@ def _fetch_single_earnings(symbol: str) -> Optional[dict]:
         estimates = []
         cutoff = "2023-01"  # Skip data older than 2023 — avoids stale/wrong historical rows
         for idx, row in df.iterrows():
-            date_str = str(idx)[:7]
+            date_str      = str(idx)[:7]   # YYYY-MM  — for cutoff check & quarter labels
+            full_date_str = str(idx)[:10]  # YYYY-MM-DD — for precise next-report dates
             if date_str < cutoff:
                 continue
             actual = _safe(row.get("Reported EPS"))
@@ -753,7 +754,7 @@ def _fetch_single_earnings(symbol: str) -> Optional[dict]:
                 )
                 quarters.append({"date": date_str, "actual": actual, "estimate": est, "beat_pct": beat_pct})
             elif est is not None:
-                estimates.append({"date": date_str, "eps_est": est})
+                estimates.append({"date": full_date_str, "eps_est": est})
             if len(quarters) >= 4 and len(estimates) >= 2:
                 break
         if not quarters:
@@ -1467,6 +1468,23 @@ async def startup_prewarm():
                 time.sleep(d)
                 _bg_refresh_earnings(i)
             threading.Thread(target=_deferred_fresh, daemon=True).start()
+
+    # ── Bulletin cron: auto-regenerate at 07:30 and 15:30 UTC ────────────────────
+    def _bulletin_cron():
+        """Background thread — fires bulletin refresh at 07:30 and 15:30 UTC daily."""
+        TARGET_BUCKETS = {7 * 60 + 30, 15 * 60 + 30}  # minutes since midnight UTC
+        last_fired: set = set()
+        while True:
+            now_utc = datetime.utcnow()
+            bucket = now_utc.hour * 60 + now_utc.minute
+            if bucket in TARGET_BUCKETS and bucket not in last_fired:
+                last_fired.add(bucket)
+                if not _bulletin_refreshing:
+                    threading.Thread(target=_bg_regenerate, daemon=True).start()
+            elif bucket not in TARGET_BUCKETS:
+                last_fired.discard(bucket)
+            time.sleep(20)  # check every 20 seconds — fine resolution within a 1-minute window
+    threading.Thread(target=_bulletin_cron, daemon=True).start()
 
 @app.get("/bulletin")
 def get_bulletin():
