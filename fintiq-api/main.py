@@ -415,13 +415,21 @@ def _fetch_earnings_today():
     except: pass
     return []
 
-def _tavily_search(query: str, max_results: int = 5, topic: str = "general", days: int = None) -> list:
+_NEWS_DOMAINS = [
+    "reuters.com","apnews.com","bloomberg.com","ft.com","cnbc.com","marketwatch.com",
+    "wsj.com","economist.com","bbc.co.uk","theguardian.com","axios.com","politico.com",
+    "federalreserve.gov","bankofengland.co.uk","ecb.europa.eu","bis.org",
+]
+
+def _tavily_search(query: str, max_results: int = 5, topic: str = "general",
+                   days: int = None, news_only: bool = False) -> list:
     if not TAVILY_API_KEY: return []
     try:
         payload = {"api_key": TAVILY_API_KEY, "query": query, "max_results": max_results,
                    "search_depth": "advanced", "include_answer": False, "include_raw_content": False,
                    "topic": topic}
         if days: payload["days"] = days
+        if news_only: payload["include_domains"] = _NEWS_DOMAINS
         r = requests.post("https://api.tavily.com/search", json=payload, timeout=12)
         if r.status_code == 200: return r.json().get("results", [])
     except: pass
@@ -483,14 +491,14 @@ def _fetch_policy_and_news() -> list:
     # ── Step 1: 4 parallel Tavily searches ───────────────────────────────────────
     # 3 queries for things that HAVE happened; 1 for upcoming scheduled events
     searches = [
-        ("central bank interest rate decision statement Fed ECB Bank of England announced", "policy",     "news", 2),
-        ("geopolitical conflict sanctions trade tariffs oil energy announced today",         "geopolitical","news", 2),
-        ("earnings economic data released GDP inflation jobs announced markets today",       "news",        "news", 2),
-        ("Fed meeting ECB meeting earnings date economic data release scheduled this week",  "watch",       "general", 3),
+        ("central bank interest rate decision statement Fed ECB Bank of England announced", "policy",     "news", 2, True),
+        ("geopolitical conflict sanctions trade tariffs oil energy announced today",         "geopolitical","news", 2, True),
+        ("earnings economic data released GDP inflation jobs announced markets today",       "news",        "news", 2, True),
+        ("Fed meeting ECB meeting earnings date economic data release scheduled this week",  "watch",       "general", 3, False),
     ]
     raw_blocks = {}
-    def _fetch(q, qtype, topic, days):
-        kw = {"topic": topic}
+    def _fetch(q, qtype, topic, days, news_only):
+        kw = {"topic": topic, "news_only": news_only}
         if days: kw["days"] = days
         results = _tavily_search(q, max_results=5, **kw)
         snippets = []
@@ -502,7 +510,7 @@ def _fetch_policy_and_news() -> list:
             snippets.append(f"TITLE: {title}\nURL: {url}\nSNIPPET: {content[:700]}")
         return qtype, "\n\n".join(snippets)
     with ThreadPoolExecutor(max_workers=4) as ex:
-        futures = [ex.submit(_fetch, q, qt, tp, d) for q, qt, tp, d in searches]
+        futures = [ex.submit(_fetch, q, qt, tp, d, no) for q, qt, tp, d, no in searches]
         for fut in futures:
             try:
                 qtype, block = fut.result(timeout=18)
@@ -562,7 +570,7 @@ RAW SNIPPETS:
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         resp = client.messages.create(
-            model="claude-haiku-4-5",
+            model="claude-haiku-4-5-20251001",
             max_tokens=2500,
             messages=[{"role": "user", "content": synthesis_prompt}]
         )
@@ -735,7 +743,7 @@ def _generate_bulletin() -> dict:
         f"ECONOMIC CALENDAR:\n{econ_txt}\n\n"
         f"TODAY'S EARNINGS:\n{earnings_txt}\n\n"
         f"LIVE WEB RESEARCH (cite specific events, data points, and analyst views from here):\n{web_context}\n\n"
-        f"PRE-BUILT DRIVERS (use EXACTLY these in the drivers array — do NOT add, remove or modify them — they come from live data and real news sources):\n{drivers_json}\n\n"
+        f"PRE-BUILT DRIVERS (copy EXACTLY into the drivers array — preserve every field including 'context', 'impact', 'type', 'icon', 'event' — do NOT add, remove, rename or modify any field or value):\n{drivers_json}\n\n"
         "Respond ONLY with valid JSON. No markdown fences, no text outside the JSON object. "
         "NEVER use double-quote characters inside string values — use single quotes or dashes instead. "
         "No newline characters inside string values.\n\n"
