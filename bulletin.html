@@ -405,12 +405,14 @@ function _updateJsonLd(isoTimestamp) {
   .beat-dot.miss   { color: #EF4444; }
   .beat-dot.inline { color: var(--muted); }
   .eps-loading { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 0.85rem; padding: 16px 0; }
-  .eps-table-wrap { overflow-x: auto; }
-  .eps-table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  .eps-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; max-width: 100%; }
+  .eps-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.78rem; }
   .eps-table th { text-align: center; padding: 8px 10px; color: var(--muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); white-space: nowrap; }
-  .eps-table th:first-child { text-align: left; }
+  .eps-table th:first-child { text-align: left; position: sticky; left: 0; z-index: 2; background: var(--navy-dark); }
   .eps-table td { padding: 6px 10px; border-bottom: 1px solid rgba(245,158,11,0.06); vertical-align: middle; }
+  .eps-table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--navy-dark); box-shadow: 2px 0 6px rgba(0,0,0,0.3); }
   .eps-table tr:hover td { background: rgba(245,158,11,0.03); }
+  .eps-table tr:hover td:first-child { background: rgba(245,158,11,0.06); }
   .eps-ticker { font-weight: 700; font-size: 0.85rem; color: var(--gold); }
   .eps-cell { text-align: center; }
   .eps-q { background: var(--card); border-radius: 6px; padding: 5px 8px; margin: 2px; display: inline-block; min-width: 90px; }
@@ -426,15 +428,13 @@ function _updateJsonLd(isoTimestamp) {
   .nav-hamburger {
     display: none;
     background: none;
-    border: 1px solid var(--border);
+    border: none;
     color: var(--text);
-    padding: 6px 11px;
-    border-radius: 6px;
+    padding: 6px;
     cursor: pointer;
-    font-size: 1.1rem;
     line-height: 1;
   }
-  .nav-hamburger:hover { border-color: var(--gold); }
+  .nav-hamburger:hover { color: var(--gold); }
   /* Mobile nav dropdown */
   .nav-links.mobile-open {
     display: flex !important;
@@ -541,8 +541,20 @@ function _updateJsonLd(isoTimestamp) {
   <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation" onclick="
     var nl=document.getElementById('nav-links');
     nl.classList.toggle('mobile-open');
-    this.textContent = nl.classList.contains('mobile-open') ? '✕' : '☰';
-  ">☰</button>
+    this.setAttribute('aria-expanded', nl.classList.contains('mobile-open'));
+    this.querySelector('svg').style.display = nl.classList.contains('mobile-open') ? 'none' : 'block';
+    this.querySelector('svg.close-icon').style.display = nl.classList.contains('mobile-open') ? 'block' : 'none';
+  ">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+      <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+      <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+      <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+    </svg>
+    <svg class="close-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" style="display:none">
+      <line x1="4" y1="4" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <line x1="18" y1="4" x2="4" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
 </nav>
 
 <div class="bulletin-header">
@@ -1269,6 +1281,15 @@ function _updateJsonLd(isoTimestamp) {
   let _earningsPollTimer = {};
 
   async function loadEarnings(index, tabEl) {
+    // Toggle: clicking active tab again collapses the table
+    if (_activeEarningsIndex === index && tabEl && tabEl.classList.contains('active')) {
+      _activeEarningsIndex = null;
+      tabEl.classList.remove('active');
+      document.getElementById('eps-content').innerHTML = '';
+      document.getElementById('eps-loading').style.display = 'none';
+      return;
+    }
+
     _activeEarningsIndex = index;
     document.querySelectorAll('.eps-tab').forEach(t => t.classList.remove('active'));
     if (tabEl) tabEl.classList.add('active');
