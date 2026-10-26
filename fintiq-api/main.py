@@ -1672,7 +1672,7 @@ async def startup_prewarm():
                 if not _bulletin_refreshing and age_h >= 4:
                     threading.Thread(target=_bg_regenerate, daemon=True).start()
             elif bucket not in TARGET_BUCKETS:
-                last_fired.discard(bucket)
+                last_fired.clear()  # reset between fires so it fires again the next day
             time.sleep(20)  # check every 20 seconds — fine resolution within a 1-minute window
     threading.Thread(target=_bulletin_cron, daemon=True).start()
 
