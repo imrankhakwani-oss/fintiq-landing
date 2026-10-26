@@ -91,8 +91,8 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; overflow-x: hidden; }
-    body { overflow-x: hidden; }
+    html { scroll-behavior: smooth; overflow-x: hidden; max-width: 100%; }
+    body { overflow-x: hidden; max-width: 100%; width: 100%; }
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--navy); color: var(--text); line-height: 1.6; }
 
     /* ── NAV ── */
@@ -473,19 +473,29 @@
       .hero-search { max-width: 100%; }
       .analysts-grid { grid-template-columns: 1fr 1fr; }
       .analysts-row2 { grid-template-columns: 1fr 1fr; max-width: 100%; }
-      .bulletin-inner { flex-direction: column; }
-      .chat-inner { flex-direction: column; }
+      /* Bulletin / Alpha Scanner strips — no min-width, stack vertically */
+      .bulletin-inner { flex-direction: column; gap: 24px; }
+      .bulletin-text { min-width: 0 !important; width: 100%; }
+      .bulletin-preview { min-width: 0 !important; width: 100%; box-sizing: border-box; }
+      /* IC Chat section */
+      .chat-inner { flex-direction: column; gap: 24px; }
+      .chat-text { min-width: 0 !important; width: 100%; }
+      .ai-chat-mock { min-width: 0 !important; width: 100%; box-sizing: border-box; }
       .cta-banner { padding: 36px 20px; }
       .footer-top { flex-direction: column; }
       .footer-bottom { flex-direction: column; text-align: center; }
       body { padding-bottom: 60px; }
       section, .analysts-wrap, .chat-section, .ecosystem-section, .faq-wrap, .cta-banner-wrap { padding: 56px 5%; }
+      /* Prevent any section from creating horizontal overflow */
+      section, footer { max-width: 100vw; overflow-x: hidden; box-sizing: border-box; }
     }
     @media (max-width: 480px) {
       .analysts-grid { grid-template-columns: 1fr; }
       .analysts-row2 { grid-template-columns: 1fr; }
       .hero-chips { gap: 6px; }
       .chip { font-size: 0.72rem; padding: 6px 11px; }
+      /* Stat chips in alpha scanner strip — stack on very small screens */
+      .bulletin-text > div[style*="display:flex"] { flex-direction: column; }
     }
 
     /* ── MOBILE BOTTOM NAV ── */
