@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Catalyst Atlas: Why Did This Share Price Move? — Fintiq</title>
+<meta name="description" content="Free tool: type a ticker and see, in plain English, why the share price moved, which news usually moves it, what happened 1 day to 3 months after past news, and the likely price range for the next week, month and quarter.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.fintiq.uk/catalyst-atlas.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.fintiq.uk/catalyst-atlas.html" />
+<meta property="og:title" content="Catalyst Atlas: Why Did This Share Price Move? — Fintiq" />
+<meta property="og:description" content="See why a share price moved, what news usually moves it, and what typically happens next. Free, plain English, educational." />
+<meta property="og:image" content="https://www.fintiq.uk/og-image.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0D1B2A;--bg2:#0A1628;--card:#0F2337;--card2:#162032;--line:rgba(255,255,255,0.07);--ink:#F1F5F9;--muted:#94A3B8;--dim:#64748B;--amber:#F59E0B;--green:#22c55e;--red:#ef4444;--blue:#60A5FA;--violet:#A78BFA;--grey:#64748B}
+body{background:var(--bg);color:var(--ink);font-family:'Inter',system-ui,sans-serif;line-height:1.6}
+a{color:var(--amber);text-decoration:none}
+nav{background:var(--bg2);border-bottom:2px solid var(--amber);padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-size:1.5rem;font-weight:900;color:var(--amber)}
+.nav-links{display:flex;gap:16px;align-items:center}
+.nav-links a{color:var(--muted);font-size:0.88rem}
+.nav-links a.active{color:var(--amber)}
+.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:var(--ink);line-height:1}
+.wrap{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+.hero{text-align:center;padding:26px 0 18px;max-width:720px;margin:0 auto}
+.hero-tag{display:inline-block;background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3);border-radius:20px;padding:3px 12px;font-size:0.72rem;font-weight:700;margin-bottom:10px;letter-spacing:.5px}
+.hero h1{font-size:2.1rem;font-weight:900;line-height:1.15;margin-bottom:8px;text-wrap:balance}
+.hero h1 span{color:var(--amber)}
+.hero p{color:var(--muted);font-size:0.95rem}
+.search{display:flex;gap:10px;max-width:560px;margin:18px auto 10px}
+.search input{flex:1;min-width:0;background:var(--bg2);border:1px solid rgba(245,158,11,0.35);color:var(--ink);border-radius:10px;padding:13px 16px;font:600 1rem 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.search input::placeholder{text-transform:none;color:#64748B;font-weight:500}
+.search input:focus{outline:2px solid var(--amber);outline-offset:1px}
+.btn{background:var(--amber);color:var(--bg2);border:0;border-radius:10px;padding:12px 22px;font:700 0.95rem 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
+.btn:focus-visible,.chip:focus-visible,.lens button:focus-visible,.more:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:.8rem;color:var(--dim)}
+.chip{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:var(--muted);border-radius:20px;padding:4px 12px;cursor:pointer;font:600 .78rem 'Inter',sans-serif}
+.chip:hover{color:var(--amber)}
+.banner{max-width:1100px;margin:6px auto 0;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.25);color:#BFDBFE;border-radius:10px;padding:10px 14px;font-size:.83rem}
+.status{text-align:center;color:var(--muted);padding:28px 0;font-size:.95rem}
+.status .err{color:#FCA5A5}
+.spinner{width:28px;height:28px;border:3px solid rgba(245,158,11,.2);border-top-color:var(--amber);border-radius:50%;margin:0 auto 12px;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+.grid{display:grid;gap:18px}
+.two{grid-template-columns:1.25fr 1fr}
+.grid>*,.cats>*,.phase>*{min-width:0}
+@media(max-width:860px){.two{grid-template-columns:1fr}}
+.card{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:22px}
+.card h2{font-size:1.15rem;font-weight:800;margin-bottom:4px}
+.card .sub{color:var(--dim);font-size:.82rem;margin-bottom:14px}
+.label{font-size:.7rem;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.company{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin:18px 0 14px}
+.company h2{font-size:1.6rem;font-weight:900}
+.company .px{font-size:1.2rem;font-weight:700;font-variant-numeric:tabular-nums}
+.company .meta{color:var(--dim);font-size:.82rem}
+.say{font-size:1.02rem;line-height:1.55;display:grid;gap:10px}
+.say p b{color:var(--amber);font-weight:700}
+.chartbox{overflow-x:auto}
+svg text{fill:var(--dim);font:11px 'Inter',sans-serif}
+.rng{display:grid;gap:16px}
+.rng .row{display:grid;gap:6px}
+.rng .top{display:flex;justify-content:space-between;gap:10px;font-size:.9rem}
+.rng .top b{font-variant-numeric:tabular-nums}
+.bar{position:relative;height:16px;background:rgba(255,255,255,0.04);border-radius:8px}
+.bar .b90{position:absolute;top:0;bottom:0;background:rgba(245,158,11,0.18);border-radius:8px}
+.bar .b70{position:absolute;top:3px;bottom:3px;background:rgba(245,158,11,0.55);border-radius:6px}
+.bar .now{position:absolute;top:-4px;bottom:-4px;width:3px;background:#fff;border-radius:2px;margin-left:-1px}
+.rng .ends{display:flex;justify-content:space-between;font-size:.75rem;color:var(--dim);font-variant-numeric:tabular-nums}
+.note{color:var(--dim);font-size:.8rem;margin-top:10px}
+.up{display:grid;gap:12px}
+.ev{border:1px solid rgba(245,158,11,0.25);background:rgba(245,158,11,0.06);border-radius:12px;padding:14px 16px;display:grid;gap:8px}
+.ev .when{font-weight:800;font-size:1.02rem}
+.ev ul{list-style:none;display:grid;gap:6px;font-size:.92rem}
+.ev li{padding-left:18px;position:relative}
+.ev li:before{content:"";position:absolute;left:2px;top:.6em;width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.warn{border-left:3px solid var(--amber);padding:8px 12px;background:rgba(245,158,11,0.08);border-radius:6px;font-size:.88rem}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:16px}
+.cat{background:linear-gradient(135deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:14px;padding:18px;display:grid;gap:10px;align-content:start}
+.cat h3{font-size:1rem;font-weight:800;display:flex;justify-content:space-between;gap:8px;align-items:start}
+.pill{font-size:.7rem;font-weight:700;border-radius:20px;padding:3px 9px;white-space:nowrap;border:1px solid currentColor}
+.p-usual{color:var(--green)} .p-often{color:#86EFAC} .p-flip{color:var(--muted)} .p-rare{color:#FCA5A5} .p-few{color:var(--dim)}
+.cat p{font-size:.9rem;color:#CBD5E1}
+.cat .stats{display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem;color:var(--dim)}
+.cat .stats b{color:var(--ink);font-variant-numeric:tabular-nums}
+.more{background:none;border:0;color:var(--amber);font:600 .82rem 'Inter',sans-serif;cursor:pointer;text-align:left;padding:0}
+.list{display:grid;gap:4px;font-size:.82rem}
+.list div{display:grid;grid-template-columns:84px 1fr 56px;gap:8px;padding:5px 0;border-bottom:1px solid var(--line)}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.pos{color:var(--green)} .neg{color:var(--red)}
+.lens{display:inline-flex;border:1px solid rgba(245,158,11,0.3);border-radius:8px;overflow:hidden}
+.lens button{background:none;border:0;color:var(--muted);font:600 .85rem 'Inter',sans-serif;padding:7px 14px;cursor:pointer}
+.lens button[aria-pressed="true"]{background:var(--amber);color:var(--bg2)}
+.headrow{display:flex;justify-content:space-between;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.phase{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px}
+@media(max-width:760px){.phase{grid-template-columns:1fr}}
+.split{display:grid;gap:8px;font-size:.9rem}
+.split div{display:grid;grid-template-columns:12px 1fr auto;gap:10px;align-items:center}
+.split i{width:10px;height:10px;border-radius:3px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.78rem;color:var(--dim);margin-top:8px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{padding:8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+th{color:var(--dim);font-size:.7rem;text-transform:uppercase;letter-spacing:.8px;font-weight:700}
+td:nth-child(2),th:nth-child(2),td:nth-child(1),th:nth-child(1){text-align:left}
+td:nth-child(2){white-space:normal;min-width:240px}
+.tablewrap{overflow-x:auto;max-height:520px}
+.cta{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:30px;text-align:center;display:grid;gap:12px;justify-items:center}
+.cta h3{font-size:1.25rem;font-weight:800;color:var(--amber)}
+.cta p{color:var(--muted);max-width:60ch}
+details.help{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+details.help summary{cursor:pointer;font-weight:700}
+details.help dl{display:grid;gap:10px;margin-top:12px;font-size:.88rem}
+details.help dt{color:var(--amber);font-weight:700}
+details.help dd{color:var(--muted)}
+.disclaimer{color:var(--dim);font-size:.78rem;text-align:center;max-width:80ch;margin:0 auto}
+section{margin-top:22px}
+footer{background:var(--bg2);border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center;margin-top:40px}
+.f-logo{font-size:1.3rem;font-weight:900;color:var(--amber);margin-bottom:6px}
+.f-sub{color:var(--dim);font-size:.82rem;margin-bottom:16px}
+.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.f-links a{color:var(--muted);font-size:.82rem}
+.f-copy{color:#334155;font-size:.72rem}
+@media(max-width:768px){
+  .nav-links{display:none;position:absolute;top:56px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2)}
+  .nav-links.mobile-open{display:flex}
+  .nav-links a{padding:13px 24px;font-size:.95rem;border-bottom:1px solid rgba(255,255,255,0.05)}
+  .nav-hamburger{display:block}
+  nav{padding:10px 16px}
+  .wrap{padding:0 16px 60px}
+  .hero h1{font-size:1.7rem}
+  .card{padding:18px}
+}
+
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(8,18,32,0.97);border-top:1px solid rgba(245,158,11,0.2);backdrop-filter:blur(16px);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
+.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.62rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px}
+.mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
+@media(max-width:768px){.mobile-bottom-nav{display:block}body{padding-bottom:68px}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="https://fintiq.uk" class="logo" style="display:flex;align-items:center;gap:8px">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </a>
+  <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true"><rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/></svg>
+  </button>
+  <div class="nav-links" id="navLinks">
+    <a href="/index.html">Home</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
+    <a href="/tools.html" class="active">Tools</a>
+    <a href="/learn.html">Learn</a>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-tag">FREE TOOL · CATALYST ATLAS</div>
+    <h1>Why did this share price move, and <span>what usually happens next?</span></h1>
+    <p>Type a ticker. In plain English you'll see what has been driving the price, which kinds of news move it, how it reacted after past news, and a realistic price range for the next week, month and quarter.</p>
+    <form class="search" id="searchForm" role="search">
+      <label for="tickerInput" class="sr" style="position:absolute;left:-9999px">Ticker</label>
+      <input id="tickerInput" name="ticker" placeholder="e.g. TSLA, AAPL, SHEL.L" autocomplete="off" maxlength="15">
+      <button class="btn" type="submit">Explain it</button>
+    </form>
+    <div class="chips" id="chips">Try:
+      <button class="chip" data-t="TSLA">Tesla</button><button class="chip" data-t="AAPL">Apple</button><button class="chip" data-t="NVDA">Nvidia</button><button class="chip" data-t="SHEL.L">Shell</button><button class="chip" data-t="BARC.L">Barclays</button>
+    </div>
+  </div>
+  <div class="banner" id="banner" hidden></div>
+  <div class="status" id="status" hidden></div>
+  <div id="out"></div>
+
+  <section>
+    <details class="help">
+      <summary>How to read this page</summary>
+      <dl>
+        <dt>Company's own move</dt><dd>How much the share price moved after taking out what the whole stock market did that day. If the market fell 1% and the share fell 3%, the company's own move was roughly −1% to −2%, depending on how strongly it usually follows the market.</dd>
+        <dt>Catalyst</dt><dd>A piece of news that moved the price: results, sales figures, a product launch, a lawsuit, a political story, and so on.</dd>
+        <dt>Day 0, 1 week, 1 month, 3 months</dt><dd>What the company's own move added up to on the news day, and then 5, 20 and 60 trading days later. This shows whether a reaction lasted or faded.</dd>
+        <dt>"Worked 6 of 8 times"</dt><dd>A simple count from this company's own history. Small counts are weak evidence, which is why cards with fewer than 4 examples are marked "Few examples".</dd>
+        <dt>Price range</dt><dd>Based on how much the price has been swinging (or, where available, what the options market is pricing in). It is a range, not a forecast of direction.</dd>
+      </dl>
+    </details>
+  </section>
+  <section>
+    <p class="disclaimer">Educational research only. Fintiq Ltd is not authorised or regulated by the FCA and nothing here is financial advice or a recommendation to buy, sell or hold any investment. Past patterns do not guarantee future results, and prices can fall as well as rise. News labels are produced automatically and can be wrong. Data may be delayed or inaccurate.</p>
+  </section>
+</div>
+
+<footer>
+  <div class="f-logo">Fintiq</div>
+  <div class="f-sub">Institutional-grade investing tools and guides — for every investor</div>
+  <div class="f-links">
+    <a href="https://www.fintiq.uk/">Home</a><a href="https://www.fintiq.uk/tools.html">Tools</a><a href="https://www.fintiq.uk/deep-dive.html">Stock Deep Dive</a><a href="https://www.fintiq.uk/bulletin.html">Market Bulletin</a><a href="https://www.fintiq.uk/learn.html">Learn</a>
+  </div>
+  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
+</footer>
+
+<script type="application/json" id="demoData">{"version":"v1","ticker":"TSLA","name":"Tesla","sector":"Consumer Cyclical","currency":"USD","market":"SPY","sector_etf":"RSPD","asof":"2026-10-21","price":386.47,"vol":57.4,"sd_own_day":2.94,"beta_now":2.23,"beta_avg":2.05,"summary":{"headline":"Tesla is up 2.0% over the past month, while the US market (S&P 500) was flat.","own_move":"After allowing for the market, the company's own news and trading moved it up about 3.7%.","beta":"When the US market (S&P 500) moves 1%, Tesla has recently tended to move about 2.2%.","phase":"Since 29 Jul 2026 the shares are up 29.5%. The biggest driver was the overall market (+14.8 points).","recent_news":null},"ranges":[{"label":"1 week","days":5,"lo70":365.33,"hi70":408.84,"lo90":353.44,"hi90":422.59},{"label":"1 month","days":21,"lo70":344.38,"hi70":433.71,"lo90":321.81,"hi90":464.12},{"label":"3 months","days":63,"lo70":316.5,"hi70":471.91,"lo90":281.44,"hi90":530.69}],"sigma":38.6,"sigma_src":"recent price swings","upcoming":[{"type":"Earnings","date":"2026-10-21","days":0,"eps_est":null,"avg_abs_move":9.0,"n_past":11,"runup5":5.6,"runup_flag":true,"note":"Results due after the US close on 21 October 2026"}],"events":[{"date":"2024-01-25","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q4 2023 results: profit missed forecasts","ret":-12.1,"pre":-5.7,"d0":-13.4,"d5":-10.9,"d20":-11.0,"d60":-30.3,"path":[-13.35,-13.06,-10.79,-10.48,-10.88,-12.5,-13.04,-14.98,-14.01,-13.64,-13.11,-11.32,-14.55,-13.86,-12.91,-8.58,-7.82,-10.14,-9.82,-10.95,-13.83,-9.87,-10.34,-9.51,-10.23,-10.77,-16.78,-19.48,-21.89,-21.88,-22.94,-21.79,-22.84,-26.32,-28.52,-27.15,-22.84,-24.84,-24.25,-26.05,-26.54,-25.28,-23.05,-23.42,-25.16,-24.8,-27.34,-26.55,-23.9,-27.44,-23.95,-22.63,-22.8,-22.01,-22.2,-25.02,-26.65,-27.14,-29.4,-30.27,-33.44]},{"date":"2024-04-24","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q1 2024 results: profit missed forecasts","ret":12.1,"pre":-9.2,"d0":12.1,"d5":28.5,"d20":23.2,"d60":53.5,"path":[12.13,18.44,15.94,32.36,28.52,26.91,25.58,24.48,25.21,20.6,18.83,15.43,13.46,15.6,18.62,14.54,15.73,17.28,15.65,23.25,20.62,18.22,19.99,18.74,20.17,20.78,17.86,15.94,15.24,13.88,15.79,16.52,13.59,11.82,14.51,17.76,15.96,20.42,18.64,16.49,17.06,16.83,20.81,26.89,27.3,27.97,38.11,51.16,60.25,62.49,62.74,68.99,67.17,52.38,54.87,57.31,56.95,55.42,58.19,53.53,59.0]},{"date":"2024-04-29","kind":"Product & technology","cat":"Product & technology","s":1,"title":"Musk's Beijing trip clears path for self-driving in China","ret":15.3,"pre":10.7,"d0":14.2,"d5":7.4,"d20":3.5,"d60":23.0,"path":[14.16,10.85,9.46,8.31,7.36,7.99,4.02,2.49,-0.44,-2.14,-0.29,2.31,-1.21,-0.18,1.16,-0.25,6.3,4.04,1.97,3.49,2.42,3.65,4.18,1.66,0.0,-0.6,-1.78,-0.13,0.5,-2.03,-3.55,-1.24,1.57,0.02,3.86,2.32,0.48,0.96,0.77,4.2,9.44,9.8,10.38,19.12,30.38,38.22,40.15,40.36,45.75,44.19,31.43,33.58,35.68,35.37,34.05,36.44,32.42,37.13,34.79,23.0,26.88]},{"date":"2024-07-01","kind":"Unexplained","cat":"Unexplained","s":1,"title":"Large company-specific move (no clear news found)","ret":6.1,"pre":9.3,"d0":7.9,"d5":27.2,"d20":17.6,"d60":15.1,"path":[7.92,18.12,25.23,26.97,27.16,32.05,30.63,19.07,21.02,22.93,22.64,21.45,23.61,19.97,24.24,22.12,11.44,14.95,11.9,17.64,13.5,15.12,10.66,10.21,11.89,10.7,7.63,6.72,6.45,5.22,7.15,3.46,6.1,6.54,7.63,7.29,6.99,2.53,4.43,1.62,-0.62,-1.0,-0.86,1.17,3.56,8.18,13.95,7.59,7.99,12.27,11.07,9.82,8.43,6.29,6.5,6.85,10.98,9.47,14.18,15.13,17.24]},{"date":"2024-07-02","kind":"Sales & delivery data","cat":"Sales & delivery data","s":1,"title":"Q2 2024 deliveries beat forecasts","ret":10.2,"pre":18.2,"d0":9.4,"d5":22.4,"d20":5.2,"d60":8.6,"path":[9.44,16.03,17.65,17.83,22.35,21.04,10.33,12.13,13.9,13.64,12.53,14.54,11.16,15.12,13.15,3.26,6.51,3.68,9.0,5.17,6.67,2.53,2.11,3.67,2.57,-0.27,-1.12,-1.37,-2.5,-0.71,-4.14,-1.69,-1.28,-0.28,-0.59,-0.86,-5.0,-3.24,-5.84,-7.92,-8.27,-8.14,-6.26,-4.05,0.24,5.58,-0.31,0.06,4.03,2.91,1.76,0.47,-1.51,-1.32,-0.99,2.83,1.44,5.8,6.68,8.63,6.01]},{"date":"2024-07-11","kind":"Product & technology","cat":"Product & technology","s":-1,"title":"Report says robotaxi event delayed","ret":-8.4,"pre":10.6,"d0":-8.8,"d5":-7.0,"d20":-17.6,"d60":-15.5,"path":[-8.85,-7.36,-5.9,-6.12,-7.03,-5.37,-8.16,-4.89,-6.51,-14.69,-12.01,-14.34,-9.94,-13.11,-11.87,-15.29,-15.63,-14.35,-15.26,-17.6,-18.31,-18.51,-19.45,-17.97,-20.8,-18.78,-18.44,-17.61,-17.87,-18.09,-21.51,-20.06,-22.21,-23.92,-24.22,-24.11,-22.56,-20.72,-17.18,-12.77,-17.64,-17.33,-14.05,-14.98,-15.93,-17.0,-18.63,-18.47,-18.2,-15.04,-16.19,-12.59,-11.86,-10.25,-12.41,-10.31,-10.31,-10.08,-13.12,-15.48,-13.73]},{"date":"2024-07-24","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q2 2024 results: profit missed forecasts","ret":-12.3,"pre":-0.4,"d0":-8.7,"d5":-7.1,"d20":-12.1,"d60":-21.3,"path":[-8.75,-5.87,-8.37,-3.67,-7.06,-5.73,-9.39,-9.76,-8.38,-9.36,-11.86,-12.61,-12.84,-13.84,-12.26,-15.28,-13.12,-12.76,-11.87,-12.14,-12.39,-16.04,-14.49,-16.79,-18.62,-18.94,-18.82,-17.16,-15.2,-11.41,-6.69,-11.9,-11.57,-8.07,-9.05,-10.07,-11.21,-12.96,-12.79,-12.5,-9.12,-10.36,-6.5,-5.72,-4.0,-6.31,-4.06,-4.06,-3.82,-7.07,-9.59,-7.72,-9.39,-9.64,-12.32,-12.66,-21.42,-22.22,-21.06,-21.27,-21.3]},{"date":"2024-10-11","kind":"Product & technology","cat":"Product & technology","s":-1,"title":"Robotaxi 'We, Robot' event disappoints","ret":-8.8,"pre":-3.4,"d0":-10.0,"d5":-9.9,"d20":16.2,"d60":57.9,"path":[-10.03,-10.94,-9.62,-9.86,-9.89,-10.75,-10.8,-10.74,-10.74,8.1,11.86,8.18,6.91,6.71,7.85,6.73,4.1,5.13,15.01,16.2,24.59,35.04,27.93,28.41,22.43,29.88,36.08,38.34,36.66,33.85,37.34,29.63,28.51,27.25,30.02,33.73,31.76,32.34,37.15,43.47,45.25,50.46,56.71,56.28,63.41,72.31,80.27,77.81,76.19,66.15,68.01,75.84,72.56,68.03,67.09,62.85,54.07,62.02,60.09,57.91,57.48]},{"date":"2024-10-24","kind":"Earnings beat","cat":"Earnings","s":1,"title":"Q3 2024 results: profit beat forecasts","ret":21.9,"pre":-1.0,"d0":21.1,"d5":19.6,"d20":53.1,"d60":72.8,"path":[21.11,25.32,21.19,19.78,19.55,20.83,19.57,16.63,17.77,28.85,30.18,39.58,51.29,43.32,43.87,37.16,45.51,52.46,54.98,53.1,49.96,53.87,45.22,43.98,42.56,45.66,49.82,47.62,48.27,53.65,60.73,62.72,68.56,75.57,75.09,83.07,93.04,101.96,99.2,97.38,86.14,88.23,97.0,93.32,88.24,87.19,82.45,72.6,81.52,79.35,76.92,76.43,83.03,86.14,82.19,88.66,82.98,84.01,78.77,72.83,69.34]},{"date":"2024-11-06","kind":"Politics & policy","cat":"Politics & policy","s":1,"title":"US election result seen as good for Musk's businesses","ret":14.8,"pre":-1.7,"d0":9.4,"d5":21.7,"d20":25.9,"d60":40.8,"path":[9.41,10.53,18.52,28.46,21.69,22.15,16.46,23.55,29.45,31.59,29.99,27.33,30.65,23.31,22.25,21.05,23.68,27.21,25.34,25.89,30.46,36.47,38.16,43.12,49.07,48.66,55.44,63.91,71.48,69.14,67.6,58.05,59.82,67.27,64.15,59.83,58.94,54.91,46.56,54.13,52.28,50.22,49.8,55.41,58.05,54.69,60.19,55.36,56.24,51.79,46.75,43.78,42.84,43.7,41.28,39.46,41.19,45.18,40.19,40.79,34.52]},{"date":"2024-11-11","kind":"Politics & policy","cat":"Politics & policy","s":1,"title":"Post-election rally continues","ret":9.0,"pre":16.7,"d0":8.4,"d5":4.2,"d20":16.6,"d60":10.0,"path":[8.39,2.68,3.07,-1.73,4.25,9.22,11.04,9.68,7.43,10.24,4.04,3.15,2.14,4.36,7.33,5.76,6.22,10.08,15.15,16.58,20.76,25.78,25.44,31.16,38.3,44.69,42.71,41.41,33.36,34.85,41.14,38.5,34.86,34.11,30.71,23.66,30.05,28.49,26.75,26.4,31.13,33.36,30.52,35.17,31.09,31.83,28.08,23.82,21.32,20.53,21.25,19.21,17.67,19.13,22.5,18.29,18.8,13.51,11.19,9.97,4.95]},{"date":"2025-01-30","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q4 2024 results: profit missed forecasts","ret":2.9,"pre":-5.0,"d0":1.2,"d5":-3.5,"d20":-22.4,"d60":-5.2,"path":[1.24,4.1,0.52,0.95,-3.54,-5.51,-6.55,-10.81,-16.59,-14.01,-11.52,-11.74,-12.78,-11.61,-12.26,-12.36,-13.43,-19.96,-23.22,-22.37,-22.44,-21.07,-22.05,-22.33,-23.26,-24.54,-31.55,-27.19,-22.72,-22.06,-23.59,-28.78,-30.5,-29.33,-28.61,-24.32,-19.48,-17.15,-19.18,-18.32,-16.22,-19.13,-16.71,-13.84,-5.86,-0.56,-3.02,-4.11,-8.92,-5.94,-9.9,-11.88,-10.63,-10.44,-10.85,-11.24,-12.51,-11.06,-12.23,-5.23,-4.98]},{"date":"2025-02-25","kind":"Unexplained","cat":"Unexplained","s":-1,"title":"Large company-specific move (no clear news found)","ret":-8.4,"pre":-1.9,"d0":-7.5,"d5":-8.8,"d20":-7.0,"d60":11.3,"path":[-7.54,-11.31,-10.32,-10.4,-8.82,-9.95,-10.27,-11.35,-12.82,-20.93,-15.89,-10.73,-9.96,-11.73,-17.72,-19.71,-18.36,-17.53,-12.57,-6.98,-4.29,-6.64,-5.64,-3.22,-6.58,-3.78,-0.47,8.75,14.88,12.03,10.77,5.22,8.66,4.08,1.8,3.23,3.46,2.98,2.54,1.07,2.74,1.39,9.48,9.77,10.45,6.51,4.04,3.01,1.92,2.11,1.48,3.14,8.28,7.4,10.99,15.07,12.19,12.91,9.99,11.3,12.52]},{"date":"2025-03-10","kind":"Politics & policy","cat":"Politics & policy","s":-1,"title":"Brand damage from Musk's government role","ret":-15.4,"pre":-2.7,"d0":-9.3,"d5":1.3,"d20":31.8,"d60":25.7,"path":[-9.3,-3.52,2.41,3.28,1.26,-5.62,-7.9,-6.36,-5.4,0.29,6.7,9.79,7.09,8.24,11.02,7.16,10.37,14.17,24.75,31.78,28.52,27.07,20.7,24.65,19.39,16.78,18.42,18.68,18.13,17.62,15.93,17.86,16.31,25.58,25.92,26.7,22.18,19.34,18.17,16.91,17.13,16.41,18.32,24.2,23.21,27.32,32.0,28.69,29.52,26.17,27.67,29.07,31.47,32.71,35.46,34.77,33.9,29.92,26.56,25.69,21.27]},{"date":"2025-04-03","kind":"Market-wide news","cat":"Market-wide news","s":1,"title":"Tariff shock: Tesla falls less than the market","ret":-5.5,"pre":6.6,"d0":9.3,"d5":5.7,"d20":4.5,"d60":-7.4,"path":[9.27,15.42,12.57,11.3,5.72,9.18,4.58,2.28,3.73,3.95,3.47,3.03,1.55,3.23,1.88,10.0,10.29,10.97,7.01,4.53,3.5,2.4,2.59,1.97,3.63,8.79,7.92,11.52,15.62,12.72,13.45,10.51,11.83,13.05,15.15,16.24,18.65,18.05,17.29,13.8,10.85,10.09,6.22,-7.86,-6.92,-2.84,1.45,2.0,-1.51,2.78,2.02,-0.31,1.59,3.41,9.27,3.9,-0.62,-3.03,-4.42,-7.4,-11.41]},{"date":"2025-04-23","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q1 2025 results: profit missed forecasts","ret":5.4,"pre":-0.7,"d0":1.7,"d5":9.3,"d20":10.1,"d60":-7.8,"path":[1.66,0.32,8.32,8.61,9.28,5.38,2.94,1.93,0.84,1.03,0.41,2.05,7.13,6.27,9.82,13.86,11.0,11.72,8.83,10.12,11.33,13.4,14.47,16.85,16.25,15.5,12.06,9.16,8.41,4.6,-9.27,-8.34,-4.32,-0.1,0.45,-3.01,1.21,0.46,-1.83,0.04,1.84,7.6,2.31,-2.13,-4.51,-5.88,-8.82,-12.76,-9.2,-11.04,-15.57,-14.27,-16.05,-12.42,-10.8,-10.24,-11.27,-8.95,-10.83,-7.8,-8.64]},{"date":"2025-04-25","kind":"Unexplained","cat":"Unexplained","s":1,"title":"Large company-specific move (no clear news found)","ret":9.8,"pre":-2.0,"d0":8.0,"d5":2.6,"d20":13.0,"d60":-7.7,"path":[7.98,8.26,8.93,5.05,2.61,1.6,0.52,0.7,0.09,1.73,6.79,5.93,9.47,13.49,10.65,11.36,8.48,9.77,10.97,13.03,14.1,16.47,15.87,15.13,11.7,8.81,8.06,4.27,-9.56,-8.63,-4.63,-0.42,0.13,-3.32,0.89,0.14,-2.14,-0.28,1.51,7.26,1.98,-2.45,-4.82,-6.18,-9.11,-13.04,-9.49,-11.33,-15.84,-14.55,-16.32,-12.71,-11.09,-10.53,-11.56,-9.24,-11.11,-8.1,-8.93,-7.67,-9.32]},{"date":"2025-06-05","kind":"Management & leadership","cat":"Management & leadership","s":-1,"title":"Public feud between Musk and President Trump","ret":-14.3,"pre":-10.0,"d0":-13.3,"d5":-4.0,"d20":-15.0,"d60":-16.0,"path":[-13.26,-12.37,-8.53,-4.5,-3.97,-7.28,-3.24,-3.96,-6.15,-4.36,-2.65,2.87,-2.19,-6.44,-8.71,-10.02,-12.83,-16.6,-13.2,-14.96,-19.29,-18.05,-19.74,-16.28,-14.73,-14.19,-15.18,-12.95,-14.75,-11.86,-12.66,-11.45,-13.03,-20.37,-18.35,-15.82,-16.5,-16.82,-18.94,-17.41,-18.48,-17.67,-16.14,-15.34,-14.93,-12.11,-13.71,-14.7,-15.72,-16.46,-15.23,-15.58,-16.58,-16.74,-14.52,-11.95,-11.56,-12.52,-14.18,-16.02,-15.65]},{"date":"2025-07-24","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q2 2025 results: profit missed forecasts","ret":-8.2,"pre":-0.1,"d0":-8.4,"d5":-4.4,"d20":-4.1,"d60":16.7,"path":[-8.44,-6.12,-3.21,-3.99,-4.36,-6.79,-5.03,-6.27,-5.33,-3.58,-2.66,-2.18,1.05,-0.78,-1.91,-3.09,-3.95,-2.53,-2.93,-4.08,-4.26,-1.71,1.25,1.69,0.58,-1.32,-3.44,-3.02,-2.95,-3.5,0.61,-1.25,-1.68,-2.2,1.85,9.4,11.88,15.37,16.86,13.18,15.04,15.85,15.09,20.63,16.45,19.66,19.65,18.98,21.97,15.46,13.8,18.95,14.43,14.32,14.17,15.44,17.58,16.18,16.57,16.69,18.01]},{"date":"2025-09-12","kind":"Product & technology","cat":"Product & technology","s":1,"title":"Optimism about AI and robotaxis","ret":7.4,"pre":5.5,"d0":7.4,"d5":11.1,"d20":12.1,"d60":11.9,"path":[7.41,9.85,13.27,14.74,11.12,12.95,13.75,13.0,18.43,14.34,17.49,17.48,16.82,19.76,13.36,11.73,16.79,12.35,12.25,12.1,13.34,15.45,14.07,14.45,14.56,15.87,15.24,14.12,14.53,15.52,9.44,11.14,12.36,12.19,9.6,12.82,15.15,12.3,15.83,14.67,10.34,10.34,8.39,6.14,2.81,3.3,6.52,6.68,6.34,7.81,4.82,8.07,6.91,7.09,6.57,7.75,6.99,10.65,12.12,11.88,8.64]},{"date":"2025-10-23","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q3 2025 results: profit missed forecasts","ret":2.3,"pre":0.1,"d0":0.9,"d5":-2.0,"d20":-7.2,"d60":-7.1,"path":[0.87,-4.44,-2.96,-1.89,-2.05,-4.3,-1.49,0.54,-1.95,1.14,0.13,-3.65,-3.66,-5.36,-7.32,-10.23,-9.81,-6.99,-6.85,-7.15,-5.87,-8.48,-5.64,-6.66,-6.5,-6.95,-5.92,-6.59,-3.39,-2.1,-2.31,-5.15,-3.89,-3.63,-4.78,0.53,4.7,8.52,6.23,8.07,5.94,6.06,4.11,3.31,1.15,-1.4,-2.29,-1.75,-4.66,-3.06,-8.17,-7.9,-6.69,-6.01,-5.52,-5.4,-6.19,-6.86,-7.11,-7.07,-6.52]},{"date":"2026-01-29","kind":"Earnings beat","cat":"Earnings","s":1,"title":"Q4 2025 results: profit beat forecasts","ret":-3.5,"pre":-3.5,"d0":-2.9,"d5":-2.6,"d20":-2.9,"d60":-17.6,"path":[-2.9,0.92,-2.06,-0.18,-2.65,-2.09,-2.7,-2.45,0.29,0.92,1.76,1.78,-0.25,-1.09,-0.68,-2.16,-3.14,-2.22,-2.3,-2.86,-3.34,-3.66,-4.47,-2.73,-1.58,-1.06,-2.53,-2.16,0.26,0.26,0.49,-0.6,-0.2,1.11,-1.54,-1.15,0.13,1.56,1.01,1.23,1.87,0.5,-0.78,0.23,-5.46,-8.36,-10.15,-15.48,-15.89,-15.07,-15.88,-15.16,-10.22,-11.54,-10.84,-12.22,-12.47,-14.29,-16.77,-17.6,-17.47]},{"date":"2026-04-23","kind":"Earnings beat","cat":"Earnings","s":1,"title":"Q1 2026 results: profit beat forecasts","ret":-3.6,"pre":-4.5,"d0":-2.9,"d5":-4.5,"d20":-2.5,"d60":-13.3,"path":[-2.89,-3.85,-3.7,-3.46,-4.46,-4.1,-2.39,-1.51,-3.87,-4.12,-0.48,1.75,4.83,2.22,3.55,1.45,-1.15,-3.81,-3.88,-2.49,-2.61,-1.43,-1.04,0.85,0.15,-1.85,-6.92,-5.54,-4.15,-6.03,-7.31,-3.53,-5.55,-6.25,-4.97,-4.31,-6.74,-6.96,-6.68,-7.08,-5.64,-8.24,-9.13,-9.69,-6.81,-2.59,-2.41,-1.06,-8.08,-4.05,-6.9,-8.77,-7.44,-7.88,-9.36,-9.9,-11.0,-10.24,-10.83,-13.3,-12.81]},{"date":"2026-07-02","kind":"Sales & delivery data","cat":"Sales & delivery data","s":-1,"title":"Q2 2026 deliveries beat, but shares fall","ret":-7.5,"pre":8.9,"d0":-7.1,"d5":-6.5,"d20":-25.6,"d60":-20.6,"path":[-7.1,-3.03,-5.91,-7.79,-6.45,-6.89,-8.39,-8.93,-10.05,-9.28,-9.87,-12.37,-11.88,-12.89,-23.64,-25.04,-25.35,-25.62,-24.87,-25.6,-26.41,-26.3,-28.39,-29.05,-29.36,-28.12,-27.67,-26.63,-28.38,-26.89,-26.05,-26.17,-25.47,-22.4,-22.4,-18.97,-21.25,-21.62,-22.79,-22.51,-23.19,-18.68,-20.24,-20.72,-18.47,-22.71,-18.96,-18.5,-18.42,-19.56,-19.8,-19.94,-18.91,-19.24,-19.72,-20.28,-19.29,-18.03,-18.46,-20.64,-22.5]},{"date":"2026-07-23","kind":"Earnings miss","cat":"Earnings","s":-1,"title":"Q2 2026 results: profit missed forecasts","ret":-14.5,"pre":-3.2,"d0":-12.3,"d5":-13.8,"d20":-10.9,"d60":-9.7,"path":[-12.35,-13.95,-14.31,-14.62,-13.75,-14.59,-15.52,-15.39,-17.79,-18.56,-18.91,-17.48,-16.97,-15.77,-17.79,-16.08,-15.11,-15.24,-14.44,-10.92,-10.91,-6.98,-9.59,-10.03,-11.36,-11.04,-11.83,-6.65,-8.44,-8.98,-6.4,-11.27,-6.96,-6.45,-6.35,-7.66,-7.94,-8.1,-6.91,-7.29,-7.84,-8.48,-7.35,-5.9,-6.39,-8.9,-11.03,-11.62,-10.91,-11.37,-8.95,-8.6,-8.97,-9.41,-8.55,-8.02,-9.05,-9.51,-9.06,-9.71,-9.22]}],"groups":[{"name":"Earnings beat","expects":"up","day0":{"hits":1,"n":3,"score":0.4},"week":{"hits":1,"n":3,"score":0.4},"month":{"hits":1,"n":3,"score":0.4},"quarter":{"hits":1,"n":3,"score":0.4},"avg_day0":5.1,"avg_month":15.9,"avg_abs_day0":9.0,"avg_path":[5.11,7.46,5.14,5.38,4.15,4.88,4.83,4.22,4.73,8.55,10.49,14.37,18.62,14.82,15.58,12.15,13.74,15.48,16.27,15.92,14.67,16.26,13.24,14.03,13.71,14.25,13.46,13.31,14.79,15.96,17.97,19.53,20.94,23.48,22.86,25.87,28.81,32.19,31.18,30.51,27.46,26.83,29.03,27.95,25.32,25.41,23.3,18.69,19.18,20.08,18.05,17.5,21.79,22.24,20.66,22.18,19.84,19.83,17.06,13.98,13.02],"lo_path":[-2.9,-3.85,-3.7,-3.46,-4.46,-4.1,-2.7,-2.45,-3.87,-4.12,-0.48,1.75,-0.25,-1.09,-0.68,-2.16,-3.14,-3.81,-3.88,-2.86,-3.34,-3.66,-4.47,-2.73,-1.58,-1.85,-6.92,-5.54,-4.15,-6.03,-7.31,-3.53,-5.55,-6.25,-4.97,-4.31,-6.74,-6.96,-6.68,-7.08,-5.64,-8.24,-9.13,-9.69,-6.81,-8.36,-10.15,-15.48,-15.89,-15.07,-15.88,-15.16,-10.22,-11.54,-10.84,-12.22,-12.47,-14.29,-16.77,-17.6,-17.47],"hi_path":[21.11,25.32,21.19,19.78,19.55,20.83,19.57,16.63,17.77,28.85,30.18,39.58,51.29,43.32,43.87,37.16,45.51,52.46,54.98,53.1,49.96,53.87,45.22,43.98,42.56,45.66,49.82,47.62,48.27,53.65,60.73,62.72,68.56,75.57,75.09,83.07,93.04,101.96,99.2,97.38,86.14,88.23,97.0,93.32,88.24,87.19,82.45,72.6,81.52,79.35,76.92,76.43,83.03,86.14,82.19,88.66,82.98,84.01,78.77,72.83,69.34],"dates":["2024-10-24","2026-01-29","2026-04-23"]},{"name":"Earnings miss","expects":"down","day0":{"hits":4,"n":8,"score":0.5},"week":{"hits":6,"n":8,"score":0.7},"month":{"hits":6,"n":8,"score":0.7},"quarter":{"hits":6,"n":8,"score":0.7},"avg_day0":-3.4,"avg_month":-4.3,"avg_abs_day0":7.3,"avg_path":[-3.37,-2.57,-1.86,0.91,-0.48,-2.14,-2.81,-3.78,-4.75,-4.55,-4.84,-5.19,-4.89,-4.92,-4.5,-4.65,-4.56,-4.83,-5.58,-4.28,-4.72,-4.07,-3.3,-3.5,-4.12,-4.66,-7.3,-6.87,-6.37,-6.43,-6.85,-9.0,-8.52,-8.04,-7.56,-5.57,-3.46,-2.29,-2.9,-3.3,-2.48,-2.11,-1.41,-0.02,-0.13,-0.03,0.15,1.16,2.6,1.5,0.05,1.87,0.88,-0.4,-0.15,0.02,-1.57,-1.77,-1.87,-1.39,-0.89],"lo_path":[-13.35,-13.95,-14.31,-14.62,-13.75,-14.59,-15.52,-15.39,-17.79,-18.56,-18.91,-17.48,-16.97,-15.77,-17.79,-16.08,-15.11,-19.96,-23.22,-22.37,-22.44,-21.07,-22.05,-22.33,-23.26,-24.54,-31.55,-27.19,-22.72,-22.06,-23.59,-28.78,-30.5,-29.33,-28.61,-27.15,-22.84,-24.84,-24.25,-26.05,-26.54,-25.28,-23.05,-23.42,-25.16,-24.8,-27.34,-26.55,-23.9,-27.44,-23.95,-22.63,-22.8,-22.01,-22.2,-25.02,-26.65,-27.14,-29.4,-30.27,-33.44],"hi_path":[12.13,18.44,15.94,32.36,28.52,26.91,25.58,24.48,25.21,20.6,18.83,15.43,13.46,15.6,18.62,14.54,15.73,17.28,15.65,23.25,20.62,18.22,19.99,18.74,20.17,20.78,17.86,15.94,15.24,13.88,15.79,16.52,13.59,11.82,14.51,17.76,15.96,20.42,18.64,16.49,17.06,16.83,20.81,26.89,27.3,27.97,38.11,51.16,60.25,62.49,62.74,68.99,67.17,52.38,54.87,57.31,56.95,55.42,58.19,53.53,59.0],"dates":["2024-01-25","2024-04-24","2024-07-24","2025-01-30","2025-04-23","2025-07-24","2025-10-23","2026-07-23"]},{"name":"Sales & delivery data","cat":"Sales & delivery data","expects":"stick","day0":{"hits":2,"n":2,"score":0.75},"week":{"hits":2,"n":2,"score":0.75},"month":{"hits":2,"n":2,"score":0.75},"quarter":{"hits":2,"n":2,"score":0.75},"avg_day0":1.2,"avg_month":-10.2,"avg_abs_day0":8.2,"avg_path":[1.17,6.5,5.87,5.02,7.95,7.07,0.97,1.6,1.92,2.18,1.33,1.08,-0.36,1.11,-5.25,-10.89,-9.42,-10.97,-7.94,-10.21,-9.87,-11.88,-13.14,-12.69,-13.39,-14.2,-14.4,-14.0,-15.44,-13.8,-15.1,-13.93,-13.38,-11.34,-11.49,-9.91,-13.12,-12.43,-14.31,-15.21,-15.73,-13.41,-13.25,-12.38,-9.12,-8.57,-9.63,-9.22,-7.2,-8.32,-9.02,-9.74,-10.21,-10.28,-10.35,-8.73,-8.92,-6.12,-5.89,-6.0,-8.25],"lo_path":[-7.1,-3.03,-5.91,-7.79,-6.45,-6.89,-8.39,-8.93,-10.05,-9.28,-9.87,-12.37,-11.88,-12.89,-23.64,-25.04,-25.35,-25.62,-24.87,-25.6,-26.41,-26.3,-28.39,-29.05,-29.36,-28.12,-27.67,-26.63,-28.38,-26.89,-26.05,-26.17,-25.47,-22.4,-22.4,-18.97,-21.25,-21.62,-22.79,-22.51,-23.19,-18.68,-20.24,-20.72,-18.47,-22.71,-18.96,-18.5,-18.42,-19.56,-19.8,-19.94,-18.91,-19.24,-19.72,-20.28,-19.29,-18.03,-18.46,-20.64,-22.5],"hi_path":[9.44,16.03,17.65,17.83,22.35,21.04,10.33,12.13,13.9,13.64,12.53,14.54,11.16,15.12,13.15,3.26,6.51,3.68,9.0,5.17,6.67,2.53,2.11,3.67,2.57,-0.27,-1.12,-1.37,-2.5,-0.71,-4.14,-1.69,-1.28,-0.28,-0.59,-0.86,-5.0,-3.24,-5.84,-7.92,-8.27,-8.14,-6.26,-4.05,0.24,5.58,-0.31,0.06,4.03,2.91,1.76,0.47,-1.51,-1.32,-0.99,2.83,1.44,5.8,6.68,8.63,6.01],"dates":["2024-07-02","2026-07-02"]},{"name":"Product & technology","cat":"Product & technology","expects":"stick","day0":{"hits":4,"n":4,"score":0.83},"week":{"hits":4,"n":4,"score":0.83},"month":{"hits":3,"n":4,"score":0.67},"quarter":{"hits":3,"n":4,"score":0.67},"avg_day0":0.7,"avg_month":3.5,"avg_abs_day0":10.1,"avg_path":[0.67,0.6,1.8,1.77,0.39,1.21,-0.3,-0.04,0.18,1.4,4.26,3.41,3.15,3.3,2.62,0.73,2.89,1.79,3.49,3.55,5.51,8.91,6.68,6.64,4.05,6.59,7.77,8.68,8.45,7.31,5.43,4.87,5.06,3.88,4.81,6.19,6.21,6.22,9.14,12.39,11.85,13.32,15.36,16.64,20.17,24.21,27.08,26.59,27.52,25.78,22.02,26.23,25.82,25.06,23.83,24.18,20.79,24.93,23.47,19.33,19.82],"lo_path":[-10.03,-10.94,-9.62,-9.86,-9.89,-10.75,-10.8,-10.74,-10.74,-14.69,-12.01,-14.34,-9.94,-13.11,-11.87,-15.29,-15.63,-14.35,-15.26,-17.6,-18.31,-18.51,-19.45,-17.97,-20.8,-18.78,-18.44,-17.61,-17.87,-18.09,-21.51,-20.06,-22.21,-23.92,-24.22,-24.11,-22.56,-20.72,-17.18,-12.77,-17.64,-17.33,-14.05,-14.98,-15.93,-17.0,-18.63,-18.47,-18.2,-15.04,-16.19,-12.59,-11.86,-10.25,-12.41,-10.31,-10.31,-10.08,-13.12,-15.48,-13.73],"hi_path":[14.16,10.85,13.27,14.74,11.12,12.95,13.75,13.0,18.43,14.34,17.49,17.48,16.82,19.76,13.36,11.73,16.79,12.35,15.01,16.2,24.59,35.04,27.93,28.41,22.43,29.88,36.08,38.34,36.66,33.85,37.34,29.63,28.51,27.25,30.02,33.73,31.76,32.34,37.15,43.47,45.25,50.46,56.71,56.28,63.41,72.31,80.27,77.81,76.19,66.15,68.01,75.84,72.56,68.03,67.09,62.85,54.07,62.02,60.09,57.91,57.48],"dates":["2024-04-29","2024-07-11","2024-10-11","2025-09-12"]},{"name":"Politics & policy","cat":"Politics & policy","expects":"stick","day0":{"hits":3,"n":3,"score":0.8},"week":{"hits":2,"n":3,"score":0.6},"month":{"hits":2,"n":3,"score":0.6},"quarter":{"hits":2,"n":3,"score":0.6},"avg_day0":2.8,"avg_month":24.8,"avg_abs_day0":9.0,"avg_path":[2.83,3.23,8.0,10.0,9.07,8.58,6.53,8.96,10.49,14.04,13.58,13.42,13.29,11.97,13.53,11.32,13.42,17.15,21.75,24.75,26.58,29.77,28.1,32.98,35.59,36.71,38.86,41.33,40.99,40.54,41.56,38.14,37.0,42.32,40.26,36.73,37.06,34.25,30.49,32.48,33.51,33.33,32.88,38.26,37.45,37.95,40.09,35.96,35.69,32.83,31.89,30.69,30.66,31.85,33.08,30.84,31.3,29.54,25.98,25.48,20.25],"lo_path":[-9.3,-3.52,2.41,-1.73,1.26,-5.62,-7.9,-6.36,-5.4,0.29,4.04,3.15,2.14,4.36,7.33,5.76,6.22,10.08,15.15,16.58,20.76,25.78,20.7,24.65,19.39,16.78,18.42,18.68,18.13,17.62,15.93,17.86,16.31,25.58,25.92,23.66,22.18,19.34,18.17,16.91,17.13,16.41,18.32,24.2,23.21,27.32,28.08,23.82,21.32,20.53,21.25,19.21,17.67,19.13,22.5,18.29,18.8,13.51,11.19,9.97,4.95],"hi_path":[9.41,10.53,18.52,28.46,21.69,22.15,16.46,23.55,29.45,31.59,29.99,27.33,30.65,23.31,22.25,21.05,23.68,27.21,25.34,31.78,30.46,36.47,38.16,43.12,49.07,48.66,55.44,63.91,71.48,69.14,67.6,58.05,59.82,67.27,64.15,59.83,58.94,54.91,46.56,54.13,52.28,50.22,49.8,55.41,58.05,54.69,60.19,55.36,56.24,51.79,46.75,43.78,42.84,43.7,41.28,39.46,41.19,45.18,40.19,40.79,34.52],"dates":["2024-11-06","2024-11-11","2025-03-10"]},{"name":"Big moves with no clear news","cat":"Unexplained","expects":"stick","day0":{"hits":3,"n":3,"score":0.8},"week":{"hits":3,"n":3,"score":0.8},"month":{"hits":3,"n":3,"score":0.8},"quarter":{"hits":1,"n":3,"score":0.4},"avg_day0":2.8,"avg_month":7.9,"avg_abs_day0":7.8,"avg_path":[2.79,5.02,7.95,7.21,6.98,7.9,6.96,2.81,2.76,1.24,4.51,5.55,7.71,7.24,5.72,4.59,0.52,2.4,3.43,7.9,7.77,8.32,6.96,7.37,5.67,5.24,5.07,6.58,3.92,2.87,4.43,2.75,4.96,2.43,3.44,3.55,2.77,1.74,2.83,3.32,1.37,-0.69,1.27,1.59,1.63,0.55,2.83,-0.24,-1.98,-0.06,-1.26,0.08,1.87,1.05,1.98,4.23,4.02,4.76,5.08,6.25,6.81],"lo_path":[-7.54,-11.31,-10.32,-10.4,-8.82,-9.95,-10.27,-11.35,-12.82,-20.93,-15.89,-10.73,-9.96,-11.73,-17.72,-19.71,-18.36,-17.53,-12.57,-6.98,-4.29,-6.64,-5.64,-3.22,-6.58,-3.78,-0.47,4.27,-9.56,-8.63,-4.63,-0.42,0.13,-3.32,0.89,0.14,-2.14,-0.28,1.51,1.07,-0.62,-2.45,-4.82,-6.18,-9.11,-13.04,-9.49,-11.33,-15.84,-14.55,-16.32,-12.71,-11.09,-10.53,-11.56,-9.24,-11.11,-8.1,-8.93,-7.67,-9.32],"hi_path":[7.98,18.12,25.23,26.97,27.16,32.05,30.63,19.07,21.02,22.93,22.64,21.45,23.61,19.97,24.24,22.12,11.44,14.95,11.9,17.64,14.1,16.47,15.87,15.13,11.89,10.7,8.06,8.75,14.88,12.03,10.77,5.22,8.66,6.54,7.63,7.29,6.99,2.98,4.43,7.26,2.74,1.39,9.48,9.77,10.45,8.18,13.95,7.59,7.99,12.27,11.07,9.82,8.43,7.4,10.99,15.07,12.19,12.91,14.18,15.13,17.24],"dates":["2024-07-01","2025-02-25","2025-04-25"]},{"name":"Price ran up 5%+ before the news","expects":"down","day0":{"hits":2,"n":8,"score":0.3},"week":{"hits":2,"n":8,"score":0.3},"month":{"hits":2,"n":8,"score":0.3},"quarter":{"hits":3,"n":8,"score":0.4},"avg_day0":5.1,"avg_month":2.0,"avg_abs_day0":9.1,"avg_path":[5.08,7.82,8.68,7.94,8.06,10.02,7.22,5.6,5.94,4.87,4.75,4.41,4.03,4.53,3.2,1.54,2.07,2.01,2.14,2.04,1.93,2.51,1.4,2.01,2.6,4.03,3.06,3.5,2.71,2.57,1.99,1.81,2.22,2.41,2.47,2.3,2.81,2.09,2.41,2.19,1.5,2.31,1.76,1.75,3.35,5.57,6.53,5.44,5.91,6.99,4.54,4.79,4.75,5.06,5.72,5.68,5.05,5.68,5.37,3.14,2.01],"lo_path":[-8.85,-7.36,-5.91,-7.79,-7.03,-6.89,-8.39,-8.93,-10.05,-14.69,-12.01,-14.34,-11.88,-13.11,-23.64,-25.04,-25.35,-25.62,-24.87,-25.6,-26.41,-26.3,-28.39,-29.05,-29.36,-28.12,-27.67,-26.63,-28.38,-26.89,-26.05,-26.17,-25.47,-23.92,-24.22,-24.11,-22.56,-21.62,-22.79,-22.51,-23.19,-18.68,-20.24,-20.72,-18.47,-22.71,-18.96,-18.5,-18.42,-19.56,-19.8,-19.94,-18.91,-19.24,-19.72,-20.28,-19.29,-18.03,-18.46,-20.64,-22.5],"hi_path":[14.16,18.12,25.23,26.97,27.16,32.05,30.63,19.07,21.02,22.93,22.64,21.45,23.61,19.97,24.24,22.12,16.79,14.95,15.15,17.64,20.76,25.78,25.44,31.16,38.3,44.69,42.71,41.41,33.36,34.85,41.14,38.5,34.86,34.11,30.71,23.66,30.05,28.49,26.75,26.4,31.13,33.36,30.52,35.17,31.09,38.22,40.15,40.36,45.75,44.19,31.43,33.58,35.68,35.37,34.05,36.44,32.42,37.13,34.79,23.0,26.88],"dates":["2024-04-29","2024-07-01","2024-07-02","2024-07-11","2024-11-11","2025-04-03","2025-09-12","2026-07-02"]}],"phases":{"weeks":{"threshold":11,"legs":[{"a":0,"b":46,"chg":23.3,"days":46,"mkt":19.0,"sec":8.1,"news":0.0,"other":-3.8,"events":[]},{"a":46,"b":72,"chg":-30.7,"days":26,"mkt":4.5,"sec":-3.9,"news":-12.0,"other":-19.4,"events":[0]},{"a":72,"b":90,"chg":11.9,"days":18,"mkt":6.4,"sec":0.4,"news":0.0,"other":5.1,"events":[]},{"a":90,"b":125,"chg":-29.9,"days":35,"mkt":-3.0,"sec":-2.2,"news":0.0,"other":-24.7,"events":[]},{"a":125,"b":130,"chg":36.6,"days":5,"mkt":3.3,"sec":0.3,"news":29.0,"other":4.0,"events":[1,2]},{"a":130,"b":139,"chg":-13.2,"days":9,"mkt":2.9,"sec":-1.8,"news":0.0,"other":-14.4,"events":[]},{"a":139,"b":179,"chg":56.3,"days":40,"mkt":13.7,"sec":-6.2,"news":21.0,"other":27.9,"events":[3,4]},{"a":179,"b":199,"chg":-27.2,"days":20,"mkt":-12.6,"sec":2.1,"news":-15.8,"other":-0.8,"events":[5,6]},{"a":199,"b":236,"chg":36.4,"days":37,"mkt":24.0,"sec":2.5,"news":0.0,"other":9.9,"events":[]},{"a":236,"b":253,"chg":-18.3,"days":17,"mkt":1.5,"sec":-1.0,"news":-9.6,"other":-9.2,"events":[7]},{"a":253,"b":291,"chg":124.6,"days":38,"mkt":14.8,"sec":1.5,"news":55.7,"other":52.5,"events":[8,9,10]},{"a":291,"b":301,"chg":-21.0,"days":10,"mkt":-7.0,"sec":0.0,"news":0.0,"other":-14.0,"events":[]},{"a":301,"b":309,"chg":12.9,"days":8,"mkt":3.4,"sec":0.0,"news":0.0,"other":9.5,"events":[]},{"a":309,"b":345,"chg":-48.1,"days":36,"mkt":-10.8,"sec":0.7,"news":-12.0,"other":-26.0,"events":[11,12,13]},{"a":345,"b":356,"chg":29.7,"days":11,"mkt":8.2,"sec":-0.3,"news":0.0,"other":21.8,"events":[]},{"a":356,"b":366,"chg":-23.0,"days":10,"mkt":-35.2,"sec":-0.7,"news":7.8,"other":5.1,"events":[14]},{"a":366,"b":367,"chg":22.7,"days":1,"mkt":28.3,"sec":0.1,"news":0.0,"other":-5.7,"events":[]},{"a":367,"b":374,"chg":-16.4,"days":7,"mkt":-14.1,"sec":0.1,"news":0.0,"other":-2.4,"events":[]},{"a":374,"b":399,"chg":59.5,"days":25,"mkt":41.8,"sec":-0.3,"news":11.9,"other":6.1,"events":[15,16]},{"a":399,"b":406,"chg":-21.5,"days":7,"mkt":0.7,"sec":0.2,"news":-12.6,"other":-9.8,"events":[17]},{"a":406,"b":417,"chg":22.5,"days":11,"mkt":3.2,"sec":0.4,"news":0.0,"other":18.9,"events":[]},{"a":417,"b":426,"chg":-15.7,"days":9,"mkt":7.4,"sec":-0.8,"news":0.0,"other":-22.3,"events":[]},{"a":426,"b":510,"chg":59.3,"days":84,"mkt":28.1,"sec":1.4,"news":-1.0,"other":30.8,"events":[18,19,20]},{"a":510,"b":524,"chg":-16.5,"days":14,"mkt":-7.5,"sec":-0.4,"news":0.0,"other":-8.6,"events":[]},{"a":524,"b":540,"chg":25.3,"days":16,"mkt":7.5,"sec":-1.3,"news":0.0,"other":19.1,"events":[]},{"a":540,"b":616,"chg":-29.9,"days":76,"mkt":-0.6,"sec":0.4,"news":-2.5,"other":-27.2,"events":[21]},{"a":616,"b":641,"chg":29.7,"days":25,"mkt":22.2,"sec":1.9,"news":-3.3,"other":8.9,"events":[22]},{"a":641,"b":670,"chg":-15.8,"days":29,"mkt":-1.7,"sec":-1.5,"news":0.0,"other":-12.6,"events":[]},{"a":670,"b":674,"chg":13.4,"days":4,"mkt":3.4,"sec":0.2,"news":0.0,"other":9.7,"events":[]},{"a":674,"b":693,"chg":-29.9,"days":19,"mkt":-4.1,"sec":-1.7,"news":-17.3,"other":-6.8,"events":[23,24]},{"a":693,"b":752,"chg":29.5,"days":59,"mkt":14.8,"sec":2.4,"news":0.0,"other":12.3,"events":[]}]},"months":{"threshold":24,"legs":[{"a":0,"b":125,"chg":-33.0,"days":125,"mkt":20.6,"sec":0.3,"news":-11.8,"other":-42.1,"events":[0]},{"a":125,"b":179,"chg":85.3,"days":54,"mkt":23.3,"sec":-9.1,"news":57.2,"other":14.0,"events":[1,2,3,4]},{"a":179,"b":199,"chg":-27.2,"days":20,"mkt":-12.6,"sec":2.1,"news":-15.8,"other":-0.8,"events":[5,6]},{"a":199,"b":291,"chg":150.2,"days":92,"mkt":52.0,"sec":3.2,"news":42.0,"other":53.1,"events":[7,8,9,10]},{"a":291,"b":345,"chg":-53.7,"days":54,"mkt":-13.5,"sec":0.6,"news":-11.4,"other":-29.4,"events":[11,12,13]},{"a":345,"b":540,"chg":120.5,"days":195,"mkt":64.4,"sec":-2.8,"news":4.8,"other":54.1,"events":[14,15,16,17,18,19,20]},{"a":540,"b":616,"chg":-29.9,"days":76,"mkt":-0.6,"sec":0.4,"news":-2.5,"other":-27.2,"events":[21]},{"a":616,"b":641,"chg":29.7,"days":25,"mkt":22.2,"sec":1.9,"news":-3.3,"other":8.9,"events":[22]},{"a":641,"b":693,"chg":-33.0,"days":52,"mkt":-2.9,"sec":-2.8,"news":-16.9,"other":-10.4,"events":[23,24]},{"a":693,"b":752,"chg":29.5,"days":59,"mkt":14.8,"sec":2.4,"news":0.0,"other":12.3,"events":[]}]},"year":{"threshold":43,"legs":[{"a":0,"b":291,"chg":126.4,"days":291,"mkt":91.0,"sec":-2.7,"news":52.9,"other":-14.8,"events":[0,1,2,3,4,5,6,7,8,9,10]},{"a":291,"b":366,"chg":-53.8,"days":75,"mkt":-36.3,"sec":-0.1,"news":-5.2,"other":-12.1,"events":[11,12,13,14]},{"a":366,"b":540,"chg":120.8,"days":174,"mkt":114.4,"sec":-1.2,"news":-8.7,"other":16.3,"events":[15,16,17,18,19,20]},{"a":540,"b":752,"chg":-21.1,"days":212,"mkt":25.1,"sec":0.8,"news":-23.5,"other":-23.5,"events":[21,22,23,24]}]}},"quiet":[[17,56],[66,89],[93,119],[132,169],[224,244],[434,472],[516,656],[714,752]],"series":{"dates":["2023-10-20","2023-10-23","2023-10-24","2023-10-25","2023-10-26","2023-10-27","2023-10-30","2023-10-31","2023-11-01","2023-11-02","2023-11-03","2023-11-06","2023-11-07","2023-11-08","2023-11-09","2023-11-10","2023-11-13","2023-11-14","2023-11-15","2023-11-16","2023-11-17","2023-11-20","2023-11-21","2023-11-22","2023-11-24","2023-11-27","2023-11-28","2023-11-29","2023-11-30","2023-12-01","2023-12-04","2023-12-05","2023-12-06","2023-12-07","2023-12-08","2023-12-11","2023-12-12","2023-12-13","2023-12-14","2023-12-15","2023-12-18","2023-12-19","2023-12-20","2023-12-21","2023-12-22","2023-12-26","2023-12-27","2023-12-28","2023-12-29","2024-01-02","2024-01-03","2024-01-04","2024-01-05","2024-01-08","2024-01-09","2024-01-10","2024-01-11","2024-01-12","2024-01-16","2024-01-17","2024-01-18","2024-01-19","2024-01-22","2024-01-23","2024-01-24","2024-01-25","2024-01-26","2024-01-29","2024-01-30","2024-01-31","2024-02-01","2024-02-02","2024-02-05","2024-02-06","2024-02-07","2024-02-08","2024-02-09","2024-02-12","2024-02-13","2024-02-14","2024-02-15","2024-02-16","2024-02-20","2024-02-21","2024-02-22","2024-02-23","2024-02-26","2024-02-27","2024-02-28","2024-02-29","2024-03-01","2024-03-04","2024-03-05","2024-03-06","2024-03-07","2024-03-08","2024-03-11","2024-03-12","2024-03-13","2024-03-14","2024-03-15","2024-03-18","2024-03-19","2024-03-20","2024-03-21","2024-03-22","2024-03-25","2024-03-26","2024-03-27","2024-03-28","2024-04-01","2024-04-02","2024-04-03","2024-04-04","2024-04-05","2024-04-08","2024-04-09","2024-04-10","2024-04-11","2024-04-12","2024-04-15","2024-04-16","2024-04-17","2024-04-18","2024-04-19","2024-04-22","2024-04-23","2024-04-24","2024-04-25","2024-04-26","2024-04-29","2024-04-30","2024-05-01","2024-05-02","2024-05-03","2024-05-06","2024-05-07","2024-05-08","2024-05-09","2024-05-10","2024-05-13","2024-05-14","2024-05-15","2024-05-16","2024-05-17","2024-05-20","2024-05-21","2024-05-22","2024-05-23","2024-05-24","2024-05-28","2024-05-29","2024-05-30","2024-05-31","2024-06-03","2024-06-04","2024-06-05","2024-06-06","2024-06-07","2024-06-10","2024-06-11","2024-06-12","2024-06-13","2024-06-14","2024-06-17","2024-06-18","2024-06-20","2024-06-21","2024-06-24","2024-06-25","2024-06-26","2024-06-27","2024-06-28","2024-07-01","2024-07-02","2024-07-03","2024-07-05","2024-07-08","2024-07-09","2024-07-10","2024-07-11","2024-07-12","2024-07-15","2024-07-16","2024-07-17","2024-07-18","2024-07-19","2024-07-22","2024-07-23","2024-07-24","2024-07-25","2024-07-26","2024-07-29","2024-07-30","2024-07-31","2024-08-01","2024-08-02","2024-08-05","2024-08-06","2024-08-07","2024-08-08","2024-08-09","2024-08-12","2024-08-13","2024-08-14","2024-08-15","2024-08-16","2024-08-19","2024-08-20","2024-08-21","2024-08-22","2024-08-23","2024-08-26","2024-08-27","2024-08-28","2024-08-29","2024-08-30","2024-09-03","2024-09-04","2024-09-05","2024-09-06","2024-09-09","2024-09-10","2024-09-11","2024-09-12","2024-09-13","2024-09-16","2024-09-17","2024-09-18","2024-09-19","2024-09-20","2024-09-23","2024-09-24","2024-09-25","2024-09-26","2024-09-27","2024-09-30","2024-10-01","2024-10-02","2024-10-03","2024-10-04","2024-10-07","2024-10-08","2024-10-09","2024-10-10","2024-10-11","2024-10-14","2024-10-15","2024-10-16","2024-10-17","2024-10-18","2024-10-21","2024-10-22","2024-10-23","2024-10-24","2024-10-25","2024-10-28","2024-10-29","2024-10-30","2024-10-31","2024-11-01","2024-11-04","2024-11-05","2024-11-06","2024-11-07","2024-11-08","2024-11-11","2024-11-12","2024-11-13","2024-11-14","2024-11-15","2024-11-18","2024-11-19","2024-11-20","2024-11-21","2024-11-22","2024-11-25","2024-11-26","2024-11-27","2024-11-29","2024-12-02","2024-12-03","2024-12-04","2024-12-05","2024-12-06","2024-12-09","2024-12-10","2024-12-11","2024-12-12","2024-12-13","2024-12-16","2024-12-17","2024-12-18","2024-12-19","2024-12-20","2024-12-23","2024-12-24","2024-12-26","2024-12-27","2024-12-30","2024-12-31","2025-01-02","2025-01-03","2025-01-06","2025-01-07","2025-01-08","2025-01-10","2025-01-13","2025-01-14","2025-01-15","2025-01-16","2025-01-17","2025-01-21","2025-01-22","2025-01-23","2025-01-24","2025-01-27","2025-01-28","2025-01-29","2025-01-30","2025-01-31","2025-02-03","2025-02-04","2025-02-05","2025-02-06","2025-02-07","2025-02-10","2025-02-11","2025-02-12","2025-02-13","2025-02-14","2025-02-18","2025-02-19","2025-02-20","2025-02-21","2025-02-24","2025-02-25","2025-02-26","2025-02-27","2025-02-28","2025-03-03","2025-03-04","2025-03-05","2025-03-06","2025-03-07","2025-03-10","2025-03-11","2025-03-12","2025-03-13","2025-03-14","2025-03-17","2025-03-18","2025-03-19","2025-03-20","2025-03-21","2025-03-24","2025-03-25","2025-03-26","2025-03-27","2025-03-28","2025-03-31","2025-04-01","2025-04-02","2025-04-03","2025-04-04","2025-04-07","2025-04-08","2025-04-09","2025-04-10","2025-04-11","2025-04-14","2025-04-15","2025-04-16","2025-04-17","2025-04-21","2025-04-22","2025-04-23","2025-04-24","2025-04-25","2025-04-28","2025-04-29","2025-04-30","2025-05-01","2025-05-02","2025-05-05","2025-05-06","2025-05-07","2025-05-08","2025-05-09","2025-05-12","2025-05-13","2025-05-14","2025-05-15","2025-05-16","2025-05-19","2025-05-20","2025-05-21","2025-05-22","2025-05-23","2025-05-27","2025-05-28","2025-05-29","2025-05-30","2025-06-02","2025-06-03","2025-06-04","2025-06-05","2025-06-06","2025-06-09","2025-06-10","2025-06-11","2025-06-12","2025-06-13","2025-06-16","2025-06-17","2025-06-18","2025-06-20","2025-06-23","2025-06-24","2025-06-25","2025-06-26","2025-06-27","2025-06-30","2025-07-01","2025-07-02","2025-07-03","2025-07-07","2025-07-08","2025-07-09","2025-07-10","2025-07-11","2025-07-14","2025-07-15","2025-07-16","2025-07-17","2025-07-18","2025-07-21","2025-07-22","2025-07-23","2025-07-24","2025-07-25","2025-07-28","2025-07-29","2025-07-30","2025-07-31","2025-08-01","2025-08-04","2025-08-05","2025-08-06","2025-08-07","2025-08-08","2025-08-11","2025-08-12","2025-08-13","2025-08-14","2025-08-15","2025-08-18","2025-08-19","2025-08-20","2025-08-21","2025-08-22","2025-08-25","2025-08-26","2025-08-27","2025-08-28","2025-08-29","2025-09-02","2025-09-03","2025-09-04","2025-09-05","2025-09-08","2025-09-09","2025-09-10","2025-09-11","2025-09-12","2025-09-15","2025-09-16","2025-09-17","2025-09-18","2025-09-19","2025-09-22","2025-09-23","2025-09-24","2025-09-25","2025-09-26","2025-09-29","2025-09-30","2025-10-01","2025-10-02","2025-10-03","2025-10-06","2025-10-07","2025-10-08","2025-10-09","2025-10-10","2025-10-13","2025-10-14","2025-10-15","2025-10-16","2025-10-17","2025-10-20","2025-10-21","2025-10-22","2025-10-23","2025-10-24","2025-10-27","2025-10-28","2025-10-29","2025-10-30","2025-10-31","2025-11-03","2025-11-04","2025-11-05","2025-11-06","2025-11-07","2025-11-10","2025-11-11","2025-11-12","2025-11-13","2025-11-14","2025-11-17","2025-11-18","2025-11-19","2025-11-20","2025-11-21","2025-11-24","2025-11-25","2025-11-26","2025-11-28","2025-12-01","2025-12-02","2025-12-03","2025-12-04","2025-12-05","2025-12-08","2025-12-09","2025-12-10","2025-12-11","2025-12-12","2025-12-15","2025-12-16","2025-12-17","2025-12-18","2025-12-19","2025-12-22","2025-12-23","2025-12-24","2025-12-26","2025-12-29","2025-12-30","2025-12-31","2026-01-02","2026-01-05","2026-01-06","2026-01-07","2026-01-08","2026-01-09","2026-01-12","2026-01-13","2026-01-14","2026-01-15","2026-01-16","2026-01-20","2026-01-21","2026-01-22","2026-01-23","2026-01-26","2026-01-27","2026-01-28","2026-01-29","2026-01-30","2026-02-02","2026-02-03","2026-02-04","2026-02-05","2026-02-06","2026-02-09","2026-02-10","2026-02-11","2026-02-12","2026-02-13","2026-02-17","2026-02-18","2026-02-19","2026-02-20","2026-02-23","2026-02-24","2026-02-25","2026-02-26","2026-02-27","2026-03-02","2026-03-03","2026-03-04","2026-03-05","2026-03-06","2026-03-09","2026-03-10","2026-03-11","2026-03-12","2026-03-13","2026-03-16","2026-03-17","2026-03-18","2026-03-19","2026-03-20","2026-03-23","2026-03-24","2026-03-25","2026-03-26","2026-03-27","2026-03-30","2026-03-31","2026-04-01","2026-04-02","2026-04-06","2026-04-07","2026-04-08","2026-04-09","2026-04-10","2026-04-13","2026-04-14","2026-04-15","2026-04-16","2026-04-17","2026-04-20","2026-04-21","2026-04-22","2026-04-23","2026-04-24","2026-04-27","2026-04-28","2026-04-29","2026-04-30","2026-05-01","2026-05-04","2026-05-05","2026-05-06","2026-05-07","2026-05-08","2026-05-11","2026-05-12","2026-05-13","2026-05-14","2026-05-15","2026-05-18","2026-05-19","2026-05-20","2026-05-21","2026-05-22","2026-05-26","2026-05-27","2026-05-28","2026-05-29","2026-06-01","2026-06-02","2026-06-03","2026-06-04","2026-06-05","2026-06-08","2026-06-09","2026-06-10","2026-06-11","2026-06-12","2026-06-15","2026-06-16","2026-06-17","2026-06-18","2026-06-22","2026-06-23","2026-06-24","2026-06-25","2026-06-26","2026-06-29","2026-06-30","2026-07-01","2026-07-02","2026-07-06","2026-07-07","2026-07-08","2026-07-09","2026-07-10","2026-07-13","2026-07-14","2026-07-15","2026-07-16","2026-07-17","2026-07-20","2026-07-21","2026-07-22","2026-07-23","2026-07-24","2026-07-27","2026-07-28","2026-07-29","2026-07-30","2026-07-31","2026-08-03","2026-08-04","2026-08-05","2026-08-06","2026-08-07","2026-08-10","2026-08-11","2026-08-12","2026-08-13","2026-08-14","2026-08-17","2026-08-18","2026-08-19","2026-08-20","2026-08-21","2026-08-24","2026-08-25","2026-08-26","2026-08-27","2026-08-28","2026-08-31","2026-09-01","2026-09-02","2026-09-03","2026-09-04","2026-09-08","2026-09-09","2026-09-10","2026-09-11","2026-09-14","2026-09-15","2026-09-16","2026-09-17","2026-09-18","2026-09-21","2026-09-22","2026-09-23","2026-09-24","2026-09-25","2026-09-28","2026-09-29","2026-09-30","2026-10-01","2026-10-02","2026-10-05","2026-10-06","2026-10-07","2026-10-08","2026-10-09","2026-10-12","2026-10-13","2026-10-14","2026-10-15","2026-10-16","2026-10-19","2026-10-20","2026-10-21"],"close":[211.99,212.08,216.52,212.42,205.76,207.3,197.36,200.84,205.66,218.51,219.96,219.27,222.18,222.11,209.98,214.65,223.71,237.41,242.84,233.59,234.3,235.6,241.2,234.21,235.45,236.08,246.72,244.14,240.08,238.83,235.58,238.72,239.37,242.64,243.84,239.74,237.01,239.29,251.05,253.5,252.08,257.22,247.14,254.5,252.54,256.61,261.44,253.18,248.48,248.42,238.45,237.93,237.49,240.45,234.96,233.94,227.22,218.89,219.91,215.55,211.88,212.19,208.8,209.14,207.83,182.63,183.25,190.93,191.59,187.29,188.86,187.91,181.06,185.1,187.58,189.56,193.57,188.13,184.02,188.71,200.45,199.95,193.76,194.77,197.41,191.97,199.4,199.73,202.04,201.88,202.64,188.14,180.74,176.54,178.65,175.34,177.77,177.54,169.48,162.5,163.57,173.8,171.32,175.66,172.82,170.83,172.63,177.67,179.83,175.79,175.22,166.63,168.38,171.11,164.9,172.98,176.88,171.76,174.6,171.05,161.48,157.11,155.45,149.93,147.05,142.05,144.68,162.13,170.18,168.29,194.05,183.28,179.99,180.01,181.19,184.76,177.81,174.72,171.97,168.47,171.89,177.55,173.99,174.84,177.46,174.95,186.6,180.11,173.74,179.24,176.75,176.19,178.79,178.08,176.29,174.77,175.0,177.94,177.48,173.79,170.66,177.29,182.47,178.01,187.44,184.86,181.57,183.01,182.58,187.35,196.37,197.42,197.88,209.86,231.26,246.39,251.52,252.94,262.33,263.26,241.03,248.23,252.64,256.56,248.5,249.23,239.2,251.51,246.38,215.99,220.25,219.8,232.1,222.62,232.07,216.86,207.67,198.88,200.64,191.76,198.84,200.0,197.49,207.83,201.38,214.14,216.12,222.72,221.1,223.27,210.66,220.32,213.21,209.21,205.75,206.28,214.11,210.6,219.41,230.17,210.73,216.27,226.17,228.13,229.81,230.29,226.78,227.87,227.2,243.92,238.25,250.0,254.27,257.02,254.22,260.46,261.63,258.02,249.02,240.66,250.08,240.83,244.5,241.05,238.77,217.8,219.16,219.57,221.33,220.89,220.7,218.85,217.97,213.65,260.48,269.19,262.51,259.52,257.55,249.85,248.98,242.84,251.44,288.53,296.91,321.22,350.0,328.49,330.24,311.18,320.72,338.74,346.0,342.03,339.64,352.56,338.59,338.23,332.89,345.16,357.09,351.42,357.93,369.49,389.22,389.79,400.99,424.77,418.1,436.23,463.02,479.86,440.13,436.17,421.06,430.6,462.28,454.13,431.66,417.41,403.84,379.28,410.44,411.05,394.36,394.94,394.74,403.31,396.36,428.22,413.82,426.5,424.07,415.11,412.38,406.58,397.15,398.09,389.1,400.28,404.6,383.68,392.21,378.17,374.32,361.62,350.73,328.5,336.51,355.94,355.84,354.11,360.56,354.4,337.8,330.53,302.8,290.8,281.95,292.98,284.65,272.04,279.1,263.45,262.67,222.15,230.58,248.09,240.68,249.98,238.01,225.31,235.86,236.26,248.71,278.39,288.14,272.06,273.13,263.55,259.16,268.46,282.76,267.28,239.43,233.29,221.86,272.2,252.4,252.31,252.35,254.11,241.55,241.37,227.5,237.97,250.74,259.51,284.95,285.88,292.03,282.16,280.52,287.21,280.26,275.35,276.22,284.82,298.26,318.38,334.07,347.68,342.82,349.98,342.09,343.82,334.62,341.04,339.34,362.89,356.9,358.43,346.46,342.69,344.27,332.05,284.7,295.14,308.58,326.09,326.43,319.11,325.31,329.13,316.35,322.05,322.16,348.68,340.47,327.55,325.78,323.63,317.66,300.71,315.65,315.35,293.94,297.81,295.88,309.87,313.51,316.9,310.78,321.67,319.41,329.65,328.49,332.11,332.56,305.3,316.06,325.59,321.2,319.04,308.27,302.63,309.26,308.72,319.91,322.27,329.65,339.03,340.84,339.38,335.58,330.56,335.16,329.31,323.9,320.11,340.01,346.6,351.67,349.6,345.98,333.87,329.36,334.09,338.53,350.84,346.4,346.97,347.79,368.81,395.94,410.04,421.62,425.86,416.85,426.07,434.21,425.85,442.79,423.39,440.4,443.21,444.72,459.46,436.0,429.83,453.25,433.09,438.69,435.54,413.49,435.9,429.24,435.15,428.75,439.31,447.43,442.6,438.97,448.98,433.72,452.42,460.55,461.51,440.1,456.56,468.37,444.26,462.07,445.91,429.52,445.23,439.62,430.6,401.99,404.35,408.92,401.25,403.99,395.23,391.09,417.78,419.4,426.58,430.17,430.14,429.24,446.74,454.53,455.0,439.58,445.17,451.45,446.89,458.96,475.31,489.88,467.26,483.37,481.2,488.73,485.56,485.4,475.19,459.64,454.43,449.72,438.07,451.67,432.96,431.41,435.8,445.01,448.96,447.2,439.2,438.57,437.5,419.25,431.44,449.36,449.06,435.2,430.9,431.46,416.56,430.41,421.81,421.96,406.01,397.21,411.11,417.32,425.21,428.27,417.07,417.44,410.63,411.32,411.71,411.82,399.83,409.38,417.4,408.58,402.51,403.32,392.43,405.94,405.55,396.73,398.68,399.24,407.82,395.01,391.2,395.56,399.27,392.78,380.3,367.96,380.85,383.03,385.95,372.11,361.83,355.28,371.75,381.26,360.59,352.82,346.65,343.25,345.62,348.95,352.42,364.2,391.95,388.9,400.62,392.5,386.42,387.51,373.72,376.3,378.67,376.02,372.8,381.63,390.82,392.51,389.37,398.73,411.79,428.35,445.0,433.45,445.27,443.3,422.24,409.99,404.11,417.26,417.85,426.01,433.59,440.36,442.1,435.79,415.88,423.74,423.7,418.45,391.0,408.95,396.68,381.59,399.15,406.43,411.15,404.66,396.38,400.49,405.05,381.61,375.53,375.12,379.71,411.84,420.6,425.3,393.45,419.77,402.9,394.06,406.55,407.76,394.76,396.18,394.46,391.06,380.84,369.57,378.93,374.01,319.69,313.03,309.22,307.44,298.32,308.85,311.21,322.08,327.35,321.55,319.53,328.58,330.88,332.81,327.51,339.96,342.27,339.3,336.87,351.12,345.13,362.86,348.95,350.25,345.82,354.81,348.75,367.95,356.09,357.01,376.37,354.08,368.16,367.81,363.56,365.44,358.97,356.58,358.08,366.2,364.27,375.3,378.9,380.12,377.94,372.11,357.45,352.84,354.81,354.11,370.59,378.73,380.68,377.81,375.0,382.7,378.03,375.23,367.16,362.44,354.72,368.06,373.71,386.47],"own":[0,-11,119,29,-204,167,-634,103,104,305,-202,15,43,-15,-391,28,437,164,192,-382,-12,-26,274,-360,65,6,411,-142,-187,-290,-102,140,-6,45,26,-259,-167,-185,295,185,-89,77,-206,131,-72,111,123,-311,-140,108,-237,49,-48,-80,-174,-111,-298,-322,124,-102,-301,-133,-220,77,-10,-1433,34,257,34,-44,-184,-62,-226,114,43,60,205,-371,80,110,485,82,-255,36,-127,-329,449,-53,93,-80,-60,-698,-329,-303,1,-137,148,-134,-463,-302,190,574,-262,79,-241,-66,169,295,-49,-229,48,-343,108,354,-475,470,172,-22,101,-24,-369,-219,-68,-316,-123,-465,5,1145,547,-213,1324,-295,-126,-105,-88,59,-375,-148,-290,-172,186,258,-350,103,133,-141,637,-215,-201,148,-104,120,51,-245,-164,-60,-119,166,63,-255,-157,237,280,-154,377,-149,-182,48,-20,335,491,32,53,763,903,584,138,15,377,-108,-926,162,156,-23,-98,177,-299,350,-172,-915,310,-269,501,-358,141,-395,-41,152,-107,-280,-86,-25,-115,182,-351,252,41,102,-31,-28,-426,184,-273,-223,-39,14,202,234,437,520,-574,37,389,-108,-113,-128,-199,19,33,379,-137,421,83,181,-244,237,0,26,-344,-276,206,-183,-27,-301,-39,-1057,-101,147,-26,-4,-96,-6,7,0,1915,341,-335,-118,-19,106,-105,-249,98,899,102,697,806,-541,38,-477,591,467,164,-122,-207,257,-578,-86,-99,215,282,-148,44,356,451,123,352,408,-28,446,530,452,-138,-92,-587,112,456,-189,-266,-56,-257,-555,504,-120,-137,-28,367,169,-215,349,-306,56,-289,-338,-204,-65,59,-169,-130,123,279,-350,43,-455,-206,-110,-467,-670,305,285,-25,-118,133,-74,-11,-124,-784,-416,111,-9,175,-125,-36,-120,-168,-976,618,596,85,-198,-703,-245,167,102,584,620,285,-248,106,254,-354,295,338,887,548,-251,-113,-514,322,-431,-222,140,22,-46,-43,-145,165,-132,767,27,62,-363,-235,-99,-107,19,-61,162,486,-81,328,361,-254,64,-262,118,109,184,94,205,-51,-64,-302,-262,-69,-358,-1423,102,428,432,55,-351,426,-74,-231,189,178,551,-504,-444,-246,-144,-317,-443,400,-204,-523,152,-209,423,183,63,-116,259,-209,333,-91,138,-180,-882,251,305,-81,-38,-258,187,-131,99,184,95,49,326,-184,-115,-120,-89,147,-41,-119,-20,264,296,44,-110,-191,-217,44,7,-56,417,-186,-44,-53,406,715,224,307,128,-320,163,71,-66,469,-352,272,-1,-56,249,-549,-145,443,-387,-10,-13,110,184,-120,33,10,113,-54,-98,36,86,-540,154,109,-15,-233,289,204,-251,310,-101,-385,-1,-178,-209,-319,47,307,15,-32,137,-281,305,-108,17,-48,110,-71,336,132,-21,-294,132,27,-120,542,407,359,-214,172,-199,11,-186,-77,-212,-255,-91,56,-301,166,-541,30,130,73,52,12,-84,-72,-27,5,58,289,-17,-429,-195,-1,-295,386,-300,190,-251,57,-62,25,277,63,83,2,-202,-84,41,-150,-100,95,-9,-57,-50,-33,-85,181,117,53,-149,38,244,0,23,-109,40,130,-266,39,129,142,-54,21,63,-135,-128,101,-584,-312,-197,-612,-48,98,-96,85,566,-148,79,-156,-29,-211,-293,-100,16,25,-104,38,177,89,-242,-26,373,221,298,-252,130,-206,-259,-273,-7,144,-12,120,39,189,-69,-202,-531,147,147,-199,-137,399,-211,-75,136,69,-258,-24,30,-43,153,-279,-98,-61,313,443,19,138,-736,429,-301,-202,145,-47,-162,-59,-123,85,-66,-281,56,-116,-1318,-185,-42,-36,101,-98,-109,15,-288,-94,-44,175,62,143,-242,206,115,-16,94,403,1,432,-285,-48,-149,36,-89,571,-194,-59,280,-534,474,56,11,-141,-30,-17,129,-42,-59,-70,124,155,-52,-271,-237,-66,80,-52,269,38,-41,-48,95,58,-113,-50,50,-71,54,260,127,176],"mkt":[0,-24,104,-200,-167,-63,165,87,147,263,126,32,39,10,-109,215,-13,266,29,17,17,106,-30,53,9,-25,14,-10,54,82,-73,-3,-56,105,59,54,63,190,44,-79,78,84,-194,131,28,58,25,5,-40,-78,-114,-45,19,197,-21,78,-6,10,-51,-77,151,201,33,46,17,86,-19,116,-12,-247,192,153,-52,42,121,6,85,-7,-208,133,102,-77,-85,14,323,10,-56,28,-20,53,137,-16,-150,79,153,-93,-13,166,-24,-30,-155,88,86,141,51,-29,-43,-28,126,-3,-26,-97,17,-193,151,8,16,-138,103,-193,-175,-26,-86,-30,-127,134,166,-7,-54,130,48,-221,-47,136,179,148,16,1,84,19,2,66,178,-29,20,16,34,-40,-104,95,10,-102,-96,129,11,16,167,0,-17,43,33,114,28,8,111,37,-40,-66,-47,55,18,23,-57,30,100,68,88,18,15,151,-132,102,45,97,-233,-128,-110,171,-27,-393,-102,214,11,-96,309,-276,-379,-598,181,-132,453,87,10,321,63,338,46,194,-33,70,-161,219,-50,29,-122,2,199,-438,-42,-50,-343,233,91,215,176,109,31,9,-62,353,-102,53,61,-47,85,-31,85,-192,9,-39,193,-195,203,149,-38,128,172,-164,91,2,80,-34,-11,-192,46,-7,65,35,-65,-427,89,-46,255,523,175,98,22,-71,11,-147,-297,92,83,8,122,70,77,118,-69,141,41,11,142,-38,43,-119,-72,177,-120,-5,99,-97,-705,-7,202,139,257,2,-250,-273,-87,-58,297,139,-278,36,-378,37,33,436,-47,247,228,139,135,-72,-357,214,-111,133,-134,-170,171,103,88,-234,173,19,-82,266,-1,74,60,-105,-437,-118,-129,13,-423,406,-463,-311,280,-466,147,-709,-232,146,-374,568,211,-298,297,-80,-74,489,67,-338,-75,-577,188,79,176,-1416,-1587,-45,-402,2548,-1077,418,227,-65,-523,33,-559,597,358,487,168,9,149,9,166,345,-135,-198,99,164,-30,768,155,30,115,149,26,-80,-402,9,-161,484,-137,93,-26,133,135,-6,-115,245,22,136,-69,96,-270,226,-205,-4,-127,234,264,13,186,118,113,-8,108,186,-176,-13,141,67,-83,45,-101,79,144,-17,45,3,199,8,97,-6,-61,-29,-87,-380,345,-116,176,-19,178,-46,244,79,2,-54,-5,-125,-61,-92,349,-101,95,52,81,-136,-170,123,191,-66,56,52,65,187,-8,121,-31,-28,106,49,107,-123,-72,-104,129,63,85,77,26,0,81,-84,134,-66,-620,344,-28,101,-156,130,237,0,-119,135,186,265,60,11,-251,75,43,-273,79,-247,22,349,51,12,-373,-4,-209,-190,87,-345,222,326,210,155,123,-103,41,78,16,43,-68,-19,149,52,-243,-34,-61,-246,168,135,138,102,78,-2,-79,-27,-164,40,146,129,-70,-2,143,34,-44,-108,59,-18,-443,248,113,8,110,86,-2,-43,-65,107,-183,-104,-272,412,104,-57,-5,-338,15,35,108,-57,155,-220,155,180,-119,-103,12,-190,151,-120,-281,186,-33,-26,-315,-117,209,54,-290,-51,-352,215,-68,112,-362,-345,-67,576,150,18,97,9,523,116,-13,198,251,164,52,254,-42,-138,213,-81,163,36,-101,-3,205,58,-77,167,287,-64,169,47,-32,116,163,-250,-15,-139,213,42,83,140,-4,114,52,56,28,-146,78,-523,46,-59,-320,341,110,362,-123,-255,158,-64,-293,-10,30,-150,336,164,-29,-28,184,-101,-66,179,91,-163,76,84,-116,-212,-35,178,-25,-268,23,5,54,-348,372,160,319,405,-45,-36,137,-7,-72,57,157,-45,-107,-154,47,-190,92,-66,72,5,148,-52,-68,-156,100,236,-89,-128,-107,-138,193,-101,-104,-100,254,-27,348,-4,-163,-19,122,-166,-41,-46,40,165,151,123,-53,-94,132,-14,-3,-242,63,-247,93,74,116],"sec":[0,39,-16,-20,52,-30,-22,-15,-14,38,142,-78,50,2,-62,-22,-11,164,5,-23,25,-25,-9,12,-21,46,16,46,-35,156,38,-5,89,-14,-37,36,-11,91,141,-9,-45,41,0,31,-34,-10,38,-15,-7,-32,-59,-26,10,7,-36,-11,12,-62,-26,-21,-22,-54,26,-107,-70,54,19,37,12,64,75,-141,-93,65,-31,38,-80,92,-93,9,16,-30,25,2,-61,39,-13,42,42,19,-39,-29,78,-11,-35,43,3,-44,22,-88,31,-56,33,30,27,-21,-22,22,44,5,-54,-62,-21,0,-46,1,35,-134,-40,12,-31,-29,47,-16,57,-15,12,0,-8,-29,52,-56,-8,-30,-25,-11,-25,-29,48,-53,13,0,-30,-25,-5,-18,-26,-98,-55,68,-46,-49,192,76,52,-42,-35,0,-72,2,-58,30,-21,-102,28,-26,42,97,43,-132,-39,-2,28,-205,-31,-19,-20,23,-27,-7,175,30,-25,80,11,-19,-2,-19,-7,-8,-13,35,33,37,-35,-7,-14,14,15,-41,-4,-3,-21,7,-27,24,5,5,-9,55,6,46,-5,5,-6,10,-29,39,15,9,35,-11,-32,-20,10,40,14,20,-1,-22,4,7,25,-26,49,36,-41,27,-20,-27,-14,1,-25,10,-19,10,-9,36,15,-18,6,-44,-36,-8,21,-5,18,-32,8,18,-19,45,-5,-47,9,-8,31,-22,4,30,8,-12,-35,-1,15,46,97,-43,8,6,17,-23,-3,-1,26,10,2,-8,-10,-17,-34,3,-21,8,32,-27,-3,9,8,-7,13,-14,-11,-4,0,7,5,9,7,-12,11,-2,4,-15,4,-4,63,-21,13,27,-37,-11,6,-12,16,-1,-12,-4,18,10,23,-5,-12,7,-32,24,37,-2,3,-13,0,-17,12,10,-8,10,-14,-9,-15,10,1,-6,-6,-5,4,19,-8,12,8,-34,-2,-22,5,-34,-61,36,13,11,-1,9,-4,-5,-6,6,10,-3,0,-11,0,-3,2,10,11,-11,-3,2,-6,-19,5,-34,-2,8,-2,-7,8,12,22,-3,17,-18,22,14,-11,20,-20,3,-1,13,-5,-16,24,28,36,-35,39,-7,-48,6,2,44,6,-40,17,-98,-23,9,-4,-9,3,-27,17,0,22,7,-5,-1,11,-31,-5,19,-1,-2,6,-1,1,9,2,0,-3,-2,0,1,-7,-7,6,-8,-4,-10,14,-6,-10,-3,6,-1,7,-3,-10,13,-2,7,3,8,11,-6,2,6,3,0,0,6,12,-6,-7,8,-7,1,5,0,-1,2,7,16,4,7,-10,0,-6,2,-2,1,1,-10,1,4,8,3,9,25,9,3,8,-5,3,-8,-12,11,0,-10,4,15,14,-14,13,-12,-46,29,-64,-2,9,-8,9,-14,24,-11,17,14,-35,-34,-33,-23,4,-13,-1,19,6,19,-4,1,1,4,4,-2,-5,-11,5,-27,-6,2,-8,11,-2,20,13,-20,5,3,5,9,16,-14,6,-10,-3,-30,-4,-6,21,-33,14,-10,-9,3,-7,26,-2,24,-14,23,-37,3,41,1,7,-7,8,12,9,-5,-4,-3,11,-1,-4,-7,-17,1,-16,18,-25,2,20,5,1,8,-3,12,-9,1,11,-3,-7,4,18,-36,-7,11,26,12,6,11,6,21,-9,3,31,-5,-23,13,4,36,21,24,-2,23,-6,2,-37,-15,-9,-3,-30,-6,6,7,12,-2,-4,-18,4,-34,7,-28,2,11,-13,19,-12,24,-25,-53,21,-42,33,28,2,-15,35,-8,46,-12,-15,2,20,-5,-56,13,15,16,10,17,-49,-86,-75,-54,73,26,9,45,-40,16,-33,15,-13,25,10,-2,36,-13,-36,17,-23,-39,13,17,73,-32,33,22,-15,13,13,44,42,11,0,-47,54,13,12,33,21,-25,41,13,-6,2,-23,22,-8,21,28,-30,26,-75,13,4,-21,-25,-121,-22,16,-49,43]},"generated":"2026-10-22T09:50:45Z","disclaimer":"Educational research only. Past patterns do not guarantee future results. Not financial advice.","demo":true,"demo_note":"Sample data for Tesla as of the close on 21 October 2026. Earnings beat/miss labels and news labels were checked by hand for this sample."}</script>
+<script>
+(function(){var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks');if(!h)return;h.addEventListener('click',function(){var o=n.classList.toggle('mobile-open');h.setAttribute('aria-expanded',o)})})();
+
+const API = 'https://api.fintiq.uk';
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sgn = v => v > 0 ? '+' : v < 0 ? '−' : '';
+const pc = (v, d = 1) => v == null ? '–' : sgn(v) + Math.abs(v).toFixed(d) + '%';
+const cls = v => v == null ? '' : v >= 0 ? 'pos' : 'neg';
+const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'});
+const CAT_COL = {"Earnings":"#F59E0B","Sales & delivery data":"#60A5FA","Product & technology":"#22c55e","Analyst rating":"#A78BFA","Deals & partnerships":"#2DD4BF","Legal & regulation":"#F472B6","Management & leadership":"#FB923C","Politics & policy":"#EF4444","Market-wide news":"#94A3B8","Unexplained":"#64748B"};
+let D = null, lens = 'months', sel = null;
+
+function money(v) {
+  if (v == null) return '–';
+  const c = (D && D.currency) || 'USD';
+  if (c === 'GBp' || c === 'GBX') return v.toFixed(v < 100 ? 2 : 0) + 'p';
+  const sym = {USD: '$', GBP: '£', EUR: '€'}[c] || '';
+  return sym + v.toFixed(2) + (sym ? '' : ' ' + c);
+}
+function pill(score, n) {
+  if (n < 4) return '<span class="pill p-few">Few examples</span>';
+  if (score >= 0.7) return '<span class="pill p-usual">Usually</span>';
+  if (score >= 0.55) return '<span class="pill p-often">More often than not</span>';
+  if (score > 0.45) return '<span class="pill p-flip">Coin flip</span>';
+  return '<span class="pill p-rare">Rarely</span>';
+}
+
+// ---------- loading ----------
+const STEPS = ['Fetching three years of prices…', 'Separating the market\'s moves from the company\'s own…', 'Finding the biggest news days…', 'Reading the news behind each one…', 'Measuring what happened afterwards…'];
+let stepTimer = null;
+function showLoading(t) {
+  $('out').innerHTML = ''; $('banner').hidden = true;
+  const st = $('status'); st.hidden = false; let k = 0;
+  st.innerHTML = `<div class="spinner"></div><div id="stepTxt">${esc(t)}: ${STEPS[0]}</div><div class="note">The first look at a company can take up to a minute. After that it is saved for everyone.</div>`;
+  clearInterval(stepTimer);
+  stepTimer = setInterval(() => { k = Math.min(k + 1, STEPS.length - 1); const el = $('stepTxt'); if (el) el.textContent = `${t}: ${STEPS[k]}`; }, 6000);
+}
+function showError(msg) {
+  clearInterval(stepTimer);
+  $('status').hidden = false;
+  $('status').innerHTML = `<p class="err">${esc(msg)}</p><p class="note">Check the ticker (UK shares end in .L, for example SHEL.L) or <button class="chip" id="demoBtn">see the Tesla example</button></p>`;
+  $('demoBtn').onclick = () => loadDemo();
+}
+async function load(ticker) {
+  ticker = (ticker || '').trim().toUpperCase();
+  if (!/^[A-Z0-9.\-^=]{1,15}$/.test(ticker)) { showError('Please enter a ticker such as TSLA, AAPL or SHEL.L.'); return; }
+  $('tickerInput').value = ticker;
+  const url = new URL(location.href); url.searchParams.set('ticker', ticker); history.replaceState(null, '', url);
+  showLoading(ticker);
+  try {
+    const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 90000);
+    const r = await fetch(`${API}/catalyst-atlas/${encodeURIComponent(ticker)}`, {signal: ctrl.signal});
+    clearTimeout(to);
+    if (!r.ok) { let m = `We couldn't analyse ${ticker} right now.`; try { const j = await r.json(); if (j.detail) m = j.detail; } catch (e) {} throw new Error(m); }
+    D = await r.json();
+    clearInterval(stepTimer); $('status').hidden = true;
+    if (typeof gtag === 'function') gtag('event', 'catalyst_atlas_view', {ticker});
+    render();
+  } catch (e) {
+    showError(e.name === 'AbortError' ? 'This is taking too long. Please try again in a minute.' : (e.message || 'Something went wrong.'));
+  }
+}
+function loadDemo() {
+  clearInterval(stepTimer); $('status').hidden = true;
+  D = JSON.parse($('demoData').textContent);
+  $('tickerInput').value = '';
+  $('banner').hidden = false; $('banner').textContent = 'Example: ' + D.demo_note + ' Type any ticker above to see live analysis.';
+  render();
+}
+
+// ---------- render ----------
+function render() {
+  lens = 'months'; sel = null;
+  const s = D.summary, own = D.events;
+  const hasNews = s.recent_news ? `<p>${esc(s.recent_news)}</p>` : '';
+  $('out').innerHTML = `
+  <div class="company"><h2>${esc(D.name)} <span style="color:var(--dim);font-weight:600;font-size:1rem">${esc(D.ticker)}</span></h2>
+    <span class="px">${money(D.price)}</span><span class="meta">Closing price ${fmtDate(D.asof)}${D.sector ? ' · ' + esc(D.sector) : ''}</span></div>
+  <div class="grid two">
+    <div class="card"><div class="label">In a nutshell</div>
+      <div class="say"><p><b>${esc(s.headline)}</b></p><p>${esc(s.own_move)}</p><p>${esc(s.phase)}</p><p>${esc(s.beta)}</p>${hasNews}</div>
+      <div class="chartbox" style="margin-top:14px"><svg id="miniChart" role="img" aria-label="Price over the last year with news days"></svg></div>
+      <div class="legend" id="miniLegend"></div>
+    </div>
+    <div class="card"><div class="label">Likely price range</div><h2>Where the price could be</h2>
+      <div class="sub">Based on ${esc(D.sigma_src)} (about ${D.sigma}% a year). It shows how far the price might move, not which way.</div>
+      <div class="rng" id="ranges"></div>
+      <p class="note">White line: today's price. Dark band: 7 in 10 chance. Light band: 9 in 10 chance.</p>
+    </div>
+  </div>
+  <section><div class="card"><div class="label">Coming up</div><h2>Known events ahead</h2><div class="sub">Dates come from the company's published calendar.</div><div class="up" id="upcoming"></div></div></section>
+  <section><div class="headrow"><div><div class="label">What moves ${esc(D.name)}</div><h2 style="font-size:1.3rem;font-weight:800">How the price reacted to each kind of news</h2>
+    <div class="note" style="margin-top:2px">All moves are the company's own move, after taking out what the whole market did.</div></div></div>
+    <div class="cats" id="cats"></div></section>
+  <section><div class="card"><div class="headrow"><div><div class="label">The story so far</div><h2>Rallies, falls and what drove them</h2><div class="sub" id="lensNote"></div></div>
+    <div class="lens" role="group" aria-label="Time scale"><button data-l="weeks">Weeks</button><button data-l="months" aria-pressed="true">Months</button><button data-l="year">Years</button></div></div>
+    <div class="chartbox"><svg id="bigChart" role="img" aria-label="Price history with rallies and falls"></svg></div>
+    <div class="legend" id="bigLegend"></div>
+    <div class="phase" id="phaseBox"></div></div></section>
+  <section><div class="card"><div class="label">Every news day we found</div><h2>Catalyst diary</h2><div class="sub">Company's own move before and after each event. Newest first.</div>
+    <div class="tablewrap"><table id="evTable"></table></div></div></section>
+  <section><div class="cta"><h3>Want the full picture on ${esc(D.ticker)}?</h3><p>The Stock Deep Dive adds fundamentals, valuation, technicals, risk and an AI analyst you can question.</p>
+    <a class="btn" href="/deep-dive.html?ticker=${encodeURIComponent(D.ticker)}">Open the ${esc(D.ticker)} Deep Dive →</a></div></section>`;
+  renderMini(); renderRanges(); renderUpcoming(); renderCats(); renderTable(); renderBig();
+  document.querySelectorAll('.lens button').forEach(b => b.onclick = () => { lens = b.dataset.l; sel = null; document.querySelectorAll('.lens button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderBig(); });
+  window.scrollTo({top: $('out').offsetTop - 70, behavior: 'smooth'});
+}
+
+const S = () => D.series;
+function lineChart(svg, i0, opts = {}) {
+  const W = Math.max(320, svg.parentElement.clientWidth), H = opts.h || 220, pl = 46, pr = 10, pt = 10, pb = 22;
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', W); svg.setAttribute('height', H);
+  const c = S().close, d = S().dates, n = c.length;
+  let lo = Infinity, hi = -Infinity; for (let i = i0; i < n; i++) { lo = Math.min(lo, c[i]); hi = Math.max(hi, c[i]); }
+  const pad = (hi - lo) * .08 || 1; lo -= pad; hi += pad;
+  const xs = i => pl + (i - i0) / (n - 1 - i0) * (W - pl - pr), ys = v => pt + (hi - v) / (hi - lo) * (H - pt - pb);
+  let g = '';
+  const step = niceStep((hi - lo) / 4);
+  for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) g += `<line x1="${pl}" x2="${W - pr}" y1="${ys(v)}" y2="${ys(v)}" stroke="rgba(255,255,255,0.06)"/><text x="${pl - 6}" y="${ys(v) + 4}" text-anchor="end">${fmtAxis(v)}</text>`;
+  let lastM = '';
+  for (let i = i0; i < n; i++) { const m = d[i].slice(0, 7); if (m !== lastM && (i0 > n - 300 ? true : ['01', '07'].includes(d[i].slice(5, 7)))) { if (lastM) { const lab = i0 > n - 300 ? new Date(d[i] + 'T00:00:00Z').toLocaleString('en-GB', {month: 'short', timeZone: 'UTC'}) : (d[i].slice(5, 7) === '01' ? d[i].slice(0, 4) : 'Jul'); g += `<text x="${xs(i) + 2}" y="${H - 6}">${lab}</text>`; } lastM = m; } }
+  if (opts.under) g += opts.under(xs, ys, pt, H - pb);
+  let p = ''; for (let i = i0; i < n; i++) p += (i === i0 ? 'M' : 'L') + xs(i).toFixed(1) + ',' + ys(c[i]).toFixed(1);
+  g += `<path d="${p}" fill="none" stroke="#F1F5F9" stroke-width="1.6"/>`;
+  const idx = {}; d.forEach((x, i) => idx[x] = i);
+  D.events.forEach(e => { const i = idx[e.date]; if (i == null || i < i0) return; g += `<circle cx="${xs(i)}" cy="${ys(c[i])}" r="4.5" fill="${CAT_COL[e.cat] || '#94A3B8'}" stroke="#0D1B2A" stroke-width="1.5"><title>${esc(fmtDate(e.date))}: ${esc(e.title)} (${pc(e.d0)} own move)</title></circle>`; });
+  svg.innerHTML = g;
+  return {xs, ys};
+}
+function niceStep(x) { const p = Math.pow(10, Math.floor(Math.log10(x))); const f = x / p; return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p; }
+function fmtAxis(v) { return v >= 1000 ? Math.round(v).toLocaleString('en-GB') : v >= 10 ? Math.round(v) : v.toFixed(1); }
+function legendFor(el, i0) {
+  const used = [...new Set(D.events.filter(e => S().dates.indexOf(e.date) >= i0).map(e => e.cat))];
+  $(el).innerHTML = used.map(c => `<span><i style="background:${CAT_COL[c] || '#94A3B8'}"></i>${esc(c === 'Unexplained' ? 'Big move, no clear news' : c)}</span>`).join('');
+}
+function renderMini() { const n = S().close.length, i0 = Math.max(0, n - 252); lineChart($('miniChart'), i0, {h: 190}); legendFor('miniLegend', i0); }
+
+function renderRanges() {
+  const R = D.ranges, lo = Math.min(...R.map(r => r.lo90)), hi = Math.max(...R.map(r => r.hi90)), X = v => (v - lo) / (hi - lo) * 100;
+  const when = {"1 week": "a week from now", "1 month": "a month from now", "3 months": "three months from now"};
+  $('ranges').innerHTML = R.map(r => `<div class="row"><div class="top"><span>${esc(r.label)}</span><b>${money(r.lo70)} – ${money(r.hi70)}</b></div>
+    <div class="bar" aria-label="${esc(r.label)} range"><div class="b90" style="left:${X(r.lo90)}%;width:${X(r.hi90) - X(r.lo90)}%"></div><div class="b70" style="left:${X(r.lo70)}%;width:${X(r.hi70) - X(r.lo70)}%"></div><div class="now" style="left:${X(D.price)}%"></div></div>
+    <div class="ends"><span>1 in 10 below ${money(r.lo90)}</span><span>1 in 10 above ${money(r.hi90)}</span></div>
+    <div class="note" style="margin-top:0">7 in 10 chance the price is between ${money(r.lo70)} and ${money(r.hi70)} ${when[r.label] || ''}.</div></div>`).join('');
+}
+
+function grp(name) { return D.groups.find(g => g.name === name); }
+function renderUpcoming() {
+  const el = $('upcoming');
+  if (!D.upcoming || !D.upcoming.length) { el.innerHTML = '<p class="note">No confirmed dates yet. Results dates are usually announced 2–4 weeks ahead.</p>'; return; }
+  el.innerHTML = D.upcoming.map(u => {
+    const when = u.note || (u.days === 0 ? 'Today' : u.days === 1 ? 'Tomorrow' : `In ${u.days} days`) + ` (${fmtDate(u.date)})`;
+    const b = grp('Earnings beat'), m = grp('Earnings miss'), ru = grp('Price ran up 5%+ before the news');
+    const li = [];
+    if (u.avg_abs_move != null) li.push(`On past results days the share price moved about <b>±${u.avg_abs_move.toFixed(1)}%</b> on average (${u.n_past} results).`);
+    if (b) li.push(`When profit <b>beat</b> forecasts, the price beat the market on the day ${b.day0.hits} of ${b.day0.n} times, and was ahead a month later ${b.month.hits} of ${b.month.n} times.`);
+    if (m) li.push(`When profit <b>missed</b> forecasts, it fell behind the market on the day ${m.day0.hits} of ${m.day0.n} times, and was still behind a month later ${m.month.hits} of ${m.month.n} times.`);
+    if (u.eps_est != null) li.push(`Analysts expect earnings of about <b>${u.eps_est.toFixed(2)}</b> per share.`);
+    let warn = '';
+    if (u.runup_flag) {
+      warn = `<div class="warn">The shares have already risen about ${pc(u.runup5)} more than the market in the past week.` + (ru ? ` In ${D.name}'s history, after a rise like that before news, the price fell on the day ${ru.day0.hits} of ${ru.day0.n} times${ru.day0.n < 4 ? ' (few examples)' : ''}.` : '') + `</div>`;
+    }
+    return `<div class="ev"><div class="when">${esc(u.type)} results · ${esc(when)}</div><ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>${warn}</div>`;
+  }).join('');
+}
+
+function sentence(g) {
+  const n = g.day0.n;
+  if (g.name === 'Earnings beat') return `When profit beat forecasts (${n} times), the price beat the market on the day ${g.day0.hits} of ${n} times. A month later it was ahead ${g.month.hits} of ${g.month.n} times.`;
+  if (g.name === 'Earnings miss') return `When profit missed forecasts (${n} times), the price fell behind the market on the day ${g.day0.hits} of ${n} times. A month later it was still behind ${g.month.hits} of ${g.month.n} times.`;
+  if (g.name.startsWith('Price ran up')) return `When the price had already jumped 5%+ (beyond the market) in the week before news, it fell on the news day ${g.day0.hits} of ${n} times.`;
+  const what = g.name === 'Big moves with no clear news' ? 'Big moves with no clear news behind them' : `Big "${g.name.toLowerCase()}" news`;
+  return `${what} moved the price about ±${(g.avg_abs_day0 || 0).toFixed(1)}% on the day (${n} times). The move was still there a month later ${g.month.hits} of ${g.month.n} times.`;
+}
+function pathSvg(g) {
+  // average path of the company's own move, day 0 to 60; "stick" groups are aligned so every move points up
+  const evs = D.events.filter(e => g.dates.includes(e.date));
+  const flip = g.expects === 'stick';
+  const paths = evs.map(e => e.path.map(v => v == null ? null : (flip ? Math.sign(e.d0 || 1) * v : v)));
+  const avg = [], lo = [], hi = [];
+  for (let k = 0; k <= 60; k++) { const v = paths.map(p => p[k]).filter(x => x != null); avg.push(v.length >= 2 ? v.reduce((a, b) => a + b, 0) / v.length : null); lo.push(v.length >= 2 ? Math.min(...v) : null); hi.push(v.length >= 2 ? Math.max(...v) : null); }
+  const vals = [...lo, ...hi, 0].filter(x => x != null); let mn = Math.min(...vals), mx = Math.max(...vals); const pad = (mx - mn) * .1 || 1; mn -= pad; mx += pad;
+  const W = 290, H = 110, pl = 30, pr = 6, pt = 6, pb = 18, xs = k => pl + k / 60 * (W - pl - pr), ys = v => pt + (mx - v) / (mx - mn) * (H - pt - pb);
+  let band = '', line = '';
+  const ks = [...Array(61).keys()].filter(k => avg[k] != null);
+  if (ks.length) {
+    band = 'M' + ks.map(k => xs(k) + ',' + ys(hi[k])).join('L') + 'L' + ks.slice().reverse().map(k => xs(k) + ',' + ys(lo[k])).join('L') + 'Z';
+    line = 'M' + ks.map(k => xs(k) + ',' + ys(avg[k])).join('L');
+  }
+  const last = ks.length ? avg[ks[ks.length - 1]] : null;
+  const col = last == null ? '#94A3B8' : last >= 0 ? '#22c55e' : '#ef4444';
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Average move from day 0 to day 60">
+    <line x1="${pl}" x2="${W - pr}" y1="${ys(0)}" y2="${ys(0)}" stroke="rgba(255,255,255,0.15)"/>
+    <text x="${pl - 4}" y="${ys(0) + 4}" text-anchor="end">0%</text><text x="${pl - 4}" y="${ys(mx - pad) + 8}" text-anchor="end">${Math.round(mx - pad)}%</text><text x="${pl - 4}" y="${ys(mn + pad)}" text-anchor="end">${Math.round(mn + pad)}%</text>
+    ${[0, 5, 20, 60].map(k => `<line x1="${xs(k)}" x2="${xs(k)}" y1="${pt}" y2="${H - pb}" stroke="rgba(255,255,255,0.05)"/><text x="${xs(k)}" y="${H - 5}" text-anchor="middle">${k === 0 ? 'Day 0' : k === 5 ? '1w' : k === 20 ? '1m' : '3m'}</text>`).join('')}
+    <path d="${band}" fill="rgba(245,158,11,0.12)"/><path d="${line}" fill="none" stroke="${col}" stroke-width="2.2"/></svg>`;
+}
+function renderCats() {
+  const order = g => g.name.startsWith('Earnings') ? 0 : g.name.startsWith('Price ran up') ? 2 : 1;
+  const gs = D.groups.slice().sort((a, b) => order(a) - order(b) || b.day0.n - a.day0.n);
+  if (!gs.length) { $('cats').innerHTML = '<p class="note">Not enough repeated news yet to show patterns for this company.</p>'; return; }
+  $('cats').innerHTML = gs.map((g, k) => {
+    const key = g.expects === 'stick' ? g.month : g.name.startsWith('Price ran up') ? g.day0 : g.month;
+    const evs = D.events.filter(e => g.dates.includes(e.date)).slice().reverse();
+    return `<div class="cat"><h3><span>${esc(g.name)}</span>${pill(key.score, key.n)}</h3><p>${esc(sentence(g))}</p>
+      ${pathSvg(g)}
+      <div class="note" style="margin-top:-4px">${g.expects === 'stick' ? 'Line: average size of the move, with falls flipped so every case points up. If it stays above 0, moves tended to last.' : 'Line: average own move from the news day to 3 months later. Shaded: best and worst cases.'}</div>
+      <div class="stats"><span>Day 0 <b class="${cls(g.avg_day0)}">${pc(g.avg_day0)}</b></span><span>1 month <b class="${cls(g.avg_month)}">${pc(g.avg_month)}</b></span><span>Examples <b>${g.day0.n}</b></span></div>
+      <button class="more" aria-expanded="false" data-k="${k}">Show each time ▾</button>
+      <div class="list" hidden>${evs.map(e => `<div><span>${esc(fmtDate(e.date))}</span><span>${esc(e.title)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span></div>`).join('')}</div></div>`;
+  }).join('');
+  $('cats').querySelectorAll('.more').forEach(b => b.onclick = () => { const l = b.nextElementSibling; l.hidden = !l.hidden; b.setAttribute('aria-expanded', !l.hidden); b.textContent = l.hidden ? 'Show each time ▾' : 'Hide ▴'; });
+}
+function renderTable() {
+  $('evTable').innerHTML = `<thead><tr><th>Date</th><th>What happened</th><th>Price that day</th><th>Week before</th><th>Day 0</th><th>1 week</th><th>1 month</th><th>3 months</th></tr></thead><tbody>` +
+    D.events.slice().reverse().map(e => `<tr><td>${esc(fmtDate(e.date))}</td><td><span style="color:${CAT_COL[e.cat] || '#94A3B8'};font-weight:700;font-size:.75rem">${esc(e.kind === 'Unexplained' ? 'No clear news' : e.kind)}</span><br>${esc(e.title)}</td>` +
+    ['ret', 'pre', 'd0', 'd5', 'd20', 'd60'].map(k => `<td class="${cls(e[k])}">${pc(e[k])}</td>`).join('') + '</tr>').join('') + '</tbody>';
+}
+const LENS_NOTE = {weeks: 'Swings of about {t}% or more, usually a few weeks long.', months: 'Moves of about {t}% or more, usually one to four months.', year: 'The big trends: moves of about {t}% or more.'};
+function renderBig() {
+  const P = D.phases[lens], legs = P.legs;
+  $('lensNote').textContent = LENS_NOTE[lens].replace('{t}', P.threshold) + ' Tap a section of the chart to see what drove it.';
+  const svg = $('bigChart');
+  const {xs} = lineChart(svg, 0, {h: 300, under: (xs, ys, top, bot) => {
+    let g = '';
+    (D.quiet || []).forEach(([a, b]) => g += `<rect x="${xs(a)}" y="${top}" width="${xs(b) - xs(a)}" height="${bot - top}" fill="rgba(255,255,255,0.035)"/>`);
+    legs.forEach((l, k) => {
+      const on = sel === k, col = l.chg >= 0 ? '#22c55e' : '#ef4444';
+      g += `<rect class="leg" data-k="${k}" x="${xs(l.a)}" y="${top}" width="${Math.max(3, xs(l.b) - xs(l.a))}" height="${bot - top}" fill="${on ? 'rgba(245,158,11,0.13)' : 'transparent'}" style="cursor:pointer"/>`;
+      g += `<line x1="${xs(l.a)}" y1="${ys(S().close[l.a])}" x2="${xs(l.b)}" y2="${ys(S().close[l.b])}" stroke="${col}" stroke-width="${on ? 2.6 : 1.4}" stroke-dasharray="5 4" pointer-events="none"/>`;
+      if (legs.length <= 14) { const mx = (xs(l.a) + xs(l.b)) / 2, y = l.chg >= 0 ? Math.min(ys(S().close[l.a]), ys(S().close[l.b])) - 8 : Math.max(ys(S().close[l.a]), ys(S().close[l.b])) + 16; g += `<text x="${mx}" y="${Math.max(top + 10, Math.min(bot - 4, y))}" text-anchor="middle" style="fill:${col};font-weight:700" pointer-events="none">${sgn(l.chg)}${Math.abs(l.chg).toFixed(0)}%</text>`; }
+    });
+    return g;
+  }});
+  svg.querySelectorAll('.leg').forEach(r => r.onclick = () => { sel = +r.dataset.k; renderBig(); });
+  legendFor('bigLegend', 0);
+  $('bigLegend').insertAdjacentHTML('beforeend', '<span><i style="background:rgba(255,255,255,0.25);border-radius:2px"></i>Quiet spell</span>');
+  const k = sel ?? legs.length - 1, l = legs[k];
+  const parts = [['Whole stock market', l.mkt, '#60A5FA'], ['Its sector and interest rates', l.sec, '#A78BFA'], ['Company news (the dots)', l.news, '#F59E0B'], ['Other buying and selling', l.other, '#64748B']];
+  const evs = (l.events || []).map(i => D.events[i]).filter(Boolean);
+  $('phaseBox').innerHTML = `<div><div class="label">${l.chg >= 0 ? 'Rally' : 'Fall'} · ${l.days} trading days</div>
+      <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px">${fmtDate(S().dates[l.a])} → ${fmtDate(S().dates[l.b])}: <span class="${cls(l.chg)}">${pc(l.chg)}</span></h3>
+      <p class="note" style="margin:0 0 10px">${money(S().close[l.a])} → ${money(S().close[l.b])}. Here's what that move was made of, in percentage points:</p>
+      <div class="split">${parts.map(([n, v, c]) => `<div><i style="background:${c}"></i><span>${n}</span><b class="${cls(v)}">${pc(v)}</b></div>`).join('')}</div></div>
+    <div><div class="label">News inside this period</div><div class="list">${evs.length ? evs.map(e => `<div><span>${esc(fmtDate(e.date))}</span><span>${esc(e.title)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span></div>`).join('') : '<p class="note">No big news days. The market and steady buying or selling did the work.</p>'}</div></div>`;
+}
+
+// ---------- start ----------
+$('searchForm').addEventListener('submit', e => { e.preventDefault(); load($('tickerInput').value); });
+$('chips').querySelectorAll('.chip').forEach(c => c.onclick = () => load(c.dataset.t));
+window.addEventListener('resize', () => { if (D) { renderMini(); renderBig(); } });
+const qp = new URLSearchParams(location.search).get('ticker');
+if (qp) load(qp); else loadDemo();
+</script>
+
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <ul>
+    <li><a href="/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Home</a></li>
+    <li><a href="/bulletin.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Bulletin</a></li>
+    <li><a href="/deep-dive.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Deep Dive</a></li>
+    <li><a href="/tools.html" class="active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 1 4.93 19.07"/></svg>Tools</a></li>
+    <li><a href="/learn.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learn</a></li>
+  </ul>
+</nav>
+</body>
+</html>

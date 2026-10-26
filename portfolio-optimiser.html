@@ -164,6 +164,13 @@ textarea.ticker-input:focus{border-color:#F59E0B}
   .nav-hamburger{display:block}
   .hero h1{font-size:1.6rem}
 }
+
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(8,18,32,0.97);border-top:1px solid rgba(245,158,11,0.2);backdrop-filter:blur(16px);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
+.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.62rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px}
+.mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
+@media(max-width:768px){.mobile-bottom-nav{display:block}body{padding-bottom:68px}}
 </style>
 </head>
 <body>
@@ -838,5 +845,15 @@ function selectFintiqPortfolio(key){
   detail.insertBefore(heading,detail.firstChild);
 }
 </script>
+
+<nav class="mobile-bottom-nav" aria-label="Mobile navigation">
+  <ul>
+    <li><a href="/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Home</a></li>
+    <li><a href="/bulletin.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Bulletin</a></li>
+    <li><a href="/deep-dive.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Deep Dive</a></li>
+    <li><a href="/tools.html" class="active"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 1 1 4.93 19.07"/></svg>Tools</a></li>
+    <li><a href="/learn.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Learn</a></li>
+  </ul>
+</nav>
 </body>
 </html>
