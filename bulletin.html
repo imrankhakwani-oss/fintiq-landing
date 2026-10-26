@@ -674,7 +674,7 @@ function _updateJsonLd(isoTimestamp) {
       </div>
       <div class="eps-meta-row" style="display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap">
         <div class="eps-meta" style="margin-bottom:0">Actual vs Estimate · <span class="beat-dot beat">▲ Beat &gt;+2%</span> <span class="beat-dot miss">▼ Miss &lt;-2%</span> <span class="beat-dot inline">≈ In-line</span> · Grey = forecast</div>
-        <div class="eps-search-wrap" style="margin-left:auto">
+        <div class="eps-search-wrap" style="margin-left:auto;display:none">
           <input id="eps-search" type="text" placeholder="Search ticker or company…" oninput="filterEarnings()" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 10px;font-size:0.8rem;outline:none;min-width:200px;width:100%">
         </div>
       </div>
@@ -1287,12 +1287,16 @@ function _updateJsonLd(isoTimestamp) {
       tabEl.classList.remove('active');
       document.getElementById('eps-content').innerHTML = '';
       document.getElementById('eps-loading').style.display = 'none';
+      const sw = document.querySelector('.eps-search-wrap');
+      if (sw) { sw.style.display = 'none'; document.getElementById('eps-search').value = ''; }
       return;
     }
 
     _activeEarningsIndex = index;
     document.querySelectorAll('.eps-tab').forEach(t => t.classList.remove('active'));
     if (tabEl) tabEl.classList.add('active');
+    const sw = document.querySelector('.eps-search-wrap');
+    if (sw) sw.style.display = '';
 
     // Already have client-side cache — render instantly
     if (_earningsCache[index]) { renderEarnings(_earningsCache[index]); return; }
