@@ -91,7 +91,8 @@
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; overflow-x: hidden; }
+    body { overflow-x: hidden; }
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--navy); color: var(--text); line-height: 1.6; }
 
     /* ── NAV ── */
@@ -1046,6 +1047,7 @@
   let lastY = 0;
   const mainNav = document.getElementById('mainNav');
   window.addEventListener('scroll', () => {
+    if (window.innerWidth <= 768) { mainNav.style.transform = 'translateY(0)'; return; }
     const y = window.scrollY;
     mainNav.style.transform = (y > lastY && y > 100) ? 'translateY(-100%)' : 'translateY(0)';
     lastY = y;

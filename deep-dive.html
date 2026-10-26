@@ -933,7 +933,7 @@ a{color:var(--gold);text-decoration:none}
 .tj-reanalyse-banner button:hover{background:rgba(245,158,11,.25)}
 
 /* ── MOBILE BOTTOM NAV ── */
-.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(8,18,32,0.97);border-top:1px solid rgba(245,158,11,0.2);backdrop-filter:blur(16px);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
+.mobile-bottom-nav{display:none;position:fixed;bottom:0;top:auto;height:auto;left:0;right:0;z-index:300;background:rgba(8,18,32,0.97);border-top:1px solid rgba(245,158,11,0.2);backdrop-filter:blur(16px);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
 .mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
 .mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.62rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px}
 .mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
@@ -5369,20 +5369,7 @@ function _doGenerateReport(returnHtml = false) {
     Fintiq Research Report · ${today} · ${ticker} · Educational use only — not financial advice · Fintiq is not FCA authorised · Always verify data independently
   </div>
 
-<script>
-(function(){
-  var btn=document.getElementById('navHamburger');
-  var nl=document.getElementById('navLinks');
-  if(!btn||!nl) return;
-  btn.addEventListener('click',function(){
-    var open=nl.classList.toggle('mobile-open');
-    btn.setAttribute('aria-expanded',open);
-  });
-  document.querySelectorAll('.nav-links a').forEach(function(a){
-    a.addEventListener('click',function(){nl.classList.remove('mobile-open');btn.setAttribute('aria-expanded',false);});
-  });
-})();
-</script>
+
 </body></html>`;
   if (returnHtml) return _pdfHtml;
   // Always download as HTML file — popup approach is blocked by most browsers
