@@ -383,7 +383,8 @@ function buildResults(data,container,currentPt,userWeights){
       ${hasUser?'<span style="color:#c084fc;font-weight:600">Yours</span> — your current allocation &nbsp;·&nbsp; ':''}
       <span style="color:#d97706;font-weight:600">S&P 500</span> — market benchmark
     </div>
-    <table class="perf-tbl">
+    <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+    <table class="perf-tbl" style="min-width:420px">
       <thead><tr>
         <th style="text-align:left;width:28%">Metric</th>
         <th class="right" style="color:#F59E0B">Optimal</th>
@@ -402,7 +403,8 @@ function buildResults(data,container,currentPt,userWeights){
         ${mRow('Info Ratio','info_ratio',ms,mv,ew,uw,spy,false,'Consistency of beating S&P 500 (>0.5 = strong)')}
         ${mRow('Beta','beta',ms,mv,ew,uw,spy,false,'Sensitivity to S&P 500 moves (1.0 = moves with market)')}
       </tbody>
-    </table>`;
+    </table>
+    </div>`;
   container.appendChild(mc);
 
   // ── Row 2: Efficient Frontier (big chart + collapsible explainer) ──

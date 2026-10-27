@@ -141,13 +141,16 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .idx-tag.dj{background:rgba(245,158,11,0.1);color:#F59E0B}
 
 /* FOOTER */
-footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}
-.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}
-.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}
-.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
-.f-links a{color:#94A3B8;font-size:0.85rem}
-.f-copy{color:#334155;font-size:0.75rem}
-.disclaimer{max-width:640px;margin:20px auto 0;color:#475569;font-size:0.75rem;line-height:1.6}
+footer{background:#050d18;border-top:1px solid rgba(255,255,255,0.08);padding:44px 5% 24px}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px;margin-bottom:32px}
+.footer-brand .f-logo-row{font-size:1.3rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px}
+.footer-brand p{color:#64748B;font-size:0.84rem;margin-top:8px;max-width:240px;line-height:1.7}
+.footer-links h4{font-size:0.84rem;font-weight:700;color:#F1F5F9;margin-bottom:12px}
+.footer-links a{display:block;color:#64748B;text-decoration:none;font-size:0.84rem;margin-bottom:8px;transition:color 0.2s}
+.footer-links a:hover{color:#F59E0B}
+.footer-bottom{border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p,.footer-disclaimer{color:#64748B;font-size:0.78rem}
+.footer-disclaimer{max-width:560px;line-height:1.55}
 
 /* MOBILE */
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
@@ -470,18 +473,48 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px
 
 <!-- FOOTER -->
 <footer>
-  <div class="f-logo" style="display:flex;align-items:center;justify-content:center;gap:8px"><svg width="22" height="22" viewBox="0 0 28 28" fill="none"><line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/><line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/><line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/><polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/></svg>Fintiq</div>
-  <div class="f-sub">Institutional-grade investing tools and guides — for every investor</div>
-  <div class="f-links">
-    <a href="https://www.fintiq.uk/">Home</a>
-    <a href="https://www.fintiq.uk/tools.html">Tools</a>
-    <a href="https://www.fintiq.uk/alpha-scanner.html">Alpha Scanner</a>
-    <a href="https://www.fintiq.uk/deep-dive.html">Stock Deep Dive</a>
-    <a href="https://www.fintiq.uk/bulletin.html">Market Bulletin</a>
-    <a href="https://www.fintiq.uk/learn.html">Learn</a>
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="f-logo-row">
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none"><line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/><line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/><line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/><polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/></svg>
+        Fintiq
+      </div>
+      <p>Your personal stock analyst. Institutional-grade analysis for every investor.</p>
+      <p style="margin-top:12px;font-size:0.78rem;color:#64748b;line-height:1.6">Fintiq Ltd<br>Companies House No. 07989936<br><a href="mailto:contactfintiq@gmail.com" style="color:#64748b;text-decoration:none">contactfintiq@gmail.com</a></p>
+    </div>
+    <div class="footer-links">
+      <h4>Tools</h4>
+      <a href="/bulletin.html">Market Bulletin</a>
+      <a href="/alpha-scanner.html">Alpha Scanner</a>
+      <a href="/factor-screener.html">Factor Screener</a>
+      <a href="/portfolio-optimiser.html">Portfolio Optimiser</a>
+      <a href="/pairs-trading.html">Pairs Trading</a>
+      <a href="/price-spectrum.html">PriceSpectrum</a>
+      <a href="/sipp-planner.html">SIPP Planner</a>
+      <a href="/pension-planner.html">Pension Planner</a>
+    </div>
+    <div class="footer-links">
+      <h4>Stock Deep Dive</h4>
+      <a href="/deep-dive.html">Business Analysis</a>
+      <a href="/deep-dive.html">Valuation (DCF)</a>
+      <a href="/deep-dive.html">Technical Analysis</a>
+      <a href="/deep-dive.html">Risk & Position Sizing</a>
+      <a href="/deep-dive.html">Catalyst Tracker</a>
+      <a href="/deep-dive.html">Investment Committee</a>
+    </div>
+    <div class="footer-links">
+      <h4>Learn</h4>
+      <a href="/learn.html#screening">Stock Screening</a>
+      <a href="/learn.html#technical">Technical Analysis</a>
+      <a href="/learn.html#portfolio">Portfolio Construction</a>
+      <a href="/learn.html#retirement">Retirement Planning</a>
+      <a href="/learn.html#markets">Markets & Strategies</a>
+    </div>
   </div>
-  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
-  <p class="disclaimer">Factor analysis is for educational and informational purposes only. Past factor exposures and historical alpha do not guarantee future performance. This is not financial advice. Always do your own research before investing.</p>
+  <div class="footer-bottom">
+    <p>© 2026 Fintiq. All rights reserved.</p>
+    <p class="footer-disclaimer">Fintiq Ltd (Companies House No. 07989936) provides information and analytical tools for educational purposes only. This is not financial advice. Factor analysis does not guarantee future results. Always do your own research before investing.</p>
+  </div>
 </footer>
 
 <!-- MOBILE BOTTOM NAV -->

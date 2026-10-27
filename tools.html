@@ -163,10 +163,10 @@
 body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.6}
 a{color:#F59E0B;text-decoration:none}
 
-nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
-.logo{font-size:1.5rem;font-weight:900;color:#F59E0B}
-.nav-links{display:flex;gap:16px;align-items:center}
-.nav-links a{color:#94A3B8;font-size:0.88rem}
+nav{background:rgba(8,18,32,0.96);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 5%;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.logo{font-size:1.45rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px;text-decoration:none;letter-spacing:-0.5px}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{color:#94A3B8;font-size:0.9rem;text-decoration:none}
 .nav-links a.active{color:#F59E0B}
 .btn-nav{background:#F59E0B!important;color:#0A1628!important;padding:7px 18px;border-radius:6px;font-weight:700;font-size:0.88rem}
 
@@ -217,12 +217,16 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .cta-box p{color:#94A3B8;font-size:0.9rem;margin-bottom:22px}
 .cta-btn{background:#F59E0B;color:#0A1628;padding:13px 30px;border-radius:8px;font-weight:700;font-size:0.9rem;display:inline-block}
 
-footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px;text-align:center}
-.f-logo{font-size:1.3rem;font-weight:900;color:#F59E0B;margin-bottom:6px}
-.f-sub{color:#64748B;font-size:0.82rem;margin-bottom:16px}
-.f-links{display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
-.f-links a{color:#94A3B8;font-size:0.82rem}
-.f-copy{color:#334155;font-size:0.72rem}
+footer{background:#050d18;border-top:1px solid rgba(255,255,255,0.08);padding:44px 5% 24px}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px;margin-bottom:32px}
+.footer-brand .f-logo-row{font-size:1.3rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px}
+.footer-brand p{color:#64748B;font-size:0.84rem;margin-top:8px;max-width:240px;line-height:1.7}
+.footer-links h4{font-size:0.84rem;font-weight:700;color:#F1F5F9;margin-bottom:12px}
+.footer-links a{display:block;color:#64748B;text-decoration:none;font-size:0.84rem;margin-bottom:8px;transition:color 0.2s}
+.footer-links a:hover{color:#F59E0B}
+.footer-bottom{border-top:1px solid rgba(255,255,255,0.08);padding-top:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p,.footer-disclaimer{color:#64748B;font-size:0.78rem}
+.footer-disclaimer{max-width:560px;line-height:1.55}
 
 /* Hamburger */
 .nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#F1F5F9;line-height:1}
@@ -230,14 +234,14 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 
 @media(max-width:768px){
   /* Nav */
-  .nav-links{display:none;position:absolute;top:56px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2)}
+  .nav-links{display:none;position:absolute;top:64px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2)}
   .nav-links.mobile-open{display:flex}
   .nav-links a{padding:13px 24px;font-size:0.95rem;border-bottom:1px solid rgba(255,255,255,0.05);color:#94A3B8}
   .nav-links a:hover{background:rgba(245,158,11,0.06);color:#F59E0B}
   .btn-nav{margin:10px 24px 14px!important;border-radius:8px!important;text-align:center;display:block;padding:11px 24px!important;font-size:0.9rem!important}
   .nav-hamburger{display:block}
   .nav-app-mobile{display:inline-block;background:#F59E0B;color:#0A1628!important;padding:6px 14px;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap}
-  nav{padding:10px 16px;position:sticky}
+  nav{padding:0 4%}
 
   /* Tool featured */
   .tool-featured{grid-template-columns:1fr;padding:24px}
@@ -543,28 +547,56 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 </div>
 
 <footer>
-  <div class="f-logo" style="display:flex;align-items:center;justify-content:center;gap:8px">
-    <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
-      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
-      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
-      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
-      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
-      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
-      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
-      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
-    </svg>
-    Fintiq
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="f-logo-row">
+        <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+          <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+          <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+          <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+          <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+          <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+          <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+          <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+        </svg>
+        Fintiq
+      </div>
+      <p>Your personal stock analyst. Institutional-grade analysis for every investor.</p>
+      <p style="margin-top:12px;font-size:0.78rem;color:#64748b;line-height:1.6">Fintiq Ltd<br>Companies House No. 07989936<br><a href="mailto:contactfintiq@gmail.com" style="color:#64748b;text-decoration:none">contactfintiq@gmail.com</a></p>
+    </div>
+    <div class="footer-links">
+      <h4>Tools</h4>
+      <a href="/bulletin.html">Market Bulletin</a>
+      <a href="/alpha-scanner.html">Alpha Scanner</a>
+      <a href="/factor-screener.html">Factor Screener</a>
+      <a href="/portfolio-optimiser.html">Portfolio Optimiser</a>
+      <a href="/pairs-trading.html">Pairs Trading</a>
+      <a href="/price-spectrum.html">PriceSpectrum</a>
+      <a href="/sipp-planner.html">SIPP Planner</a>
+      <a href="/pension-planner.html">Pension Planner</a>
+    </div>
+    <div class="footer-links">
+      <h4>Stock Deep Dive</h4>
+      <a href="/deep-dive.html">Business Analysis</a>
+      <a href="/deep-dive.html">Valuation (DCF)</a>
+      <a href="/deep-dive.html">Technical Analysis</a>
+      <a href="/deep-dive.html">Risk & Position Sizing</a>
+      <a href="/deep-dive.html">Catalyst Tracker</a>
+      <a href="/deep-dive.html">Investment Committee</a>
+    </div>
+    <div class="footer-links">
+      <h4>Learn</h4>
+      <a href="/learn.html#screening">Stock Screening</a>
+      <a href="/learn.html#technical">Technical Analysis</a>
+      <a href="/learn.html#portfolio">Portfolio Construction</a>
+      <a href="/learn.html#retirement">Retirement Planning</a>
+      <a href="/learn.html#markets">Markets & Strategies</a>
+    </div>
   </div>
-  <div class="f-sub">Institutional-grade investing tools and guides — for every investor</div>
-  <div class="f-links">
-    <a href="https://www.fintiq.uk/">Home</a>
-    <a href="https://www.fintiq.uk/tools.html">Tools</a>
-    <a href="https://www.fintiq.uk/alpha-scanner.html">Alpha Scanner</a>
-    <a href="https://www.fintiq.uk/deep-dive.html">Stock Deep Dive</a>
-    <a href="https://www.fintiq.uk/bulletin.html">Market Bulletin</a>
-    <a href="https://www.fintiq.uk/learn.html">Learn</a>
+  <div class="footer-bottom">
+    <p>© 2026 Fintiq. All rights reserved.</p>
+    <p class="footer-disclaimer">Fintiq Ltd (Companies House No. 07989936) provides information and analytical tools for educational purposes only. This is not financial advice. Investing involves risk. Past performance is not indicative of future results.</p>
   </div>
-  <div class="f-copy">© 2026 Fintiq. Educational content only. Not financial advice.</div>
 </footer>
 
 <div class="mobile-bottom-nav" role="navigation" aria-label="Mobile navigation">
