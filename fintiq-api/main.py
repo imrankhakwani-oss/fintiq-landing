@@ -1292,7 +1292,7 @@ def get_prices(ticker: str, period: str = "1y"):
     period accepts: 6mo, 1y, 2y, 5y
     """
     import yfinance as yf
-    allowed_periods = {"6mo","1y","2y","3y","5y"}
+    allowed_periods = {"5d","1mo","3mo","6mo","1y","2y","3y","5y"}
     if period not in allowed_periods:
         period = "1y"
     try:
