@@ -383,37 +383,243 @@ def _fetch_sector_data():
         except: out[sym] = None
     return out
 
-def _fetch_econ_calendar():
-    today = datetime.now().strftime("%Y-%m-%d")
-    end   = (datetime.now()+timedelta(days=5)).strftime("%Y-%m-%d")
-    try:
-        r = requests.get(f"{FMP_BASE}/v3/economic_calendar?from={today}&to={end}&apikey={FMP_KEY}", timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            return [e for e in data if e.get("impact") in ("High","Medium")] if data else []
-    except: pass
-    return []
+def _fetch_econ_calendar_v2() -> list:
+    """Fetch upcoming high-impact economic events.
+    Sources: FRED release schedule (CPI, NFP, PCE, GDP, Retail Sales, Jobless Claims) + hardcoded FOMC.
+    Returns events for today + next 7 days, sorted by date."""
+    events = []
+    today = datetime.now().date()
+    end_date = today + timedelta(days=7)
 
-def _fetch_market_news():
-    try:
-        r = requests.get(f"{FMP_BASE}/v4/general_news?page=0&apikey={FMP_KEY}", timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            if isinstance(data, list): return data[:10]
-    except: pass
-    return []
+    # FOMC dates — hardcoded in _FOMC_DATES
+    fomc_days, fomc_date = _get_next_fomc()
+    if fomc_date:
+        fd = datetime.strptime(fomc_date, "%Y-%m-%d").date()
+        if fd <= end_date:
+            events.append({
+                "date": fomc_date, "event": "FOMC Interest Rate Decision",
+                "country": "US", "impact": "High", "source": "Federal Reserve",
+                "estimate": None, "previous": None,
+            })
 
-def _fetch_earnings_today():
+    # FRED release IDs → (event name, country, impact)
+    FRED_RELEASES = {
+        10:  ("CPI Inflation", "US", "High"),
+        50:  ("Non-Farm Payrolls", "US", "High"),
+        54:  ("PCE Price Index", "US", "High"),
+        53:  ("GDP Growth Rate", "US", "High"),
+        67:  ("Retail Sales", "US", "High"),
+        61:  ("Jobless Claims", "US", "Medium"),
+        298: ("UMich Consumer Sentiment", "US", "Medium"),
+        57:  ("PPI Producer Prices", "US", "Medium"),
+    }
+
+    if FRED_API_KEY:
+        try:
+            r = requests.get(
+                "https://api.stlouisfed.org/fred/releases/dates",
+                params={
+                    "api_key": FRED_API_KEY,
+                    "file_type": "json",
+                    "include_release_dates_with_no_data": "true",
+                    "realtime_start": today.strftime("%Y-%m-%d"),
+                    "realtime_end": end_date.strftime("%Y-%m-%d"),
+                },
+                timeout=10,
+            )
+            if r.status_code == 200:
+                for rd in r.json().get("release_dates", []):
+                    rid = rd.get("release_id")
+                    rdate = rd.get("date", "")
+                    if rid in FRED_RELEASES and today.strftime("%Y-%m-%d") <= rdate <= end_date.strftime("%Y-%m-%d"):
+                        ename, country, impact = FRED_RELEASES[rid]
+                        events.append({
+                            "date": rdate, "event": ename, "country": country,
+                            "impact": impact, "source": "BLS/BEA via FRED",
+                            "estimate": None, "previous": None,
+                        })
+        except Exception:
+            pass
+
+    # Sort by date, deduplicate
+    seen: set = set()
+    unique: list = []
+    for e in sorted(events, key=lambda x: x["date"]):
+        k = (e["date"], e["event"])
+        if k not in seen:
+            seen.add(k)
+            unique.append(e)
+    return unique
+
+def _fetch_rss_news() -> list:
+    """Fetch latest market headlines from Reuters RSS feeds. No API key needed."""
+    import xml.etree.ElementTree as ET
+    RSS_FEEDS = [
+        "https://feeds.reuters.com/reuters/businessNews",
+        "https://feeds.reuters.com/reuters/marketsNews",
+    ]
+    items: list = []
+    for feed_url in RSS_FEEDS:
+        try:
+            r = requests.get(feed_url, timeout=8, headers={"User-Agent": "Fintiq/1.0 market research"})
+            if r.status_code != 200:
+                continue
+            root = ET.fromstring(r.content)
+            channel = root.find("channel")
+            if channel is None:
+                continue
+            for item in channel.findall("item")[:8]:
+                title   = (item.findtext("title") or "").strip()
+                link    = (item.findtext("link") or "").strip()
+                desc    = (item.findtext("description") or "").strip()
+                pubdate = (item.findtext("pubDate") or "").strip()
+                if title and len(title) > 20:
+                    items.append({
+                        "title": title, "url": link,
+                        "description": desc[:200] if desc else "",
+                        "published": pubdate, "source": "Reuters",
+                    })
+        except Exception:
+            continue
+    seen: set = set(); unique: list = []
+    for item in items:
+        if item["title"] not in seen:
+            seen.add(item["title"]); unique.append(item)
+    return unique[:12]
+
+_MAG7 = [
+    ("AAPL","Apple"), ("MSFT","Microsoft"), ("NVDA","Nvidia"),
+    ("AMZN","Amazon"), ("META","Meta"), ("GOOGL","Alphabet"), ("TSLA","Tesla"),
+]
+_MAG7_SYMBOLS = {sym for sym, _ in _MAG7}
+
+_KEY_EARNINGS_TICKERS = _MAG7 + [
+    ("JPM","JPMorgan"), ("GS","Goldman Sachs"), ("BAC","Bank of America"),
+    ("NFLX","Netflix"), ("AMD","AMD"), ("AVGO","Broadcom"),
+]
+
+def _fetch_earnings_v2() -> list:
+    """Fetch upcoming earnings for Mag7 + major banks via yfinance calendar."""
+    today = datetime.now().date()
+    results: list = []
+
+    def _check(sym: str, name: str):
+        try:
+            cal = yf.Ticker(sym).calendar
+            if not isinstance(cal, dict):
+                return
+            earn_dates = cal.get("Earnings Date", [])
+            if not isinstance(earn_dates, list):
+                earn_dates = [earn_dates]
+            for ed in earn_dates[:1]:
+                if ed is None:
+                    continue
+                earn_date = ed.date() if hasattr(ed, "date") else ed
+                days_away = (earn_date - today).days
+                if -1 <= days_away <= 14:
+                    eps_est = cal.get("EPS Estimate")
+                    results.append({
+                        "symbol": sym, "name": name,
+                        "date": earn_date.strftime("%Y-%m-%d"),
+                        "days_away": days_away,
+                        "eps_est": round(float(eps_est), 2) if eps_est is not None else None,
+                        "is_today": days_away == 0,
+                        "is_mag7": sym in _MAG7_SYMBOLS,
+                    })
+        except Exception:
+            pass
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        futs = [ex.submit(_check, sym, name) for sym, name in _KEY_EARNINGS_TICKERS]
+        for f in futs:
+            try: f.result(timeout=12)
+            except: pass
+
+    return sorted(results, key=lambda x: (x["days_away"], not x["is_mag7"]))
+
+def _fetch_boe_rate() -> float | None:
+    """Fetch Bank of England base rate via FRED."""
+    for series in ["BOERUKQ", "UKBRBASE"]:
+        obs = _fetch_fred(series, 2)
+        if obs:
+            try: return round(float(obs[0]["value"]), 2)
+            except: pass
+    return None
+
+def _compute_sentiment_score(bd: dict) -> dict:
+    """Compute market sentiment 0-100 (0=extreme fear, 100=extreme greed)."""
+    score = 50.0
+    signals: list = []
     try:
-        from datetime import date as _date
-        today = _date.today().strftime("%Y-%m-%d")
-        r = requests.get(f"{FMP_BASE}/v3/earning_calendar?from={today}&to={today}&apikey={FMP_KEY}", timeout=10)
-        if r.status_code == 200:
-            data = r.json()
-            if isinstance(data, list):
-                return sorted(data[:20], key=lambda x: abs(float(x.get("marketCapitalization") or 0)), reverse=True)[:10]
-    except: pass
-    return []
+        # Component 1: VIX level (40%)
+        vix_price = bd.get("^VIX", {}).get("price")
+        if vix_price:
+            vix = float(vix_price)
+            # VIX 10 → score +20; VIX 40 → score -20 (linear within ±20)
+            vix_adj = max(-20, min(20, (20 - vix) * (40/30)))
+            score += vix_adj * 0.40
+            if vix < 15:   signals.append({"color": "green",  "label": f"VIX calm ({vix:.0f})"})
+            elif vix < 20: signals.append({"color": "yellow", "label": f"VIX normal ({vix:.0f})"})
+            elif vix < 25: signals.append({"color": "orange", "label": f"VIX elevated ({vix:.0f})"})
+            else:          signals.append({"color": "red",    "label": f"VIX high ({vix:.0f}) — fear"})
+
+        # Component 2: VIX term structure (20%)
+        v9 = bd.get("^VIX9D", {}).get("price")
+        v3 = bd.get("^VIX3M", {}).get("price")
+        if v9 and vix_price and v3:
+            if float(v9) > float(vix_price):
+                score -= 10 * 0.20
+                signals.append({"color": "red", "label": "VIX inverted (near-term stress)"})
+            else:
+                score += 5 * 0.20
+                signals.append({"color": "green", "label": "VIX contango (calm structure)"})
+
+        # Component 3: S&P futures direction (20%)
+        spxf_chg = bd.get("ES=F", {}).get("chg_pct")
+        if spxf_chg:
+            fut = float(spxf_chg)
+            score += max(-15, min(15, fut * 5)) * 0.20
+            if fut > 0.3:   signals.append({"color": "green",  "label": f"Futures up {fut:+.1f}%"})
+            elif fut < -0.3: signals.append({"color": "red",   "label": f"Futures down {fut:+.1f}%"})
+
+        # Component 4: DXY — rising dollar = risk-off (20%)
+        dxy_chg = bd.get("DX-Y.NYB", {}).get("chg_pct")
+        if dxy_chg:
+            score += max(-10, min(10, -float(dxy_chg) * 3)) * 0.20
+
+        score = max(0, min(100, round(score)))
+        if score >= 75:   label = "Extreme Greed"
+        elif score >= 60: label = "Greed"
+        elif score >= 45: label = "Neutral"
+        elif score >= 30: label = "Fear"
+        else:             label = "Extreme Fear"
+        return {"score": int(score), "label": label, "signals": signals[:4]}
+    except Exception:
+        return {"score": 50, "label": "Neutral", "signals": []}
+
+def _fetch_global_monitors_live(bd: dict) -> dict:
+    """Build global monitors from already-fetched yfinance prices."""
+    def p(sym): d = bd.get(sym, {}); return {"price": d.get("price"), "chg_pct": d.get("chg_pct")}
+    boe = _fetch_boe_rate()
+    return {
+        "uk":     {"ftse100": p("^FTSE"), "ftse250": p("^FTMC"), "gbp_usd": p("GBPUSD=X"), "boe_rate": boe},
+        "europe": {"dax": p("^GDAXI"), "cac40": p("^FCHI"), "stoxx50": p("^STOXX50E"), "eur_usd": p("EURUSD=X")},
+        "asia":   {"nikkei": p("^N225"), "hsi": p("^HSI"), "shanghai": p("000001.SS"), "usd_jpy": p("USDJPY=X")},
+    }
+
+def _fetch_mag7_data(bd: dict, earnings_list: list) -> list:
+    """Build Mag7 price + upcoming earnings data."""
+    out = []
+    for sym, name in _MAG7:
+        d = bd.get(sym, {})
+        earn = next((e for e in earnings_list if e["symbol"] == sym), None)
+        out.append({
+            "symbol": sym, "name": name,
+            "price": d.get("price"), "chg_pct": d.get("chg_pct"),
+            "next_earnings": earn["date"] if earn else None,
+            "eps_est": earn.get("eps_est") if earn else None,
+        })
+    return out
 
 _NEWS_DOMAINS = [
     "reuters.com","apnews.com","bloomberg.com","ft.com","cnbc.com","marketwatch.com",
@@ -658,10 +864,29 @@ def _build_drivers(earnings_today: list, econ: list, news_items: list = None) ->
 
 # ── Bulletin generation ────────────────────────────────────────────────────────
 def _generate_bulletin() -> dict:
-    syms = [s for s,_,_,_ in _BRIEF_INDICES] + [s for s,_,_ in _BRIEF_INSTRUMENTS]
+    # Mag7 tickers needed for sentiment + spotlight
+    _MAG7_SYMS = [sym for sym, _ in _MAG7]
+    syms = [s for s,_,_,_ in _BRIEF_INDICES] + [s for s,_,_ in _BRIEF_INSTRUMENTS] + _MAG7_SYMS
     bd = _fetch_brief_data(syms)
-    news = _fetch_market_news(); econ = _fetch_econ_calendar()
-    sectors = _fetch_sector_data(); earnings_today = _fetch_earnings_today()
+
+    # Parallel: RSS news, FRED/FOMC calendar, yfinance earnings, sector data
+    with ThreadPoolExecutor(max_workers=4) as _ex:
+        _f_news    = _ex.submit(_fetch_rss_news)
+        _f_econ    = _ex.submit(_fetch_econ_calendar_v2)
+        _f_sectors = _ex.submit(_fetch_sector_data)
+        _f_earn    = _ex.submit(_fetch_earnings_v2)
+        news_rss        = _f_news.result(timeout=15)
+        econ            = _f_econ.result(timeout=15)
+        sectors         = _f_sectors.result(timeout=15)
+        earnings_list   = _f_earn.result(timeout=15)
+
+    earnings_today = [e for e in earnings_list if e.get("is_today")]
+
+    # Computed sections (non-AI)
+    sentiment       = _compute_sentiment_score(bd)
+    global_monitors = _fetch_global_monitors_live(bd)
+    mag7_data       = _fetch_mag7_data(bd, earnings_list)
+
     web_context = _fetch_web_context(earnings_today, econ)
 
     # Fetch 2Y yield for curve context
@@ -700,10 +925,16 @@ def _generate_bulletin() -> dict:
 
     region_txt = "\n".join(f"{lbl}: {bd.get(sym,{}).get('price','n/a')} ({pct(bd.get(sym,{}).get('chg_pct'))})"
                            for sym,lbl,_,region in _BRIEF_INDICES if region in ("Asia","Europe","UK"))
-    news_txt = "\n".join(f"- {n.get('title','')}" for n in (news or [])[:8] if n.get('title')) or "No news available"
-    econ_txt = "\n".join(f"- {e.get('date','')[:16]} [{e.get('country','')}] {e.get('event','')} "
-                         f"(est: {e.get('estimate','?')}, prev: {e.get('previous','?')})"
-                         for e in (econ or [])[:8]) or "No major events scheduled"
+    news_txt = "\n".join(f"- {n.get('title','')}" for n in (news_rss or [])[:8] if n.get('title')) or "No news available"
+    today_str = now.strftime("%Y-%m-%d")
+    econ_today_items = [e for e in econ if e.get("date","")[:10] == today_str]
+    econ_week_items  = [e for e in econ if e.get("date","")[:10] > today_str]
+    econ_txt = ("TODAY:\n" + "\n".join(
+        f"- [{e.get('country','')}] {e.get('event','')} ({e.get('impact','')} impact)"
+        for e in econ_today_items) if econ_today_items else "TODAY: No major releases") + \
+        "\n\nTHIS WEEK:\n" + ("\n".join(
+        f"- {e.get('date','')[:10]} [{e.get('country','')}] {e.get('event','')} ({e.get('impact','')} impact)"
+        for e in econ_week_items[:8]) if econ_week_items else "No major events this week")
     sector_txt = "  |  ".join(f"{name}: {f'{v:+.1f}%' if v is not None else 'n/a'}"
                                for sym,name in _SECTOR_ETFS for v in [sectors.get(sym)]) or "No sector data"
     earnings_txt = "\n".join(f"- {e.get('symbol','')} ({e.get('name','')}) — EPS est: {e.get('epsEstimated','?')}"
@@ -799,8 +1030,34 @@ def _generate_bulletin() -> dict:
                             if depth==0: j_end=ci+1; break
                 raw = raw[j_start:j_end]
             parsed = json.loads(raw)
-            parsed.update({"fallback":False,"timestamp":now.strftime("%H:%M GMT"),
-                           "session":session,"generated_at":now.isoformat(),"web_enhanced":bool(TAVILY_API_KEY)})
+            parsed.update({
+                "fallback": False,
+                "timestamp": now.strftime("%H:%M GMT"),
+                "session": session,
+                "generated_at": now.isoformat(),
+                "web_enhanced": bool(TAVILY_API_KEY),
+                # New computed sections (non-AI)
+                "sentiment": sentiment,
+                "event_radar": econ,
+                "global_monitors": global_monitors,
+                "mag7": mag7_data,
+                "earnings_radar": earnings_list[:12],
+                "market_prices": {
+                    "spx":   bd.get("^GSPC",{}),  "spxf": bd.get("ES=F",{}),
+                    "nqf":   bd.get("NQ=F",{}),   "ym":   bd.get("YM=F",{}),
+                    "rut":   bd.get("^RUT",{}),   "vix":  bd.get("^VIX",{}),
+                    "vix9d": bd.get("^VIX9D",{}), "vix3m":bd.get("^VIX3M",{}),
+                    "tnx":   bd.get("^TNX",{}),   "hyg":  bd.get("HYG",{}),
+                    "lqd":   bd.get("LQD",{}),    "gold": bd.get("GC=F",{}),
+                    "brent": bd.get("BZ=F",{}),   "wti":  bd.get("CL=F",{}),
+                    "dxy":   bd.get("DX-Y.NYB",{}),"gbp": bd.get("GBPUSD=X",{}),
+                    "eur":   bd.get("EURUSD=X",{}), "jpy": bd.get("USDJPY=X",{}),
+                    "ftse":  bd.get("^FTSE",{}),  "dax":  bd.get("^GDAXI",{}),
+                    "n225":  bd.get("^N225",{}),  "hsi":  bd.get("^HSI",{}),
+                },
+                "sectors_data": {sym: sectors.get(sym) for sym, _ in _SECTOR_ETFS},
+                "yield_2y": yield_2y,
+            })
             return parsed
         except anthropic.APIStatusError as e:
             if e.status_code==529 and attempt<2: time.sleep(5*(attempt+1)); continue
@@ -1590,14 +1847,38 @@ async def startup_prewarm():
     global _pair_signals_cache, _pair_signals_cached_at
 
     # ── Bulletin: load from Railway /data volume (persists across deploys) ────────
-    # Cron handles scheduled regeneration; only regenerate here if cache is very stale
-    # (>20h = cron definitely missed) or completely absent (first-ever deployment).
-    _STARTUP_REGEN_THRESHOLD = 20 * 3600
+    # Cron handles scheduled regeneration; regenerate on startup if:
+    #   a) the bulletin predates the most recent scheduled fire time (smart check), OR
+    #   b) bulletin is > 12h old (absolute fallback), OR
+    #   c) no cache exists at all (first deploy / volume cleared).
+    def _should_regen_on_startup(saved_at: float) -> bool:
+        """Smart schedule-aware check: regen if the bulletin predates the last cron fire."""
+        now_ts   = time.time()
+        now_utc  = datetime.utcnow()
+        # Scheduled fire times in minutes-since-UTC-midnight
+        SCHEDULE_MINS = [6 * 60 + 30, 13 * 60 + 0, 21 * 60 + 0]
+        current_mins  = now_utc.hour * 60 + now_utc.minute
+        midnight_ts   = now_ts - current_mins * 60  # Unix ts of today's UTC midnight
+
+        past_fires_today = [m for m in SCHEDULE_MINS if m <= current_mins]
+        if past_fires_today:
+            last_fire_ts = midnight_ts + max(past_fires_today) * 60
+            if saved_at < last_fire_ts:
+                return True  # bulletin predates last scheduled fire → stale
+        else:
+            # Before 06:30 UTC — compare against yesterday's 21:00 UTC fire
+            yesterday_21_utc = midnight_ts - 3 * 3600  # UTC midnight - 3h = yesterday 21:00 UTC
+            if saved_at < yesterday_21_utc:
+                return True
+
+        # Absolute fallback: regenerate if bulletin is older than one full cycle
+        return (now_ts - saved_at) >= 12 * 3600
+
     disk_data, disk_saved_at = _load_bulletin_from_disk()
     if disk_data:
         _bulletin_cache     = disk_data
         _bulletin_cached_at = disk_saved_at
-        if time.time() - disk_saved_at >= _STARTUP_REGEN_THRESHOLD:
+        if _should_regen_on_startup(disk_saved_at):
             threading.Thread(target=_bg_regenerate, daemon=True).start()
     else:
         # No cache on volume — first-ever deployment or volume was cleared
@@ -1655,12 +1936,16 @@ async def startup_prewarm():
                 _bg_refresh_earnings(i)
             threading.Thread(target=_deferred_fresh, daemon=True).start()
 
-    # ── Bulletin cron: auto-regenerate at 07:30 and 15:30 UTC ────────────────────
+    # ── Bulletin cron: auto-regenerate 3× daily ──────────────────────────────────
+    # Times chosen as DST-safe UTC compromises:
+    #   06:30 UTC → 07:30 BST (summer) / 06:30 GMT (winter) — 1h before UK open (08:00)
+    #   13:00 UTC → 14:00 BST (summer) / 13:00 GMT (winter) — ~30-90min before US open (09:30 ET)
+    #   21:00 UTC → 22:00 BST (summer) / 21:00 GMT (winter) — ~30min-1h after US close (16:00 ET)
+    # IMPORTANT: this in-process cron is a safety net. The primary trigger is the
+    # external cron-job.org schedule that POSTs to /bulletin/refresh?token=<REFRESH_TOKEN>
+    # at 06:30, 13:00, and 21:00 UTC daily. That survives container restarts.
     def _bulletin_cron():
-        """Background thread — fires bulletin refresh at 07:30 and 14:00 UTC daily.
-        07:30 UTC = 30 mins before UK market open (08:00 GMT)
-        14:00 UTC = 30 mins before US market open (14:30 GMT / 09:30 ET)"""
-        TARGET_BUCKETS = {7 * 60 + 30, 14 * 60 + 0}  # minutes since midnight UTC
+        TARGET_BUCKETS = {6 * 60 + 30, 13 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
         last_fired: set = set()
         while True:
             now_utc = datetime.utcnow()
@@ -1668,12 +1953,13 @@ async def startup_prewarm():
             if bucket in TARGET_BUCKETS and bucket not in last_fired:
                 last_fired.add(bucket)
                 age_h = (time.time() - _bulletin_cached_at) / 3600
-                # Skip if bulletin was generated within the last 4 hours (e.g. just bootstrapped after a deploy)
-                if not _bulletin_refreshing and age_h >= 4:
+                # Skip only if bulletin was freshly generated in the last 2h
+                # (2h guard avoids double-firing on a restart that already triggered startup regen)
+                if not _bulletin_refreshing and age_h >= 2:
                     threading.Thread(target=_bg_regenerate, daemon=True).start()
             elif bucket not in TARGET_BUCKETS:
-                last_fired.clear()  # reset between fires so it fires again the next day
-            time.sleep(20)  # check every 20 seconds — fine resolution within a 1-minute window
+                last_fired.clear()  # reset so it fires again next occurrence
+            time.sleep(20)  # check every 20s — adequate resolution within a 1-min window
     threading.Thread(target=_bulletin_cron, daemon=True).start()
 
 @app.get("/bulletin")
@@ -1682,19 +1968,15 @@ def get_bulletin():
     age = time.time() - _bulletin_cached_at
     has_cache = bool(_bulletin_cache)
 
-    # STALE-WHILE-REVALIDATE: if we have any cached version, return it immediately
-    # and kick off a background refresh if cache is stale (or expired)
+    # Return cached bulletin immediately.
+    # Refreshes are cron-driven only (06:30, 13:00, 21:00 UTC via cron-job.org).
+    # No stale-on-visit trigger — avoids thundering herd on high traffic.
     if has_cache:
-        is_stale = age >= _BULLETIN_TTL
-        if is_stale and not _bulletin_refreshing:
-            # Fire-and-forget background regeneration
-            t = threading.Thread(target=_bg_regenerate, daemon=True)
-            t.start()
         return {
             **_bulletin_cache,
             "cached": True,
             "age_minutes": round(age / 60),
-            "refreshing": _bulletin_refreshing or (is_stale and not _bulletin_refreshing),
+            "refreshing": _bulletin_refreshing,
         }
 
     # No cache at all — startup pre-warm should already be generating
