@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29h -->
+<!-- v2026-10-29i -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -235,6 +235,50 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .eps-th-q{text-align:right}
 #epsSearch:focus{border-color:rgba(245,158,11,.5);box-shadow:0 0 0 2px rgba(245,158,11,.1)}
 
+/* ── MACRO CALENDAR ── */
+.macro-cal-grid{column-count:3;column-gap:10px}
+@media(max-width:768px){.macro-cal-grid{column-count:2}}
+@media(max-width:480px){.macro-cal-grid{column-count:1}}
+.mcal-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;overflow:hidden;break-inside:avoid;margin-bottom:10px;cursor:pointer}
+.mcal-card.impact-high{border-left:3px solid var(--red)}
+.mcal-card.impact-medium{border-left:3px solid #eab308}
+.mcal-card.impact-low{border-left:3px solid var(--muted2)}
+.mcal-card.open .mcal-toggle{transform:rotate(180deg)}
+.mcal-head{display:flex;align-items:flex-start;gap:8px;padding:11px 13px}
+.mcal-left{flex:1;min-width:0}
+.mcal-event{font-size:13px;font-weight:600;line-height:1.3}
+.mcal-meta{display:flex;align-items:center;gap:6px;margin-top:5px;flex-wrap:wrap}
+.mcal-date{font-size:10px;color:var(--muted)}
+.mcal-countdown{font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(245,158,11,.15);color:var(--gold)}
+.mcal-country{font-size:10px;color:var(--muted2);border:1px solid var(--border2);border-radius:3px;padding:1px 5px}
+.mcal-toggle{color:var(--muted2);font-size:14px;flex-shrink:0;transition:transform .2s;margin-top:2px}
+.mcal-body{display:none;padding:0 13px 11px;border-top:1px solid rgba(255,255,255,.05)}
+.mcal-body.open{display:block}
+.mcal-stats{display:flex;gap:12px;margin-top:8px}
+.mcal-stat{display:flex;flex-direction:column;gap:1px}
+.mcal-stat-label{font-size:9px;font-weight:700;letter-spacing:.5px;color:var(--muted2);text-transform:uppercase}
+.mcal-stat-val{font-size:13px;font-weight:700;font-family:monospace}
+.mcal-why{font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.04)}
+
+/* ── GEO-POLITICAL SIGNALS ── */
+.geo-grid{column-count:2;column-gap:10px}
+@media(max-width:640px){.geo-grid{column-count:1}}
+.geo-card{background:var(--card);border:1px solid var(--border2);border-left:3px solid var(--orange);border-radius:10px;overflow:hidden;break-inside:avoid;margin-bottom:10px;cursor:pointer}
+.geo-card.open .geo-toggle{transform:rotate(180deg)}
+.geo-head{display:flex;align-items:flex-start;gap:8px;padding:11px 13px}
+.geo-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+.geo-left{flex:1;min-width:0}
+.geo-title{font-size:13px;font-weight:600;line-height:1.35}
+.geo-source{font-size:10px;color:var(--muted2);margin-top:3px}
+.geo-toggle{color:var(--muted2);font-size:14px;flex-shrink:0;transition:transform .2s;margin-top:3px}
+.geo-body{display:none;padding:0 13px 11px;border-top:1px solid rgba(255,255,255,.05)}
+.geo-body.open{display:block}
+.geo-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+
+/* ── CANDLESTICK CHART ── */
+.candle-wrap{margin:10px 0 4px;background:rgba(0,0,0,.25);border-radius:6px;padding:8px 6px 4px;overflow:hidden;min-height:72px}
+.candle-loading{text-align:center;color:var(--muted2);font-size:10px;padding:12px 0}
+
 /* Key insights */
 .insights-list{display:flex;flex-direction:column;gap:6px}
 .ins-item{display:flex;gap:8px;padding:9px 13px;background:var(--card);border:1px solid var(--border2);border-radius:8px;font-size:13px;line-height:1.45;align-items:flex-start}
@@ -439,6 +483,10 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <div class="sec-head"><h2>Event Radar — Next 7 Days</h2><div class="sec-rule"></div></div>
   <div class="event-chips" id="eventChips"></div>
 
+  <!-- MACRO CALENDAR -->
+  <div class="sec-head"><h2>Macro Calendar</h2><div class="sec-rule"></div></div>
+  <div class="macro-cal-grid" id="macroCalGrid"></div>
+
   <!-- DRIVERS -->
   <div class="sec-head"><h2>Today's Drivers</h2><div class="sec-rule"></div></div>
   <div class="drivers-row" id="driverCards"></div>
@@ -446,6 +494,10 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <!-- RISK RADAR -->
   <div class="sec-head"><h2>Risk Radar</h2><div class="sec-rule"></div></div>
   <div class="radar-row" id="radarCards"></div>
+
+  <!-- GEO-POLITICAL SIGNALS -->
+  <div class="sec-head"><h2>Geo-Political Signals</h2><div class="sec-rule"></div></div>
+  <div class="geo-grid" id="geoGrid"></div>
 
   <!-- MOMENTUM SPOTLIGHT -->
   <div class="sec-head"><h2>Momentum Spotlight</h2><div class="sec-rule"></div></div>
@@ -456,6 +508,7 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <div class="sec-head"><h2>Earnings Tracker</h2><div class="sec-rule"></div></div>
   <div id="epsWrap">
     <div class="eps-tabs">
+      <button class="eps-tab" onclick="switchEpsTab('mag7',this)" style="border-color:rgba(245,158,11,.3)">⭐ Mag 7</button>
       <button class="eps-tab" onclick="switchEpsTab('sp500',this)">S&amp;P 500</button>
       <button class="eps-tab" onclick="switchEpsTab('nasdaq100',this)">Nasdaq 100</button>
       <button class="eps-tab" onclick="switchEpsTab('ftse100',this)">FTSE 100</button>
@@ -867,12 +920,172 @@ function toggleCard(prefix,i){
   body.classList.toggle('open',!open);card.classList.toggle('open',!open);
 }
 
+// ── Macro Calendar ─────────────────────────────────────────────────────
+const _MACRO_WHY={
+  'FOMC Interest Rate Decision':'The Fed sets borrowing costs for the whole US economy. A rate hold, cut or hike directly moves stocks, bonds and the dollar.',
+  'CPI':'Inflation data. Higher than expected = the Fed may keep rates high longer, which hurts stocks and bonds. Lower = relief rally possible.',
+  'PCE Price Index':'The Fed\'s preferred inflation measure. Moves markets the same way CPI does — watch for surprises vs consensus.',
+  'NFP':'The most-watched jobs report. Strong jobs = Fed holds rates higher; weak jobs = cuts likely. Big market mover on the first Friday of each month.',
+  'GDP Growth Rate':'How fast the US economy grew last quarter. Weak GDP raises recession fears; strong GDP may keep rates elevated.',
+  'Retail Sales':'Consumer spending drives 70% of US GDP. A big miss signals the economy is slowing.',
+  'PPI':'Factory-gate prices. An early signal for CPI — if PPI is rising, consumer prices often follow.',
+  'Jobless Claims':'Weekly check on the jobs market. Rising claims = more unemployment pressure = potential for rate cuts.',
+  'Bank of England':'The UK equivalent of a Fed decision. Moves GBP and FTSE stocks, especially banks and property.',
+  'ECB Interest Rate':'The European Central Bank sets rates for the eurozone. Moves EUR/USD and European equity markets.',
+  'PMI':'Purchasing Managers\' Index — a survey of business activity. Above 50 = expansion; below 50 = contraction.',
+  'ISM':'Similar to PMI — a measure of US manufacturing or services activity. Strong surprise often moves the S&P 500.',
+  'JOLTS':'Job openings data. Fewer openings = labour market cooling, giving the Fed room to cut rates.',
+  'Durable Goods':'Orders for big-ticket manufactured items like aircraft and machinery — a signal of business investment confidence.',
+};
+function _macroCountdown(dateStr){
+  if(!dateStr) return '';
+  const now=new Date(); const ev=new Date(dateStr+'T00:00:00');
+  const diff=Math.round((ev-now)/(1000*3600*24));
+  if(diff<0) return 'Past';
+  if(diff===0) return 'TODAY';
+  if(diff===1) return 'Tomorrow';
+  return `In ${diff}d`;
+}
+function _macroWhy(event){
+  for(const k of Object.keys(_MACRO_WHY)){
+    if((event||'').includes(k)) return _MACRO_WHY[k];
+  }
+  return '';
+}
+function renderMacroCal(events){
+  const el=document.getElementById('macroCalGrid');
+  if(!events||!events.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No major events in the next 2 weeks</div>';return;}
+  // Filter to next 14 days, high/medium impact only
+  const now=new Date(); const cutoff=new Date(now.getTime()+14*24*3600*1000);
+  const filtered=events.filter(e=>{
+    if(!e.date) return false;
+    const d=new Date(e.date+'T00:00:00');
+    return d>=new Date(now.toDateString()) && d<=cutoff;
+  }).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!filtered.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No high-impact events in the next 14 days</div>';return;}
+  el.innerHTML=filtered.map((e,i)=>{
+    const impact=(e.impact||'Low');
+    const impCls=impact==='High'?'impact-high':impact==='Medium'||impact==='Moderate'?'impact-medium':'impact-low';
+    const countdown=_macroCountdown(e.date?e.date.slice(0,10):'');
+    const why=_macroWhy(e.event);
+    const hasPrev=e.previous!=null&&String(e.previous)!=='None'&&String(e.previous)!=='';
+    const hasEst=e.estimate!=null&&String(e.estimate)!=='None'&&String(e.estimate)!=='';
+    const statsHtml=(hasPrev||hasEst)?`<div class="mcal-stats">
+      ${hasEst?`<div class="mcal-stat"><div class="mcal-stat-label">Consensus</div><div class="mcal-stat-val">${e.estimate}</div></div>`:''}
+      ${hasPrev?`<div class="mcal-stat"><div class="mcal-stat-label">Previous</div><div class="mcal-stat-val">${e.previous}</div></div>`:''}
+    </div>`:'';
+    const whyHtml=why?`<div class="mcal-why">${why}</div>`:'';
+    return `<div class="mcal-card ${impCls}" onclick="toggleMcal(${i})">
+      <div class="mcal-head">
+        <div class="mcal-left">
+          <div class="mcal-event">${e.event||''}</div>
+          <div class="mcal-meta">
+            <span class="mcal-date">${e.date?e.date.slice(0,10):''}</span>
+            <span class="mcal-countdown">${countdown}</span>
+            ${e.country?`<span class="mcal-country">${e.country}</span>`:''}
+          </div>
+        </div>
+        <div class="mcal-toggle" id="mcalt${i}">⌄</div>
+      </div>
+      <div class="mcal-body" id="mcalb${i}">
+        ${statsHtml}${whyHtml}
+      </div>
+    </div>`;
+  }).join('');
+}
+function toggleMcal(i){
+  const body=document.getElementById('mcalb'+i);
+  const tog=document.getElementById('mcalt'+i);
+  const card=body.closest('.mcal-card');
+  if(!body) return;
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  if(tog) tog.style.transform=open?'':'rotate(180deg)';
+  if(card) card.classList.toggle('open',!open);
+}
+
+// ── Geo-political signals ──────────────────────────────────────────────
+function renderGeoNews(items){
+  const el=document.getElementById('geoGrid');
+  if(!items||!items.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No geo-political signals available</div>';return;}
+  el.innerHTML=items.map((n,i)=>`<div class="geo-card" onclick="toggleGeo(${i})">
+    <div class="geo-head">
+      <div class="geo-icon">🌍</div>
+      <div class="geo-left">
+        <div class="geo-title">${n.title||''}</div>
+        <div class="geo-source">${n.source||''} · ${n.published?n.published.slice(0,16):''}</div>
+      </div>
+      <div class="geo-toggle" id="geot${i}">⌄</div>
+    </div>
+    <div class="geo-body" id="geob${i}">
+      ${n.description?`<div class="geo-desc">${n.description}</div>`:''}
+    </div>
+  </div>`).join('');
+}
+function toggleGeo(i){
+  const body=document.getElementById('geob'+i);
+  const tog=document.getElementById('geot'+i);
+  const card=body.closest('.geo-card');
+  if(!body) return;
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  if(tog) tog.style.transform=open?'':'rotate(180deg)';
+  if(card) card.classList.toggle('open',!open);
+}
+
+// ── Candlestick chart ──────────────────────────────────────────────────
+const _candleCache={};
+async function fetchAndRenderCandles(sym,containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(_candleCache[sym]){renderCandleChart(el,_candleCache[sym]);return;}
+  el.innerHTML='<div class="candle-loading">Loading chart…</div>';
+  try{
+    const r=await fetch(API+'/candles?symbol='+encodeURIComponent(sym)+'&period=2mo',{signal:AbortSignal.timeout(12000)});
+    if(!r.ok){el.innerHTML='';return;}
+    const candles=await r.json();
+    if(!candles||candles.length<5){el.innerHTML='';return;}
+    _candleCache[sym]=candles;
+    renderCandleChart(el,candles);
+  }catch(e){el.innerHTML='';}
+}
+function renderCandleChart(container,candles){
+  const W=container.clientWidth||300; const H=72;
+  const recent=candles.slice(-40);
+  const highs=recent.map(c=>c.high); const lows=recent.map(c=>c.low);
+  const maxH=Math.max(...highs); const minL=Math.min(...lows);
+  const range=maxH-minL||1;
+  const n=recent.length; const candleW=Math.max(2,Math.floor((W-8)/n)-1); const gap=1;
+  const pad=4;
+  const py=v=>pad+(1-(v-minL)/range)*(H-2*pad);
+  let svg=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  recent.forEach((c,i)=>{
+    const x=4+i*(candleW+gap);
+    const up=c.close>=c.open;
+    const col=up?'#22c55e':'#ef4444';
+    const bodyTop=py(Math.max(c.open,c.close));
+    const bodyBot=py(Math.min(c.open,c.close));
+    const bodyH=Math.max(1,bodyBot-bodyTop);
+    const cx=x+candleW/2;
+    svg+=`<line x1="${cx}" y1="${py(c.high)}" x2="${cx}" y2="${py(c.low)}" stroke="${col}" stroke-width="1" opacity=".7"/>`;
+    svg+=`<rect x="${x}" y="${bodyTop}" width="${candleW}" height="${bodyH}" fill="${col}" rx="0.5"/>`;
+  });
+  svg+='</svg>';
+  container.innerHTML=svg;
+}
+
 // ── Trade ideas ────────────────────────────────────────────────────────
 function toggleTrdCard(card){
   const body=card.querySelector('.trd-body');
   const isOpen=card.classList.contains('open');
   card.classList.toggle('open',!isOpen);
   body.classList.toggle('open',!isOpen);
+  // Lazy-load candlestick chart when card opens
+  if(!isOpen){
+    const sym=card.dataset.sym;
+    const cid=card.dataset.candleId;
+    if(sym&&cid) fetchAndRenderCandles(sym,cid);
+  }
 }
 
 async function fetchMomentumPrices(tickers){
@@ -892,8 +1105,11 @@ function renderTrades(trades){
     const tc=(t.type||'stock')==='sector'?'trd-sector':'trd-stock';
     const bc=(t.type||'stock')==='sector'?'badge-sector':'badge-stock';
     const sym=t.setup||'';
-    const dd=sym&&(t.type==='stock'||!t.type)?`<a href="/deep-dive.html?ticker=${encodeURIComponent(sym)}" class="trd-dd" onclick="event.stopPropagation()" style="font-size:11px;color:var(--gold);text-decoration:none;margin-top:10px;display:inline-block;font-weight:600;letter-spacing:.3px">→ Open Deep Dive</a>`:'';
-    return `<div class="trd-card ${tc}" onclick="toggleTrdCard(this)">
+    const isStock=(t.type==='stock'||!t.type);
+    const dd=sym&&isStock?`<a href="/deep-dive.html?ticker=${encodeURIComponent(sym)}" class="trd-dd" onclick="event.stopPropagation()" style="font-size:11px;color:var(--gold);text-decoration:none;margin-top:10px;display:inline-block;font-weight:600;letter-spacing:.3px">→ Open Deep Dive</a>`:'';
+    const candleId=`candle_${i}`;
+    const candleEl=isStock&&sym?`<div class="candle-wrap" id="${candleId}"></div>`:'';
+    return `<div class="trd-card ${tc}" onclick="toggleTrdCard(this)" data-sym="${sym}" data-candle-id="${candleId}">
       <div class="trd-top">
         <div class="trd-ticker-row">
           <span class="trd-ticker">${sym}</span>
@@ -906,6 +1122,7 @@ function renderTrades(trades){
       </div>
       <span class="trd-toggle">▾</span>
       <div class="trd-body" id="trd${i}">
+        ${candleEl}
         <div class="trd-thesis">${t.thesis||''}</div>
         ${dd}
       </div>
@@ -1153,8 +1370,10 @@ function render(d,md){
   renderMag7(d.mag7);
   renderMovers(md?.movers);
   renderEvents(d.event_radar);
+  renderMacroCal(d.event_radar);
   renderDrivers(d.drivers);
   renderRadar(d.risk_radar);
+  renderGeoNews(d.geo_news);
   renderTrades(d.trade_ideas);
   renderMonitors(d.global_monitors);
   renderInsights(tc.bullets);
