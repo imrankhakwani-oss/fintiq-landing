@@ -479,13 +479,13 @@ def _fetch_econ_calendar_v2() -> list:
                     "estimate": None, "previous": None,
                 })
 
-    # ── Sort + deduplicate ───────────────────────────────────────────────
-    seen: set = set()
+    # ── Sort + deduplicate — keep only the NEXT occurrence per event name ──
+    seen_name: set = set()
     unique: list = []
     for e in sorted(events, key=lambda x: x["date"]):
-        k = (e["date"], e["event"])
-        if k not in seen:
-            seen.add(k); unique.append(e)
+        name = e["event"]
+        if name not in seen_name:
+            seen_name.add(name); unique.append(e)
     return unique
 
 
@@ -542,7 +542,7 @@ def _enrich_econ_events(events: list) -> list:
                 chg = (v0 - v1) / v1 * 100
                 return f"{chg:+.2f}% {suffix}"
             if fmt_type == "diff_k":
-                chg = (v0 - v1) / 1000
+                chg = v0 - v1   # PAYEMS is already in thousands
                 return f"{chg:+.0f}K {suffix}"
         except Exception:
             pass
