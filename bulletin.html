@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29k -->
+<!-- v2026-10-29l -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1378,7 +1378,7 @@ function render(d,md){
   renderMag7(d.mag7);
   renderMovers(md?.movers);
   renderEvents(d.event_radar);
-  renderMacroCal(d.event_radar);
+  renderMacroCal(d.macro_calendar||d.event_radar);
   renderDrivers(d.drivers);
   renderRadar(d.risk_radar);
   renderGeoNews(d.geo_news);
