@@ -888,27 +888,49 @@ function render(d,md){
   document.getElementById('page').style.display='';
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────
+function showPage(msg){
+  document.getElementById('ldr').style.display='none';
+  document.getElementById('page').style.display='';
+  if(msg)document.getElementById('callText').textContent=msg;
+}
+function fetchWithTimeout(url,ms){
+  const ctrl=new AbortController();
+  const id=setTimeout(()=>ctrl.abort(),ms);
+  return fetch(url,{cache:'no-store',signal:ctrl.signal}).finally(()=>clearTimeout(id));
+}
+
 // ── Fetch & boot ───────────────────────────────────────────────────────
 async function load(){
+  // Show "still loading" hint after 8s so user knows it's working
+  const hint=setTimeout(()=>{
+    document.querySelector('.loading div:last-child').textContent='API warming up — almost there…';
+  },8000);
+
   try{
     const[bRes,mRes]=await Promise.allSettled([
-      fetch(API+'/bulletin',{cache:'no-store'}),
-      fetch(API+'/market-data',{cache:'no-store'}),
+      fetchWithTimeout(API+'/bulletin',20000),
+      fetchWithTimeout(API+'/market-data',20000),
     ]);
+    clearTimeout(hint);
     let b=null,md=null;
-    if(bRes.status==='fulfilled'&&bRes.value.ok)b=await bRes.value.json();
-    if(mRes.status==='fulfilled'&&mRes.value.ok)md=await mRes.value.json();
+    if(bRes.status==='fulfilled'&&bRes.value.ok) b=await bRes.value.json().catch(()=>null);
+    if(mRes.status==='fulfilled'&&mRes.value.ok) md=await mRes.value.json().catch(()=>null);
     if(!b){
-      document.getElementById('ldr').style.display='none';
-      document.getElementById('page').style.display='';
-      document.getElementById('callText').textContent='Bulletin is generating — please refresh in a minute.';
+      showPage('Bulletin is warming up — please refresh in a moment.');
       return;
     }
-    render(b,md);
+    try{
+      render(b,md);
+    }catch(err){
+      console.error('render error',err);
+      showPage('Bulletin loaded but a display error occurred. Try refreshing.');
+    }
   }catch(e){
-    document.getElementById('ldr').style.display='none';
-    document.getElementById('page').style.display='';
-    document.getElementById('callText').textContent='Unable to load bulletin. Please refresh.';
+    clearTimeout(hint);
+    showPage(e.name==='AbortError'
+      ? 'Market data is taking longer than usual. Please refresh in a moment.'
+      : 'Unable to connect. Please check your connection and refresh.');
   }
 }
 load();
