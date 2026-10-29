@@ -2158,13 +2158,15 @@ async def startup_prewarm():
     # ── Bulletin cron: auto-regenerate 3× daily ──────────────────────────────────
     # Times chosen as DST-safe UTC compromises:
     #   06:30 UTC → 07:30 BST (summer) / 06:30 GMT (winter) — 1h before UK open (08:00)
-    #   13:00 UTC → 14:00 BST (summer) / 13:00 GMT (winter) — ~30-90min before US open (09:30 ET)
+    #   09:00 UTC → 10:00 BST (summer) / 09:00 GMT (winter) — catches pre-market European news
+    #   14:00 UTC → 15:00 BST (summer) / 14:00 GMT (winter) — 30min after 8:30 ET data drops
+    #                                                           (CPI, NFP, PCE, GDP all at 8:30 ET = 13:30 UTC)
     #   21:00 UTC → 22:00 BST (summer) / 21:00 GMT (winter) — ~30min-1h after US close (16:00 ET)
     # IMPORTANT: this in-process cron is a safety net. The primary trigger is the
     # external cron-job.org schedule that POSTs to /bulletin/refresh?token=<REFRESH_TOKEN>
-    # at 06:30, 13:00, and 21:00 UTC daily. That survives container restarts.
+    # at 06:30, 09:00, 14:00, and 21:00 UTC daily. That survives container restarts.
     def _bulletin_cron():
-        TARGET_BUCKETS = {6 * 60 + 30, 13 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
+        TARGET_BUCKETS = {6 * 60 + 30, 9 * 60 + 0, 14 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
         last_fired: set = set()
         while True:
             now_utc = datetime.utcnow()
