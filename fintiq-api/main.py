@@ -488,6 +488,92 @@ def _fetch_econ_calendar_v2() -> list:
             seen.add(k); unique.append(e)
     return unique
 
+
+# ── FRED Series IDs for enrichment ──────────────────────────────────────────
+_ECON_SERIES = {
+    "CPI Inflation":           ("CPIAUCSL",          "mom_pct",  "MoM"),
+    "Non-Farm Payrolls":       ("PAYEMS",             "diff_k",   "K"),
+    "PCE Price Index":         ("PCEPI",              "mom_pct",  "MoM"),
+    "GDP Growth Rate":         ("A191RL1Q225SBEA",    "level_pct","%"),
+    "Retail Sales":            ("RSAFS",              "mom_pct",  "MoM"),
+    "UMich Consumer Sentiment":("UMCSENT",            "level",    ""),
+    "PPI Producer Prices":     ("PPIACO",             "mom_pct",  "MoM"),
+    "Jobless Claims":          ("ICSA",               "level_k",  "K"),
+}
+
+def _enrich_econ_events(events: list) -> list:
+    """Add previous readings from FRED to each econ event. One API call per series."""
+    if not FRED_API_KEY or not events:
+        return events
+    from concurrent.futures import ThreadPoolExecutor as _TPE2
+
+    def _obs(series_id: str) -> list:
+        try:
+            r = requests.get(
+                "https://api.stlouisfed.org/fred/series/observations",
+                params={
+                    "series_id": series_id, "api_key": FRED_API_KEY,
+                    "file_type": "json", "sort_order": "desc",
+                    "limit": 3, "observation_start": "2023-01-01",
+                },
+                timeout=8,
+            )
+            if r.status_code == 200:
+                return [o for o in r.json().get("observations", []) if o.get("value") not in (".", None, "")]
+        except Exception:
+            pass
+        return []
+
+    def _fmt(obs_list: list, fmt_type: str, suffix: str) -> str:
+        if not obs_list:
+            return ""
+        try:
+            v0 = float(obs_list[0]["value"])
+            if fmt_type == "level":
+                return f"{v0:.1f}"
+            if fmt_type == "level_pct":
+                return f"{v0:+.1f}%"
+            if fmt_type == "level_k":
+                return f"{v0/1000:.0f}K"
+            if len(obs_list) < 2:
+                return ""
+            v1 = float(obs_list[1]["value"])
+            if fmt_type == "mom_pct":
+                chg = (v0 - v1) / v1 * 100
+                return f"{chg:+.2f}% {suffix}"
+            if fmt_type == "diff_k":
+                chg = (v0 - v1) / 1000
+                return f"{chg:+.0f}K {suffix}"
+        except Exception:
+            pass
+        return ""
+
+    # Collect unique series needed
+    needed: dict = {}
+    for e in events:
+        if e["previous"] is None and e["event"] in _ECON_SERIES:
+            sid, fmt_type, suffix = _ECON_SERIES[e["event"]]
+            needed[e["event"]] = (sid, fmt_type, suffix)
+
+    if not needed:
+        return events
+
+    with _TPE2(max_workers=4) as ex:
+        futures = {name: ex.submit(_obs, sid) for name, (sid, _, _s) in needed.items()}
+        results: dict = {}
+        for name, fut in futures.items():
+            try:
+                sid, fmt_type, suffix = needed[name]
+                results[name] = _fmt(fut.result(timeout=10), fmt_type, suffix)
+            except Exception:
+                results[name] = ""
+
+    for e in events:
+        if e["previous"] is None and e["event"] in results and results[e["event"]]:
+            e["previous"] = results[e["event"]]
+    return events
+
+
 def _fetch_rss_news() -> list:
     """Fetch latest market headlines from Reuters RSS feeds. No API key needed."""
     import xml.etree.ElementTree as ET
@@ -1149,7 +1235,7 @@ def _generate_bulletin() -> dict:
                 # New computed sections (non-AI)
                 "sentiment": sentiment,
                 "event_radar": [e for e in econ if (datetime.strptime(e["date"],"%Y-%m-%d").date()-datetime.now().date()).days<=7],
-                "macro_calendar": econ,
+                "macro_calendar": _enrich_econ_events(list(econ)),
                 "geo_news": geo_news,
                 "global_monitors": global_monitors,
                 "mag7": mag7_data,
