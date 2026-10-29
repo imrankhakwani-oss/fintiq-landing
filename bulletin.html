@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29b -->
+<!-- v2026-10-29c -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -195,29 +195,36 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .rdr-body.open{display:block}
 .rdr-card.open .rdr-toggle{transform:rotate(180deg)}
 
-/* Trade ideas */
+/* Momentum Spotlight cards */
 .trades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
-.trd-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;overflow:hidden;position:relative;cursor:pointer}
+.trd-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;overflow:hidden;position:relative;cursor:pointer;transition:border-color .15s}
+.trd-card:hover{border-color:rgba(255,255,255,.15)}
 .trd-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px}
 .trd-stock::before{background:var(--blue)}.trd-sector::before{background:var(--purple)}
-.trd-top{padding:12px 32px 7px 13px}
+.trd-top{padding:12px 32px 10px 13px;display:flex;flex-direction:column;gap:5px}
+.trd-ticker-row{display:flex;align-items:center;gap:6px}
 .trd-ticker{font-size:18px;font-weight:900;font-family:monospace;letter-spacing:-.5px}
-.trd-badge{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;letter-spacing:.3px;margin-left:5px;vertical-align:middle}
+.trd-badge{font-size:9px;padding:2px 5px;border-radius:3px;font-weight:700;letter-spacing:.3px;vertical-align:middle}
 .badge-stock{background:rgba(59,130,246,.2);color:#93c5fd}
 .badge-sector{background:rgba(139,92,246,.2);color:#c4b5fd}
-.trd-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:0 13px 9px}
-.trd-lv{background:rgba(255,255,255,.04);border-radius:6px;padding:5px 4px;text-align:center}
-.trd-lv-label{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.3px}
-.trd-lv-val{font-size:13px;font-weight:700;font-family:monospace;margin-top:1px}
-.lv-entry{color:var(--text)}.lv-stop{color:var(--red)}.lv-target{color:var(--green)}
-.trd-rr{padding:0 13px 4px;font-size:11px;color:var(--muted2)}
-.trd-rr strong{color:var(--gold)}
-.trd-body{display:none;padding:0 13px 12px;border-top:1px solid rgba(255,255,255,.05)}
+.trd-price-row{display:flex;align-items:baseline;gap:6px}
+.trd-px{font-size:13px;font-family:monospace;color:var(--text);font-weight:600}
+.trd-chg{font-size:11px;font-weight:600}
+.trd-body{display:none;padding:8px 13px 12px;border-top:1px solid rgba(255,255,255,.05)}
 .trd-body.open{display:block}
-.trd-thesis{font-size:11px;color:var(--muted);line-height:1.5;margin-top:7px}
-.trd-risk{font-size:11px;color:var(--muted2);margin-top:4px}
-.trd-toggle{position:absolute;top:13px;right:11px;font-size:15px;color:var(--muted2)}
+.trd-thesis{font-size:11px;color:var(--muted);line-height:1.6;margin-top:2px}
+.trd-toggle{position:absolute;top:13px;right:11px;font-size:15px;color:var(--muted2);transition:transform .2s}
 .trd-card.open .trd-toggle{transform:rotate(180deg)}
+
+/* EPS Tracker tabs */
+.eps-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.eps-tab{background:rgba(255,255,255,.05);border:1px solid var(--border2);border-radius:6px;color:var(--muted);font-size:12px;font-weight:600;padding:5px 12px;cursor:pointer;transition:all .15s}
+.eps-tab:hover{border-color:rgba(255,255,255,.2);color:var(--text)}
+.eps-tab.active{background:rgba(245,158,11,.15);border-color:var(--gold);color:var(--gold)}
+.eps-today-label{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--green);margin:0 0 6px;padding:6px 0 0}
+.eps-q-label{font-size:9px;color:var(--muted2)}
+.eps-q-act{font-family:monospace;font-size:12px;font-weight:700}
+.eps-q-est{font-family:monospace;font-size:10px;color:var(--muted2)}
 
 /* Key insights */
 .insights-list{display:flex;flex-direction:column;gap:6px}
@@ -435,12 +442,14 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <!-- EPS TRACKER -->
   <div class="sec-head"><h2>Earnings Tracker</h2><div class="sec-rule"></div></div>
   <div id="epsWrap">
-    <div id="epsToday" style="display:none">
-      <div class="movers-half-label gainer" style="margin-bottom:8px">🔔 Reporting Today</div>
-      <div class="eps-table-wrap" id="epsTodayTable"></div>
+    <div class="eps-tabs">
+      <button class="eps-tab active" onclick="switchEpsTab('sp500',this)">S&amp;P 500</button>
+      <button class="eps-tab" onclick="switchEpsTab('nasdaq100',this)">Nasdaq 100</button>
+      <button class="eps-tab" onclick="switchEpsTab('ftse100',this)">FTSE 100</button>
+      <button class="eps-tab" onclick="switchEpsTab('stoxx50',this)">Euro Stoxx</button>
     </div>
-    <div class="eps-table-wrap" id="epsTable"></div>
-    <div id="epsMsg" style="color:var(--muted);font-size:12px;padding:8px 0">Loading earnings data…</div>
+    <div id="epsContent"></div>
+    <div id="epsMsg" style="color:var(--muted);font-size:12px;padding:8px 0"></div>
   </div>
 
   <!-- GLOBAL MONITORS -->
@@ -837,22 +846,72 @@ function toggleCard(prefix,i){
 }
 
 // ── Trade ideas ────────────────────────────────────────────────────────
+function toggleTrdCard(card){
+  const body=card.querySelector('.trd-body');
+  const isOpen=card.classList.contains('open');
+  card.classList.toggle('open',!isOpen);
+  body.classList.toggle('open',!isOpen);
+}
+
+async function fetchMomentumPrices(tickers){
+  if(!tickers.length) return {};
+  try{
+    const url=`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
+    const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
+    if(!r.ok) return {};
+    const j=await r.json();
+    const out={};
+    (j.quoteResponse?.result||[]).forEach(q=>{out[q.symbol]={price:q.regularMarketPrice,chg_pct:q.regularMarketChangePercent,name:q.shortName};});
+    return out;
+  }catch(e){return {};}
+}
+
 function renderTrades(trades){
   const el=document.getElementById('tradesGrid');
   if(!trades||!trades.length){el.innerHTML='';return;}
+  const stockTickers=trades.filter(t=>t.setup&&(t.type==='stock'||!t.type)).map(t=>t.setup);
   el.innerHTML=trades.map((t,i)=>{
     const tc=(t.type||'stock')==='sector'?'trd-sector':'trd-stock';
     const bc=(t.type||'stock')==='sector'?'badge-sector':'badge-stock';
     const sym=t.setup||'';
     const dd=sym&&(t.type==='stock'||!t.type)?`<a href="/deep-dive.html?ticker=${encodeURIComponent(sym)}" class="trd-dd" onclick="event.stopPropagation()" style="font-size:11px;color:var(--gold);text-decoration:none;margin-top:10px;display:inline-block;font-weight:600;letter-spacing:.3px">→ Open Deep Dive</a>`:'';
-    return `<div class="trd-card ${tc}">
-      <div class="trd-top"><span class="trd-ticker">${sym}</span><span class="trd-badge ${bc}">${(t.type||'STOCK').toUpperCase()}</span></div>
-      <div class="trd-body open" id="trd${i}">
+    return `<div class="trd-card ${tc}" onclick="toggleTrdCard(this)">
+      <div class="trd-top">
+        <div class="trd-ticker-row">
+          <span class="trd-ticker">${sym}</span>
+          <span class="trd-badge ${bc}">${(t.type||'STOCK').toUpperCase()}</span>
+        </div>
+        <div class="trd-price-row" id="trdprice${i}">
+          <span class="trd-px">—</span>
+          <span class="trd-chg" style="color:var(--muted2)">—</span>
+        </div>
+      </div>
+      <span class="trd-toggle">▾</span>
+      <div class="trd-body" id="trd${i}">
         <div class="trd-thesis">${t.thesis||''}</div>
         ${dd}
       </div>
     </div>`;
   }).join('');
+  // Async populate live prices
+  if(stockTickers.length){
+    fetchMomentumPrices(stockTickers).then(prices=>{
+      trades.forEach((t,i)=>{
+        const sym=t.setup||'';
+        if(!sym||!prices[sym]) return;
+        const p=prices[sym];
+        const row=document.getElementById('trdprice'+i);
+        if(!row) return;
+        if(p.price!=null) row.querySelector('.trd-px').textContent='$'+p.price.toFixed(2);
+        if(p.chg_pct!=null){
+          const up=p.chg_pct>=0;
+          const chgEl=row.querySelector('.trd-chg');
+          chgEl.textContent=(up?'+':'')+p.chg_pct.toFixed(2)+'%';
+          chgEl.style.color=up?'var(--green)':'var(--red)';
+        }
+      });
+    });
+  }
 }
 
 // ── Global monitors ────────────────────────────────────────────────────
@@ -887,64 +946,108 @@ function renderMonitors(gm){
 }
 
 // ── EPS Tracker ────────────────────────────────────────────────────────
-async function loadEpsTracker(){
+const _epsCache={};
+let _activeEpsTab='sp500';
+
+async function loadEpsIndex(index){
+  if(_epsCache[index]) return _epsCache[index];
   const msg=document.getElementById('epsMsg');
-  const today=new Date().toISOString().slice(0,10);
-  let data=null;
-  // Retry up to 3 times (earnings endpoint may return 202 while loading)
+  if(msg) msg.textContent='Loading earnings data…';
   for(let i=0;i<3;i++){
     try{
-      const r=await fetch(API+'/earnings?index=sp500',{cache:'no-store',signal:AbortSignal.timeout(20000)});
-      if(r.status===202){if(i<2){if(msg)msg.textContent='Loading earnings data…';await new Promise(r=>setTimeout(r,8000));continue;}break;}
-      if(!r.ok)break;
+      const r=await fetch(API+'/earnings?index='+index,{cache:'no-store',signal:AbortSignal.timeout(20000)});
+      if(r.status===202){if(i<2){await new Promise(r=>setTimeout(r,8000));continue;}return null;}
+      if(!r.ok) return null;
       const j=await r.json();
-      data=j.data||j;
-      break;
-    }catch(e){break;}
+      const data=j.data||j;
+      if(data&&data.length){_epsCache[index]=data;}
+      return data;
+    }catch(e){return null;}
   }
-  if(!data||!data.length){if(msg)msg.textContent='Earnings data unavailable';return;}
-  if(msg)msg.style.display='none';
+  return null;
+}
+
+function buildEpsTable(data,today){
+  if(!data||!data.length) return '<div style="color:var(--muted);padding:16px 0">No data available</div>';
+
+  function cleanSym(s){return s.replace(/\.(L|PA|DE|MI|AS|MC|BR)$/,'');}
+
+  function qCell(q){
+    if(!q||q.actual==null) return '<td style="color:var(--muted2);font-size:11px;text-align:center">—</td>';
+    const beat=q.beat_pct;
+    const cls=beat==null?'':beat>=0?'eps-beat':'eps-miss';
+    const beatBadge=beat!=null?`<span class="${cls}" style="font-size:9px;display:block">${beat>=0?'+':''}${beat.toFixed(1)}%</span>`:'';
+    const estLine=q.estimate!=null?`<span class="eps-q-est">e${q.estimate.toFixed(2)}</span>`:'';
+    return `<td style="text-align:right;padding:6px 8px">
+      <span class="eps-q-act ${cls}">${q.actual.toFixed(2)}</span>
+      ${estLine}${beatBadge}
+    </td>`;
+  }
 
   function epsRow(e,isToday){
-    const q=e.quarters?.[0]||{};
-    const est=e.estimates?.[0]||{};
-    const actual=q.actual!=null?q.actual.toFixed(2):'—';
-    const qest=q.estimate!=null?q.estimate.toFixed(2):'—';
-    const beat=q.beat_pct!=null?q.beat_pct:null;
-    const beatCls=beat==null?'eps-neutral':beat>=0?'eps-beat':'eps-miss';
-    const beatStr=beat==null?'—':(beat>=0?'+':'')+beat.toFixed(1)+'%';
-    const nextEst=est.eps_est!=null?est.eps_est.toFixed(2):'—';
-    const nextDate=e.next_date||'—';
+    const qs=e.quarters||[];
+    // quarters[0]=latest, show columns oldest→newest (Q-3,Q-2,Q-1,Q0)
+    const cols=[qs[3]||null,qs[2]||null,qs[1]||null,qs[0]||null];
+    const nEst=e.estimates?.[0]?.eps_est!=null?e.estimates[0].eps_est.toFixed(2):'—';
+    const nDate=e.next_date?e.next_date.slice(5):'—';
+    const sym=cleanSym(e.symbol);
+    const dd=`<a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd" onclick="event.stopPropagation()">DD→</a>`;
     const todayCls=isToday?'today-row':'';
-    const ddLink=`<a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd">Deep Dive →</a>`;
     return `<tr class="${todayCls}">
-      <td><span class="eps-sym">${e.symbol}</span>${ddLink}</td>
-      <td>${nextDate}</td>
-      <td style="font-family:monospace">${nextEst}</td>
-      <td style="font-family:monospace">${actual}</td>
-      <td style="font-family:monospace">${qest}</td>
-      <td><span class="${beatCls}">${beatStr}</span></td>
+      <td style="white-space:nowrap"><span class="eps-sym">${sym}</span>${dd}</td>
+      ${cols.map(qCell).join('')}
+      <td style="font-size:11px;white-space:nowrap;padding:6px 8px">${nDate}</td>
+      <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text);padding:6px 8px;text-align:right">${nEst}</td>
     </tr>`;
   }
 
   const header=`<thead><tr>
-    <th>Ticker</th><th>Next Date</th><th>Next Est.</th><th>Last Actual</th><th>Last Est.</th><th>Beat/Miss</th>
+    <th style="min-width:80px">Ticker</th>
+    <th style="text-align:right">Q-3</th>
+    <th style="text-align:right">Q-2</th>
+    <th style="text-align:right">Q-1</th>
+    <th style="text-align:right">Latest</th>
+    <th>Next Date</th>
+    <th style="text-align:right">Next Est.</th>
   </tr></thead>`;
 
   const todayRows=data.filter(e=>e.next_date===today);
-  const upcoming=data.filter(e=>e.next_date&&e.next_date>today).slice(0,30);
+  const upcoming=data.filter(e=>e.next_date&&e.next_date>today).slice(0,40);
 
+  let html='';
   if(todayRows.length){
-    const wrap=document.getElementById('epsToday');
-    if(wrap){
-      wrap.style.display='';
-      const tbl=document.getElementById('epsTodayTable');
-      if(tbl)tbl.innerHTML=`<table class="eps-table">${header}<tbody>${todayRows.map(e=>epsRow(e,true)).join('')}</tbody></table>`;
-    }
+    html+=`<div class="eps-today-label">🔔 Reporting Today</div>
+    <div class="eps-table-wrap" style="margin-bottom:18px"><table class="eps-table">${header}<tbody>${todayRows.map(e=>epsRow(e,true)).join('')}</tbody></table></div>`;
   }
+  if(upcoming.length){
+    html+=`<div class="eps-table-wrap"><table class="eps-table">${header}<tbody>${upcoming.map(e=>epsRow(e,false)).join('')}</tbody></table></div>`;
+  }
+  if(!html) html='<div style="color:var(--muted);padding:16px 0;font-size:12px">No upcoming earnings in next 90 days</div>';
+  return html;
+}
 
-  const mainTbl=document.getElementById('epsTable');
-  if(mainTbl)mainTbl.innerHTML=`<table class="eps-table">${header}<tbody>${upcoming.map(e=>epsRow(e,false)).join('')}</tbody></table>`;
+async function switchEpsTab(index,btn){
+  _activeEpsTab=index;
+  document.querySelectorAll('.eps-tab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const content=document.getElementById('epsContent');
+  const msg=document.getElementById('epsMsg');
+  if(msg) msg.textContent='';
+  if(content) content.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px 0">Loading…</div>';
+  const today=new Date().toISOString().slice(0,10);
+  const data=await loadEpsIndex(index);
+  if(index!==_activeEpsTab) return; // tab switched while loading
+  if(!data||!data.length){
+    if(content) content.innerHTML='';
+    if(msg) msg.textContent='Earnings data unavailable';
+    return;
+  }
+  if(msg) msg.textContent='';
+  if(content) content.innerHTML=buildEpsTable(data,today);
+}
+
+async function loadEpsTracker(){
+  await switchEpsTab('sp500',document.querySelector('.eps-tab'));
 }
 
 // ── Key insights ───────────────────────────────────────────────────────
