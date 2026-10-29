@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29c -->
+<!-- v2026-10-29d -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -196,7 +196,7 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .rdr-card.open .rdr-toggle{transform:rotate(180deg)}
 
 /* Momentum Spotlight cards */
-.trades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
+.trades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-items:start}
 .trd-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;overflow:hidden;position:relative;cursor:pointer;transition:border-color .15s}
 .trd-card:hover{border-color:rgba(255,255,255,.15)}
 .trd-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px}
@@ -225,6 +225,9 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .eps-q-label{font-size:9px;color:var(--muted2)}
 .eps-q-act{font-family:monospace;font-size:12px;font-weight:700}
 .eps-q-est{font-family:monospace;font-size:10px;color:var(--muted2)}
+.eps-qcell{text-align:right;padding:6px 8px;line-height:1.4}
+.eps-th-q{text-align:right}
+#epsSearch:focus{border-color:rgba(245,158,11,.5);box-shadow:0 0 0 2px rgba(245,158,11,.1)}
 
 /* Key insights */
 .insights-list{display:flex;flex-direction:column;gap:6px}
@@ -443,13 +446,19 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <div class="sec-head"><h2>Earnings Tracker</h2><div class="sec-rule"></div></div>
   <div id="epsWrap">
     <div class="eps-tabs">
-      <button class="eps-tab active" onclick="switchEpsTab('sp500',this)">S&amp;P 500</button>
+      <button class="eps-tab" onclick="switchEpsTab('sp500',this)">S&amp;P 500</button>
       <button class="eps-tab" onclick="switchEpsTab('nasdaq100',this)">Nasdaq 100</button>
       <button class="eps-tab" onclick="switchEpsTab('ftse100',this)">FTSE 100</button>
       <button class="eps-tab" onclick="switchEpsTab('stoxx50',this)">Euro Stoxx</button>
     </div>
-    <div id="epsContent"></div>
-    <div id="epsMsg" style="color:var(--muted);font-size:12px;padding:8px 0"></div>
+    <div id="epsBody">
+      <div style="margin:10px 0 12px">
+        <input id="epsSearch" type="text" placeholder="Search ticker or company…" oninput="_epsRefreshContent()"
+          style="width:100%;box-sizing:border-box;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:7px;padding:8px 12px;color:var(--text);font-size:13px;outline:none">
+      </div>
+      <div id="epsContent"></div>
+      <div id="epsMsg" style="color:var(--muted);font-size:12px;padding:8px 0"></div>
+    </div>
   </div>
 
   <!-- GLOBAL MONITORS -->
@@ -856,13 +865,9 @@ function toggleTrdCard(card){
 async function fetchMomentumPrices(tickers){
   if(!tickers.length) return {};
   try{
-    const url=`https://query2.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}&fields=regularMarketPrice,regularMarketChangePercent,shortName`;
-    const r=await fetch(url,{signal:AbortSignal.timeout(6000)});
+    const r=await fetch(API+'/quotes?symbols='+tickers.join(','),{signal:AbortSignal.timeout(12000)});
     if(!r.ok) return {};
-    const j=await r.json();
-    const out={};
-    (j.quoteResponse?.result||[]).forEach(q=>{out[q.symbol]={price:q.regularMarketPrice,chg_pct:q.regularMarketChangePercent,name:q.shortName};});
-    return out;
+    return await r.json();
   }catch(e){return {};}
 }
 
@@ -947,7 +952,15 @@ function renderMonitors(gm){
 
 // ── EPS Tracker ────────────────────────────────────────────────────────
 const _epsCache={};
-let _activeEpsTab='sp500';
+let _activeEpsTab=null;
+
+function fmtEpsDate(d){
+  // d = "YYYY-MM-DD" → "29 Oct 2026"
+  if(!d||d==='—') return '—';
+  const dt=new Date(d+'T00:00:00');
+  if(isNaN(dt)) return d;
+  return dt.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][dt.getMonth()]+' '+dt.getFullYear();
+}
 
 async function loadEpsIndex(index){
   if(_epsCache[index]) return _epsCache[index];
@@ -960,59 +973,62 @@ async function loadEpsIndex(index){
       if(!r.ok) return null;
       const j=await r.json();
       const data=j.data||j;
-      if(data&&data.length){_epsCache[index]=data;}
+      if(data&&data.length) _epsCache[index]=data;
       return data;
     }catch(e){return null;}
   }
   return null;
 }
 
-function buildEpsTable(data,today){
+function buildEpsTable(data,today,filter){
   if(!data||!data.length) return '<div style="color:var(--muted);padding:16px 0">No data available</div>';
-
   function cleanSym(s){return s.replace(/\.(L|PA|DE|MI|AS|MC|BR)$/,'');}
 
   function qCell(q){
-    if(!q||q.actual==null) return '<td style="color:var(--muted2);font-size:11px;text-align:center">—</td>';
+    if(!q||q.actual==null) return '<td class="eps-qcell" style="color:var(--muted2)">—</td>';
     const beat=q.beat_pct;
     const cls=beat==null?'':beat>=0?'eps-beat':'eps-miss';
-    const beatBadge=beat!=null?`<span class="${cls}" style="font-size:9px;display:block">${beat>=0?'+':''}${beat.toFixed(1)}%</span>`:'';
-    const estLine=q.estimate!=null?`<span class="eps-q-est">e${q.estimate.toFixed(2)}</span>`:'';
-    return `<td style="text-align:right;padding:6px 8px">
-      <span class="eps-q-act ${cls}">${q.actual.toFixed(2)}</span>
-      ${estLine}${beatBadge}
-    </td>`;
+    const beatBadge=beat!=null?`<br><span class="${cls}" style="font-size:9px">${beat>=0?'+':''}${beat.toFixed(1)}%</span>`:'';
+    const estLine=q.estimate!=null?`<br><span class="eps-q-est">e${q.estimate.toFixed(2)}</span>`:'';
+    const qLabel=q.date?`<span class="eps-q-label">${q.date.slice(0,7)}</span><br>`:'';
+    return `<td class="eps-qcell"><span class="eps-q-act ${cls}">${q.actual.toFixed(2)}</span>${estLine}${beatBadge}</td>`;
   }
 
   function epsRow(e,isToday){
     const qs=e.quarters||[];
-    // quarters[0]=latest, show columns oldest→newest (Q-3,Q-2,Q-1,Q0)
-    const cols=[qs[3]||null,qs[2]||null,qs[1]||null,qs[0]||null];
+    // Latest first → Q-1 → Q-2 → Q-3 (oldest)
+    const cols=[qs[0]||null,qs[1]||null,qs[2]||null,qs[3]||null];
     const nEst=e.estimates?.[0]?.eps_est!=null?e.estimates[0].eps_est.toFixed(2):'—';
-    const nDate=e.next_date?e.next_date.slice(5):'—';
+    const nDate=fmtEpsDate(e.next_date);
     const sym=cleanSym(e.symbol);
-    const dd=`<a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd" onclick="event.stopPropagation()">DD→</a>`;
     const todayCls=isToday?'today-row':'';
     return `<tr class="${todayCls}">
-      <td style="white-space:nowrap"><span class="eps-sym">${sym}</span>${dd}</td>
+      <td style="white-space:nowrap"><span class="eps-sym">${sym}</span></td>
       ${cols.map(qCell).join('')}
-      <td style="font-size:11px;white-space:nowrap;padding:6px 8px">${nDate}</td>
+      <td style="font-size:11px;white-space:nowrap;padding:6px 8px;min-width:90px">${nDate}</td>
       <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text);padding:6px 8px;text-align:right">${nEst}</td>
+      <td style="padding:6px 8px;text-align:right"><a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd" onclick="event.stopPropagation()">Deep Dive</a></td>
     </tr>`;
   }
 
   const header=`<thead><tr>
-    <th style="min-width:80px">Ticker</th>
-    <th style="text-align:right">Q-3</th>
-    <th style="text-align:right">Q-2</th>
-    <th style="text-align:right">Q-1</th>
-    <th style="text-align:right">Latest</th>
+    <th style="min-width:70px">Ticker</th>
+    <th class="eps-th-q">Latest</th>
+    <th class="eps-th-q">Q-1</th>
+    <th class="eps-th-q">Q-2</th>
+    <th class="eps-th-q">Q-3</th>
     <th>Next Date</th>
     <th style="text-align:right">Next Est.</th>
+    <th></th>
   </tr></thead>`;
 
-  const todayRows=data.filter(e=>e.next_date===today);
-  const upcoming=data.filter(e=>e.next_date&&e.next_date>today).slice(0,40);
+  let rows=data;
+  if(filter){
+    const q=filter.toLowerCase();
+    rows=data.filter(e=>e.symbol.toLowerCase().includes(q));
+  }
+  const todayRows=rows.filter(e=>e.next_date===today);
+  const upcoming=rows.filter(e=>e.next_date&&e.next_date>today).slice(0,50);
 
   let html='';
   if(todayRows.length){
@@ -1022,32 +1038,59 @@ function buildEpsTable(data,today){
   if(upcoming.length){
     html+=`<div class="eps-table-wrap"><table class="eps-table">${header}<tbody>${upcoming.map(e=>epsRow(e,false)).join('')}</tbody></table></div>`;
   }
-  if(!html) html='<div style="color:var(--muted);padding:16px 0;font-size:12px">No upcoming earnings in next 90 days</div>';
+  if(!html){
+    html=filter
+      ?`<div style="color:var(--muted);padding:16px 0;font-size:12px">No results for "${filter}"</div>`
+      :`<div style="color:var(--muted);padding:16px 0;font-size:12px">No upcoming earnings found</div>`;
+  }
   return html;
 }
 
+function _epsRefreshContent(){
+  if(!_activeEpsTab) return;
+  const today=new Date().toISOString().slice(0,10);
+  const data=_epsCache[_activeEpsTab];
+  if(!data) return;
+  const filter=document.getElementById('epsSearch')?.value.trim()||'';
+  const content=document.getElementById('epsContent');
+  if(content) content.innerHTML=buildEpsTable(data,today,filter||null);
+}
+
 async function switchEpsTab(index,btn){
+  // If same tab clicked again, close it
+  if(_activeEpsTab===index){
+    _activeEpsTab=null;
+    document.querySelectorAll('.eps-tab').forEach(b=>b.classList.remove('active'));
+    const body=document.getElementById('epsBody');
+    if(body) body.style.display='none';
+    return;
+  }
   _activeEpsTab=index;
   document.querySelectorAll('.eps-tab').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
+  const body=document.getElementById('epsBody');
+  if(body) body.style.display='';
   const content=document.getElementById('epsContent');
   const msg=document.getElementById('epsMsg');
   if(msg) msg.textContent='';
   if(content) content.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px 0">Loading…</div>';
-  const today=new Date().toISOString().slice(0,10);
   const data=await loadEpsIndex(index);
-  if(index!==_activeEpsTab) return; // tab switched while loading
+  if(index!==_activeEpsTab) return;
   if(!data||!data.length){
     if(content) content.innerHTML='';
     if(msg) msg.textContent='Earnings data unavailable';
     return;
   }
   if(msg) msg.textContent='';
-  if(content) content.innerHTML=buildEpsTable(data,today);
+  const today=new Date().toISOString().slice(0,10);
+  const filter=document.getElementById('epsSearch')?.value.trim()||'';
+  if(content) content.innerHTML=buildEpsTable(data,today,filter||null);
 }
 
 async function loadEpsTracker(){
-  await switchEpsTab('sp500',document.querySelector('.eps-tab'));
+  // Tabs are visible by default; no tab is pre-selected — user clicks to open
+  const body=document.getElementById('epsBody');
+  if(body) body.style.display='none';
 }
 
 // ── Key insights ───────────────────────────────────────────────────────
