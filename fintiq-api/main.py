@@ -387,10 +387,10 @@ def _fetch_sector_data():
 def _fetch_econ_calendar_v2() -> list:
     """Fetch upcoming high-impact economic events.
     Sources: FRED release schedule (CPI, NFP, PCE, GDP, Retail Sales, Jobless Claims) + hardcoded FOMC.
-    Returns events for today + next 7 days, sorted by date."""
+    Returns events for today + next 45 days, sorted by date."""
     events = []
     today = datetime.now().date()
-    end_date = today + timedelta(days=7)
+    end_date = today + timedelta(days=45)
 
     # FOMC dates — hardcoded in _FOMC_DATES
     fomc_days, fomc_date = _get_next_fomc()
@@ -494,20 +494,46 @@ _MAG7 = [
 ]
 
 def _fetch_geo_news_rss() -> list:
-    """Fetch world/geopolitical headlines from Reuters World + BBC World RSS feeds."""
+    """Fetch world/geopolitical headlines from multiple RSS feeds with fallbacks."""
     import xml.etree.ElementTree as ET
+    # Ordered by reliability — tries each until we have 8+ items
     GEO_FEEDS = [
-        ("https://feeds.reuters.com/Reuters/worldNews", "Reuters"),
-        ("https://feeds.bbci.co.uk/news/world/rss.xml", "BBC"),
+        ("https://feeds.bbci.co.uk/news/world/rss.xml",             "BBC"),
+        ("https://rss.nytimes.com/services/xml/rss/nyt/World.xml",  "NYT"),
+        ("https://feeds.skynews.com/feeds/rss/world.xml",           "Sky News"),
+        ("https://www.aljazeera.com/xml/rss/all.xml",               "Al Jazeera"),
+        ("https://feeds.reuters.com/Reuters/worldNews",              "Reuters"),
+        ("https://feeds.reuters.com/reuters/topNews",                "Reuters Top"),
+        ("https://feeds.feedburner.com/ndtvnews-world-news",        "NDTV"),
+        ("https://apnews.com/apf-intlnews.rss",                     "AP"),
     ]
     items: list = []
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; Fintiq/1.0; +https://fintiq.uk)"}
     for feed_url, source in GEO_FEEDS:
+        if len(items) >= 8:
+            break
         try:
-            r = requests.get(feed_url, timeout=8, headers={"User-Agent": "Fintiq/1.0 market research"})
-            if r.status_code != 200: continue
-            root = ET.fromstring(r.content)
+            r = requests.get(feed_url, timeout=8, headers=headers)
+            if r.status_code != 200:
+                continue
+            content = r.content
+            # Strip encoding declaration that can confuse ElementTree
+            content = content.replace(b"<?xml version='1.0' encoding='UTF-8'?>", b"")
+            content = content.replace(b'<?xml version="1.0" encoding="UTF-8"?>', b"")
+            content = content.replace(b'<?xml version="1.0" encoding="utf-8"?>', b"")
+            root = ET.fromstring(content)
             channel = root.find("channel")
-            if channel is None: continue
+            if channel is None:
+                # Atom feed?
+                ns = {"atom": "http://www.w3.org/2005/Atom"}
+                entries = root.findall("atom:entry", ns) or root.findall("{http://www.w3.org/2005/Atom}entry")
+                for entry in entries[:5]:
+                    title = (entry.findtext("{http://www.w3.org/2005/Atom}title") or "").strip()
+                    link_el = entry.find("{http://www.w3.org/2005/Atom}link")
+                    link = link_el.get("href", "") if link_el is not None else ""
+                    if title and len(title) > 20:
+                        items.append({"title": title, "url": link, "description": "", "published": "", "source": source})
+                continue
             for item in channel.findall("item")[:6]:
                 title   = (item.findtext("title") or "").strip()
                 link    = (item.findtext("link") or "").strip()
@@ -519,7 +545,8 @@ def _fetch_geo_news_rss() -> list:
                         "description": desc[:300] if desc else "",
                         "published": pubdate, "source": source,
                     })
-        except Exception: continue
+        except Exception:
+            continue
     seen: set = set(); unique: list = []
     for item in items:
         if item["title"] not in seen:
