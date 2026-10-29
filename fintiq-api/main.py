@@ -962,7 +962,7 @@ def _generate_bulletin() -> dict:
         f"   Write: 'yield curve (the gap between short and long-term government bond rates — when it inverts, recessions often follow)' not just 'yield curve'.\n"
         f"   Write: '25 basis points (0.25%)' not just '25bps'.\n\n"
         f"4. THE CALL HEADLINE: Write like a newspaper front page. Punchy, clear, one real data point.\n"
-        f"   GOOD examples: 'Tech stocks slide 1.5% as strong jobs data kills hopes for a rate cut' | 'S&P 500 at {spx.get(\"price\",\"n/a\")} — earnings season off to a strong start but AI spending worries cap the rally' | 'Gold hits ${gold.get(\"price\",\"n/a\")} as the dollar weakens and the Fed signals patience'\n"
+        "   GOOD examples: 'Tech stocks slide 1.5% as strong jobs data kills hopes for a rate cut' | 'S&P 500 at " + str(spx.get('price','n/a')) + " — earnings season off to a strong start but AI spending worries cap the rally' | 'Gold hits $" + str(gold.get('price','n/a')) + " as the dollar weakens and the Fed signals patience'\n"
         f"   BAD examples (never write like this): 'A fractured risk-on session with dangerous internal split confirms overnight pressure' | 'Defensive rotation with institutional repositioning into quality' | 'Regime shift from transition to risk-off confirmed by VIX contango'\n\n"
         f"5. SPECIFIC NUMBERS. Always cite exact figures from the data below. Never make vague statements.\n\n"
         f"6. EXPLAIN THE 'SO WHAT'. For every signal, tell the investor what it means for their money — not just what the signal is.\n\n"
