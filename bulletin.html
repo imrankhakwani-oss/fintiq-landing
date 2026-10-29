@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29d -->
+<!-- v2026-10-29f -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -196,7 +196,11 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .rdr-card.open .rdr-toggle{transform:rotate(180deg)}
 
 /* Momentum Spotlight cards */
-.trades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px;align-items:start}
+.trades-grid{column-count:4;column-gap:10px}
+.trd-card{display:block;break-inside:avoid;margin-bottom:10px}
+@media(max-width:960px){.trades-grid{column-count:3}}
+@media(max-width:640px){.trades-grid{column-count:2}}
+@media(max-width:400px){.trades-grid{column-count:1}}
 .trd-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;overflow:hidden;position:relative;cursor:pointer;transition:border-color .15s}
 .trd-card:hover{border-color:rgba(255,255,255,.15)}
 .trd-card::before{content:'';position:absolute;top:0;left:0;bottom:0;width:3px}
@@ -271,13 +275,16 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 
 /* EPS tracker */
 .eps-table-wrap{overflow-x:auto;margin-bottom:16px}
-.eps-table{width:100%;border-collapse:collapse;font-size:12px}
-.eps-table th{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted2);padding:6px 10px;text-align:left;border-bottom:1px solid var(--border2)}
-.eps-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.eps-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:auto}
+.eps-table th{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted2);padding:6px 8px;text-align:center;border-bottom:1px solid var(--border2);white-space:nowrap}
+.eps-table th:first-child{text-align:left}
+.eps-table td{padding:7px 8px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle;text-align:center}
+.eps-table td:first-child{text-align:left}
 .eps-table tr:last-child td{border-bottom:none}
-.eps-table tr.today-row td{background:rgba(234,179,8,.06);font-weight:600}
-.eps-sym{font-weight:700;color:var(--text)}
-.eps-dd{font-size:11px;color:var(--gold);text-decoration:none;margin-left:6px}
+.eps-table tr.today-row td{background:rgba(234,179,8,.06)}
+.eps-sym{font-weight:700;color:var(--text);font-size:13px}
+.eps-name{font-size:10px;color:var(--muted2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+.eps-dd{font-size:11px;color:var(--gold);text-decoration:none;font-weight:600}
 .eps-dd:hover{text-decoration:underline}
 .eps-beat{color:var(--green)}.eps-miss{color:var(--red)}.eps-neutral{color:var(--muted)}
 .disclaimer{font-size:11px;color:var(--muted2);line-height:1.6;background:rgba(148,163,184,.05);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-top:20px}
@@ -985,41 +992,40 @@ function buildEpsTable(data,today,filter){
   function cleanSym(s){return s.replace(/\.(L|PA|DE|MI|AS|MC|BR)$/,'');}
 
   function qCell(q){
-    if(!q||q.actual==null) return '<td class="eps-qcell" style="color:var(--muted2)">—</td>';
+    if(!q||q.actual==null) return '<td style="color:var(--muted2);text-align:center;padding:7px 4px">—</td>';
     const beat=q.beat_pct;
     const cls=beat==null?'':beat>=0?'eps-beat':'eps-miss';
-    const beatBadge=beat!=null?`<br><span class="${cls}" style="font-size:9px">${beat>=0?'+':''}${beat.toFixed(1)}%</span>`:'';
-    const estLine=q.estimate!=null?`<br><span class="eps-q-est">e${q.estimate.toFixed(2)}</span>`:'';
-    const qLabel=q.date?`<span class="eps-q-label">${q.date.slice(0,7)}</span><br>`:'';
-    return `<td class="eps-qcell"><span class="eps-q-act ${cls}">${q.actual.toFixed(2)}</span>${estLine}${beatBadge}</td>`;
+    const beatBadge=beat!=null?`<div class="${cls}" style="font-size:9px;margin-top:1px">${beat>=0?'+':''}${beat.toFixed(1)}%</div>`:'';
+    const estLine=q.estimate!=null?`<div class="eps-q-est" style="margin-top:1px">e${q.estimate.toFixed(2)}</div>`:'';
+    return `<td style="text-align:center;padding:7px 4px;line-height:1.3"><div class="eps-q-act ${cls}">${q.actual.toFixed(2)}</div>${estLine}${beatBadge}</td>`;
   }
 
   function epsRow(e,isToday){
     const qs=e.quarters||[];
-    // Latest first → Q-1 → Q-2 → Q-3 (oldest)
     const cols=[qs[0]||null,qs[1]||null,qs[2]||null,qs[3]||null];
     const nEst=e.estimates?.[0]?.eps_est!=null?e.estimates[0].eps_est.toFixed(2):'—';
     const nDate=fmtEpsDate(e.next_date);
     const sym=cleanSym(e.symbol);
+    const coName=e.name?`<span class="eps-name">${e.name}</span>`:'';
     const todayCls=isToday?'today-row':'';
     return `<tr class="${todayCls}">
-      <td style="white-space:nowrap"><span class="eps-sym">${sym}</span></td>
+      <td style="white-space:nowrap;min-width:100px"><span class="eps-sym">${sym}</span>${coName}</td>
       ${cols.map(qCell).join('')}
-      <td style="font-size:11px;white-space:nowrap;padding:6px 8px;min-width:90px">${nDate}</td>
-      <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text);padding:6px 8px;text-align:right">${nEst}</td>
-      <td style="padding:6px 8px;text-align:right"><a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd" onclick="event.stopPropagation()">Deep Dive</a></td>
+      <td style="font-size:11px;white-space:nowrap;width:100px">${nDate}</td>
+      <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text);width:60px">${nEst}</td>
+      <td style="width:72px"><a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd" onclick="event.stopPropagation()">Deep Dive</a></td>
     </tr>`;
   }
 
   const header=`<thead><tr>
-    <th style="min-width:70px">Ticker</th>
-    <th class="eps-th-q">Latest</th>
-    <th class="eps-th-q">Q-1</th>
-    <th class="eps-th-q">Q-2</th>
-    <th class="eps-th-q">Q-3</th>
-    <th>Next Date</th>
-    <th style="text-align:right">Next Est.</th>
-    <th></th>
+    <th style="text-align:left;min-width:100px">Ticker</th>
+    <th style="width:90px">Latest</th>
+    <th style="width:90px">Q-1</th>
+    <th style="width:90px">Q-2</th>
+    <th style="width:90px">Q-3</th>
+    <th style="width:100px">Next Date</th>
+    <th style="width:60px">Next Est.</th>
+    <th style="width:72px"></th>
   </tr></thead>`;
 
   let rows=data;
