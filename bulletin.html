@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29 -->
+<!-- v2026-10-29b -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -225,6 +225,17 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .ins-num{flex-shrink:0;width:20px;height:20px;background:rgba(245,158,11,.15);color:var(--gold);border-radius:50%;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
 
 /* Global monitors */
+.movers-container{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px}
+@media(max-width:640px){.movers-container{grid-template-columns:1fr}}
+.movers-half-label{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px}
+.movers-half-label.gainer{color:#22c55e}.movers-half-label.loser{color:#ef4444}
+.mover-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border2);border-radius:8px;margin-bottom:6px}
+.mover-card:last-child{margin-bottom:0}
+.mover-flag{font-size:16px;flex-shrink:0}
+.mover-info{flex:1;min-width:0}
+.mover-ticker{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mover-price{font-size:10px;color:var(--muted2);margin-top:1px}
+.mover-chg{font-size:13px;font-weight:700;flex-shrink:0}
 .monitors-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:640px){.monitors-row{grid-template-columns:1fr}}
 .mon-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:14px 15px}
@@ -248,6 +259,17 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .ana-card h4{font-size:10px;font-weight:700;letter-spacing:1px;color:var(--gold);text-transform:uppercase;margin-bottom:10px}
 .ana-card p{font-size:13px;color:var(--muted);line-height:1.65}
 
+/* EPS tracker */
+.eps-table-wrap{overflow-x:auto;margin-bottom:16px}
+.eps-table{width:100%;border-collapse:collapse;font-size:12px}
+.eps-table th{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--muted2);padding:6px 10px;text-align:left;border-bottom:1px solid var(--border2)}
+.eps-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.eps-table tr:last-child td{border-bottom:none}
+.eps-table tr.today-row td{background:rgba(234,179,8,.06);font-weight:600}
+.eps-sym{font-weight:700;color:var(--text)}
+.eps-dd{font-size:11px;color:var(--gold);text-decoration:none;margin-left:6px}
+.eps-dd:hover{text-decoration:underline}
+.eps-beat{color:var(--green)}.eps-miss{color:var(--red)}.eps-neutral{color:var(--muted)}
 .disclaimer{font-size:11px;color:var(--muted2);line-height:1.6;background:rgba(148,163,184,.05);border:1px solid var(--border2);border-radius:8px;padding:12px 14px;margin-top:20px}
 footer{border-top:1px solid var(--border2);padding:22px 0;text-align:center;color:var(--muted2);font-size:12px;margin-top:28px}
 footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold)}
@@ -389,6 +411,10 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <div class="sec-head"><h2>Magnificent 7</h2><div class="sec-rule"></div></div>
   <div class="heat-grid-7" id="mag7Heat"></div>
 
+  <!-- MARKET MOVERS -->
+  <div class="sec-head"><h2>Top Movers &amp; Losers</h2><div class="sec-rule"></div></div>
+  <div class="movers-container" id="moversRow"></div>
+
   <!-- EVENT RADAR -->
   <div class="sec-head"><h2>Event Radar — Next 7 Days</h2><div class="sec-rule"></div></div>
   <div class="event-chips" id="eventChips"></div>
@@ -401,9 +427,21 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
   <div class="sec-head"><h2>Risk Radar</h2><div class="sec-rule"></div></div>
   <div class="radar-row" id="radarCards"></div>
 
-  <!-- TRADE IDEAS -->
-  <div class="sec-head"><h2>Trade Ideas</h2><div class="sec-rule"></div></div>
+  <!-- MOMENTUM SPOTLIGHT -->
+  <div class="sec-head"><h2>Momentum Spotlight</h2><div class="sec-rule"></div></div>
+  <p style="font-size:11px;color:var(--muted);margin:-12px 0 16px;line-height:1.5">Stocks and ETFs with strong recent price momentum. For informational purposes only — not financial advice. Always do your own research.</p>
   <div class="trades-grid" id="tradesGrid"></div>
+
+  <!-- EPS TRACKER -->
+  <div class="sec-head"><h2>Earnings Tracker</h2><div class="sec-rule"></div></div>
+  <div id="epsWrap">
+    <div id="epsToday" style="display:none">
+      <div class="movers-half-label gainer" style="margin-bottom:8px">🔔 Reporting Today</div>
+      <div class="eps-table-wrap" id="epsTodayTable"></div>
+    </div>
+    <div class="eps-table-wrap" id="epsTable"></div>
+    <div id="epsMsg" style="color:var(--muted);font-size:12px;padding:8px 0">Loading earnings data…</div>
+  </div>
 
   <!-- GLOBAL MONITORS -->
   <div class="sec-head"><h2>Global Monitors</h2><div class="sec-rule"></div></div>
@@ -593,7 +631,7 @@ async function fetchSpark(ticker){
 // ── Render market tiles ────────────────────────────────────────────────
 const MKT_DEF=[
   {key:'spx',  label:'S&P 500',    ticker:'^GSPC', dec:0},
-  {key:'spxf', label:'S&P Futures',ticker:'ES=F',  dec:0},
+  {key:'dji',  label:'Dow Jones',  ticker:'^DJI',  dec:0},
   {key:'nqf',  label:'Nasdaq Fut', ticker:'NQ=F',  dec:0},
   {key:'vix',  label:'VIX (Fear)', ticker:'^VIX',  dec:1},
   {key:'tnx',  label:'10Y UST %',  ticker:'^TNX',  dec:2},
@@ -720,6 +758,36 @@ function renderMag7(mag7arr){
   });
 }
 
+// ── Market movers ──────────────────────────────────────────────────────
+function renderMovers(movers){
+  const el=document.getElementById('moversRow');
+  if(!el||!movers||!movers.length)return;
+  const gainers=movers.filter(m=>parseFloat(m.chg_pct)>=0).slice(0,5);
+  const losers=movers.filter(m=>parseFloat(m.chg_pct)<0).slice(0,5);
+  function card(m){
+    const up=parseFloat(m.chg_pct)>=0;
+    const chgStr=m.move||(up?'+':'')+parseFloat(m.chg_pct).toFixed(2)+'%';
+    const priceStr=m.price!=null?fmt(m.price,2):'';
+    return `<div class="mover-card">
+      <div class="mover-flag">${m.flag||'🇺🇸'}</div>
+      <div class="mover-info">
+        <div class="mover-ticker">${(m.ticker||'').replace('.L','')}</div>
+        ${priceStr?`<div class="mover-price">${priceStr}</div>`:''}
+      </div>
+      <div class="mover-chg ${up?'pos':'neg'}">${chgStr}</div>
+    </div>`;
+  }
+  el.innerHTML=`
+    <div>
+      <div class="movers-half-label gainer">▲ Top Gainers</div>
+      ${gainers.map(card).join('')}
+    </div>
+    <div>
+      <div class="movers-half-label loser">▼ Top Losers</div>
+      ${losers.map(card).join('')}
+    </div>`;
+}
+
 // ── Event chips ────────────────────────────────────────────────────────
 function renderEvents(events){
   const el=document.getElementById('eventChips');
@@ -776,25 +844,16 @@ function renderTrades(trades){
     const tc=(t.type||'stock')==='sector'?'trd-sector':'trd-stock';
     const bc=(t.type||'stock')==='sector'?'badge-sector':'badge-stock';
     const sym=t.setup||'';
-    const dd=sym&&(t.type==='stock'||!t.type)?`<a href="/deep-dive.html?ticker=${sym}" class="trd-dd" onclick="event.stopPropagation()" style="font-size:11px;color:var(--gold);text-decoration:none;margin-top:5px;display:inline-block">→ Deep Dive</a>`:'';
-    return `<div class="trd-card ${tc}" onclick="toggleTrade(${i})">
+    const dd=sym&&(t.type==='stock'||!t.type)?`<a href="/deep-dive.html?ticker=${encodeURIComponent(sym)}" class="trd-dd" onclick="event.stopPropagation()" style="font-size:11px;color:var(--gold);text-decoration:none;margin-top:10px;display:inline-block;font-weight:600;letter-spacing:.3px">→ Open Deep Dive</a>`:'';
+    return `<div class="trd-card ${tc}">
       <div class="trd-top"><span class="trd-ticker">${sym}</span><span class="trd-badge ${bc}">${(t.type||'STOCK').toUpperCase()}</span></div>
-      <div class="trd-toggle">⌄</div>
-      <div class="trd-levels">
-        <div class="trd-lv"><div class="trd-lv-label">Entry</div><div class="trd-lv-val lv-entry">${t.entry||'—'}</div></div>
-        <div class="trd-lv"><div class="trd-lv-label">Stop</div><div class="trd-lv-val lv-stop">${t.stop||'—'}</div></div>
-        <div class="trd-lv"><div class="trd-lv-label">Target</div><div class="trd-lv-val lv-target">${t.target||'—'}</div></div>
-      </div>
-      <div class="trd-rr">R:R <strong>${t.risk_reward||'—'}</strong></div>
-      <div class="trd-body" id="trd${i}">
+      <div class="trd-body open" id="trd${i}">
         <div class="trd-thesis">${t.thesis||''}</div>
-        ${t.risk?`<div class="trd-risk">⚠ ${t.risk}</div>`:''}
         ${dd}
       </div>
     </div>`;
   }).join('');
 }
-function toggleTrade(i){const b=document.getElementById('trd'+i);const c=b.closest('.trd-card');if(!b||!c)return;b.classList.toggle('open');c.classList.toggle('open');}
 
 // ── Global monitors ────────────────────────────────────────────────────
 function renderMonitors(gm){
@@ -825,6 +884,67 @@ function renderMonitors(gm){
       ['USD/JPY',   as.usd_jpy?.price!=null?fmt(as.usd_jpy.price,2):'—',as.usd_jpy?.chg_pct],
     ]),
   ].join('');
+}
+
+// ── EPS Tracker ────────────────────────────────────────────────────────
+async function loadEpsTracker(){
+  const msg=document.getElementById('epsMsg');
+  const today=new Date().toISOString().slice(0,10);
+  let data=null;
+  // Retry up to 3 times (earnings endpoint may return 202 while loading)
+  for(let i=0;i<3;i++){
+    try{
+      const r=await fetch(API+'/earnings?index=sp500',{cache:'no-store',signal:AbortSignal.timeout(20000)});
+      if(r.status===202){if(i<2){if(msg)msg.textContent='Loading earnings data…';await new Promise(r=>setTimeout(r,8000));continue;}break;}
+      if(!r.ok)break;
+      const j=await r.json();
+      data=j.data||j;
+      break;
+    }catch(e){break;}
+  }
+  if(!data||!data.length){if(msg)msg.textContent='Earnings data unavailable';return;}
+  if(msg)msg.style.display='none';
+
+  function epsRow(e,isToday){
+    const q=e.quarters?.[0]||{};
+    const est=e.estimates?.[0]||{};
+    const actual=q.actual!=null?q.actual.toFixed(2):'—';
+    const qest=q.estimate!=null?q.estimate.toFixed(2):'—';
+    const beat=q.beat_pct!=null?q.beat_pct:null;
+    const beatCls=beat==null?'eps-neutral':beat>=0?'eps-beat':'eps-miss';
+    const beatStr=beat==null?'—':(beat>=0?'+':'')+beat.toFixed(1)+'%';
+    const nextEst=est.eps_est!=null?est.eps_est.toFixed(2):'—';
+    const nextDate=e.next_date||'—';
+    const todayCls=isToday?'today-row':'';
+    const ddLink=`<a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd">Deep Dive →</a>`;
+    return `<tr class="${todayCls}">
+      <td><span class="eps-sym">${e.symbol}</span>${ddLink}</td>
+      <td>${nextDate}</td>
+      <td style="font-family:monospace">${nextEst}</td>
+      <td style="font-family:monospace">${actual}</td>
+      <td style="font-family:monospace">${qest}</td>
+      <td><span class="${beatCls}">${beatStr}</span></td>
+    </tr>`;
+  }
+
+  const header=`<thead><tr>
+    <th>Ticker</th><th>Next Date</th><th>Next Est.</th><th>Last Actual</th><th>Last Est.</th><th>Beat/Miss</th>
+  </tr></thead>`;
+
+  const todayRows=data.filter(e=>e.next_date===today);
+  const upcoming=data.filter(e=>e.next_date&&e.next_date>today).slice(0,30);
+
+  if(todayRows.length){
+    const wrap=document.getElementById('epsToday');
+    if(wrap){
+      wrap.style.display='';
+      const tbl=document.getElementById('epsTodayTable');
+      if(tbl)tbl.innerHTML=`<table class="eps-table">${header}<tbody>${todayRows.map(e=>epsRow(e,true)).join('')}</tbody></table>`;
+    }
+  }
+
+  const mainTbl=document.getElementById('epsTable');
+  if(mainTbl)mainTbl.innerHTML=`<table class="eps-table">${header}<tbody>${upcoming.map(e=>epsRow(e,false)).join('')}</tbody></table>`;
 }
 
 // ── Key insights ───────────────────────────────────────────────────────
@@ -873,6 +993,7 @@ function render(d,md){
   const sectors=(d.sectors_data&&Object.values(d.sectors_data).some(v=>v!=null))?d.sectors_data:sectorsFromMarketData(md);
   renderSectors(sectors);
   renderMag7(d.mag7);
+  renderMovers(md?.movers);
   renderEvents(d.event_radar);
   renderDrivers(d.drivers);
   renderRadar(d.risk_radar);
@@ -886,6 +1007,8 @@ function render(d,md){
   if(tc.headline)document.title=tc.headline.slice(0,80)+' — Fintiq';
   document.getElementById('ldr').style.display='none';
   document.getElementById('page').style.display='';
+  // Load EPS tracker async — doesn't block page render
+  loadEpsTracker();
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────
