@@ -962,10 +962,11 @@ def _generate_bulletin() -> dict:
         f"   Write: 'yield curve (the gap between short and long-term government bond rates — when it inverts, recessions often follow)' not just 'yield curve'.\n"
         f"   Write: '25 basis points (0.25%)' not just '25bps'.\n\n"
         f"4. THE CALL HEADLINE: Write like a newspaper front page. Punchy, clear, one real data point.\n"
-        f"   GOOD examples: 'Tech stocks slide 1.5% as strong jobs data kills hopes for a rate cut' | 'S&P 500 at 5,420 — earnings season off to a strong start but AI spending worries cap the rally' | 'Gold hits $2,700 as the dollar weakens and the Fed signals patience'\n"
+        f"   GOOD examples: 'Tech stocks slide 1.5% as strong jobs data kills hopes for a rate cut' | 'S&P 500 at {spx.get(\"price\",\"n/a\")} — earnings season off to a strong start but AI spending worries cap the rally' | 'Gold hits ${gold.get(\"price\",\"n/a\")} as the dollar weakens and the Fed signals patience'\n"
         f"   BAD examples (never write like this): 'A fractured risk-on session with dangerous internal split confirms overnight pressure' | 'Defensive rotation with institutional repositioning into quality' | 'Regime shift from transition to risk-off confirmed by VIX contango'\n\n"
         f"5. SPECIFIC NUMBERS. Always cite exact figures from the data below. Never make vague statements.\n\n"
         f"6. EXPLAIN THE 'SO WHAT'. For every signal, tell the investor what it means for their money — not just what the signal is.\n\n"
+        f"⚠ CRITICAL — PRICE ACCURACY: The LIVE MARKET DATA below is fetched in real time and is the ONLY source of correct prices. The S&P 500 today is {spx.get('price','n/a')}. NEVER substitute any price from your training data — your knowledge of historical S&P levels (e.g. 5,500 or any pre-2026 level) is WRONG for today. Use ONLY the numbers in the section below.\n\n"
         f"LIVE MARKET DATA (reference specific figures throughout):\n{mkt}\n"
         f"SECTOR PERFORMANCE:\n{sector_txt}\n\n"
         f"ASIA / EUROPE OVERNIGHT:\n{region_txt}\n\n"
@@ -992,16 +993,17 @@ def _generate_bulletin() -> dict:
         '"equity_flow":"6-8 sentences in plain English. Name which sectors are rising and falling today with specific ETF percentage figures. Explain in everyday language why money is moving this way — which earnings, news events, or economic data are driving it. Name 1-2 specific stocks that are making headlines and explain what they did and why it matters.",'
         '"overnight_wires":"3-4 sentences in plain English. What happened in Asian and European markets last night, with specific index levels. Explain what this tells us about how US markets are likely to open today.",'
         '"trade_ideas":['
-        '{{"setup":"US-listed stock ticker symbol (e.g. NVDA)","type":"stock","thesis":"Plain English explanation of the opportunity — what is happening with this company right now, what catalyst makes this timely today, and why a retail investor should pay attention. Reference a specific event or data point. No jargon.","entry":"Price level only (e.g. $220 or $215-220)","stop":"Price level only (e.g. $208)","target":"Price level only (e.g. $245)","risk_reward":"e.g. 1:2.5","risk":"One plain-English sentence — what specific event or price move would prove this trade wrong"}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol (can include a non-US ADR such as BABA, TSM, ASML, SAP)","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Materials or commodity-linked stock (gold miner, copper, lithium, or energy — e.g. NEM, FCX, ALB, SLB, FSLR)","type":"stock","thesis":"Link this to the gold, copper, or oil price move in the live data above. Explain in plain English why the commodity price is moving and what it means for this stock.","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Materials or commodity-linked stock (different commodity or sub-sector from the one above)","type":"stock","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Sector ETF ticker (e.g. XLK, XLE, XLF, XBI, XLI)","type":"sector","thesis":"In plain English, explain why this sector is moving today — name which individual stocks inside the ETF are driving it and what news or data triggered the move.","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Sector ETF ticker (e.g. XLV, XLU, XLB, XLRE, XLC — choose a DIFFERENT sector from the one above)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}},'
-        '{{"setup":"Sector or thematic ETF ticker (e.g. SMH, GDX, KWEB, ARKK, IYT — choose a thematic not already used above)","type":"sector","thesis":"...","entry":"...","stop":"...","target":"...","risk_reward":"...","risk":"..."}}],'
+        'MOMENTUM SPOTLIGHT — Select the 10 stocks/ETFs with the strongest PRICE MOMENTUM right now. Industry definition of momentum: consistent upward price movement over the past 3-12 months, recent outperformance versus the S&P 500, and a specific catalyst (earnings beat, analyst upgrade, product launch, macro tailwind) reinforcing the trend TODAY. Do NOT include stocks in downtrends. Do NOT include speculative or penny stocks.'
+        '{{"setup":"US-listed stock ticker symbol (e.g. NVDA)","type":"stock","thesis":"Plain English explanation of this stock momentum — what drove price strength recently, what specific catalyst is fresh TODAY, what % it has moved and over what period, why retail investors should pay attention now. Be specific. No jargon."}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol (ADR is fine — e.g. BABA, TSM, ASML, SAP)","type":"stock","thesis":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
+        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
+        '{{"setup":"Materials or commodity-linked stock with momentum (e.g. gold miner, copper, energy — NEM, FCX, SLB, FSLR)","type":"stock","thesis":"Link to the commodity price move in the live data. Explain why the commodity is rising and what it means for this stock specifically."}},'
+        '{{"setup":"Another materials/commodity stock with different sub-sector","type":"stock","thesis":"..."}},'
+        '{{"setup":"Sector ETF with the strongest momentum today (e.g. XLK, XLE, XLF, XBI, SMH, GDX)","type":"sector","thesis":"In plain English, which stocks inside this ETF are driving the strength and what news or data triggered the move today."}},'
+        '{{"setup":"Second sector or thematic ETF with strong momentum (different from above)","type":"sector","thesis":"..."}}],'
         f'"drivers":{drivers_json}}}'
     )
 
@@ -1042,7 +1044,7 @@ def _generate_bulletin() -> dict:
                 "mag7": mag7_data,
                 "earnings_radar": earnings_list[:12],
                 "market_prices": {
-                    "spx":   bd.get("^GSPC",{}),  "spxf": bd.get("ES=F",{}),
+                    "spx":   bd.get("^GSPC",{}),  "dji":  bd.get("^DJI",{}),
                     "nqf":   bd.get("NQ=F",{}),   "ym":   bd.get("YM=F",{}),
                     "rut":   bd.get("^RUT",{}),   "vix":  bd.get("^VIX",{}),
                     "vix9d": bd.get("^VIX9D",{}), "vix3m":bd.get("^VIX3M",{}),
