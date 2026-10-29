@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29n -->
+<!-- v2026-10-29o -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -161,7 +161,7 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .evt-chip{background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:7px;min-width:0}
 .evt-chip.today{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
 .evt-when{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px}
-.evt-name{font-size:12px;font-weight:500;white-space:nowrap}
+.evt-name{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
 .evt-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
 .high-dot{background:var(--red)}.med-dot{background:#eab308}
 
@@ -339,6 +339,42 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 footer{border-top:1px solid var(--border2);padding:22px 0;text-align:center;color:var(--muted2);font-size:12px;margin-top:28px}
 footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold)}
 .section-end{height:28px}
+
+/* ── MOBILE REFINEMENTS ── */
+@media(max-width:480px){
+  /* Tighter section headers */
+  .sec-head{margin:14px 0 8px}
+  /* Sector heat: 3→2 cols, Mag7: 4→3 cols */
+  .heat-grid-5{grid-template-columns:repeat(2,1fr)}
+  .heat-grid-7{grid-template-columns:repeat(3,1fr)}
+  /* Macro calendar 1 col already at 480 — also tighten card padding */
+  .mcal-head{padding:9px 11px}
+  /* Smaller chart modal on phones */
+  .chart-modal{padding:14px;border-radius:12px}
+  .chart-area{height:170px}
+  .cmo-ticker{font-size:18px}
+  /* Tighten call strip */
+  .call-strip{padding:10px 0}
+  .call-text{font-size:13px}
+  /* Market tiles: 2 cols already; reduce price font slightly */
+  .mkt-price{font-size:15px}
+  .mkt-tile{padding:10px 11px}
+  /* Tighter mover cards */
+  .mover-card{padding:5px 8px}
+  /* Global monitors stacked — reduce padding */
+  .mon-card{padding:11px 12px}
+  /* Reduce analysis grid min from 300px to fit phone */
+  .analysis-body.open{grid-template-columns:1fr}
+  /* Event chip text — already has ellipsis, reduce padding */
+  .evt-chip{padding:5px 8px}
+  /* Drivers + geo body text */
+  .drv-context,.drv-impact,.geo-desc{font-size:11px}
+}
+@media(max-width:360px){
+  .heat-grid-7{grid-template-columns:repeat(2,1fr)}
+  .event-chips{grid-template-columns:1fr}
+  .movers-container{gap:10px}
+}
 </style>
 </head>
 <body>
