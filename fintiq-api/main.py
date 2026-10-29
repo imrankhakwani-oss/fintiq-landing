@@ -1148,7 +1148,8 @@ def _generate_bulletin() -> dict:
                 "web_enhanced": bool(TAVILY_API_KEY),
                 # New computed sections (non-AI)
                 "sentiment": sentiment,
-                "event_radar": econ,
+                "event_radar": [e for e in econ if (datetime.strptime(e["date"],"%Y-%m-%d").date()-datetime.now().date()).days<=7],
+                "macro_calendar": econ,
                 "geo_news": geo_news,
                 "global_monitors": global_monitors,
                 "mag7": mag7_data,
