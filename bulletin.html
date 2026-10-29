@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29g -->
+<!-- v2026-10-29h -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -250,6 +250,7 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .mover-flag{font-size:16px;flex-shrink:0}
 .mover-info{flex:1;min-width:0}
 .mover-ticker{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mover-co{font-size:10px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .mover-price{font-size:10px;color:var(--muted2);margin-top:1px}
 .mover-chg{font-size:13px;font-weight:700;flex-shrink:0}
 .monitors-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
@@ -795,10 +796,13 @@ function renderMovers(movers){
     const up=parseFloat(m.chg_pct)>=0;
     const chgStr=m.move||(up?'+':'')+parseFloat(m.chg_pct).toFixed(2)+'%';
     const priceStr=m.price!=null?fmt(m.price,2):'';
+    const displayTicker=(m.ticker||'').replace('.L','');
+    const displayName=(m.name&&m.name!==displayTicker)?`<div class="mover-co">${m.name}</div>`:'';
     return `<div class="mover-card">
       <div class="mover-flag">${m.flag||'🇺🇸'}</div>
       <div class="mover-info">
-        <div class="mover-ticker">${(m.ticker||'').replace('.L','')}</div>
+        <div class="mover-ticker">${displayTicker}</div>
+        ${displayName}
         ${priceStr?`<div class="mover-price">${priceStr}</div>`:''}
       </div>
       <div class="mover-chg ${up?'pos':'neg'}">${chgStr}</div>
