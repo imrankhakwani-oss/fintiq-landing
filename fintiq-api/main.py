@@ -993,17 +993,23 @@ def _generate_bulletin() -> dict:
         '"equity_flow":"6-8 sentences in plain English. Name which sectors are rising and falling today with specific ETF percentage figures. Explain in everyday language why money is moving this way — which earnings, news events, or economic data are driving it. Name 1-2 specific stocks that are making headlines and explain what they did and why it matters.",'
         '"overnight_wires":"3-4 sentences in plain English. What happened in Asian and European markets last night, with specific index levels. Explain what this tells us about how US markets are likely to open today.",'
         '"trade_ideas":['
-        'MOMENTUM SPOTLIGHT — Select the 10 stocks/ETFs with the strongest PRICE MOMENTUM right now. Industry definition of momentum: consistent upward price movement over the past 3-12 months, recent outperformance versus the S&P 500, and a specific catalyst (earnings beat, analyst upgrade, product launch, macro tailwind) reinforcing the trend TODAY. Do NOT include stocks in downtrends. Do NOT include speculative or penny stocks.'
-        '{{"setup":"US-listed stock ticker symbol (e.g. NVDA)","type":"stock","thesis":"Plain English explanation of this stock momentum — what drove price strength recently, what specific catalyst is fresh TODAY, what % it has moved and over what period, why retail investors should pay attention now. Be specific. No jargon."}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol (ADR is fine — e.g. BABA, TSM, ASML, SAP)","type":"stock","thesis":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
-        '{{"setup":"US-listed stock ticker symbol","type":"stock","thesis":"..."}},'
-        '{{"setup":"Materials or commodity-linked stock with momentum (e.g. gold miner, copper, energy — NEM, FCX, SLB, FSLR)","type":"stock","thesis":"Link to the commodity price move in the live data. Explain why the commodity is rising and what it means for this stock specifically."}},'
-        '{{"setup":"Another materials/commodity stock with different sub-sector","type":"stock","thesis":"..."}},'
-        '{{"setup":"Sector ETF with the strongest momentum today (e.g. XLK, XLE, XLF, XBI, SMH, GDX)","type":"sector","thesis":"In plain English, which stocks inside this ETF are driving the strength and what news or data triggered the move today."}},'
-        '{{"setup":"Second sector or thematic ETF with strong momentum (different from above)","type":"sector","thesis":"..."}}],'
+        'MOMENTUM SPOTLIGHT — Select the 12 individual STOCKS (no ETFs, no funds) with the strongest PRICE MOMENTUM right now across US, UK and European markets. '
+        'Industry definition of momentum: consistent upward price movement over the past 3-12 months, recent outperformance versus their home index, AND a specific catalyst (earnings beat, analyst upgrade, product launch, macro tailwind) reinforcing the trend TODAY. '
+        'Coverage rules: at least 8 must be US-listed (NYSE/NASDAQ tickers). For UK stocks use their US ADR ticker (e.g. SHEL, BP, AZN, RIO, ULVR, HSBC, BARC). For European stocks use their US-listed ADR or primary ticker (e.g. ASML, SAP, TTE, SIE, MC). '
+        'Do NOT include index ETFs, sector ETFs, or mutual funds. Do NOT include stocks in downtrends. Do NOT include speculative penny stocks. '
+        'Return exactly 12 objects, all with "type":"stock".'
+        '{{"setup":"US stock ticker (e.g. NVDA)","type":"stock","thesis":"Plain English: what drove price strength recently, what specific catalyst is fresh TODAY, what % it has moved and over what period, why this matters now. No jargon."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"US stock ticker","type":"stock","thesis":"..."}},'
+        '{{"setup":"UK ADR ticker (e.g. SHEL, AZN, BP, RIO, HSBC) or strong US stock","type":"stock","thesis":"..."}},'
+        '{{"setup":"EU ADR ticker (e.g. ASML, SAP, TTE, SIE) or strong US stock","type":"stock","thesis":"..."}},'
+        '{{"setup":"Materials or commodity-linked stock with momentum (e.g. NEM, FCX, SLB, FSLR, AA)","type":"stock","thesis":"Link to the commodity price move. Explain why the commodity is rising and what it means for this stock."}},'
+        '{{"setup":"Financial or healthcare stock with momentum","type":"stock","thesis":"..."}}],'
         f'"drivers":{drivers_json}}}'
     )
 
@@ -2010,6 +2016,23 @@ def refresh_bulletin(token: Optional[str] = None):
     t = threading.Thread(target=_bg_regenerate, daemon=True)
     t.start()
     return {"status": "refresh_started"}
+
+@app.get("/quotes")
+def get_quotes(symbols: str = ""):
+    """Live price + change for a comma-separated list of tickers (max 20). Used by bulletin momentum cards."""
+    tickers = [s.strip().upper() for s in symbols.split(",") if s.strip()][:20]
+    if not tickers:
+        return {}
+    result = {}
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futures = {ex.submit(_yf_quick, sym): sym for sym in tickers}
+        for fut, sym in futures.items():
+            try:
+                d = fut.result(timeout=10)
+                result[sym] = {"price": d.get("price"), "chg_pct": d.get("chg_pct")}
+            except:
+                result[sym] = {}
+    return result
 
 @app.get("/market-data")
 def get_market_data():
