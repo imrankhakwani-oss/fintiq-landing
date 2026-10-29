@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29m -->
+<!-- v2026-10-29n -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -983,10 +983,12 @@ function renderMacroCal(events){
       ${hasPrev?`<div class="mcal-stat"><div class="mcal-stat-label">Previous</div><div class="mcal-stat-val">${e.previous}</div></div>`:''}
     </div>`:'';
     const whyHtml=why?`<div class="mcal-why">${why}</div>`:'';
+    // Previous reading badge shown on card face
+    const prevBadge=hasPrev?`<span style="font-size:10px;font-weight:700;color:var(--muted2);margin-left:6px;background:rgba(255,255,255,.06);padding:1px 6px;border-radius:6px">Prev: ${e.previous}</span>`:'';
     return `<div class="mcal-card ${impCls}" onclick="toggleMcal(${i})">
       <div class="mcal-head">
         <div class="mcal-left">
-          <div class="mcal-event">${e.event||''}</div>
+          <div class="mcal-event">${e.event||''}${prevBadge}</div>
           <div class="mcal-meta">
             <span class="mcal-date">${e.date?e.date.slice(0,10):''}</span>
             <span class="mcal-countdown">${countdown}</span>
