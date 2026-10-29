@@ -947,11 +947,7 @@ def _generate_bulletin() -> dict:
     earnings_txt = "\n".join(f"- {e.get('symbol','')} ({e.get('name','')}) — EPS est: {e.get('epsEstimated','?')}"
                               for e in (earnings_today or [])) or "No major earnings today"
 
-    # Pre-build Today's Drivers from real data — earnings + econ + policy/news headlines
     import json as _json
-    news_items = _fetch_policy_and_news()
-    drivers_prebuilt = _build_drivers(earnings_today, econ, news_items)
-    drivers_json = _json.dumps(drivers_prebuilt, ensure_ascii=False)
 
     prompt = (
         f"You are a market analyst writing the {session.upper()} MARKET BULLETIN for everyday retail investors — people who check markets before the trading day, during lunch, or after work. They want to know what is happening and what to do about it, in plain English.\n\n"
@@ -979,7 +975,6 @@ def _generate_bulletin() -> dict:
         f"ECONOMIC CALENDAR:\n{econ_txt}\n\n"
         f"TODAY'S EARNINGS:\n{earnings_txt}\n\n"
         f"LIVE WEB RESEARCH (cite specific events, data points, and analyst views from here):\n{web_context}\n\n"
-        f"PRE-BUILT DRIVERS (copy EXACTLY into the drivers array — preserve every field including 'context', 'impact', 'type', 'icon', 'event' — do NOT add, remove, rename or modify any field or value):\n{drivers_json}\n\n"
         "Respond ONLY with valid JSON. No markdown fences, no text outside the JSON object. "
         "NEVER use double-quote characters inside string values — use single quotes or dashes instead. "
         "No newline characters inside string values.\n\n"
@@ -1015,7 +1010,11 @@ def _generate_bulletin() -> dict:
         '{{"setup":"EU ADR ticker (e.g. ASML, SAP, TTE, SIE) or strong US stock","type":"stock","thesis":"..."}},'
         '{{"setup":"Materials or commodity-linked stock with momentum (e.g. NEM, FCX, SLB, FSLR, AA)","type":"stock","thesis":"Link to the commodity price move. Explain why the commodity is rising and what it means for this stock."}},'
         '{{"setup":"Financial or healthcare stock with momentum","type":"stock","thesis":"..."}}],'
-        f'"drivers":{drivers_json}}}'
+        '"drivers":['
+        'Generate 4-5 of TODAY\'s most genuinely important market-moving events. Each must be specific and actionable — no placeholders. '
+        'Pull from the EARNINGS, ECONOMIC CALENDAR, NEWS HEADLINES, and LIVE WEB RESEARCH above. Priority order: (1) Earnings reports with real numbers, (2) High-impact macro releases happening TODAY with actual estimates from the calendar, (3) Breaking news or policy decisions moving markets. '
+        'For each driver write a real "impact" — not generic phrases. Earnings: name what analysts are watching (revenue, margins, guidance) and what a beat/miss would mean for the sector. Macro: state the estimate vs previous and whether a surprise would push yields/dollar up or down. News: say what happened and which assets it hits directly. '
+        'Schema for each object: {{"type":"earnings|macro|news|policy|geopolitical","icon":"📊 for earnings | 📈 for macro | 📰 for news | 🏛 for policy | 🌍 for geopolitical","event":"5-8 word title, no jargon","impact":"1-2 plain-English sentences: specific context and why it matters to a retail investor today"}}]}}'
     )
 
     if not ANTHROPIC_API_KEY: raise RuntimeError("ANTHROPIC_API_KEY not set")
