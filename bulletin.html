@@ -638,7 +638,6 @@ function renderMkt(mp, y2){
 function renderSentiment(s){
   if(!s)return;
   const score=s.score??50;
-  const colors={score>=75:'var(--green)',score>=60:'#4ade80',score>=45:'#eab308',score>=30:'var(--orange)',_:'var(--red)'};
   let col='var(--red)';
   if(score>=75)col='var(--green)';else if(score>=60)col='#4ade80';else if(score>=45)col='#eab308';else if(score>=30)col='var(--orange)';
   document.getElementById('gScore').textContent=score;
