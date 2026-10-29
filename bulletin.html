@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29j -->
+<!-- v2026-10-29k -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -146,8 +146,9 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .heat-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .heat-grid-7{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 @media(max-width:640px){.heat-grid-5{grid-template-columns:repeat(3,1fr)}.heat-grid-7{grid-template-columns:repeat(4,1fr)}}
-.htile{border-radius:8px;padding:10px 6px;text-align:center;border:1px solid transparent;cursor:pointer;transition:transform .15s}
-.htile:hover{transform:scale(1.05)}
+.htile{border-radius:9px;padding:10px 6px;text-align:center;border:1px solid transparent;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden}
+.htile:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.htile-bar{position:absolute;top:0;left:0;right:0;height:2px;border-radius:9px 9px 0 0}
 .htick{font-size:12px;font-weight:700;letter-spacing:.3px}
 .hname{font-size:9px;margin-top:1px;opacity:.8}
 .hpct{font-size:15px;font-weight:700;font-family:monospace;margin-top:5px}
@@ -289,14 +290,14 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 @media(max-width:640px){.movers-container{grid-template-columns:1fr}}
 .movers-half-label{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--muted2);text-transform:uppercase;margin-bottom:8px}
 .movers-half-label.gainer{color:#22c55e}.movers-half-label.loser{color:#ef4444}
-.mover-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card);border:1px solid var(--border2);border-radius:8px;margin-bottom:6px}
+.mover-card{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--card);border:1px solid var(--border2);border-radius:7px;margin-bottom:4px}
 .mover-card:last-child{margin-bottom:0}
-.mover-flag{font-size:16px;flex-shrink:0}
+.mover-flag{font-size:13px;flex-shrink:0}
 .mover-info{flex:1;min-width:0}
-.mover-ticker{font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mover-co{font-size:10px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
-.mover-price{font-size:10px;color:var(--muted2);margin-top:1px}
-.mover-chg{font-size:13px;font-weight:700;flex-shrink:0}
+.mover-ticker{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mover-co{font-size:9px;color:var(--muted2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mover-price{font-size:9px;color:var(--muted2)}
+.mover-chg{font-size:12px;font-weight:700;flex-shrink:0}
 .monitors-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 @media(max-width:640px){.monitors-row{grid-template-columns:1fr}}
 .mon-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:14px 15px}
@@ -578,13 +579,13 @@ function fmtPct(v){if(v==null||isNaN(+v))return '—';const n=+v;return(n>=0?'+'
 function cc(v){if(v==null||isNaN(+v))return 'fl';return +v>0?'up':+v<0?'dn':'fl';}
 
 function heatC(pct){
-  if(pct==null)return{bg:'rgba(148,163,184,.06)',txt:'var(--muted)',bdr:'rgba(148,163,184,.12)'};
+  if(pct==null)return{bg:'rgba(148,163,184,.06)',txt:'#94a3b8',bdr:'rgba(148,163,184,.14)',accent:'rgba(148,163,184,.2)'};
   const v=+pct;
-  if(v>=2)   return{bg:'rgba(34,197,94,.22)',  txt:'#86efac',bdr:'rgba(34,197,94,.4)'};
-  if(v>=0.5) return{bg:'rgba(34,197,94,.1)',   txt:'#a7f3d0',bdr:'rgba(34,197,94,.2)'};
-  if(v>=-0.5)return{bg:'rgba(148,163,184,.06)',txt:'var(--muted)',bdr:'rgba(148,163,184,.12)'};
-  if(v>=-2)  return{bg:'rgba(239,68,68,.12)',  txt:'#fca5a5',bdr:'rgba(239,68,68,.25)'};
-  return             {bg:'rgba(239,68,68,.22)', txt:'#f87171',bdr:'rgba(239,68,68,.4)'};
+  if(v>=2)   return{bg:'linear-gradient(145deg,rgba(22,101,52,.55) 0%,rgba(15,23,42,.9) 100%)',  txt:'#86efac',bdr:'rgba(34,197,94,.35)',accent:'rgba(34,197,94,.6)'};
+  if(v>=0.5) return{bg:'linear-gradient(145deg,rgba(22,101,52,.3) 0%,rgba(15,23,42,.9) 100%)',   txt:'#a7f3d0',bdr:'rgba(34,197,94,.2)',accent:'rgba(34,197,94,.4)'};
+  if(v>=-0.5)return{bg:'linear-gradient(145deg,rgba(30,41,59,.7) 0%,rgba(15,23,42,.9) 100%)',    txt:'#94a3b8',bdr:'rgba(148,163,184,.14)',accent:'rgba(148,163,184,.2)'};
+  if(v>=-2)  return{bg:'linear-gradient(145deg,rgba(127,29,29,.4) 0%,rgba(15,23,42,.9) 100%)',   txt:'#fca5a5',bdr:'rgba(239,68,68,.3)',accent:'rgba(239,68,68,.5)'};
+  return            {bg:'linear-gradient(145deg,rgba(127,29,29,.65) 0%,rgba(15,23,42,.9) 100%)',  txt:'#f87171',bdr:'rgba(239,68,68,.45)',accent:'rgba(239,68,68,.7)'};
 }
 
 // ── Sparkline SVG (inline, small) ─────────────────────────────────────
@@ -799,9 +800,10 @@ function renderSectors(sectors){
   el.innerHTML=Object.entries(SECTORS).map(([sym,name])=>{
     const pct=sectors[sym],c=heatC(pct);
     return `<div class="htile" style="background:${c.bg};border-color:${c.bdr}" onclick="openChart('${name}','${sym}',null,${pct||0})">
-      <div class="htick" style="color:${c.txt}">${sym}</div>
-      <div class="hname" style="color:${c.txt}">${name}</div>
-      <div class="hpct" style="color:${c.txt}">${pct!=null?fmtPct(pct):'—'}</div>
+      <div class="htile-bar" style="background:${c.accent}"></div>
+      <div class="htick" style="color:#e2e8f0;font-size:11px;font-weight:800;letter-spacing:.3px">${sym}</div>
+      <div class="hname" style="color:#94a3b8;font-size:9px;margin-top:1px">${name}</div>
+      <div class="hpct" style="color:${c.txt};font-size:16px;font-weight:800;margin-top:5px">${pct!=null?fmtPct(pct):'—'}</div>
       <div class="hspark" id="sspark_${sym}"></div>
     </div>`;
   }).join('');
@@ -819,11 +821,14 @@ function renderMag7(mag7arr){
   if(!mag7arr||!mag7arr.length)return;
   document.getElementById('mag7Heat').innerHTML=mag7arr.map(m=>{
     const c=heatC(m.chg_pct);
+    const priceStr=m.price!=null?`<div style="font-size:10px;color:#64748b;margin-top:1px">${fmt(m.price,2)}</div>`:'';
     return `<div class="htile" style="background:${c.bg};border-color:${c.bdr}" onclick="openChart('${m.name}','${m.symbol}',${m.price||null},${m.chg_pct||0})">
-      <div class="htick" style="color:${c.txt}">${m.symbol}</div>
-      <div class="hname" style="color:${c.txt}">${m.name}</div>
-      <div class="hpct" style="color:${c.txt}">${m.chg_pct!=null?fmtPct(m.chg_pct):'—'}</div>
-      ${m.next_earnings?`<div style="font-size:9px;color:${c.txt};opacity:.7;margin-top:2px">${m.next_earnings.slice(5)}</div>`:''}
+      <div class="htile-bar" style="background:${c.accent}"></div>
+      <div class="htick" style="color:#e2e8f0;font-size:11px;font-weight:800;letter-spacing:.3px">${m.symbol}</div>
+      <div class="hname" style="color:#94a3b8;font-size:9px;margin-top:1px">${m.name}</div>
+      <div class="hpct" style="color:${c.txt};font-size:16px;font-weight:800;margin-top:5px">${m.chg_pct!=null?fmtPct(m.chg_pct):'—'}</div>
+      ${priceStr}
+      ${m.next_earnings?`<div style="font-size:9px;color:#f59e0b;margin-top:2px">📅 ${m.next_earnings.slice(5)}</div>`:''}
       <div class="hspark" id="mspark_${m.symbol}"></div>
     </div>`;
   }).join('');
