@@ -209,6 +209,7 @@ _INDEX_TICKERS = {
         "RMS.PA","DBK.DE","NOKIA.HE","EL.PA","VOW3.DE","BMW.DE","MBG.DE","AMS.MC","DG.PA","RI.PA",
         "ORA.PA","VIE.PA","ML.PA","ACA.PA","AI.PA","LR.PA","PUB.PA","STM","AXA.PA","MTS.MC",
     ],
+    "mag7": ["AAPL","MSFT","NVDA","AMZN","META","GOOGL","TSLA"],
 }
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -491,6 +492,39 @@ _MAG7 = [
     ("AAPL","Apple"), ("MSFT","Microsoft"), ("NVDA","Nvidia"),
     ("AMZN","Amazon"), ("META","Meta"), ("GOOGL","Alphabet"), ("TSLA","Tesla"),
 ]
+
+def _fetch_geo_news_rss() -> list:
+    """Fetch world/geopolitical headlines from Reuters World + BBC World RSS feeds."""
+    import xml.etree.ElementTree as ET
+    GEO_FEEDS = [
+        ("https://feeds.reuters.com/Reuters/worldNews", "Reuters"),
+        ("https://feeds.bbci.co.uk/news/world/rss.xml", "BBC"),
+    ]
+    items: list = []
+    for feed_url, source in GEO_FEEDS:
+        try:
+            r = requests.get(feed_url, timeout=8, headers={"User-Agent": "Fintiq/1.0 market research"})
+            if r.status_code != 200: continue
+            root = ET.fromstring(r.content)
+            channel = root.find("channel")
+            if channel is None: continue
+            for item in channel.findall("item")[:6]:
+                title   = (item.findtext("title") or "").strip()
+                link    = (item.findtext("link") or "").strip()
+                desc    = (item.findtext("description") or "").strip()
+                pubdate = (item.findtext("pubDate") or "").strip()
+                if title and len(title) > 20:
+                    items.append({
+                        "title": title, "url": link,
+                        "description": desc[:300] if desc else "",
+                        "published": pubdate, "source": source,
+                    })
+        except Exception: continue
+    seen: set = set(); unique: list = []
+    for item in items:
+        if item["title"] not in seen:
+            seen.add(item["title"]); unique.append(item)
+    return unique[:10]
 _MAG7_SYMBOLS = {sym for sym, _ in _MAG7}
 
 _KEY_EARNINGS_TICKERS = _MAG7 + [
@@ -874,13 +908,15 @@ def _generate_bulletin() -> dict:
     syms = [s for s,_,_,_ in _BRIEF_INDICES] + [s for s,_,_ in _BRIEF_INSTRUMENTS] + _MAG7_SYMS
     bd = _fetch_brief_data(syms)
 
-    # Parallel: RSS news, FRED/FOMC calendar, yfinance earnings, sector data
-    with ThreadPoolExecutor(max_workers=4) as _ex:
+    # Parallel: RSS news, geo news, FRED/FOMC calendar, yfinance earnings, sector data
+    with ThreadPoolExecutor(max_workers=5) as _ex:
         _f_news    = _ex.submit(_fetch_rss_news)
+        _f_geo     = _ex.submit(_fetch_geo_news_rss)
         _f_econ    = _ex.submit(_fetch_econ_calendar_v2)
         _f_sectors = _ex.submit(_fetch_sector_data)
         _f_earn    = _ex.submit(_fetch_earnings_v2)
         news_rss        = _f_news.result(timeout=15)
+        geo_news        = _f_geo.result(timeout=15)
         econ            = _f_econ.result(timeout=15)
         sectors         = _f_sectors.result(timeout=15)
         earnings_list   = _f_earn.result(timeout=15)
@@ -1050,6 +1086,7 @@ def _generate_bulletin() -> dict:
                 # New computed sections (non-AI)
                 "sentiment": sentiment,
                 "event_radar": econ,
+                "geo_news": geo_news,
                 "global_monitors": global_monitors,
                 "mag7": mag7_data,
                 "earnings_radar": earnings_list[:12],
@@ -2039,6 +2076,27 @@ def refresh_bulletin(token: Optional[str] = None):
     t = threading.Thread(target=_bg_regenerate, daemon=True)
     t.start()
     return {"status": "refresh_started"}
+
+@app.get("/candles")
+def get_candles(symbol: str, period: str = "1mo"):
+    """OHLC daily candle data for a single ticker. Used by bulletin momentum cards."""
+    try:
+        t = yf.Ticker(symbol)
+        hist = t.history(period=period, interval="1d", auto_adjust=True)
+        if hist.empty:
+            return []
+        result = []
+        for dt, row in hist.iterrows():
+            result.append({
+                "date": dt.strftime("%Y-%m-%d"),
+                "open":  round(float(row["Open"]),  2),
+                "high":  round(float(row["High"]),  2),
+                "low":   round(float(row["Low"]),   2),
+                "close": round(float(row["Close"]), 2),
+            })
+        return result
+    except Exception:
+        return []
 
 @app.get("/quotes")
 def get_quotes(symbols: str = ""):
