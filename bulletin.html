@@ -894,44 +894,55 @@ function showPage(msg){
   document.getElementById('page').style.display='';
   if(msg)document.getElementById('callText').textContent=msg;
 }
-function fetchWithTimeout(url,ms){
+function setLoadMsg(t){
+  const el=document.querySelector('#ldr div:last-child');
+  if(el)el.textContent=t;
+}
+async function fetchJSON(url,timeoutMs){
   const ctrl=new AbortController();
-  const id=setTimeout(()=>ctrl.abort(),ms);
-  return fetch(url,{cache:'no-store',signal:ctrl.signal}).finally(()=>clearTimeout(id));
+  const id=setTimeout(()=>ctrl.abort(),timeoutMs);
+  try{
+    const r=await fetch(url,{cache:'no-store',signal:ctrl.signal});
+    clearTimeout(id);
+    if(!r.ok||r.status===202)return null; // 202 = still generating
+    return await r.json().catch(()=>null);
+  }catch(e){
+    clearTimeout(id);
+    return null;
+  }
 }
 
-// ── Fetch & boot ───────────────────────────────────────────────────────
+// ── Fetch & boot (with retry for 202 generating state) ────────────────
 async function load(){
-  // Show "still loading" hint after 8s so user knows it's working
-  const hint=setTimeout(()=>{
-    document.querySelector('.loading div:last-child').textContent='API warming up — almost there…';
-  },8000);
+  const MAX_ATTEMPTS=6, RETRY_MS=10000;
+  for(let i=0;i<MAX_ATTEMPTS;i++){
+    if(i===0) setLoadMsg('Loading bulletin…');
+    else      setLoadMsg(`API is warming up… retry ${i}/${MAX_ATTEMPTS-1}`);
 
-  try{
-    const[bRes,mRes]=await Promise.allSettled([
-      fetchWithTimeout(API+'/bulletin',20000),
-      fetchWithTimeout(API+'/market-data',20000),
+    // Fetch bulletin with 15s timeout; fetch market-data in parallel with its own timeout
+    // (market-data runs independently so a slow yfinance fetch doesn't block bulletin)
+    const [b, md] = await Promise.all([
+      fetchJSON(API+'/bulletin',    15000),
+      fetchJSON(API+'/market-data', 15000),
     ]);
-    clearTimeout(hint);
-    let b=null,md=null;
-    if(bRes.status==='fulfilled'&&bRes.value.ok) b=await bRes.value.json().catch(()=>null);
-    if(mRes.status==='fulfilled'&&mRes.value.ok) md=await mRes.value.json().catch(()=>null);
-    if(!b){
-      showPage('Bulletin is warming up — please refresh in a moment.');
+
+    if(b && !b.detail){
+      // Valid bulletin — render it
+      try{ render(b,md); }
+      catch(err){
+        console.error('render error',err);
+        showPage('Bulletin loaded but a display error occurred. Please reload.');
+      }
       return;
     }
-    try{
-      render(b,md);
-    }catch(err){
-      console.error('render error',err);
-      showPage('Bulletin loaded but a display error occurred. Try refreshing.');
+
+    // Bulletin not ready yet (202 / null) — wait and retry
+    if(i<MAX_ATTEMPTS-1){
+      await new Promise(r=>setTimeout(r,RETRY_MS));
     }
-  }catch(e){
-    clearTimeout(hint);
-    showPage(e.name==='AbortError'
-      ? 'Market data is taking longer than usual. Please refresh in a moment.'
-      : 'Unable to connect. Please check your connection and refresh.');
   }
+  // All retries exhausted
+  showPage('Bulletin is being generated — please refresh in about a minute.');
 }
 load();
 </script>
