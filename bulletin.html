@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29l -->
+<!-- v2026-10-29m -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -156,9 +156,9 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .hspark svg{width:100%;height:28px;display:block}
 
 /* ── EVENT CHIPS ── */
-.event-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
-.event-chips::-webkit-scrollbar{display:none}
-.evt-chip{flex-shrink:0;background:var(--card);border:1px solid var(--border2);border-radius:20px;padding:6px 14px;display:flex;align-items:center;gap:8px}
+.event-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding-bottom:2px}
+@media(max-width:640px){.event-chips{grid-template-columns:repeat(2,1fr)}}
+.evt-chip{background:var(--card);border:1px solid var(--border2);border-radius:8px;padding:6px 10px;display:flex;align-items:center;gap:7px;min-width:0}
 .evt-chip.today{border-color:rgba(245,158,11,.4);background:rgba(245,158,11,.06)}
 .evt-when{font-size:10px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.4px}
 .evt-name{font-size:12px;font-weight:500;white-space:nowrap}
@@ -882,7 +882,7 @@ function renderEvents(events){
     const isToday=(e.date||'').slice(0,10)===today;
     const dotCls=e.impact==='High'?'high-dot':'med-dot';
     const when=isToday?'TODAY':(e.date||'').slice(5,10);
-    return `<div class="evt-chip${isToday?' today':''}"><span class="evt-dot ${dotCls}"></span><span class="evt-when">${when}</span><span class="evt-name">${e.event||''} · ${e.country||''}</span></div>`;
+    return `<div class="evt-chip${isToday?' today':''}"><span class="evt-dot ${dotCls}"></span><span class="evt-when" style="flex-shrink:0">${when}</span><span class="evt-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0">${e.event||''} · ${e.country||''}</span></div>`;
   }).join('');
 }
 
