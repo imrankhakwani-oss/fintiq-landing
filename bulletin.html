@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29i -->
+<!-- v2026-10-29j -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -110,37 +110,37 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .chart-area svg{width:100%;height:100%;display:block}
 .chart-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px}
 
-/* ── SENTIMENT GAUGE ── */
-.signal-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+/* ── COMPACT SENTIMENT + VIX STRIP ── */
+.signal-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 @media(max-width:640px){.signal-row{grid-template-columns:1fr}}
-.sig-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:16px}
-.sig-card h3{font-size:10px;font-weight:700;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px}
+.sig-card{background:var(--card);border:1px solid var(--border2);border-radius:10px;padding:10px 12px}
+.sig-card h3{font-size:9px;font-weight:700;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
 
-/* Full-width gauge */
-.gauge-wrap{display:flex;flex-direction:column;align-items:center;gap:4px}
-.gauge-svg-outer{width:100%;max-width:260px}
-.gauge-svg-outer svg{width:100%;display:block}
-.gauge-score-row{display:flex;align-items:baseline;gap:8px}
-.gauge-score{font-size:40px;font-weight:900;font-family:monospace;line-height:1}
-.gauge-label{font-size:13px;color:var(--muted)}
-.gauge-sigs{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;justify-content:center}
-.g-sig{font-size:11px;color:var(--muted);padding:2px 7px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;gap:4px}
-.g-sig::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+/* Compact gauge — horizontal layout */
+.gauge-wrap{display:flex;align-items:center;gap:10px}
+.gauge-svg-outer{width:80px;flex-shrink:0}
+.gauge-svg-outer svg{width:80px;display:block}
+.gauge-score-col{display:flex;flex-direction:column;gap:2px;min-width:0}
+.gauge-score{font-size:26px;font-weight:900;font-family:monospace;line-height:1}
+.gauge-label{font-size:11px;color:var(--muted);white-space:nowrap}
+.gauge-sigs{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.g-sig{font-size:10px;color:var(--muted);padding:1px 6px;border-radius:10px;background:rgba(255,255,255,.05);display:flex;align-items:center;gap:3px}
+.g-sig::before{content:'';width:4px;height:4px;border-radius:50%;flex-shrink:0}
 .s-green::before{background:var(--green)}.s-yellow::before{background:#eab308}
 .s-orange::before{background:var(--orange)}.s-red::before{background:var(--red)}
 
-/* VIX term structure */
-.vix-term{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+/* Compact VIX */
+.vix-term{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .vix-box{text-align:center;flex:1}
-.vix-box-label{font-size:10px;color:var(--muted2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-.vix-box-val{font-size:22px;font-weight:700;font-family:monospace}
-.vix-arrow{font-size:18px;color:var(--muted2);padding:0 4px}
-.vix-signal{display:inline-block;font-size:11px;padding:3px 9px;border-radius:12px;font-weight:600;margin-top:4px}
+.vix-box-label{font-size:9px;color:var(--muted2);text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.vix-box-val{font-size:16px;font-weight:700;font-family:monospace}
+.vix-arrow{font-size:14px;color:var(--muted2);padding:0 2px}
+.vix-signal{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;margin-top:2px}
 .vs-inverted{background:rgba(239,68,68,.15);color:#fca5a5}
 .vs-contango{background:rgba(34,197,94,.15);color:#86efac}
-.curve-row{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border2)}
-.curve-label{font-size:11px;color:var(--muted)}
-.curve-val{font-size:18px;font-weight:700;font-family:monospace}
+.curve-row{display:flex;justify-content:space-between;align-items:center;margin-top:6px;padding-top:6px;border-top:1px solid var(--border2)}
+.curve-label{font-size:10px;color:var(--muted)}
+.curve-val{font-size:14px;font-weight:700;font-family:monospace}
 
 /* ── HEAT MAP ── */
 .heat-grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
@@ -426,25 +426,21 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
       <div class="gauge-wrap">
         <div class="gauge-svg-outer">
           <svg viewBox="0 0 260 145" xmlns="http://www.w3.org/2000/svg" id="gaugeSvg">
-            <!-- Arc segments -->
             <path d="M 20 130 A 110 110 0 0 1 67 27" stroke="#ef4444" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.35"/>
             <path d="M 67 27 A 110 110 0 0 1 130 14" stroke="#f97316" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.35"/>
             <path d="M 130 14 A 110 110 0 0 1 193 27" stroke="#eab308" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.35"/>
             <path d="M 193 27 A 110 110 0 0 1 240 130" stroke="#22c55e" stroke-width="14" fill="none" stroke-linecap="round" opacity="0.35"/>
-            <!-- Needle -->
             <line id="gaugeNeedle" x1="130" y1="130" x2="130" y2="30" stroke="var(--gold)" stroke-width="2.5" stroke-linecap="round" transform="rotate(0 130 130)"/>
-            <!-- Centre dot -->
             <circle cx="130" cy="130" r="7" fill="var(--gold)" opacity="0.9"/>
-            <!-- Labels -->
             <text x="14" y="148" font-size="9" fill="#94A3B8" text-anchor="middle">FEAR</text>
             <text x="246" y="148" font-size="9" fill="#94A3B8" text-anchor="end">GREED</text>
           </svg>
         </div>
-        <div class="gauge-score-row">
+        <div class="gauge-score-col">
           <div class="gauge-score" id="gScore" style="color:var(--muted)">—</div>
           <div class="gauge-label" id="gLabel">Loading…</div>
+          <div class="gauge-sigs" id="gSigs"></div>
         </div>
-        <div class="gauge-sigs" id="gSigs"></div>
       </div>
     </div>
     <div class="sig-card">
@@ -939,10 +935,14 @@ const _MACRO_WHY={
 };
 function _macroCountdown(dateStr){
   if(!dateStr) return '';
-  const now=new Date(); const ev=new Date(dateStr+'T00:00:00');
-  const diff=Math.round((ev-now)/(1000*3600*24));
+  // Compare date strings only (YYYY-MM-DD) — avoids timestamp bugs for same-day events
+  const todayStr=new Date().toISOString().slice(0,10);
+  const evStr=dateStr.slice(0,10);
+  if(evStr===todayStr) return 'TODAY';
+  const now=new Date(); const ev=new Date(evStr+'T00:00:00');
+  const nowDay=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const diff=Math.round((ev-nowDay)/(1000*3600*24));
   if(diff<0) return 'Past';
-  if(diff===0) return 'TODAY';
   if(diff===1) return 'Tomorrow';
   return `In ${diff}d`;
 }
@@ -954,15 +954,18 @@ function _macroWhy(event){
 }
 function renderMacroCal(events){
   const el=document.getElementById('macroCalGrid');
-  if(!events||!events.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No major events in the next 2 weeks</div>';return;}
-  // Filter to next 14 days, high/medium impact only
-  const now=new Date(); const cutoff=new Date(now.getTime()+14*24*3600*1000);
+  if(!events||!events.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No major events in the next 6 weeks</div>';return;}
+  // Filter to next 45 days, high/medium impact only
+  const now=new Date(); const cutoff=new Date(now.getTime()+45*24*3600*1000);
+  const todayStr=new Date().toISOString().slice(0,10);
   const filtered=events.filter(e=>{
     if(!e.date) return false;
-    const d=new Date(e.date+'T00:00:00');
-    return d>=new Date(now.toDateString()) && d<=cutoff;
+    const evStr=e.date.slice(0,10);
+    const d=new Date(evStr+'T00:00:00');
+    const today=new Date(todayStr+'T00:00:00');
+    return d>=today && d<=cutoff;
   }).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!filtered.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No high-impact events in the next 14 days</div>';return;}
+  if(!filtered.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No high-impact events in the next 45 days</div>';return;}
   el.innerHTML=filtered.map((e,i)=>{
     const impact=(e.impact||'Low');
     const impCls=impact==='High'?'impact-high':impact==='Medium'||impact==='Moderate'?'impact-medium':'impact-low';
