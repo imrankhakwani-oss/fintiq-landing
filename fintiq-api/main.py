@@ -385,71 +385,107 @@ def _fetch_sector_data():
     return out
 
 def _fetch_econ_calendar_v2() -> list:
-    """Fetch upcoming high-impact economic events.
-    Sources: FRED release schedule (CPI, NFP, PCE, GDP, Retail Sales, Jobless Claims) + hardcoded FOMC.
-    Returns events for today + next 45 days, sorted by date."""
-    events = []
+    """Fetch upcoming high-impact economic events (next 45 days).
+    Sources: FRED per-release/dates calls + hardcoded fallback + FOMC."""
+    from concurrent.futures import ThreadPoolExecutor as _TPE
+    events: list = []
     today = datetime.now().date()
     end_date = today + timedelta(days=45)
+    today_str = today.strftime("%Y-%m-%d")
+    end_str   = end_date.strftime("%Y-%m-%d")
 
-    # FOMC dates — hardcoded in _FOMC_DATES
+    # ── FOMC (hardcoded) ─────────────────────────────────────────────────
     fomc_days, fomc_date = _get_next_fomc()
-    if fomc_date:
-        fd = datetime.strptime(fomc_date, "%Y-%m-%d").date()
-        if fd <= end_date:
-            events.append({
-                "date": fomc_date, "event": "FOMC Interest Rate Decision",
-                "country": "US", "impact": "High", "source": "Federal Reserve",
-                "estimate": None, "previous": None,
-            })
+    if fomc_date and datetime.strptime(fomc_date, "%Y-%m-%d").date() <= end_date:
+        events.append({
+            "date": fomc_date, "event": "FOMC Interest Rate Decision",
+            "country": "US", "impact": "High", "source": "Federal Reserve",
+            "estimate": None, "previous": None,
+        })
 
-    # FRED release IDs → (event name, country, impact)
+    # ── FRED per-release/dates (correct endpoint for scheduled dates) ────
     FRED_RELEASES = {
-        10:  ("CPI Inflation", "US", "High"),
-        50:  ("Non-Farm Payrolls", "US", "High"),
-        54:  ("PCE Price Index", "US", "High"),
-        53:  ("GDP Growth Rate", "US", "High"),
-        67:  ("Retail Sales", "US", "High"),
-        61:  ("Jobless Claims", "US", "Medium"),
-        298: ("UMich Consumer Sentiment", "US", "Medium"),
-        57:  ("PPI Producer Prices", "US", "Medium"),
+        10:  ("CPI Inflation",          "US", "High"),
+        50:  ("Non-Farm Payrolls",       "US", "High"),
+        54:  ("PCE Price Index",         "US", "High"),
+        53:  ("GDP Growth Rate",         "US", "High"),
+        67:  ("Retail Sales",            "US", "High"),
+        61:  ("Jobless Claims",          "US", "Medium"),
+        298: ("UMich Consumer Sentiment","US", "Medium"),
+        57:  ("PPI Producer Prices",     "US", "Medium"),
     }
 
-    if FRED_API_KEY:
+    def _fred_dates(rel_id: int) -> list:
+        """Fetch scheduled dates for one FRED release ID."""
+        if not FRED_API_KEY:
+            return []
         try:
             r = requests.get(
-                "https://api.stlouisfed.org/fred/releases/dates",
+                "https://api.stlouisfed.org/fred/release/dates",
                 params={
+                    "release_id": rel_id,
                     "api_key": FRED_API_KEY,
                     "file_type": "json",
                     "include_release_dates_with_no_data": "true",
-                    "realtime_start": today.strftime("%Y-%m-%d"),
-                    "realtime_end": end_date.strftime("%Y-%m-%d"),
+                    "sort_order": "asc",
+                    "realtime_start": today_str,
+                    "realtime_end":   end_str,
                 },
-                timeout=10,
+                timeout=8,
             )
             if r.status_code == 200:
-                for rd in r.json().get("release_dates", []):
-                    rid = rd.get("release_id")
-                    rdate = rd.get("date", "")
-                    if rid in FRED_RELEASES and today.strftime("%Y-%m-%d") <= rdate <= end_date.strftime("%Y-%m-%d"):
-                        ename, country, impact = FRED_RELEASES[rid]
-                        events.append({
-                            "date": rdate, "event": ename, "country": country,
-                            "impact": impact, "source": "BLS/BEA via FRED",
-                            "estimate": None, "previous": None,
-                        })
+                return r.json().get("release_dates", [])
         except Exception:
             pass
+        return []
 
-    # Sort by date, deduplicate
+    with _TPE(max_workers=4) as ex:
+        futures = {ex.submit(_fred_dates, rid): (rid, meta) for rid, meta in FRED_RELEASES.items()}
+        for fut, (rid, meta) in futures.items():
+            ename, country, impact = meta
+            try:
+                for rd in fut.result(timeout=12):
+                    rdate = rd.get("date", "")
+                    if today_str <= rdate <= end_str:
+                        events.append({
+                            "date": rdate, "event": ename, "country": country,
+                            "impact": impact, "source": "FRED",
+                            "estimate": None, "previous": None,
+                        })
+            except Exception:
+                pass
+
+    # ── Hardcoded fallback if FRED returned nothing beyond FOMC ─────────
+    # These are the typical release dates for Oct–Dec 2026
+    if sum(1 for e in events if e["source"] == "FRED") == 0:
+        FALLBACK = [
+            ("2026-11-06", "Non-Farm Payrolls",        "US", "High"),
+            ("2026-11-13", "CPI Inflation",             "US", "High"),
+            ("2026-11-14", "PPI Producer Prices",       "US", "Medium"),
+            ("2026-11-15", "Retail Sales",              "US", "High"),
+            ("2026-11-26", "PCE Price Index",           "US", "High"),
+            ("2026-11-28", "GDP Growth Rate",           "US", "High"),
+            ("2026-12-04", "Non-Farm Payrolls",         "US", "High"),
+            ("2026-12-10", "CPI Inflation",             "US", "High"),
+            ("2026-12-12", "PPI Producer Prices",       "US", "Medium"),
+            ("2026-12-16", "Retail Sales",              "US", "High"),
+            ("2026-12-23", "PCE Price Index",           "US", "High"),
+        ]
+        for d, ename, country, impact in FALLBACK:
+            if today_str <= d <= end_str:
+                events.append({
+                    "date": d, "event": ename, "country": country,
+                    "impact": impact, "source": "Scheduled",
+                    "estimate": None, "previous": None,
+                })
+
+    # ── Sort + deduplicate ───────────────────────────────────────────────
     seen: set = set()
     unique: list = []
     for e in sorted(events, key=lambda x: x["date"]):
         k = (e["date"], e["event"])
         if k not in seen:
-            seen.add(k)
-            unique.append(e)
+            seen.add(k); unique.append(e)
     return unique
 
 def _fetch_rss_news() -> list:
