@@ -852,11 +852,16 @@ def _build_drivers(earnings_today: list, econ: list, news_items: list = None) ->
     # 2. Economic data releases
     for e in (econ or [])[:3]:
         ev = e.get("event",""); country = e.get("country","")
-        est = e.get("estimate","?"); prev = e.get("previous","?")
+        est = e.get("estimate"); prev = e.get("previous")
+        _none = {None,"None","none","?",""}
+        parts = []
+        if str(est) not in _none: parts.append(f"Est: {est}")
+        if str(prev) not in _none: parts.append(f"Prev: {prev}")
+        impact = " | ".join(parts) if parts else "Watch for release outcome and market reaction"
         if ev:
             drivers.append({"type":"macro","icon":"📈",
                 "event":f"[{country}] {ev}",
-                "impact":f"Estimate: {est} | Previous: {prev}"})
+                "impact": impact})
     # 3. Policy & news headlines from Tavily (Fed, geopolitical, WSJ/FT/Bloomberg)
     for item in (news_items or [])[:6]:
         drivers.append(item)
@@ -1209,7 +1214,11 @@ def _fetch_single_earnings(symbol: str) -> Optional[dict]:
             return None
         # next_date: the nearest upcoming earnings date (first estimate date if available)
         next_date = estimates[0]["date"] if estimates else None
-        return {"symbol": symbol, "quarters": quarters[:4], "estimates": estimates[:2], "next_date": next_date}
+        try:
+            name = t.info.get("shortName") or t.info.get("longName") or ""
+        except:
+            name = ""
+        return {"symbol": symbol, "name": name, "quarters": quarters[:4], "estimates": estimates[:2], "next_date": next_date}
     except:
         return None
 
