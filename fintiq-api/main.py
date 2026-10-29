@@ -926,6 +926,8 @@ def _generate_bulletin() -> dict:
     region_txt = "\n".join(f"{lbl}: {bd.get(sym,{}).get('price','n/a')} ({pct(bd.get(sym,{}).get('chg_pct'))})"
                            for sym,lbl,_,region in _BRIEF_INDICES if region in ("Asia","Europe","UK"))
     news_txt = "\n".join(f"- {n.get('title','')}" for n in (news_rss or [])[:8] if n.get('title')) or "No news available"
+    now = datetime.now(); hour = now.hour
+    session = "Pre-Market" if hour<8 else "Morning" if hour<12 else "Midday" if hour<14 else "Close Watch" if hour<16 else "After-Hours"
     today_str = now.strftime("%Y-%m-%d")
     econ_today_items = [e for e in econ if e.get("date","")[:10] == today_str]
     econ_week_items  = [e for e in econ if e.get("date","")[:10] > today_str]
@@ -945,9 +947,6 @@ def _generate_bulletin() -> dict:
     news_items = _fetch_policy_and_news()
     drivers_prebuilt = _build_drivers(earnings_today, econ, news_items)
     drivers_json = _json.dumps(drivers_prebuilt, ensure_ascii=False)
-
-    now = datetime.now(); hour = now.hour
-    session = "Pre-Market" if hour<8 else "Morning" if hour<12 else "Midday" if hour<14 else "Close Watch" if hour<16 else "After-Hours"
 
     prompt = (
         f"You are a market analyst writing the {session.upper()} MARKET BULLETIN for everyday retail investors — people who check markets before the trading day, during lunch, or after work. They want to know what is happening and what to do about it, in plain English.\n\n"
@@ -1435,8 +1434,10 @@ def _bg_regenerate():
         _bulletin_cache = fresh
         _bulletin_cached_at = time.time()
         _save_bulletin_to_disk(fresh)           # /data volume — persists across deploys
-    except Exception:
-        pass
+    except Exception as e:
+        import traceback
+        print(f"[BULLETIN ERROR] _generate_bulletin failed: {e}", flush=True)
+        traceback.print_exc()
     finally:
         _bulletin_refreshing = False
 
