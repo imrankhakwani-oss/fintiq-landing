@@ -649,7 +649,7 @@ function buildChartSVG(prices, color, w, h){
     const lbl=d.slice(5); // MM-DD
     xLabels.push(`<text x="${xv.toFixed(1)}" y="${padT+ch+20}" font-size="9" fill="#64748B" text-anchor="middle">${lbl}</text>`);
   }
-  return `<svg viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
     ${yGrids.join('')}
     ${xLabels.join('')}
     <path d="${area}" fill="${fillC}" stroke="none"/>
@@ -697,13 +697,16 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeChart();});
 const _sparkCache={};
 async function fetchSpark(ticker){
   if(_sparkCache[ticker])return _sparkCache[ticker];
+  const ctrl=new AbortController();
+  const t=setTimeout(()=>ctrl.abort(),10000);
   try{
-    const r=await fetch(`${API}/prices/${encodeURIComponent(ticker)}?period=1mo`);
+    const r=await fetch(`${API}/prices/${encodeURIComponent(ticker)}?period=1mo`,{signal:ctrl.signal});
+    clearTimeout(t);
     if(!r.ok)return null;
     const d=await r.json();
     _sparkCache[ticker]=d.prices||[];
     return _sparkCache[ticker];
-  }catch{return null;}
+  }catch{clearTimeout(t);return null;}
 }
 
 // ── Render market tiles ────────────────────────────────────────────────
@@ -1046,29 +1049,39 @@ function toggleGeo(i){
 // ── Candlestick chart ──────────────────────────────────────────────────
 const _candleCache={};
 async function fetchAndRenderCandles(sym,containerId){
+  // Wait one frame so display:block has reflowed before we read dimensions
+  await new Promise(r=>requestAnimationFrame(r));
   const el=document.getElementById(containerId);
   if(!el) return;
   if(_candleCache[sym]){renderCandleChart(el,_candleCache[sym]);return;}
   el.innerHTML='<div class="candle-loading">Loading chart…</div>';
+  // Use AbortController for broad browser support (works in Safari < 17)
+  const ctrl=new AbortController();
+  const timer=setTimeout(()=>ctrl.abort(),12000);
   try{
-    const r=await fetch(API+'/candles?symbol='+encodeURIComponent(sym)+'&period=2mo',{signal:AbortSignal.timeout(12000)});
+    const r=await fetch(API+'/candles?symbol='+encodeURIComponent(sym)+'&period=2mo',{signal:ctrl.signal});
+    clearTimeout(timer);
     if(!r.ok){el.innerHTML='';return;}
     const candles=await r.json();
     if(!candles||candles.length<5){el.innerHTML='';return;}
     _candleCache[sym]=candles;
     renderCandleChart(el,candles);
-  }catch(e){el.innerHTML='';}
+  }catch(e){clearTimeout(timer);el.innerHTML='';}
 }
 function renderCandleChart(container,candles){
-  const W=container.clientWidth||300; const H=72;
+  // Use a fixed viewBox (300×72) + width="100%" so size doesn't depend on clientWidth timing
+  const VW=300; const H=72;
   const recent=candles.slice(-40);
   const highs=recent.map(c=>c.high); const lows=recent.map(c=>c.low);
   const maxH=Math.max(...highs); const minL=Math.min(...lows);
   const range=maxH-minL||1;
-  const n=recent.length; const candleW=Math.max(2,Math.floor((W-8)/n)-1); const gap=1;
+  const n=recent.length;
+  const totalW=VW-8;
+  const candleW=Math.max(2,Math.floor(totalW/n)-1);
+  const gap=Math.max(0,Math.floor((totalW-n*candleW)/(n-1||1)));
   const pad=4;
   const py=v=>pad+(1-(v-minL)/range)*(H-2*pad);
-  let svg=`<svg width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">`;
+  let svg=`<svg viewBox="0 0 ${VW} ${H}" width="100%" style="display:block" xmlns="http://www.w3.org/2000/svg">`;
   recent.forEach((c,i)=>{
     const x=4+i*(candleW+gap);
     const up=c.close>=c.open;
@@ -1076,9 +1089,9 @@ function renderCandleChart(container,candles){
     const bodyTop=py(Math.max(c.open,c.close));
     const bodyBot=py(Math.min(c.open,c.close));
     const bodyH=Math.max(1,bodyBot-bodyTop);
-    const cx=x+candleW/2;
-    svg+=`<line x1="${cx}" y1="${py(c.high)}" x2="${cx}" y2="${py(c.low)}" stroke="${col}" stroke-width="1" opacity=".7"/>`;
-    svg+=`<rect x="${x}" y="${bodyTop}" width="${candleW}" height="${bodyH}" fill="${col}" rx="0.5"/>`;
+    const cx=x+Math.floor(candleW/2);
+    svg+=`<line x1="${cx}" y1="${py(c.high).toFixed(1)}" x2="${cx}" y2="${py(c.low).toFixed(1)}" stroke="${col}" stroke-width="1" opacity=".6"/>`;
+    svg+=`<rect x="${x}" y="${bodyTop.toFixed(1)}" width="${candleW}" height="${bodyH.toFixed(1)}" fill="${col}" rx="0.5"/>`;
   });
   svg+='</svg>';
   container.innerHTML=svg;
@@ -1090,11 +1103,11 @@ function toggleTrdCard(card){
   const isOpen=card.classList.contains('open');
   card.classList.toggle('open',!isOpen);
   body.classList.toggle('open',!isOpen);
-  // Lazy-load candlestick chart when card opens
+  // Lazy-load candlestick chart when card opens (defer so display:block reflows first)
   if(!isOpen){
     const sym=card.dataset.sym;
     const cid=card.dataset.candleId;
-    if(sym&&cid) fetchAndRenderCandles(sym,cid);
+    if(sym&&cid) setTimeout(()=>fetchAndRenderCandles(sym,cid),30);
   }
 }
 
