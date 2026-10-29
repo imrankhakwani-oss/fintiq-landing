@@ -1122,6 +1122,21 @@ def _build_market_data() -> dict:
         "LLOY.L","NG.L","GLEN.L","AV.L","NWG.L","BA.L","RR.L","BATS.L",
         "VOD.L","REL.L","EXPN.L","SSE.L",
     ]
+    _MOVER_NAMES = {
+        "AAPL":"Apple","MSFT":"Microsoft","NVDA":"Nvidia","AMZN":"Amazon",
+        "META":"Meta","GOOGL":"Alphabet","TSLA":"Tesla","JPM":"JPMorgan",
+        "V":"Visa","UNH":"UnitedHealth","XOM":"ExxonMobil","MA":"Mastercard",
+        "COST":"Costco","HD":"Home Depot","NFLX":"Netflix","AMD":"AMD",
+        "AVGO":"Broadcom","BAC":"Bank of America","WMT":"Walmart","CRM":"Salesforce",
+        "ABBV":"AbbVie","LLY":"Eli Lilly","MRK":"Merck","QCOM":"Qualcomm",
+        "GE":"GE Aerospace","INTC":"Intel","MS":"Morgan Stanley","GS":"Goldman Sachs",
+        "AMGN":"Amgen","ADBE":"Adobe",
+        "SHEL.L":"Shell","AZN.L":"AstraZeneca","HSBA.L":"HSBC","ULVR.L":"Unilever",
+        "BP.L":"BP","RIO.L":"Rio Tinto","GSK.L":"GSK","BARC.L":"Barclays",
+        "LLOY.L":"Lloyds","NG.L":"National Grid","GLEN.L":"Glencore","AV.L":"Aviva",
+        "NWG.L":"NatWest","BA.L":"BAE Systems","RR.L":"Rolls-Royce","BATS.L":"BAT",
+        "VOD.L":"Vodafone","REL.L":"RELX","EXPN.L":"Experian","SSE.L":"SSE",
+    }
     try:
         with ThreadPoolExecutor(max_workers=20) as ex:
             futs = {ex.submit(_yf_quick, sym): sym for sym in _MOVER_UNIVERSE}
@@ -1131,7 +1146,7 @@ def _build_market_data() -> dict:
                 try:
                     d = fut.result(timeout=10)
                     if d.get("chg_pct") is not None:
-                        name = sym.replace(".L","")
+                        name = _MOVER_NAMES.get(sym, sym.replace(".L",""))
                         flag = "🇬🇧" if sym.endswith(".L") else "🇺🇸"
                         mover_data.append({"ticker": sym, "name": name, "flag": flag,
                                            "chg_pct": d["chg_pct"], "price": d.get("price")})
