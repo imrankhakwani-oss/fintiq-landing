@@ -673,6 +673,166 @@ def _fetch_geo_news_rss() -> list:
         if item["title"] not in seen:
             seen.add(item["title"]); unique.append(item)
     return unique[:10]
+
+
+def _fetch_market_geopolitics() -> list:
+    """
+    Fetch geopolitical news with DIRECT market impact: oil routes, sanctions, trade wars,
+    commodity supply disruptions. Filters out irrelevant world news (crime, accidents, etc).
+    Uses Tavily + Claude Haiku. Falls back to RSS if Tavily unavailable.
+    """
+    if not TAVILY_API_KEY or not ANTHROPIC_API_KEY:
+        return _fetch_geo_news_rss()
+
+    today = datetime.now().strftime("%B %d %Y")
+    searches = [
+        ("oil price Strait Hormuz Iran Middle East conflict energy sanctions today",    "news", True, 2),
+        ("Red Sea Bab-el-Mandeb shipping Houthi Suez Canal disruption freight rates",   "news", True, 2),
+        ("South China Sea Taiwan US China tariffs trade war sanctions technology",        "news", True, 2),
+        ("Russia Ukraine energy gas pipeline commodity ceasefire sanctions",              "news", True, 2),
+        ("OPEC production cut oil supply energy geopolitical commodity impact",           "news", True, 2),
+    ]
+    raw_snippets: list = []
+    seen_titles: set = set()
+
+    def _do_search(q, topic, news_only, days):
+        results = _tavily_search(q, max_results=5, topic=topic, news_only=news_only, days=days)
+        for r in results[:4]:
+            title   = (r.get("title") or "").strip()
+            content = (r.get("content") or "").strip()
+            url     = (r.get("url") or "")
+            if title and len(title) > 20 and title not in seen_titles:
+                seen_titles.add(title)
+                raw_snippets.append(f"TITLE: {title}\nURL: {url}\nSNIPPET: {content[:500]}")
+
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        futs = [ex.submit(_do_search, q, tp, no, d) for q, tp, no, d in searches]
+        for f in futs:
+            try: f.result(timeout=15)
+            except: pass
+
+    if not raw_snippets:
+        return _fetch_geo_news_rss()
+
+    prompt = f"""Today is {today}. You are a commodity and markets analyst.
+
+From the news snippets below, select 6–8 items with a DIRECT, IDENTIFIABLE impact on:
+- Commodity prices (oil, gas, gold, grain, copper, lithium, shipping)
+- Global trade routes (Suez, Hormuz, Bab-el-Mandeb, South China Sea, Panama Canal)
+- Major markets via sanctions, tariffs, or supply chain disruption
+
+STRICT EXCLUSIONS — do NOT include:
+- Crime, murders, court cases, accidents, plane crashes
+- Local elections or domestic politics unless they move a commodity
+- Cultural or social stories
+- Anything where you cannot name the specific commodity or asset class affected
+
+For each selected item output:
+- "title": concise headline, max 15 words, include a location or named entity
+- "source": publication name (extract from URL domain: reuters.com → Reuters, ft.com → FT, etc.)
+- "impact": 1-2 plain-English sentences naming the SPECIFIC commodity or market affected and the direction (e.g. "Brent crude up 2%; XLE, OXY benefit; airlines face higher fuel costs")
+- "affects": short emoji tags e.g. "🛢️ Oil · ✈️ Airlines" or "📦 Shipping · 🥇 Gold · 💱 USD"
+
+Respond ONLY with a valid JSON array. No markdown fences.
+Each element: {{"title":"...","source":"...","impact":"...","affects":"..."}}
+
+RAW SNIPPETS:
+{chr(10).join(raw_snippets[:20])}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001", max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+        import re as _re
+        raw = _re.sub(r'^```(?:json)?\s*', '', raw, flags=_re.M)
+        raw = _re.sub(r'\s*```$', '', raw, flags=_re.M).strip()
+        parsed = json.loads(raw)
+        items = [i for i in parsed if isinstance(i, dict) and i.get("title")][:8]
+        return items if items else _fetch_geo_news_rss()
+    except Exception:
+        return _fetch_geo_news_rss()
+
+
+def _fetch_corporate_news() -> list:
+    """
+    Fetch business/corporate news that moves markets: M&A deals, semiconductor/AI hardware,
+    pharma approvals, major restructurings, large IPOs. Returns structured items with sector + impact.
+    """
+    if not TAVILY_API_KEY or not ANTHROPIC_API_KEY:
+        return []
+
+    today = datetime.now().strftime("%B %d %Y")
+    searches = [
+        ("merger acquisition deal billion announced today company",                           "news", True, 2),
+        ("semiconductor chip AI hardware TSMC NVIDIA AMD Intel orders demand supply",         "news", True, 2),
+        ("pharmaceutical biotech drug approval FDA deal merger clinical trial result",         "news", True, 2),
+        ("technology company layoffs restructuring IPO spinoff revenue guidance",              "news", True, 2),
+        ("major corporate contract partnership deal quarterly results outlook sector",         "news", True, 2),
+    ]
+    raw_snippets: list = []
+    seen_titles: set = set()
+
+    def _do_search(q, topic, news_only, days):
+        results = _tavily_search(q, max_results=5, topic=topic, news_only=news_only, days=days)
+        for r in results[:4]:
+            title   = (r.get("title") or "").strip()
+            content = (r.get("content") or "").strip()
+            url     = (r.get("url") or "")
+            if title and len(title) > 20 and title not in seen_titles:
+                seen_titles.add(title)
+                raw_snippets.append(f"TITLE: {title}\nURL: {url}\nSNIPPET: {content[:500]}")
+
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        futs = [ex.submit(_do_search, q, tp, no, d) for q, tp, no, d in searches]
+        for f in futs:
+            try: f.result(timeout=15)
+            except: pass
+
+    if not raw_snippets:
+        return []
+
+    prompt = f"""Today is {today}. You are a business editor for a financial news service targeting stock investors.
+
+From the snippets below, select 6–8 items that are MOST MARKET-RELEVANT:
+- M&A: mergers, acquisitions, buyouts — include deal value if available
+- Technology: chips, semiconductors, AI hardware, cloud — anything affecting NVDA, AMD, ASML, TSM, INTC
+- Major corporate events: restructurings, layoffs >1000 staff, large IPOs, major guidance cuts/raises
+- Pharma/Biotech: FDA approvals, pivotal trial results, major deals
+- Any story that directly moves a named sector ETF (XLK, SMH, XBI, XLP, XLE, etc.) or large-cap stock today
+
+EXCLUDE: small-cap noise, general business features, opinion pieces, geopolitical or macro stories.
+
+For each item output:
+- "title": concise headline max 15 words, include company name and a number if available
+- "source": publication name extracted from URL (reuters.com → Reuters, wsj.com → WSJ, ft.com → FT)
+- "sector": exactly one of: Semiconductors | M&A | Pharma | Technology | Energy | Finance | Consumer | Other
+- "impact": 1-2 plain-English sentences naming the specific stock(s) or ETF and whether it is positive, negative, or a watch
+- "type": one of: ma | sector | corporate | ipo
+
+Respond ONLY with a valid JSON array. No markdown fences.
+Each element: {{"title":"...","source":"...","sector":"...","impact":"...","type":"..."}}
+
+RAW SNIPPETS:
+{chr(10).join(raw_snippets[:20])}"""
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001", max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+        import re as _re
+        raw = _re.sub(r'^```(?:json)?\s*', '', raw, flags=_re.M)
+        raw = _re.sub(r'\s*```$', '', raw, flags=_re.M).strip()
+        parsed = json.loads(raw)
+        return [i for i in parsed if isinstance(i, dict) and i.get("title")][:8]
+    except Exception:
+        return []
+
 _MAG7_SYMBOLS = {sym for sym, _ in _MAG7}
 
 _KEY_EARNINGS_TICKERS = _MAG7 + [
@@ -1056,15 +1216,17 @@ def _generate_bulletin() -> dict:
     syms = [s for s,_,_,_ in _BRIEF_INDICES] + [s for s,_,_ in _BRIEF_INSTRUMENTS] + _MAG7_SYMS
     bd = _fetch_brief_data(syms)
 
-    # Parallel: RSS news, geo news, FRED/FOMC calendar, yfinance earnings, sector data
-    with ThreadPoolExecutor(max_workers=5) as _ex:
+    # Parallel: RSS news, geo news, corporate news, FRED/FOMC calendar, yfinance earnings, sector data
+    with ThreadPoolExecutor(max_workers=7) as _ex:
         _f_news    = _ex.submit(_fetch_rss_news)
-        _f_geo     = _ex.submit(_fetch_geo_news_rss)
+        _f_geo     = _ex.submit(_fetch_market_geopolitics)   # replaces _fetch_geo_news_rss
+        _f_corp    = _ex.submit(_fetch_corporate_news)
         _f_econ    = _ex.submit(_fetch_econ_calendar_v2)
         _f_sectors = _ex.submit(_fetch_sector_data)
         _f_earn    = _ex.submit(_fetch_earnings_v2)
-        news_rss        = _f_news.result(timeout=15)
-        geo_news        = _f_geo.result(timeout=15)
+        news_rss        = _f_news.result(timeout=20)
+        geo_news        = _f_geo.result(timeout=25)          # Tavily+Haiku — allow a bit more time
+        corp_news       = _f_corp.result(timeout=25)
         econ            = _f_econ.result(timeout=15)
         sectors         = _f_sectors.result(timeout=15)
         earnings_list   = _f_earn.result(timeout=15)
@@ -1268,6 +1430,7 @@ def _generate_bulletin() -> dict:
                 "event_radar": [e for e in econ if (datetime.strptime(e["date"],"%Y-%m-%d").date()-datetime.now().date()).days<=7],
                 "macro_calendar": _enrich_econ_events(list(econ)),
                 "geo_news": geo_news,
+                "business_news": corp_news,
                 "global_monitors": global_monitors,
                 "mag7": mag7_data,
                 "earnings_radar": earnings_list[:12],
