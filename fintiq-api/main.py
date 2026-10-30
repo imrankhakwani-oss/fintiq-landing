@@ -851,7 +851,8 @@ def _fetch_all_market_news() -> tuple:
                 "\n\nRespond with a JSON array. Each element: "
                 "{\"id\":\"GEO0\",\"impact\":\"...\",\"affects\":\"🛢️ Oil · 📦 Shipping\"} for GEO items, "
                 "{\"id\":\"BIZ0\",\"impact\":\"...\",\"sector\":\"Technology\"} for BIZ items. "
-                "sector must be one of: Semiconductors|M&A|Pharma|Technology|Energy|Finance|Consumer|Other. "
+                "sector must be one of: Technology|Financials|Energy|Healthcare|Industrials|"
+                "Communications|Consumer Disc.|Consumer Staples|Materials|Real Estate|Other. "
                 "No markdown. No explanation. Valid JSON array only."
             )
             client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
