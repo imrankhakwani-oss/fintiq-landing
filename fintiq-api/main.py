@@ -1498,7 +1498,11 @@ def _load_earnings_from_disk(index: str):
             d = json.load(f)
         saved_at = d.get("_saved_at", 0)
         if time.time() - saved_at < _EARNINGS_TTL:
-            return d["data"], saved_at
+            data = d["data"]
+            # Dedup on load in case cache was built with old code that had duplicate tickers
+            seen: set = set()
+            data = [r for r in data if r.get("symbol") not in seen and not seen.add(r.get("symbol",""))]
+            return data, saved_at
     except Exception: pass
     return None, 0
 
