@@ -2344,6 +2344,17 @@ def get_earnings(index: str = "sp500", force: bool = False):
     # STALE-WHILE-REVALIDATE: return cached immediately, refresh in background if stale
     if has_cache and not force:
         is_stale = age >= _EARNINGS_TTL
+        # Use shorter 6h TTL when stocks have recently reported (next_date in past 3 days)
+        # This catches yfinance updating Reported EPS within hours of an earnings release
+        if not is_stale:
+            today_str = datetime.utcnow().strftime('%Y-%m-%d')
+            three_days_ago = (datetime.utcnow() - timedelta(days=3)).strftime('%Y-%m-%d')
+            has_recent_reporters = any(
+                e.get('next_date') and three_days_ago <= e['next_date'] <= today_str
+                for e in _earnings_cache.get(index, [])
+            )
+            if has_recent_reporters:
+                is_stale = age >= (6 * 3600)  # 6h TTL during active earnings window
         if is_stale and not _earnings_refreshing.get(index):
             t = threading.Thread(target=_bg_refresh_earnings, args=(index,), daemon=True)
             t.start()
