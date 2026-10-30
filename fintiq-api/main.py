@@ -690,7 +690,7 @@ def _fetch_all_market_news() -> tuple:
         """Run queries sequentially; return deduplicated list of {title,url,snippet}."""
         out, seen = [], set()
         for q in queries:
-            for r in _tavily_search(q, max_results=max_each, topic="general",
+            for r in _tavily_search(q, max_results=max_each, topic="news",
                                     days=3, news_only=False):
                 t = (r.get("title") or "").strip()
                 u = r.get("url", "")
@@ -924,6 +924,7 @@ def _tavily_search(query: str, max_results: int = 5, topic: str = "general",
         print("[TAVILY] no API key set", flush=True)
         return []
     payload = {
+        "api_key": TAVILY_API_KEY,   # body key (legacy + most compatible)
         "query": query,
         "max_results": max_results,
         "search_depth": depth,
@@ -1190,23 +1191,26 @@ def _generate_bulletin() -> dict:
     syms = [s for s,_,_,_ in _BRIEF_INDICES] + [s for s,_,_ in _BRIEF_INSTRUMENTS] + _MAG7_SYMS
     bd = _fetch_brief_data(syms)
 
-    # Parallel: RSS news, all market news (geo+corporate in one call), FRED/FOMC calendar, yfinance earnings, sector data
-    with ThreadPoolExecutor(max_workers=6) as _ex:
+    # Parallel: RSS news, FRED/FOMC calendar, yfinance earnings, sector data
+    # NOTE: _fetch_all_market_news runs SYNCHRONOUSLY (not in the pool) so Tavily
+    # request errors surface clearly in logs without being hidden by future timeouts.
+    with ThreadPoolExecutor(max_workers=5) as _ex:
         _f_news    = _ex.submit(_fetch_rss_news)
-        _f_allnews = _ex.submit(_fetch_all_market_news)      # single generic call → (geo, corp)
         _f_econ    = _ex.submit(_fetch_econ_calendar_v2)
         _f_sectors = _ex.submit(_fetch_sector_data)
         _f_earn    = _ex.submit(_fetch_earnings_v2)
-        news_rss          = _f_news.result(timeout=20)
-        try:
-            geo_news, corp_news = _f_allnews.result(timeout=60)
-        except Exception as _e:
-            import traceback as _tb
-            print(f"[ALLNEWS FAILED] {type(_e).__name__}: {_e}\n{_tb.format_exc()}", flush=True)
-            geo_news, corp_news = _fetch_geo_news_rss(), []
-        econ              = _f_econ.result(timeout=15)
-        sectors           = _f_sectors.result(timeout=15)
-        earnings_list     = _f_earn.result(timeout=15)
+        news_rss      = _f_news.result(timeout=20)
+        econ          = _f_econ.result(timeout=15)
+        sectors       = _f_sectors.result(timeout=15)
+        earnings_list = _f_earn.result(timeout=15)
+
+    # Run news fetch synchronously so Tavily errors appear directly in logs
+    try:
+        geo_news, corp_news = _fetch_all_market_news()
+    except Exception as _e:
+        import traceback as _tb
+        print(f"[ALLNEWS FAILED] {type(_e).__name__}: {_e}\n{_tb.format_exc()}", flush=True)
+        geo_news, corp_news = _fetch_geo_news_rss(), []
 
     earnings_today = [e for e in earnings_list if e.get("is_today")]
 
