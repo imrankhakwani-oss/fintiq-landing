@@ -270,10 +270,25 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .geo-left{flex:1;min-width:0}
 .geo-title{font-size:13px;font-weight:600;line-height:1.35}
 .geo-source{font-size:10px;color:var(--muted2);margin-top:3px}
+.geo-affects{font-size:10px;color:var(--orange);margin-top:4px;font-weight:600}
 .geo-toggle{color:var(--muted2);font-size:14px;flex-shrink:0;transition:transform .2s;margin-top:3px}
 .geo-body{display:none;padding:0 13px 11px;border-top:1px solid rgba(255,255,255,.05)}
 .geo-body.open{display:block}
 .geo-desc{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+/* ── CORPORATE & SECTOR NEWS ── */
+.biz-grid{column-count:2;column-gap:10px}
+@media(max-width:640px){.biz-grid{column-count:1}}
+.biz-card{background:var(--card);border:1px solid var(--border2);border-left:3px solid #6366f1;border-radius:10px;overflow:hidden;break-inside:avoid;margin-bottom:10px;cursor:pointer}
+.biz-card.open .biz-toggle{transform:rotate(180deg)}
+.biz-head{display:flex;align-items:flex-start;gap:8px;padding:11px 13px}
+.biz-sector-badge{font-size:9px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 6px;border-radius:4px;background:rgba(99,102,241,.15);color:#a5b4fc;flex-shrink:0;margin-top:2px;white-space:nowrap}
+.biz-left{flex:1;min-width:0}
+.biz-title{font-size:13px;font-weight:600;line-height:1.35}
+.biz-source{font-size:10px;color:var(--muted2);margin-top:3px}
+.biz-toggle{color:var(--muted2);font-size:14px;flex-shrink:0;transition:transform .2s;margin-top:3px}
+.biz-body{display:none;padding:0 13px 11px;border-top:1px solid rgba(255,255,255,.05)}
+.biz-body.open{display:block}
+.biz-impact{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
 
 /* ── CANDLESTICK CHART ── */
 .candle-wrap{margin:10px 0 4px;background:rgba(0,0,0,.25);border-radius:6px;padding:8px 6px 4px;overflow:hidden;min-height:72px}
@@ -526,7 +541,13 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
 
   <!-- GEO-POLITICAL SIGNALS -->
   <div class="sec-head"><h2>Geo-Political Signals</h2><div class="sec-rule"></div></div>
+  <p style="font-size:11px;color:var(--muted);margin:-12px 0 14px;line-height:1.5">Events affecting commodity prices, shipping routes and global trade.</p>
   <div class="geo-grid" id="geoGrid"></div>
+
+  <!-- CORPORATE & SECTOR NEWS -->
+  <div class="sec-head"><h2>Corporate &amp; Sector News</h2><div class="sec-rule"></div></div>
+  <p style="font-size:11px;color:var(--muted);margin:-12px 0 14px;line-height:1.5">M&amp;A deals, semiconductor sector, pharma approvals and major corporate events.</p>
+  <div class="biz-grid" id="bizGrid"></div>
 
   <!-- MOMENTUM SPOTLIGHT -->
   <div class="sec-head"><h2>Momentum Spotlight</h2><div class="sec-rule"></div></div>
@@ -1053,24 +1074,69 @@ function toggleMcal(i){
 function renderGeoNews(items){
   const el=document.getElementById('geoGrid');
   if(!items||!items.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No geo-political signals available</div>';return;}
-  el.innerHTML=items.map((n,i)=>`<div class="geo-card" onclick="toggleGeo(${i})">
+  // Support both new format (impact/affects) and old RSS format (description/published)
+  el.innerHTML=items.map((n,i)=>{
+    const hasStructured=!!(n.impact||n.affects);
+    const bodyContent=hasStructured
+      ?`<div class="geo-desc">${n.impact||''}</div>`
+      :(n.description?`<div class="geo-desc">${n.description}</div>`:'');
+    const sourceInfo=n.source?`${n.source}${n.published?' · '+n.published.slice(0,10):''}`:
+      (n.published?n.published.slice(0,10):'');
+    return `<div class="geo-card" onclick="toggleGeo(${i})">
     <div class="geo-head">
       <div class="geo-icon">🌍</div>
       <div class="geo-left">
         <div class="geo-title">${n.title||''}</div>
-        <div class="geo-source">${n.source||''} · ${n.published?n.published.slice(0,16):''}</div>
+        ${sourceInfo?`<div class="geo-source">${sourceInfo}</div>`:''}
+        ${n.affects?`<div class="geo-affects">${n.affects}</div>`:''}
       </div>
       <div class="geo-toggle" id="geot${i}">⌄</div>
     </div>
     <div class="geo-body" id="geob${i}">
-      ${n.description?`<div class="geo-desc">${n.description}</div>`:''}
+      ${bodyContent}
     </div>
-  </div>`).join('');
+  </div>`;
+  }).join('');
 }
 function toggleGeo(i){
   const body=document.getElementById('geob'+i);
   const tog=document.getElementById('geot'+i);
-  const card=body.closest('.geo-card');
+  const card=body?.closest('.geo-card');
+  if(!body) return;
+  const open=body.classList.contains('open');
+  body.classList.toggle('open',!open);
+  if(tog) tog.style.transform=open?'':'rotate(180deg)';
+  if(card) card.classList.toggle('open',!open);
+}
+
+// ── Corporate & Sector News ────────────────────────────────────────────────
+const _SECTOR_ICONS={'Semiconductors':'💾','M&A':'🤝','Pharma':'💊','Technology':'💻','Energy':'⚡','Finance':'🏦','Consumer':'🛍️','Other':'📊'};
+function renderBusinessNews(items){
+  const el=document.getElementById('bizGrid');
+  if(!el) return;
+  if(!items||!items.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px">No corporate news available</div>';return;}
+  el.innerHTML=items.map((n,i)=>{
+    const icon=_SECTOR_ICONS[n.sector]||'📊';
+    const typeLabel={'ma':'M&A','sector':'Sector','corporate':'Corporate','ipo':'IPO'}[n.type]||'News';
+    return `<div class="biz-card" onclick="toggleBiz(${i})">
+    <div class="biz-head">
+      <div class="biz-sector-badge">${icon} ${n.sector||typeLabel}</div>
+      <div class="biz-left">
+        <div class="biz-title">${n.title||''}</div>
+        <div class="biz-source">${n.source||''}</div>
+      </div>
+      <div class="biz-toggle" id="bizt${i}">⌄</div>
+    </div>
+    <div class="biz-body" id="bizb${i}">
+      ${n.impact?`<div class="biz-impact">${n.impact}</div>`:''}
+    </div>
+  </div>`;
+  }).join('');
+}
+function toggleBiz(i){
+  const body=document.getElementById('bizb'+i);
+  const tog=document.getElementById('bizt'+i);
+  const card=body?.closest('.biz-card');
   if(!body) return;
   const open=body.classList.contains('open');
   body.classList.toggle('open',!open);
@@ -1461,6 +1527,7 @@ function render(d,md){
   renderDrivers(d.drivers);
   renderRadar(d.risk_radar);
   renderGeoNews(d.geo_news);
+  renderBusinessNews(d.business_news);
   renderTrades(d.trade_ideas);
   renderMonitors(d.global_monitors);
   renderInsights(tc.bullets);
