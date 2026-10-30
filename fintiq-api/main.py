@@ -1134,6 +1134,37 @@ def _generate_bulletin() -> dict:
 
     import json as _json
 
+    # ── Load previous bulletin for rolling context ────────────────────
+    prev_context = ""
+    try:
+        if os.path.exists(_BULLETIN_CACHE_FILE):
+            with open(_BULLETIN_CACHE_FILE) as _pf:
+                _prev = json.load(_pf)
+            _prev_tc   = _prev.get("the_call", {})
+            _prev_time = _prev.get("generated_at", "")[:16]
+            _prev_head = _prev_tc.get("headline", "")
+            _prev_bullets = "\n".join(
+                f"  - {b}" for b in (_prev_tc.get("bullets") or [])[:7])
+            _prev_drivers = "; ".join(
+                d.get("event", "") for d in (_prev.get("drivers") or [])[:4] if d.get("event"))
+            _prev_earn = "; ".join(
+                f"{e.get('symbol','')} ({e.get('timing','')})" for e in (_prev.get("earnings_radar") or [])[:4] if e.get("symbol"))
+            prev_context = (
+                f"PREVIOUS BULLETIN CONTEXT (last generated: {_prev_time} UTC)\n"
+                f"Last headline: {_prev_head}\n"
+                f"Key bullets from last update:\n{_prev_bullets}\n"
+                f"Today's drivers highlighted then: {_prev_drivers}\n"
+                f"Earnings flagged in last update: {_prev_earn or 'none'}\n\n"
+                f"CONTINUITY INSTRUCTION: This bulletin is an UPDATE, not a fresh start. "
+                f"If earnings or events that were 'pending' in the last update have since been announced, "
+                f"REPORT THE ACTUAL RESULT (beat/miss %, EPS vs estimate, stock reaction). "
+                f"If ongoing stories have developed since the last update, note what changed. "
+                f"If a story from the last update is now resolved, say so briefly. "
+                f"Make each update feel like a continuous rolling brief — carry threads forward.\n\n"
+            )
+    except Exception:
+        prev_context = ""
+
     prompt = (
         f"You are a market analyst writing the {session.upper()} MARKET BULLETIN for everyday retail investors — people who check markets before the trading day, during lunch, or after work. They want to know what is happening and what to do about it, in plain English.\n\n"
         f"YOUR JOB: Study the live data below. Identify the single most important thing happening in markets right now. Explain it so clearly that a busy person who reads the FT or Wall Street Journal — but is not a professional trader — instantly understands it and can decide how to act.\n\n"
@@ -1153,6 +1184,7 @@ def _generate_bulletin() -> dict:
         f"5. SPECIFIC NUMBERS. Always cite exact figures from the data below. Never make vague statements.\n\n"
         f"6. EXPLAIN THE 'SO WHAT'. For every signal, tell the investor what it means for their money — not just what the signal is.\n\n"
         f"⚠ CRITICAL — PRICE ACCURACY: The LIVE MARKET DATA below is fetched in real time and is the ONLY source of correct prices. The S&P 500 today is {spx.get('price','n/a')}. NEVER substitute any price from your training data — your knowledge of historical S&P levels (e.g. 5,500 or any pre-2026 level) is WRONG for today. Use ONLY the numbers in the section below.\n\n"
+        f"{prev_context}"
         f"LIVE MARKET DATA (reference specific figures throughout):\n{mkt}\n"
         f"SECTOR PERFORMANCE:\n{sector_txt}\n\n"
         f"ASIA / EUROPE OVERNIGHT:\n{region_txt}\n\n"
