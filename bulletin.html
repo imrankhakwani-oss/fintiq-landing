@@ -1278,7 +1278,7 @@ function buildEpsTable(data,today,filter){
     return `<td style="text-align:center;padding:7px 4px;line-height:1.3"><div class="eps-q-act ${cls}">${q.actual.toFixed(2)}</div>${estLine}${beatBadge}</td>`;
   }
 
-  function epsRow(e,isToday){
+  function epsRow(e,isToday,pendingResult){
     const qs=e.quarters||[];
     const cols=[qs[0]||null,qs[1]||null,qs[2]||null,qs[3]||null];
     const nEst=e.estimates?.[0]?.eps_est!=null?e.estimates[0].eps_est.toFixed(2):'—';
@@ -1286,9 +1286,14 @@ function buildEpsTable(data,today,filter){
     const sym=cleanSym(e.symbol);
     const coName=e.name?`<span class="eps-name">${e.name}</span>`:'';
     const todayCls=isToday?'today-row':'';
+    // Latest column: if result just announced but yfinance hasn't updated yet, show pending
+    const latestCell=pendingResult
+      ?`<td style="text-align:center;padding:7px 4px;color:var(--muted2);font-size:10px;line-height:1.4">⏳<br>Updating</td>`
+      :qCell(cols[0]);
+    const historyCols=pendingResult?[cols[0],cols[1],cols[2]]:cols.slice(1);
     return `<tr class="${todayCls}">
       <td style="white-space:nowrap;min-width:100px"><span class="eps-sym">${sym}</span>${coName}</td>
-      ${cols.map(qCell).join('')}
+      ${latestCell}${historyCols.map(qCell).join('')}
       <td style="font-size:11px;white-space:nowrap;width:100px">${nDate}</td>
       <td style="font-family:monospace;font-size:12px;font-weight:700;color:var(--text);width:60px">${nEst}</td>
       <td style="width:72px"><a href="/deep-dive.html?ticker=${encodeURIComponent(e.symbol)}" class="eps-dd" onclick="event.stopPropagation()">Deep Dive</a></td>
@@ -1337,7 +1342,14 @@ function buildEpsTable(data,today,filter){
   }
   if(recent.length){
     html+=`<div class="eps-today-label" style="color:var(--muted);margin-top:18px">📋 Recently Reported</div>
-    <div class="eps-table-wrap" style="margin-bottom:4px"><table class="eps-table">${header}<tbody>${recent.map(e=>epsRow(e,false)).join('')}</tbody></table></div>`;
+    <div class="eps-table-wrap" style="margin-bottom:4px"><table class="eps-table">${header}<tbody>${recent.map(e=>{
+      // Detect if yfinance hasn't updated with actual result yet:
+      // next_date is in the past but quarters[0] is from an earlier month → result still pending
+      const resultPending=e.next_date&&e.next_date<today
+        &&e.quarters&&e.quarters.length>0
+        &&e.quarters[0].date<e.next_date.slice(0,7);
+      return epsRow(e,false,resultPending);
+    }).join('')}</tbody></table></div>`;
   }
   if(!html){
     html=filter
