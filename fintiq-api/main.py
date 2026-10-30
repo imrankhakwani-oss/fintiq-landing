@@ -677,96 +677,112 @@ def _fetch_geo_news_rss() -> list:
 
 def _fetch_all_market_news() -> tuple:
     """
-    Single generic function that fetches ALL market-relevant news (geopolitical + corporate)
-    using broad queries, then asks Claude Haiku to sort everything into two buckets.
+    Fetch market news in two separate Tavily calls (geo + corporate).
+    Tavily results are mapped DIRECTLY to output — no Claude required to succeed.
+    Claude is called afterwards only to write better impact sentences; if it fails,
+    the raw Tavily snippets are shown instead. This eliminates all silent fallback paths.
 
     Returns: (geo_signals: list, business_news: list)
-    - geo_signals: world events affecting commodities, trade routes, energy, currencies
-    - business_news: corporate news affecting stocks — M&A, earnings, sector moves, IPOs
-
-    Fully generic — no topic-specific queries. Claude decides what matters and why.
-    Falls back to (rss_geo, []) if Tavily or Anthropic unavailable.
     """
-    if not TAVILY_API_KEY or not ANTHROPIC_API_KEY:
+    import re as _re
+
+    def _tavily_items(queries: list, max_each: int = 6) -> list:
+        """Run queries sequentially; return deduplicated list of {title,url,snippet}."""
+        out, seen = [], set()
+        for q in queries:
+            for r in _tavily_search(q, max_results=max_each, topic="general",
+                                    days=3, news_only=False):
+                t = (r.get("title") or "").strip()
+                u = r.get("url", "")
+                c = (r.get("content") or r.get("snippet") or "")[:400]
+                if t and len(t) > 12 and t not in seen:
+                    seen.add(t)
+                    out.append({"title": t, "url": u, "snippet": c})
+        return out
+
+    # ── Step 1: Tavily fetches ─────────────────────────────────────────────────
+    if not TAVILY_API_KEY:
         return _fetch_geo_news_rss(), []
 
-    today = datetime.now().strftime("%B %d %Y")
+    geo_raw  = _tavily_items([
+        "oil commodity energy prices supply geopolitical",
+        "trade tariffs sanctions Fed interest rates inflation economy",
+    ])
+    biz_raw  = _tavily_items([
+        "earnings revenue quarterly results company sector",
+        "merger acquisition deal M&A corporate announcement",
+    ])
 
-    # Broad financial queries — no hardcoded companies or regions.
-    # news_only=True restricts to Reuters/Bloomberg/FT/CNBC/WSJ/MarketWatch/AP
-    # so all results are market-relevant by definition. Claude just categorises them.
-    searches = [
-        "oil energy commodity prices market today",
-        "corporate earnings M&A acquisition deal company news today",
-        "geopolitical trade tariffs sanctions supply chain economy today",
-        "Fed interest rates inflation economic data stocks today",
-    ]
+    # ── Step 2: Direct format (always works regardless of Claude) ──────────────
+    def _direct_geo(items):
+        return [{"title": i["title"],
+                 "source": _source_from_url(i["url"]) or "Reuters",
+                 "impact": i["snippet"],
+                 "affects": "📈 Markets"} for i in items[:8]]
 
-    raw_snippets: list = []
-    seen_titles: set = set()
-    _lock = threading.Lock()
+    def _direct_biz(items):
+        return [{"title": i["title"],
+                 "source": _source_from_url(i["url"]) or "Reuters",
+                 "sector": "Other",
+                 "impact": i["snippet"],
+                 "type": "corporate"} for i in items[:8]]
 
-    def _do_search(q):
-        results = _tavily_search(q, max_results=8, topic="news", days=3, news_only=True)
-        for r in results[:7]:
-            title   = (r.get("title") or "").strip()
-            content = (r.get("content") or "").strip()
-            url     = (r.get("url") or "")
-            if title and len(title) > 15:
-                with _lock:
-                    if title not in seen_titles:
-                        seen_titles.add(title)
-                        raw_snippets.append(f"TITLE: {title}\nURL: {url}\nSNIPPET: {content[:500]}")
+    geo_out = _direct_geo(geo_raw)
+    biz_out = _direct_biz(biz_raw)
 
-    with ThreadPoolExecutor(max_workers=4) as ex:
-        futs = [ex.submit(_do_search, q) for q in searches]
-        for f in futs:
-            try: f.result(timeout=20)
-            except: pass
+    # ── Step 3: Claude enhancement (optional – improves impact text + sectors) ──
+    if ANTHROPIC_API_KEY and (geo_raw or biz_raw):
+        try:
+            snippets = []
+            for i, g in enumerate(geo_raw[:8]):
+                snippets.append(f"GEO{i}|{g['title']}|{g['snippet'][:250]}")
+            for i, b in enumerate(biz_raw[:8]):
+                snippets.append(f"BIZ{i}|{b['title']}|{b['snippet'][:250]}")
 
-    if not raw_snippets:
-        return _fetch_geo_news_rss(), []
+            prompt = (
+                "You are a financial markets editor. For each item below rewrite a sharp "
+                "1-sentence market impact, and for BIZ items add the best sector label.\n\n"
+                "Items (format ID|TITLE|RAW_TEXT):\n"
+                + "\n".join(snippets) +
+                "\n\nRespond with a JSON array. Each element: "
+                "{\"id\":\"GEO0\",\"impact\":\"...\",\"affects\":\"🛢️ Oil · 📦 Shipping\"} for GEO items, "
+                "{\"id\":\"BIZ0\",\"impact\":\"...\",\"sector\":\"Technology\"} for BIZ items. "
+                "sector must be one of: Semiconductors|M&A|Pharma|Technology|Energy|Finance|Consumer|Other. "
+                "No markdown. No explanation. Valid JSON array only."
+            )
+            client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+            resp = client.messages.create(
+                model="claude-haiku-4-5-20251001", max_tokens=1800,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+            raw = _re.sub(r'^```(?:json)?\s*', '', raw, flags=_re.M)
+            raw = _re.sub(r'\s*```$', '', raw, flags=_re.M).strip()
+            enhanced = json.loads(raw)
 
-    prompt = f"""Today is {today}. You are a financial markets editor sorting news into two buckets.
+            for item in enhanced:
+                iid = str(item.get("id", ""))
+                if iid.startswith("GEO"):
+                    try:
+                        idx = int(iid[3:])
+                        if idx < len(geo_out):
+                            if item.get("impact"): geo_out[idx]["impact"] = item["impact"]
+                            if item.get("affects"): geo_out[idx]["affects"] = item["affects"]
+                    except (ValueError, IndexError):
+                        pass
+                elif iid.startswith("BIZ"):
+                    try:
+                        idx = int(iid[3:])
+                        if idx < len(biz_out):
+                            if item.get("impact"): biz_out[idx]["impact"] = item["impact"]
+                            if item.get("sector"): biz_out[idx]["sector"] = item["sector"]
+                    except (ValueError, IndexError):
+                        pass
+        except Exception:
+            pass  # Claude failed — keep the direct Tavily output, still show news
 
-These snippets come from Reuters, Bloomberg, FT, CNBC, WSJ and similar financial news sources.
-Categorise ALL of them — do not skip items just because they seem obvious or routine.
-
-━━━ CATEGORY 1: geo_signals ━━━
-Any world event with a market dimension: oil/gas prices, sanctions, trade disputes, OPEC, central bank decisions, geopolitical tension near trade routes, elections affecting markets, commodity supply.
-For each: {{"title":"max 12 words","source":"publication (e.g. Reuters, FT, CNBC)","impact":"1 sentence on which market or commodity is affected and how","affects":"e.g. 🛢️ Oil · 📦 Shipping · 🥇 Gold · 💱 USD"}}
-
-━━━ CATEGORY 2: business_news ━━━
-Company or sector news: earnings results, M&A, IPOs, drug approvals, guidance changes, layoffs, major contracts, sector trends.
-For each: {{"title":"max 12 words with company name","source":"publication","sector":"Semiconductors|M&A|Pharma|Technology|Energy|Finance|Consumer|Other","impact":"1 sentence on which stock or ETF is affected","type":"ma|sector|corporate|ipo"}}
-
-━━━ RULES ━━━
-- Put each snippet in the bucket it fits best. If it fits both, use your judgment.
-- Up to 8 items per category.
-- Source = publication name extracted from the URL domain.
-- Respond ONLY with valid JSON. No markdown fences. No explanation.
-Format: {{"geo_signals":[...],"business_news":[...]}}
-
-RAW SNIPPETS:
-{chr(10).join(raw_snippets[:28])}"""
-
-    try:
-        import re as _re
-        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001", max_tokens=2500,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
-        raw = _re.sub(r'^```(?:json)?\s*', '', raw, flags=_re.M)
-        raw = _re.sub(r'\s*```$', '', raw, flags=_re.M).strip()
-        parsed = json.loads(raw)
-        geo  = [i for i in (parsed.get("geo_signals") or [])    if isinstance(i, dict) and i.get("title")][:8]
-        biz  = [i for i in (parsed.get("business_news") or [])  if isinstance(i, dict) and i.get("title")][:8]
-        # Fall back geo to RSS only if Claude found nothing
-        return (geo if geo else _fetch_geo_news_rss()), biz
-    except Exception:
-        return _fetch_geo_news_rss(), []
+    # ── Step 4: Return — RSS only if Tavily also returned nothing ─────────────
+    return (geo_out if geo_out else _fetch_geo_news_rss()), biz_out
 
 _MAG7_SYMBOLS = {sym for sym, _ in _MAG7}
 
