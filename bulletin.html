@@ -1374,6 +1374,9 @@ async function switchEpsTab(index,btn){
   const content=document.getElementById('epsContent');
   const msg=document.getElementById('epsMsg');
   if(msg) msg.textContent='';
+  if(index==='ftse100') {
+    if(msg) msg.innerHTML='<span style="color:var(--muted2);font-size:11px">ⓘ yfinance provides earnings data for ~10–15 FTSE 100 stocks with US analyst consensus. Full UK coverage requires a dedicated data source.</span>';
+  }
   if(content) content.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px 0">Loading…</div>';
   const data=await loadEpsIndex(index);
   if(index!==_activeEpsTab) return;
