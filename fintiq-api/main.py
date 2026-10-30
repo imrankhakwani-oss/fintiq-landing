@@ -705,13 +705,11 @@ def _fetch_all_market_news() -> tuple:
         return _fetch_geo_news_rss(), []
 
     geo_raw  = _tavily_items([
-        "oil commodity energy prices supply geopolitical",
-        "trade tariffs sanctions Fed interest rates inflation economy",
-    ])
+        "oil commodity energy geopolitical trade tariffs sanctions inflation economy",
+    ], max_each=10)
     biz_raw  = _tavily_items([
-        "earnings revenue quarterly results company sector",
-        "merger acquisition deal M&A corporate announcement",
-    ])
+        "earnings revenue quarterly results merger acquisition M&A corporate sector",
+    ], max_each=10)
 
     # ── Step 2: Direct format (always works regardless of Claude) ──────────────
     def _direct_geo(items):
@@ -1175,7 +1173,10 @@ def _generate_bulletin() -> dict:
         _f_sectors = _ex.submit(_fetch_sector_data)
         _f_earn    = _ex.submit(_fetch_earnings_v2)
         news_rss          = _f_news.result(timeout=20)
-        geo_news, corp_news = _f_allnews.result(timeout=30)  # allow extra time for Tavily+Haiku
+        try:
+            geo_news, corp_news = _f_allnews.result(timeout=60)
+        except Exception:
+            geo_news, corp_news = _fetch_geo_news_rss(), []
         econ              = _f_econ.result(timeout=15)
         sectors           = _f_sectors.result(timeout=15)
         earnings_list     = _f_earn.result(timeout=15)
