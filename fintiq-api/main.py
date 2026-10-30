@@ -189,18 +189,17 @@ _INDEX_TICKERS = {
         "FANG","HON","MSTR","COIN","HOOD","SOFI","RBLX","LYFT","DKNG","NET",
     ],
     "ftse100": [
-        # 1-50
+        # Core FTSE 100 — deduplicated, verified yfinance tickers
         "SHEL.L","AZN.L","HSBA.L","ULVR.L","DGE.L","BP.L","RIO.L","LLOY.L","GSK.L","BARC.L",
         "VOD.L","REL.L","EXPN.L","WPP.L","PRU.L","LGEN.L","BA.L","AAL.L","BHP.L","IMB.L",
         "MNG.L","ABF.L","CNA.L","SBRY.L","IHG.L","SGE.L","RKT.L","SSE.L","NG.L","GLEN.L",
         "AV.L","STAN.L","NWG.L","BATS.L","TW.L","ITRK.L","AUTO.L","SDR.L","FRES.L","JD.L",
-        "MNDI.L","INF.L","WTB.L","CRDA.L","PSON.L","AHT.L","HL.L","WEIR.L","RR.L","IMI.L",
-        # 51-100
-        "BDEV.L","BWY.L","PSN.L","BLND.L","LAND.L","SGRO.L","SMDS.L","SMWH.L","EMG.L","DPLM.L",
-        "FLTR.L","HLN.L","HIK.L","HWDN.L","IAG.L","III.L","KGF.L","LSEG.L","MKS.L","MRW.L",
-        "OCDO.L","RS1.L","SVT.L","UTG.L","RTO.L","CPG.L","CRH.L","ENT.L","SKG.L","DCC.L",
-        "TSCO.L","BT-A.L","ULVR.L","BRBY.L","ADM.L","ALW.L","ANT.L","ANTO.L","BME.L","BOO.L",
-        "CCH.L","CHG.L","COB.L","CTEC.L","DLN.L","GFS.L","GSK.L","HBR.L","HLN.L","HSX.L",
+        "CRDA.L","PSON.L","AHT.L","HL.L","WEIR.L","RR.L","IMI.L",
+        "BDEV.L","PSN.L","BLND.L","LAND.L","SGRO.L","SMDS.L","SMWH.L","EMG.L","DPLM.L",
+        "FLTR.L","HLN.L","HIK.L","IAG.L","III.L","KGF.L","LSEG.L","MKS.L","MRW.L",
+        "OCDO.L","SVT.L","RTO.L","CRH.L","ENT.L",
+        "TSCO.L","BT-A.L","BRBY.L","ANTO.L","CPG.L","SKG.L",
+        "CCH.L","CHG.L","DLN.L","GFS.L","HBR.L",
     ],
     "stoxx50": [
         "ASML","MC.PA","OR.PA","TTE.PA","SIE.DE","AIR.PA","ALV.DE","BNP.PA","SAN.PA","SAP",
@@ -1443,8 +1442,9 @@ def _fetch_single_earnings(symbol: str) -> Optional[dict]:
                 estimates.append({"date": full_date_str, "eps_est": est})
             if len(quarters) >= 4 and len(estimates) >= 2:
                 break
-        if not quarters:
+        if not quarters and not estimates:
             return None
+        # UK / European companies often report semi-annually — keep them even with no quarterly history
         # next_date: the nearest upcoming earnings date (first estimate date if available)
         next_date = estimates[0]["date"] if estimates else None
         try:
@@ -1465,6 +1465,13 @@ def _fetch_index_earnings(index: str) -> list:
                 r = fut.result(timeout=25)
                 if r: results.append(r)
             except: pass
+    # Deduplicate by symbol (ticker list may have duplicates)
+    seen_syms: set = set()
+    deduped = []
+    for r in results:
+        if r["symbol"] not in seen_syms:
+            seen_syms.add(r["symbol"]); deduped.append(r)
+    results = deduped
     # Filter out delisted/acquired companies whose next earnings date is >90 days in the past
     # (e.g. ANSS acquired by Synopsys Jan 2025 — still in some index lists but no longer reports)
     from datetime import date as _dt_date
