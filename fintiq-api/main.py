@@ -692,13 +692,14 @@ def _fetch_all_market_news() -> tuple:
 
     today = datetime.now().strftime("%B %d %Y")
 
-    # Four financially-focused generic queries — no hardcoded regions or companies,
-    # but anchored to financial/market subject matter so Tavily returns relevant articles.
+    # Broad financial queries — no hardcoded companies or regions.
+    # news_only=True restricts to Reuters/Bloomberg/FT/CNBC/WSJ/MarketWatch/AP
+    # so all results are market-relevant by definition. Claude just categorises them.
     searches = [
-        f"oil commodity prices supply disruption geopolitical risk market impact {today}",
-        f"corporate earnings revenue M&A acquisition deal sector news {today}",
-        f"trade tariffs sanctions energy supply chain global economy impact {today}",
-        f"stock market Fed interest rates inflation economic data company results {today}",
+        "oil energy commodity prices market today",
+        "corporate earnings M&A acquisition deal company news today",
+        "geopolitical trade tariffs sanctions supply chain economy today",
+        "Fed interest rates inflation economic data stocks today",
     ]
 
     raw_snippets: list = []
@@ -706,7 +707,7 @@ def _fetch_all_market_news() -> tuple:
     _lock = threading.Lock()
 
     def _do_search(q):
-        results = _tavily_search(q, max_results=8, topic="news", days=3)
+        results = _tavily_search(q, max_results=8, topic="news", days=3, news_only=True)
         for r in results[:7]:
             title   = (r.get("title") or "").strip()
             content = (r.get("content") or "").strip()
@@ -726,29 +727,24 @@ def _fetch_all_market_news() -> tuple:
     if not raw_snippets:
         return _fetch_geo_news_rss(), []
 
-    prompt = f"""Today is {today}. You are a senior financial markets editor.
+    prompt = f"""Today is {today}. You are a financial markets editor sorting news into two buckets.
 
-Below are raw news snippets from today. Your job is to sort them into TWO categories.
+These snippets come from Reuters, Bloomberg, FT, CNBC, WSJ and similar financial news sources.
+Categorise ALL of them — do not skip items just because they seem obvious or routine.
 
 ━━━ CATEGORY 1: geo_signals ━━━
-World/geopolitical events that DIRECTLY affect commodity prices, trade routes, energy supply, currencies or global trade. Examples: conflicts near oil shipping lanes, sanctions that affect energy/metals, trade wars affecting supply chains, OPEC decisions, natural disasters affecting food/commodity supply.
-EXCLUDE: crime, domestic court cases, elections with no commodity/market link, cultural or social stories.
-
-For each item: {{"title":"max 12 words","source":"publication from URL","impact":"1-2 sentences naming the specific commodity/market and direction","affects":"emoji tags e.g. 🛢️ Oil · 📦 Shipping · 🥇 Gold"}}
+Any world event with a market dimension: oil/gas prices, sanctions, trade disputes, OPEC, central bank decisions, geopolitical tension near trade routes, elections affecting markets, commodity supply.
+For each: {{"title":"max 12 words","source":"publication (e.g. Reuters, FT, CNBC)","impact":"1 sentence on which market or commodity is affected and how","affects":"e.g. 🛢️ Oil · 📦 Shipping · 🥇 Gold · 💱 USD"}}
 
 ━━━ CATEGORY 2: business_news ━━━
-Corporate and sector news that DIRECTLY moves stocks or sectors. Examples: mergers/acquisitions with deal value, major earnings beats or misses, drug approvals, large-scale layoffs or restructurings, IPOs, major contract wins, supply chain shifts between companies, CEO changes at large caps.
-EXCLUDE: small company news, opinion articles, macro/geopolitical stories (those go in category 1).
-
-For each item: {{"title":"max 12 words including company name","source":"publication from URL","sector":"Semiconductors|M&A|Pharma|Technology|Energy|Finance|Consumer|Other","impact":"1-2 sentences naming the stock(s)/ETF and direction","type":"ma|sector|corporate|ipo"}}
+Company or sector news: earnings results, M&A, IPOs, drug approvals, guidance changes, layoffs, major contracts, sector trends.
+For each: {{"title":"max 12 words with company name","source":"publication","sector":"Semiconductors|M&A|Pharma|Technology|Energy|Finance|Consumer|Other","impact":"1 sentence on which stock or ETF is affected","type":"ma|sector|corporate|ipo"}}
 
 ━━━ RULES ━━━
-- Select up to 8 items per category. Only include what is clearly in the snippets.
-- If a snippet doesn't clearly fit either category, skip it.
-- Keep titles short and factual — no clickbait. Include a number or name when available.
-- Extract source from URL domain (reuters.com → Reuters, ft.com → FT, wsj.com → WSJ, cnbc.com → CNBC, etc.)
-
-Respond ONLY with a valid JSON object. No markdown. No explanation.
+- Put each snippet in the bucket it fits best. If it fits both, use your judgment.
+- Up to 8 items per category.
+- Source = publication name extracted from the URL domain.
+- Respond ONLY with valid JSON. No markdown fences. No explanation.
 Format: {{"geo_signals":[...],"business_news":[...]}}
 
 RAW SNIPPETS:
