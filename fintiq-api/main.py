@@ -919,18 +919,43 @@ _NEWS_DOMAINS = [
 ]
 
 def _tavily_search(query: str, max_results: int = 5, topic: str = "general",
-                   days: int = None, news_only: bool = False) -> list:
-    if not TAVILY_API_KEY: return []
+                   days: int = None, news_only: bool = False, depth: str = "basic") -> list:
+    if not TAVILY_API_KEY:
+        print("[TAVILY] no API key set", flush=True)
+        return []
+    payload = {
+        "query": query,
+        "max_results": max_results,
+        "search_depth": depth,
+        "include_answer": False,
+        "include_raw_content": False,
+        "topic": topic,
+    }
+    # `days` only works with topic="news"; for topic="general" use time_range
+    if days:
+        if topic == "news":
+            payload["days"] = days
+        else:
+            payload["time_range"] = "week" if days > 1 else "day"
+    if news_only:
+        payload["include_domains"] = _NEWS_DOMAINS
     try:
-        payload = {"api_key": TAVILY_API_KEY, "query": query, "max_results": max_results,
-                   "search_depth": "advanced", "include_answer": False, "include_raw_content": False,
-                   "topic": topic}
-        if days: payload["days"] = days
-        if news_only: payload["include_domains"] = _NEWS_DOMAINS
-        r = requests.post("https://api.tavily.com/search", json=payload, timeout=12)
-        if r.status_code == 200: return r.json().get("results", [])
-    except: pass
-    return []
+        r = requests.post(
+            "https://api.tavily.com/search",
+            json=payload,
+            timeout=25,
+            headers={"Authorization": f"Bearer {TAVILY_API_KEY}",
+                     "Content-Type": "application/json"},
+        )
+        if r.status_code != 200:
+            print(f"[TAVILY] {r.status_code} q={query[:50]!r} body={r.text[:200]}", flush=True)
+            return []
+        res = r.json().get("results", [])
+        print(f"[TAVILY] ok {len(res)} results q={query[:50]!r}", flush=True)
+        return res
+    except Exception as e:
+        print(f"[TAVILY] {type(e).__name__}: {e} q={query[:50]!r}", flush=True)
+        return []
 
 def _source_from_url(url: str) -> str:
     """Extract readable source name from a URL for attribution."""
@@ -1175,7 +1200,9 @@ def _generate_bulletin() -> dict:
         news_rss          = _f_news.result(timeout=20)
         try:
             geo_news, corp_news = _f_allnews.result(timeout=60)
-        except Exception:
+        except Exception as _e:
+            import traceback as _tb
+            print(f"[ALLNEWS FAILED] {type(_e).__name__}: {_e}\n{_tb.format_exc()}", flush=True)
             geo_news, corp_news = _fetch_geo_news_rss(), []
         econ              = _f_econ.result(timeout=15)
         sectors           = _f_sectors.result(timeout=15)
@@ -2374,6 +2401,35 @@ def bulletin_status():
         "refreshing": _bulletin_refreshing,
         "cached_at": datetime.fromtimestamp(_bulletin_cached_at).isoformat() if _bulletin_cache else None,
     }
+
+@app.get("/debug/market-news")
+def debug_market_news():
+    """Diagnostic endpoint — runs Tavily + news fetch directly, returns results + logs."""
+    import traceback as _tb
+    out: dict = {
+        "key_present": bool(TAVILY_API_KEY),
+        "key_prefix": (TAVILY_API_KEY or "")[:6] + "...",
+    }
+    # Step 1: raw Tavily test
+    try:
+        raw = _tavily_search("oil energy tariffs inflation economy", max_results=5,
+                             topic="news", days=3)
+        out["tavily_raw_count"] = len(raw)
+        out["tavily_sample"] = [{"title": r.get("title"), "url": r.get("url")} for r in raw[:3]]
+    except Exception as e:
+        out["tavily_error"] = str(e)
+    # Step 2: full function
+    try:
+        g, b = _fetch_all_market_news()
+        out["geo_count"] = len(g)
+        out["biz_count"] = len(b)
+        out["geo_is_rss"] = any("at_medium=RSS" in (x.get("url") or x.get("source","")) for x in g)
+        out["geo_sample"] = g[:2]
+        out["biz_sample"] = b[:2]
+    except Exception:
+        out["fetch_exception"] = _tb.format_exc()
+    out["cache_age_minutes"] = round((time.time() - (_bulletin_cached_at or 0)) / 60, 1)
+    return out
 
 @app.post("/bulletin/refresh")
 def refresh_bulletin(token: Optional[str] = None):
