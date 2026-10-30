@@ -707,27 +707,45 @@ def _fetch_all_market_news() -> tuple:
         ("https://feeds.a.dj.com/rss/RSSMarketsMain.xml",                  "WSJ Markets"),
     ]
 
+    # Stories to always exclude — political/crime/social noise with no market impact
+    _EXCLUDE_KW = re.compile(
+        r'\b(election|senate|congress|parliament|democrat|republican|trump|biden|harris|'
+        r'campaign|ballot|voter|voting|midterm|primary|governor|attorney general|'
+        r'murder|killer|shooting|stabbing|arrest|convicted|sentenced|prison|criminal|'
+        r'hurricane|earthquake|flood|wildfire|tornado|tsunami|'
+        r'celebrity|oscar|grammy|nfl|nba|fifa|sport|football|soccer|tennis|'
+        r'obituary|died|death toll|funeral|memorial|'
+        r'newspaper|media|journalist|press freedom|censored|shutdown)\b',
+        re.I
+    )
+
     # Keywords that make a headline relevant for the Geo-Political Signals section
+    # Requires a market-relevant term — general world news that doesn't touch
+    # commodities, trade, rates or macro is excluded
     _GEO_KW = re.compile(
-        r'\b(oil|gas|energy|crude|opec|commodity|commodities|lng|copper|gold|wheat|grain|'
-        r'tariff|tariffs|sanction|sanctions|trade war|trade deal|export ban|import duty|'
-        r'supply chain|shipping|freight|suez|strait|pipeline|inflation|cpi|ppi|'
-        r'interest rate|fed|federal reserve|ecb|boe|central bank|'
-        r'geopolit|conflict|war|missile|drone|attack|military|troops|'
-        r'china|russia|iran|ukraine|taiwan|middle east|red sea|'
-        r'gdp|recession|debt ceiling|treasury yield|dollar|forex)\b',
+        r'\b(oil|gas|energy|crude|opec|commodity|commodities|lng|copper|gold|silver|'
+        r'wheat|grain|corn|soybean|lithium|uranium|'
+        r'tariff|tariffs|sanction|sanctions|trade war|trade deal|trade deficit|'
+        r'export ban|import duty|supply chain|shipping|freight|suez|strait|pipeline|'
+        r'inflation|cpi|ppi|interest rate|fed|federal reserve|ecb|boe|central bank|'
+        r'gdp|recession|debt ceiling|treasury yield|dollar index|forex|currency|'
+        r'geopolit|military spending|arms|weapons export|drone strike|naval|blockade|'
+        r'china economy|russia economy|iran nuclear|taiwan strait|'
+        r'red sea|gulf|hormuz|bab el-mandeb|black sea)\b',
         re.I
     )
 
     # Keywords that make a headline relevant for the Corporate & Sector News section
     _BIZ_KW = re.compile(
-        r'\b(merger|acquisition|acqui|acquired|takeover|buyout|deal|ipo|listing|'
-        r'earnings|revenue|profit|quarterly|results|beats|misses|raised guidance|'
-        r'fda|approval|approved|drug|clinical trial|phase|'
-        r'layoff|layoffs|job cut|restructur|spinoff|spin-off|divest|'
-        r'dividend|buyback|share repurchase|ceo|chief executive|appointed|resigned|'
-        r'antitrust|regulatory|sec|investigation|fine|settlement|'
-        r'semiconductor|chip|ai model|cloud|data centre|data center)\b',
+        r'\b(merger|acquisition|acqui|acquired|takeover|buyout|ipo|listing|'
+        r'earnings|revenue|profit|quarterly results|beats estimates|misses estimates|'
+        r'raised guidance|lowered guidance|outlook raised|outlook cut|'
+        r'fda approval|fda approved|drug approved|clinical trial|phase 3|phase iii|'
+        r'layoff|layoffs|job cuts|restructur|spinoff|spin-off|divest|'
+        r'dividend|share buyback|share repurchase|'
+        r'antitrust|sec charges|sec fine|settlement|'
+        r'semiconductor|chipmaker|data centre|data center|ai chip|cloud revenue|'
+        r'market cap|stock surges|stock plunges|shares jump|shares fall|wipeout)\b',
         re.I
     )
 
@@ -779,7 +797,11 @@ def _fetch_all_market_news() -> tuple:
             for item in _parse_rss(feed_url, source, limit_per_feed):
                 t = item["title"]
                 text_to_check = t + " " + item.get("snippet", "")
-                if t in seen or not keyword_re.search(text_to_check):
+                if t in seen:
+                    continue
+                if _EXCLUDE_KW.search(text_to_check):
+                    continue  # noise — political/crime/sport
+                if not keyword_re.search(text_to_check):
                     continue
                 seen.add(t)
                 out.append(item)
