@@ -692,14 +692,13 @@ def _fetch_all_market_news() -> tuple:
 
     today = datetime.now().strftime("%B %d %Y")
 
-    # Four broad queries that together cover the full universe of market-relevant news.
-    # Deliberately generic so they capture whatever is actually moving markets today,
-    # without assuming specific topics in advance.
+    # Four financially-focused generic queries — no hardcoded regions or companies,
+    # but anchored to financial/market subject matter so Tavily returns relevant articles.
     searches = [
-        f"world news affecting financial markets commodities energy trade {today}",
-        f"global corporate business news M&A earnings deals sectors {today}",
-        f"geopolitical events oil energy shipping trade routes global economy {today}",
-        f"stock market moving news technology finance pharma company results {today}",
+        f"oil commodity prices supply disruption geopolitical risk market impact {today}",
+        f"corporate earnings revenue M&A acquisition deal sector news {today}",
+        f"trade tariffs sanctions energy supply chain global economy impact {today}",
+        f"stock market Fed interest rates inflation economic data company results {today}",
     ]
 
     raw_snippets: list = []
@@ -707,7 +706,7 @@ def _fetch_all_market_news() -> tuple:
     _lock = threading.Lock()
 
     def _do_search(q):
-        results = _tavily_search(q, max_results=8, topic="news", days=2)
+        results = _tavily_search(q, max_results=8, topic="news", days=3)
         for r in results[:7]:
             title   = (r.get("title") or "").strip()
             content = (r.get("content") or "").strip()
