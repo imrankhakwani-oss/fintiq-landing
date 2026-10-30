@@ -677,52 +677,136 @@ def _fetch_geo_news_rss() -> list:
 
 def _fetch_all_market_news() -> tuple:
     """
-    Fetch market news in two separate Tavily calls (geo + corporate).
-    Tavily results are mapped DIRECTLY to output — no Claude required to succeed.
-    Claude is called afterwards only to write better impact sentences; if it fails,
-    the raw Tavily snippets are shown instead. This eliminates all silent fallback paths.
+    Fetch market-relevant news from free RSS feeds — no API key required.
+    Uses keyword filtering to split items into geo/commodity signals vs corporate news.
 
     Returns: (geo_signals: list, business_news: list)
     """
     import re as _re
+    import xml.etree.ElementTree as ET
 
-    def _tavily_items(queries: list, max_each: int = 6) -> list:
-        """Run queries sequentially; return deduplicated list of {title,url,snippet}."""
-        out, seen = [], set()
-        for q in queries:
-            for r in _tavily_search(q, max_results=max_each, topic="news",
-                                    days=3, news_only=False):
-                t = (r.get("title") or "").strip()
-                u = r.get("url", "")
-                c = (r.get("content") or r.get("snippet") or "")[:400]
-                if t and len(t) > 12 and t not in seen:
-                    seen.add(t)
-                    out.append({"title": t, "url": u, "snippet": c})
+    _HDR = {"User-Agent": "Mozilla/5.0 (compatible; Fintiq/1.0; +https://fintiq.uk)"}
+
+    # Feeds targeted at geo/macro/commodity signals
+    GEO_FEEDS = [
+        ("https://feeds.reuters.com/reuters/companyNews",                   "Reuters"),
+        ("https://feeds.reuters.com/reuters/topNews",                       "Reuters"),
+        ("https://oilprice.com/rss/main",                                   "OilPrice"),
+        ("https://feeds.bbci.co.uk/news/business/rss.xml",                  "BBC Business"),
+        ("https://www.cnbc.com/id/10000664/device/rss/rss.html",           "CNBC Economy"),
+        ("https://feeds.reuters.com/reuters/marketsNews",                   "Reuters Markets"),
+    ]
+
+    # Feeds targeted at corporate / sector / earnings news
+    CORP_FEEDS = [
+        ("https://feeds.reuters.com/reuters/businessNews",                  "Reuters Business"),
+        ("https://feeds.marketwatch.com/marketwatch/topstories/",           "MarketWatch"),
+        ("https://www.cnbc.com/id/100003114/device/rss/rss.html",          "CNBC"),
+        ("https://www.cnbc.com/id/10001147/device/rss/rss.html",           "CNBC Earnings"),
+        ("https://feeds.reuters.com/reuters/marketsNews",                   "Reuters Markets"),
+        ("https://feeds.a.dj.com/rss/RSSMarketsMain.xml",                  "WSJ Markets"),
+    ]
+
+    # Keywords that make a headline relevant for the Geo-Political Signals section
+    _GEO_KW = re.compile(
+        r'\b(oil|gas|energy|crude|opec|commodity|commodities|lng|copper|gold|wheat|grain|'
+        r'tariff|tariffs|sanction|sanctions|trade war|trade deal|export ban|import duty|'
+        r'supply chain|shipping|freight|suez|strait|pipeline|inflation|cpi|ppi|'
+        r'interest rate|fed|federal reserve|ecb|boe|central bank|'
+        r'geopolit|conflict|war|missile|drone|attack|military|troops|'
+        r'china|russia|iran|ukraine|taiwan|middle east|red sea|'
+        r'gdp|recession|debt ceiling|treasury yield|dollar|forex)\b',
+        re.I
+    )
+
+    # Keywords that make a headline relevant for the Corporate & Sector News section
+    _BIZ_KW = re.compile(
+        r'\b(merger|acquisition|acqui|acquired|takeover|buyout|deal|ipo|listing|'
+        r'earnings|revenue|profit|quarterly|results|beats|misses|raised guidance|'
+        r'fda|approval|approved|drug|clinical trial|phase|'
+        r'layoff|layoffs|job cut|restructur|spinoff|spin-off|divest|'
+        r'dividend|buyback|share repurchase|ceo|chief executive|appointed|resigned|'
+        r'antitrust|regulatory|sec|investigation|fine|settlement|'
+        r'semiconductor|chip|ai model|cloud|data centre|data center)\b',
+        re.I
+    )
+
+    def _parse_rss(feed_url: str, source: str, limit: int = 8) -> list:
+        """Parse an RSS/Atom feed; return list of {title, url, snippet, source}."""
+        out = []
+        try:
+            r = requests.get(feed_url, timeout=8, headers=_HDR)
+            if r.status_code != 200:
+                return out
+            content = r.content
+            for decl in (b"<?xml version='1.0' encoding='UTF-8'?>",
+                         b'<?xml version="1.0" encoding="UTF-8"?>',
+                         b'<?xml version="1.0" encoding="utf-8"?>'):
+                content = content.replace(decl, b"")
+            root = ET.fromstring(content)
+            channel = root.find("channel")
+            items = channel.findall("item") if channel is not None else []
+            if not items:
+                # Atom
+                ns = "{http://www.w3.org/2005/Atom}"
+                items = root.findall(f"{ns}entry")
+                for entry in items[:limit]:
+                    title = (entry.findtext(f"{ns}title") or "").strip()
+                    link_el = entry.find(f"{ns}link")
+                    link = link_el.get("href", "") if link_el is not None else ""
+                    summary = (entry.findtext(f"{ns}summary") or "").strip()[:300]
+                    if title and len(title) > 15:
+                        out.append({"title": title, "url": link, "snippet": summary, "source": source})
+            else:
+                for item in items[:limit]:
+                    title = (item.findtext("title") or "").strip()
+                    link  = (item.findtext("link") or "").strip()
+                    desc  = (item.findtext("description") or "").strip()[:300]
+                    # Strip HTML tags from description
+                    desc = re.sub(r"<[^>]+>", "", desc).strip()
+                    if title and len(title) > 15:
+                        out.append({"title": title, "url": link, "snippet": desc, "source": source})
+        except Exception:
+            pass
         return out
 
-    # ── Step 1: Tavily fetches ─────────────────────────────────────────────────
-    if not TAVILY_API_KEY:
-        return _fetch_geo_news_rss(), []
+    def _pull(feeds, keyword_re, limit_per_feed=8, max_total=12) -> list:
+        """Pull from feeds, filter by keywords, deduplicate, return up to max_total."""
+        seen, out = set(), []
+        for feed_url, source in feeds:
+            if len(out) >= max_total:
+                break
+            for item in _parse_rss(feed_url, source, limit_per_feed):
+                t = item["title"]
+                text_to_check = t + " " + item.get("snippet", "")
+                if t in seen or not keyword_re.search(text_to_check):
+                    continue
+                seen.add(t)
+                out.append(item)
+                if len(out) >= max_total:
+                    break
+        return out
 
-    geo_raw  = _tavily_items([
-        "oil commodity energy geopolitical trade tariffs sanctions inflation economy",
-    ], max_each=10)
-    biz_raw  = _tavily_items([
-        "earnings revenue quarterly results merger acquisition M&A corporate sector",
-    ], max_each=10)
+    print("[NEWS] fetching geo RSS feeds", flush=True)
+    geo_raw  = _pull(GEO_FEEDS,  _GEO_KW,  max_total=12)
+    print(f"[NEWS] geo_raw={len(geo_raw)}", flush=True)
+
+    print("[NEWS] fetching corp RSS feeds", flush=True)
+    biz_raw  = _pull(CORP_FEEDS, _BIZ_KW,  max_total=12)
+    print(f"[NEWS] biz_raw={len(biz_raw)}", flush=True)
 
     # ── Step 2: Direct format (always works regardless of Claude) ──────────────
     def _direct_geo(items):
         return [{"title": i["title"],
-                 "source": _source_from_url(i["url"]) or "Reuters",
-                 "impact": i["snippet"],
+                 "source": i.get("source") or _source_from_url(i["url"]) or "Reuters",
+                 "impact": i["snippet"] or i["title"],
                  "affects": "📈 Markets"} for i in items[:8]]
 
     def _direct_biz(items):
         return [{"title": i["title"],
-                 "source": _source_from_url(i["url"]) or "Reuters",
+                 "source": i.get("source") or _source_from_url(i["url"]) or "Reuters",
                  "sector": "Other",
-                 "impact": i["snippet"],
+                 "impact": i["snippet"] or i["title"],
                  "type": "corporate"} for i in items[:8]]
 
     geo_out = _direct_geo(geo_raw)
@@ -777,9 +861,10 @@ def _fetch_all_market_news() -> tuple:
                     except (ValueError, IndexError):
                         pass
         except Exception:
-            pass  # Claude failed — keep the direct Tavily output, still show news
+            pass  # Claude failed — keep the direct RSS output, still show news
 
-    # ── Step 4: Return — RSS only if Tavily also returned nothing ─────────────
+    # ── Step 4: Return ─────────────────────────────────────────────────────────
+    print(f"[NEWS] final geo={len(geo_out)} corp={len(biz_out)}", flush=True)
     return (geo_out if geo_out else _fetch_geo_news_rss()), biz_out
 
 _MAG7_SYMBOLS = {sym for sym, _ in _MAG7}
@@ -2408,28 +2493,15 @@ def bulletin_status():
 
 @app.get("/debug/market-news")
 def debug_market_news():
-    """Diagnostic endpoint — runs Tavily + news fetch directly, returns results + logs."""
+    """Diagnostic endpoint — runs RSS news fetch directly, returns results + counts."""
     import traceback as _tb
-    out: dict = {
-        "key_present": bool(TAVILY_API_KEY),
-        "key_prefix": (TAVILY_API_KEY or "")[:6] + "...",
-    }
-    # Step 1: raw Tavily test
-    try:
-        raw = _tavily_search("oil energy tariffs inflation economy", max_results=5,
-                             topic="news", days=3)
-        out["tavily_raw_count"] = len(raw)
-        out["tavily_sample"] = [{"title": r.get("title"), "url": r.get("url")} for r in raw[:3]]
-    except Exception as e:
-        out["tavily_error"] = str(e)
-    # Step 2: full function
+    out: dict = {}
     try:
         g, b = _fetch_all_market_news()
         out["geo_count"] = len(g)
         out["biz_count"] = len(b)
-        out["geo_is_rss"] = any("at_medium=RSS" in (x.get("url") or x.get("source","")) for x in g)
-        out["geo_sample"] = g[:2]
-        out["biz_sample"] = b[:2]
+        out["geo_sample"] = g[:3]
+        out["biz_sample"] = b[:3]
     except Exception:
         out["fetch_exception"] = _tb.format_exc()
     out["cache_age_minutes"] = round((time.time() - (_bulletin_cached_at or 0)) / 60, 1)
