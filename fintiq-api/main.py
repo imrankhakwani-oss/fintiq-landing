@@ -687,13 +687,14 @@ def _fetch_all_market_news() -> tuple:
 
     _HDR = {"User-Agent": "Mozilla/5.0 (compatible; Fintiq/1.0; +https://fintiq.uk)"}
 
-    # Feeds targeted at geo/macro/commodity signals
+    # Feeds targeted at geo/macro/commodity signals — business-focused ONLY
+    # (No general world news feeds — BBC World/NYT World produce too much political noise)
     GEO_FEEDS = [
-        ("https://feeds.reuters.com/reuters/topNews",                       "Reuters"),
         ("https://feeds.reuters.com/reuters/marketsNews",                   "Reuters Markets"),
-        ("https://feeds.bbci.co.uk/news/business/rss.xml",                  "BBC Business"),
+        ("https://feeds.reuters.com/reuters/topNews",                       "Reuters"),
+        ("https://feeds.reuters.com/reuters/businessNews",                  "Reuters Business"),
         ("https://www.cnbc.com/id/10000664/device/rss/rss.html",           "CNBC Economy"),
-        ("https://feeds.bbci.co.uk/news/world/rss.xml",                    "BBC World"),
+        ("https://feeds.bbci.co.uk/news/business/rss.xml",                  "BBC Business"),
         ("https://apnews.com/apf-business.rss",                            "AP Business"),
     ]
 
@@ -720,18 +721,19 @@ def _fetch_all_market_news() -> tuple:
     )
 
     # Keywords that make a headline relevant for the Geo-Political Signals section
-    # Requires a market-relevant term — general world news that doesn't touch
-    # commodities, trade, rates or macro is excluded
+    # Broad enough to catch most financial/macro/geopolitical stories from business feeds
     _GEO_KW = re.compile(
         r'\b(oil|gas|energy|crude|opec|commodity|commodities|lng|copper|gold|silver|'
-        r'wheat|grain|corn|soybean|lithium|uranium|'
-        r'tariff|tariffs|sanction|sanctions|trade war|trade deal|trade deficit|'
-        r'export ban|import duty|supply chain|shipping|freight|suez|strait|pipeline|'
-        r'inflation|cpi|ppi|interest rate|fed|federal reserve|ecb|boe|central bank|'
-        r'gdp|recession|debt ceiling|treasury yield|dollar index|forex|currency|'
-        r'geopolit|military spending|arms|weapons export|drone strike|naval|blockade|'
-        r'china economy|russia economy|iran nuclear|taiwan strait|'
-        r'red sea|gulf|hormuz|bab el-mandeb|black sea)\b',
+        r'wheat|grain|corn|soybean|lithium|uranium|coal|'
+        r'tariff|tariffs|sanction|sanctions|trade war|trade deal|trade deficit|embargo|'
+        r'export|import|supply chain|shipping|freight|suez|strait|pipeline|port|'
+        r'inflation|cpi|ppi|interest rate|rate hike|rate cut|fed|federal reserve|ecb|boe|central bank|'
+        r'gdp|recession|debt ceiling|treasury yield|dollar index|forex|currency|devalue|'
+        r'military|conflict|war|ceasefire|troops|attack|missile|nuclear|'
+        r'china|russia|iran|ukraine|taiwan|saudi|gulf|opec|'
+        r'geopolit|arms|blockade|naval|'
+        r'market|economy|economic|growth|output|budget|deficit|surplus|spending|'
+        r'red sea|hormuz|bab el-mandeb|black sea|south china sea)\b',
         re.I
     )
 
@@ -888,7 +890,9 @@ def _fetch_all_market_news() -> tuple:
 
     # ── Step 4: Return ─────────────────────────────────────────────────────────
     print(f"[NEWS] final geo={len(geo_out)} corp={len(biz_out)}", flush=True)
-    return (geo_out if geo_out else _fetch_geo_news_rss()), biz_out
+    # Never fall back to _fetch_geo_news_rss() — that has no filtering and lets
+    # general news (elections, crime, sport) through. Return what we filtered.
+    return geo_out, biz_out
 
 _MAG7_SYMBOLS = {sym for sym, _ in _MAG7}
 
