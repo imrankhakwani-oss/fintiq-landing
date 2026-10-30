@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-29o -->
+<!-- v2026-10-30a -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -1313,10 +1313,23 @@ function buildEpsTable(data,today,filter){
   let rows=data;
   if(filter){
     const q=filter.toLowerCase();
-    rows=data.filter(e=>e.symbol.toLowerCase().includes(q));
+    rows=data.filter(e=>(e.symbol+' '+(e.name||'')).toLowerCase().includes(q));
   }
+
+  // 30-day lookback for "recently reported"
+  const d30=new Date(today); d30.setDate(d30.getDate()-30);
+  const thirtyAgo=d30.toISOString().slice(0,10);
+
   const todayRows=rows.filter(e=>e.next_date===today);
   const upcoming=rows.filter(e=>e.next_date&&e.next_date>today).slice(0,50);
+  // Recently reported: next_date in the past 30 days, OR next_date is null/missing but latest quarter is within 30 days
+  const recent=rows.filter(e=>{
+    if(e.next_date===today) return false; // already in todayRows
+    if(e.next_date&&e.next_date>today) return false; // already in upcoming
+    const recentPastDate=e.next_date&&e.next_date>=thirtyAgo;
+    const recentQuarter=!e.next_date&&e.quarters&&e.quarters[0]&&e.quarters[0].date>=thirtyAgo.slice(0,7);
+    return recentPastDate||recentQuarter;
+  });
 
   let html='';
   if(todayRows.length){
@@ -1325,6 +1338,10 @@ function buildEpsTable(data,today,filter){
   }
   if(upcoming.length){
     html+=`<div class="eps-table-wrap"><table class="eps-table">${header}<tbody>${upcoming.map(e=>epsRow(e,false)).join('')}</tbody></table></div>`;
+  }
+  if(recent.length){
+    html+=`<div class="eps-today-label" style="color:var(--muted);margin-top:18px">📋 Recently Reported</div>
+    <div class="eps-table-wrap" style="margin-bottom:4px"><table class="eps-table">${header}<tbody>${recent.map(e=>epsRow(e,false)).join('')}</tbody></table></div>`;
   }
   if(!html){
     html=filter
@@ -1471,36 +1488,66 @@ async function fetchJSON(url,timeoutMs){
   }
 }
 
-// ── Fetch & boot (with retry for 202 generating state) ────────────────
+// ── localStorage cache helpers ────────────────────────────────────────
+const _CACHE_KEY='fintiq_bulletin_v2';
+const _CACHE_TTL=25*3600*1000; // 25 hours
+
+function _saveCache(b,md){
+  try{localStorage.setItem(_CACHE_KEY,JSON.stringify({b,md,ts:Date.now()}));}catch(e){}
+}
+function _loadCache(){
+  try{
+    const raw=localStorage.getItem(_CACHE_KEY);
+    if(!raw)return null;
+    const obj=JSON.parse(raw);
+    if(Date.now()-obj.ts>_CACHE_TTL){localStorage.removeItem(_CACHE_KEY);return null;}
+    return obj; // {b, md, ts}
+  }catch(e){return null;}
+}
+
+// ── Fetch & boot ──────────────────────────────────────────────────────
 async function load(){
+  // ── Fast path: render cached bulletin immediately ──────────────────
+  const cached=_loadCache();
+  if(cached&&cached.b&&!cached.b.detail){
+    try{render(cached.b,cached.md);}catch(e){}
+    // Silently refresh in the background
+    const [freshB,freshMd]=await Promise.all([
+      fetchJSON(API+'/bulletin',15000),
+      fetchJSON(API+'/market-data',15000),
+    ]);
+    if(freshB&&!freshB.detail){
+      const isNewer=(freshB.generated_at||'')>(cached.b.generated_at||'');
+      if(isNewer){
+        try{render(freshB,freshMd||cached.md);}catch(e){}
+        _saveCache(freshB,freshMd||cached.md);
+        // Show a subtle "Updated" toast
+        const t=document.createElement('div');
+        t.textContent='✓ Bulletin updated';
+        t.style.cssText='position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac;font-size:11px;font-weight:600;padding:5px 14px;border-radius:20px;z-index:999;transition:opacity .5s';
+        document.body.appendChild(t);
+        setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),600);},2500);
+      }
+    }
+    return;
+  }
+
+  // ── Slow path: no cache, show loading screen ───────────────────────
   const MAX_ATTEMPTS=6, RETRY_MS=10000;
   for(let i=0;i<MAX_ATTEMPTS;i++){
     if(i===0) setLoadMsg('Loading bulletin…');
     else      setLoadMsg(`API is warming up… retry ${i}/${MAX_ATTEMPTS-1}`);
-
-    // Fetch bulletin with 15s timeout; fetch market-data in parallel with its own timeout
-    // (market-data runs independently so a slow yfinance fetch doesn't block bulletin)
-    const [b, md] = await Promise.all([
-      fetchJSON(API+'/bulletin',    15000),
-      fetchJSON(API+'/market-data', 15000),
+    const [b,md]=await Promise.all([
+      fetchJSON(API+'/bulletin',15000),
+      fetchJSON(API+'/market-data',15000),
     ]);
-
-    if(b && !b.detail){
-      // Valid bulletin — render it
-      try{ render(b,md); }
-      catch(err){
-        console.error('render error',err);
-        showPage('Bulletin loaded but a display error occurred. Please reload.');
-      }
+    if(b&&!b.detail){
+      try{render(b,md);}catch(err){showPage('Bulletin loaded but a display error occurred. Please reload.');return;}
+      _saveCache(b,md);
       return;
     }
-
-    // Bulletin not ready yet (202 / null) — wait and retry
-    if(i<MAX_ATTEMPTS-1){
-      await new Promise(r=>setTimeout(r,RETRY_MS));
-    }
+    if(i<MAX_ATTEMPTS-1) await new Promise(r=>setTimeout(r,RETRY_MS));
   }
-  // All retries exhausted
   showPage('Bulletin is being generated — please refresh in about a minute.');
 }
 load();
