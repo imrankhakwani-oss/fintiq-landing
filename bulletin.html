@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<!-- v2026-10-30a -->
+<!-- v2026-10-30b -->
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -55,12 +55,11 @@ nav#mainNav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-i
 .page{padding-top:72px;max-width:1240px;margin:0 auto;padding-left:4%;padding-right:4%}
 @media(max-width:768px){.page{padding-bottom:72px}}
 
-/* ── LOADING ── */
-.loading{position:fixed;inset:0;background:var(--navy);z-index:500;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-.loading-logo{font-size:22px;font-weight:900;color:var(--gold)}
-.loading-bar{width:180px;height:2px;background:rgba(245,158,11,.2);border-radius:1px;overflow:hidden}
-.loading-bar::after{content:'';display:block;height:100%;width:40%;background:var(--gold);border-radius:1px;animation:slide 1.2s ease-in-out infinite}
+/* ── LOADING TOP-BAR ── */
+.loading{position:fixed;top:0;left:0;right:0;z-index:600;height:2px;background:rgba(245,158,11,.2)}
+.loading-bar{height:100%;background:var(--gold);border-radius:1px;animation:slide 1.4s ease-in-out infinite;width:40%}
 @keyframes slide{0%{transform:translateX(-200%)}100%{transform:translateX(400%)}}
+.loading-logo,.loading div:last-child{display:none}
 
 /* ── THE CALL ── */
 .call-strip{background:rgba(245,158,11,.06);border-bottom:1px solid rgba(245,158,11,.15);padding:14px 0;margin-bottom:20px}
@@ -379,11 +378,8 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
 </head>
 <body>
 
-<div class="loading" id="ldr">
-  <div class="loading-logo">Fintiq</div>
-  <div class="loading-bar"></div>
-  <div style="font-size:12px;color:var(--muted)">Loading bulletin…</div>
-</div>
+<!-- slim top-bar shown while fetching; hidden once data lands -->
+<div class="loading" id="ldr"><div class="loading-bar"></div></div>
 
 <!-- ═══ CHART MODAL ═══ -->
 <div class="chart-modal-overlay" id="chartOverlay" onclick="if(event.target===this)closeChart()">
@@ -436,14 +432,14 @@ footer a{color:var(--muted);text-decoration:none}footer a:hover{color:var(--gold
 </nav>
 
 <!-- ═══ PAGE ═══ -->
-<div class="page" id="page" style="display:none">
+<div class="page" id="page">
 
   <!-- THE CALL -->
   <div class="call-strip">
     <div class="call-inner">
       <div class="call-badge">THE CALL</div>
       <div style="flex:1">
-        <div class="call-text" id="callText">—</div>
+        <div class="call-text" id="callText" style="color:var(--muted);font-size:14px">Loading market data…</div>
         <div class="call-meta">
           <span class="session-chip" id="sessionChip">—</span>
           <span id="clockSpan" style="font-family:monospace">—</span>
@@ -1459,7 +1455,7 @@ function render(d,md){
   if(d.generated_at)try{const el=document.getElementById('bulletin-jsonld');const o=JSON.parse(el.textContent);o.datePublished=o.dateModified=d.generated_at;el.textContent=JSON.stringify(o);}catch(e){}
   if(tc.headline)document.title=tc.headline.slice(0,80)+' — Fintiq';
   document.getElementById('ldr').style.display='none';
-  document.getElementById('page').style.display='';
+  document.getElementById('callText').style.cssText=''; // reset placeholder style
   // Load EPS tracker async — doesn't block page render
   loadEpsTracker();
 }
@@ -1467,13 +1463,9 @@ function render(d,md){
 // ── Helpers ───────────────────────────────────────────────────────────
 function showPage(msg){
   document.getElementById('ldr').style.display='none';
-  document.getElementById('page').style.display='';
-  if(msg)document.getElementById('callText').textContent=msg;
+  if(msg){const el=document.getElementById('callText');el.textContent=msg;el.style.cssText='color:var(--muted);font-size:14px';}
 }
-function setLoadMsg(t){
-  const el=document.querySelector('#ldr div:last-child');
-  if(el)el.textContent=t;
-}
+function setLoadMsg(t){/* top-bar has no text slot — no-op */}
 async function fetchJSON(url,timeoutMs){
   const ctrl=new AbortController();
   const id=setTimeout(()=>ctrl.abort(),timeoutMs);
