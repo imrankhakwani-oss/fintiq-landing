@@ -689,12 +689,12 @@ def _fetch_all_market_news() -> tuple:
 
     # Feeds targeted at geo/macro/commodity signals
     GEO_FEEDS = [
-        ("https://feeds.reuters.com/reuters/companyNews",                   "Reuters"),
         ("https://feeds.reuters.com/reuters/topNews",                       "Reuters"),
-        ("https://oilprice.com/rss/main",                                   "OilPrice"),
+        ("https://feeds.reuters.com/reuters/marketsNews",                   "Reuters Markets"),
         ("https://feeds.bbci.co.uk/news/business/rss.xml",                  "BBC Business"),
         ("https://www.cnbc.com/id/10000664/device/rss/rss.html",           "CNBC Economy"),
-        ("https://feeds.reuters.com/reuters/marketsNews",                   "Reuters Markets"),
+        ("https://feeds.bbci.co.uk/news/world/rss.xml",                    "BBC World"),
+        ("https://apnews.com/apf-business.rss",                            "AP Business"),
     ]
 
     # Feeds targeted at corporate / sector / earnings news
