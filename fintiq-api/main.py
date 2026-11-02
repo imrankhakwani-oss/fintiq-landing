@@ -8209,22 +8209,22 @@ def _wiki_tables(url: str):
 
 
 def _fetch_sp500_universe():
+    """Fetch S&P 500 via GitHub-hosted CSV (no Cloudflare blocking)."""
     try:
-        tables = _wiki_tables(
-            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
-        )
-        if not tables:
-            return []
-        df = tables[0]
+        url = ("https://raw.githubusercontent.com/datasets/"
+               "s-and-p-500-companies/main/data/constituents.csv")
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+        import io as _io
+        df = pd.read_csv(_io.StringIO(resp.text))
         result = []
         for _, row in df.iterrows():
             ticker = str(row.get("Symbol", "") or "").strip().replace(".", "-")
-            company = str(row.get("Security", "") or "").strip()
-            sector = str(row.get("GICS Sector", "") or "").strip()
-            industry = str(row.get("GICS Sub-Industry", "") or "").strip()
+            company = str(row.get("Name", "") or "").strip()
+            sector = str(row.get("Sector", "") or "").strip()
             if ticker and company and ticker != "nan":
                 result.append({"ticker": ticker, "company": company,
-                                "sector": sector, "industry": industry,
+                                "sector": sector, "industry": "",
                                 "exchange": "NYSE/NASDAQ", "market": "us",
                                 "country": "United States", "currency": "USD",
                                 "index_member": "sp500"})
@@ -8235,84 +8235,128 @@ def _fetch_sp500_universe():
         return []
 
 
+# NASDAQ 100 hardcoded — updated periodically, changes ~4x/year
+_NASDAQ100_TICKERS = [
+    ("AAPL","Apple","Technology"),("MSFT","Microsoft","Technology"),
+    ("NVDA","NVIDIA","Technology"),("AMZN","Amazon","Consumer Disc."),
+    ("META","Meta Platforms","Communications"),("GOOG","Alphabet C","Communications"),
+    ("GOOGL","Alphabet A","Communications"),("TSLA","Tesla","Consumer Disc."),
+    ("AVGO","Broadcom","Technology"),("COST","Costco","Consumer Staples"),
+    ("NFLX","Netflix","Communications"),("ASML","ASML Holding","Technology"),
+    ("AMD","Advanced Micro Devices","Technology"),("QCOM","Qualcomm","Technology"),
+    ("INTU","Intuit","Technology"),("CSCO","Cisco","Technology"),
+    ("AMGN","Amgen","Healthcare"),("TMUS","T-Mobile","Communications"),
+    ("TXN","Texas Instruments","Technology"),("ISRG","Intuitive Surgical","Healthcare"),
+    ("BKNG","Booking Holdings","Consumer Disc."),("CMCSA","Comcast","Communications"),
+    ("PEP","PepsiCo","Consumer Staples"),("AMAT","Applied Materials","Technology"),
+    ("PANW","Palo Alto Networks","Technology"),("ADI","Analog Devices","Technology"),
+    ("MU","Micron Technology","Technology"),("LRCX","Lam Research","Technology"),
+    ("REGN","Regeneron","Healthcare"),("VRTX","Vertex Pharma","Healthcare"),
+    ("KLAC","KLA Corp","Technology"),("CDNS","Cadence Design","Technology"),
+    ("SNPS","Synopsys","Technology"),("CRWD","CrowdStrike","Technology"),
+    ("MCHP","Microchip Technology","Technology"),("ADP","Automatic Data Processing","Technology"),
+    ("ADBE","Adobe","Technology"),("FTNT","Fortinet","Technology"),
+    ("ABNB","Airbnb","Consumer Disc."),("MELI","MercadoLibre","Consumer Disc."),
+    ("KDP","Keurig Dr Pepper","Consumer Staples"),("MDLZ","Mondelez","Consumer Staples"),
+    ("PAYX","Paychex","Technology"),("CSGP","CoStar Group","Real Estate"),
+    ("CHTR","Charter Communications","Communications"),("ROP","Roper Technologies","Industrials"),
+    ("FAST","Fastenal","Industrials"),("DXCM","DexCom","Healthcare"),
+    ("MNST","Monster Beverage","Consumer Staples"),("GILD","Gilead Sciences","Healthcare"),
+    ("EA","Electronic Arts","Communications"),("IDXX","IDEXX Laboratories","Healthcare"),
+    ("CTAS","Cintas","Industrials"),("ORLY","O'Reilly Auto","Consumer Disc."),
+    ("CEG","Constellation Energy","Utilities"),("PCAR","PACCAR","Industrials"),
+    ("XEL","Xcel Energy","Utilities"),("CPRT","Copart","Industrials"),
+    ("DDOG","Datadog","Technology"),("GEHC","GE HealthCare","Healthcare"),
+    ("KHC","Kraft Heinz","Consumer Staples"),("TEAM","Atlassian","Technology"),
+    ("EXC","Exelon","Utilities"),("DASH","DoorDash","Consumer Disc."),
+    ("ZS","Zscaler","Technology"),("WDAY","Workday","Technology"),
+    ("HON","Honeywell","Industrials"),("ILMN","Illumina","Healthcare"),
+    ("MRNA","Moderna","Healthcare"),("ON","ON Semiconductor","Technology"),
+    ("NXPI","NXP Semiconductors","Technology"),("MDB","MongoDB","Technology"),
+    ("BIIB","Biogen","Healthcare"),("BKR","Baker Hughes","Energy"),
+    ("GFS","GlobalFoundries","Technology"),("ANSS","Ansys","Technology"),
+    ("TTD","Trade Desk","Technology"),("AXON","Axon Enterprise","Industrials"),
+    ("CDW","CDW Corp","Technology"),("ROST","Ross Stores","Consumer Disc."),
+    ("ODFL","Old Dominion Freight","Industrials"),("APP","Applovin","Technology"),
+    ("CSX","CSX Corp","Industrials"),("LULU","Lululemon","Consumer Disc."),
+    ("CCEP","Coca-Cola Europacific","Consumer Staples"),("MAR","Marriott","Consumer Disc."),
+    ("PYPL","PayPal","Financials"),("SBUX","Starbucks","Consumer Disc."),
+    ("TTWO","Take-Two Interactive","Communications"),("PDD","PDD Holdings","Consumer Disc."),
+    ("SMCI","Super Micro Computer","Technology"),("FANG","Diamondback Energy","Energy"),
+    ("WBD","Warner Bros Discovery","Communications"),("AZN","AstraZeneca","Healthcare"),
+    ("INTC","Intel","Technology"),("VRSK","Verisk Analytics","Industrials"),
+]
+
+# FTSE 100 hardcoded with .L suffix for yfinance
+_FTSE100_TICKERS = [
+    ("AAF.L","Airtel Africa","Communications"),("AAL.L","Anglo American","Materials"),
+    ("ABF.L","Associated British Foods","Consumer Staples"),("ADM.L","Admiral Group","Financials"),
+    ("AHT.L","Ashtead Group","Industrials"),("AML.L","Aston Martin","Consumer Disc."),
+    ("ANTO.L","Antofagasta","Materials"),("AUTO.L","Auto Trader","Communications"),
+    ("AV.L","Aviva","Financials"),("AZN.L","AstraZeneca","Healthcare"),
+    ("BA.L","BAE Systems","Industrials"),("BARC.L","Barclays","Financials"),
+    ("BATS.L","British American Tobacco","Consumer Staples"),("BEZ.L","Beazley","Financials"),
+    ("BKG.L","Berkeley Group","Real Estate"),("BNZL.L","Bunzl","Industrials"),
+    ("BP.L","BP","Energy"),("BRBY.L","Burberry","Consumer Disc."),
+    ("BT-A.L","BT Group","Communications"),("CCH.L","Coca-Cola HBC","Consumer Staples"),
+    ("CNA.L","Centrica","Utilities"),("CPG.L","Compass Group","Consumer Disc."),
+    ("CRH.L","CRH","Materials"),("DCC.L","DCC","Industrials"),
+    ("DGE.L","Diageo","Consumer Staples"),("DPLM.L","Diploma","Industrials"),
+    ("EZJ.L","easyJet","Consumer Disc."),("FERG.L","Ferguson","Industrials"),
+    ("FLTR.L","Flutter Entertainment","Consumer Disc."),("FRES.L","Fresnillo","Materials"),
+    ("GLEN.L","Glencore","Materials"),("GSK.L","GSK","Healthcare"),
+    ("HIK.L","Hikma Pharmaceuticals","Healthcare"),("HLN.L","Haleon","Healthcare"),
+    ("HMSO.L","Hammerson","Real Estate"),("HSBA.L","HSBC Holdings","Financials"),
+    ("HWDN.L","Howden Joinery","Industrials"),("IAG.L","IAG","Industrials"),
+    ("IHG.L","InterContinental Hotels","Consumer Disc."),("IMB.L","Imperial Brands","Consumer Staples"),
+    ("INF.L","Informa","Communications"),("ITRK.L","Intertek","Industrials"),
+    ("JD.L","JD Sports","Consumer Disc."),("JMAT.L","Johnson Matthey","Materials"),
+    ("KGF.L","Kingfisher","Consumer Disc."),("LAND.L","Land Securities","Real Estate"),
+    ("LGEN.L","Legal & General","Financials"),("LLOY.L","Lloyds Banking","Financials"),
+    ("LSEG.L","London Stock Exchange Group","Financials"),("MKS.L","Marks & Spencer","Consumer Disc."),
+    ("MNDI.L","Mondi","Materials"),("MNG.L","M&G","Financials"),
+    ("MRO.L","Melrose Industries","Industrials"),("MTO.L","Mitie Group","Industrials"),
+    ("NG.L","National Grid","Utilities"),("NWG.L","NatWest Group","Financials"),
+    ("NXT.L","Next","Consumer Disc."),("OCDO.L","Ocado Group","Consumer Staples"),
+    ("PHNX.L","Phoenix Group","Financials"),("PRU.L","Prudential","Financials"),
+    ("PSH.L","Pershing Square","Financials"),("PSN.L","Persimmon","Real Estate"),
+    ("PSON.L","Pearson","Communications"),("REL.L","RELX","Industrials"),
+    ("RIO.L","Rio Tinto","Materials"),("RKT.L","Reckitt","Consumer Staples"),
+    ("RMV.L","Rightmove","Communications"),("RR.L","Rolls-Royce","Industrials"),
+    ("RS1.L","RS Group","Industrials"),("SBRY.L","Sainsbury's","Consumer Staples"),
+    ("SDR.L","Schroders","Financials"),("SGE.L","Sage Group","Technology"),
+    ("SGRO.L","Segro","Real Estate"),("SHEL.L","Shell","Energy"),
+    ("SMDS.L","DS Smith","Materials"),("SMIN.L","Smiths Group","Industrials"),
+    ("SMT.L","Scottish Mortgage","Financials"),("SN.L","Smith & Nephew","Healthcare"),
+    ("SPX.L","Spirax Group","Industrials"),("STAN.L","Standard Chartered","Financials"),
+    ("SVT.L","Severn Trent","Utilities"),("TSCO.L","Tesco","Consumer Staples"),
+    ("ULVR.L","Unilever","Consumer Staples"),("VODA.L","Vodafone","Communications"),
+    ("WPP.L","WPP","Communications"),("WTB.L","Whitbread","Consumer Disc."),
+]
+
+
 def _fetch_nasdaq100_universe():
-    try:
-        tables = _wiki_tables("https://en.wikipedia.org/wiki/Nasdaq-100")
-        if not tables:
-            return []
-        df = None
-        for t in tables:
-            cols = [str(c).lower() for c in t.columns]
-            if any("ticker" in c or "symbol" in c for c in cols) and len(t) > 50:
-                df = t
-                break
-        if df is None:
-            return []
-        result = []
-        for _, row in df.iterrows():
-            ticker = None
-            for col in df.columns:
-                if "ticker" in str(col).lower() or "symbol" in str(col).lower():
-                    val = str(row[col]).strip().replace(".", "-")
-                    if val and val != "nan":
-                        ticker = val
-                    break
-            company = None
-            for col in df.columns:
-                if "company" in str(col).lower() or "name" in str(col).lower():
-                    company = str(row[col]).strip()
-                    break
-            if ticker and company and ticker != "nan":
-                result.append({"ticker": ticker, "company": company,
-                                "sector": "", "industry": "",
-                                "exchange": "NASDAQ", "market": "us",
-                                "country": "United States", "currency": "USD",
-                                "index_member": "nasdaq100"})
-        print(f"[SCOUT] NASDAQ 100: {len(result)} tickers", flush=True)
-        return result
-    except Exception as e:
-        print(f"[SCOUT] NASDAQ 100 fetch failed: {e}", flush=True)
-        return []
+    result = []
+    for ticker, company, sector in _NASDAQ100_TICKERS:
+        result.append({"ticker": ticker, "company": company,
+                        "sector": sector, "industry": "",
+                        "exchange": "NASDAQ", "market": "us",
+                        "country": "United States", "currency": "USD",
+                        "index_member": "nasdaq100"})
+    print(f"[SCOUT] NASDAQ 100: {len(result)} tickers (hardcoded)", flush=True)
+    return result
 
 
 def _fetch_ftse100_universe():
-    try:
-        tables = _wiki_tables("https://en.wikipedia.org/wiki/FTSE_100_Index")
-        if not tables:
-            return []
-        df = None
-        for t in tables:
-            cols = [str(c).lower() for c in t.columns]
-            if any(k in c for c in cols for k in ["ticker", "epic", "tidm", "symbol"]) and len(t) > 50:
-                df = t
-                break
-        if df is None:
-            return []
-        result = []
-        for _, row in df.iterrows():
-            ticker = None
-            for col in df.columns:
-                if any(k in str(col).lower() for k in ["ticker", "epic", "tidm", "symbol"]):
-                    val = str(row[col]).strip()
-                    if val and val != "nan" and len(val) <= 6:
-                        ticker = val + ".L"
-                    break
-            company = None
-            for col in df.columns:
-                if any(k in str(col).lower() for k in ["company", "name", "security"]):
-                    company = str(row[col]).strip()
-                    break
-            if ticker and company and company != "nan":
-                result.append({"ticker": ticker, "company": company,
-                                "sector": "", "industry": "",
-                                "exchange": "LSE", "market": "uk",
-                                "country": "United Kingdom", "currency": "GBP",
-                                "index_member": "ftse100"})
-        print(f"[SCOUT] FTSE 100: {len(result)} tickers", flush=True)
-        return result
-    except Exception as e:
-        print(f"[SCOUT] FTSE 100 fetch failed: {e}", flush=True)
-        return []
+    result = []
+    for ticker, company, sector in _FTSE100_TICKERS:
+        result.append({"ticker": ticker, "company": company,
+                        "sector": sector, "industry": "",
+                        "exchange": "LSE", "market": "uk",
+                        "country": "United Kingdom", "currency": "GBP",
+                        "index_member": "ftse100"})
+    print(f"[SCOUT] FTSE 100: {len(result)} tickers (hardcoded)", flush=True)
+    return result
 
 
 def _build_scout_universe():
