@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fintiq Scout — AI Stock Scanner | Find Stocks That Match Your Thesis</title>
+<meta name="description" content="Tell Fintiq Scout what you're looking for in plain English. It scans 900+ stocks across S&P 500, NASDAQ 100, FTSE 100 and more to find your best matches — no jargon, no spreadsheets.">
+<meta name="robots" content="index, follow">
+<meta name="author" content="Fintiq">
+<link rel="canonical" href="https://www.fintiq.uk/ai-stock-scanner.html" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://www.fintiq.uk/ai-stock-scanner.html" />
+<meta property="og:title" content="Fintiq Scout — AI Stock Scanner" />
+<meta property="og:description" content="Describe what you want in plain English. Scout scans 900+ stocks and finds your best matches." />
+<meta property="og:image" content="https://www.fintiq.uk/og-image.png" />
+<meta property="og:site_name" content="Fintiq" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@fintiq" />
+<meta name="twitter:title" content="Fintiq Scout — AI Stock Scanner" />
+<meta name="twitter:description" content="Describe what you want in plain English. Scout scans 900+ stocks and finds your best matches." />
+<meta name="twitter:image" content="https://www.fintiq.uk/og-image.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050f1c;--card:#0d1f35;--card2:#0a1929;--border:#1e3a5f;
+  --gold:#f5a623;--gold2:rgba(245,166,35,0.10);
+  --text:#e2e8f0;--muted:#64748b;--dim:#94a3b8;
+  --green:#10b981;--red:#ef4444;--blue:#38bdf8;--purple:#818cf8;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.6;min-height:100vh}
+a{color:var(--gold);text-decoration:none}
+
+/* ── Nav ── */
+.nav{background:rgba(8,18,32,0.96);border-bottom:1px solid var(--border);padding:0 5%;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.nav-logo{font-weight:900;font-size:1.45rem;color:var(--gold);letter-spacing:-0.5px;display:flex;align-items:center;gap:8px;text-decoration:none}
+.nav-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;background:var(--gold2);border:1px solid rgba(245,166,35,0.3);color:var(--gold);padding:2px 7px;border-radius:4px;text-transform:uppercase}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{color:var(--muted);font-size:0.9rem;text-decoration:none;transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--gold)}
+
+/* ── Page ── */
+.page{max-width:780px;margin:0 auto;padding:48px 20px 80px}
+
+/* ── H1 for SEO ── */
+.page-h1{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:32px}
+
+/* ── State containers ── */
+#state-input,#state-clarify,#state-loading,#state-results{display:none}
+#state-input.active,#state-clarify.active,#state-loading.active,#state-results.active{display:block}
+
+/* ── Input state ── */
+.scout-hero{text-align:center;margin-bottom:40px}
+.scout-title{font-size:2rem;font-weight:900;letter-spacing:-0.04em;line-height:1.2;margin-bottom:12px}
+.scout-title .hl{color:var(--gold)}
+.scout-sub{color:var(--dim);font-size:0.95rem;max-width:520px;margin:0 auto}
+.scout-coverage{display:flex;justify-content:center;gap:16px;margin-top:16px;flex-wrap:wrap}
+.cov-pill{font-size:0.7rem;color:var(--muted);background:rgba(30,58,95,0.4);border:1px solid var(--border);padding:4px 10px;border-radius:20px}
+
+.thesis-box{background:var(--card);border:2px solid var(--border);border-radius:14px;padding:20px;transition:border-color .2s;margin-bottom:16px}
+.thesis-box:focus-within{border-color:var(--gold)}
+.thesis-textarea{width:100%;background:transparent;border:none;outline:none;color:var(--text);font-family:var(--font);font-size:1rem;line-height:1.6;resize:none;min-height:80px;max-height:200px}
+.thesis-textarea::placeholder{color:var(--muted)}
+.thesis-footer{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.thesis-counter{font-size:0.75rem;color:var(--muted)}
+.scout-btn{background:var(--gold);color:#050f1c;border:none;border-radius:10px;padding:12px 28px;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:var(--font);transition:opacity .2s;display:flex;align-items:center;gap:8px}
+.scout-btn:hover{opacity:0.9}
+.scout-btn:disabled{opacity:0.4;cursor:not-allowed}
+
+.examples-label{font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px}
+.examples-grid{display:flex;flex-wrap:wrap;gap:8px}
+.example-chip{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;font-size:0.8rem;color:var(--dim);cursor:pointer;transition:all .2s;text-align:left}
+.example-chip:hover{border-color:var(--gold);color:var(--gold);background:var(--gold2)}
+
+/* ── Clarify state ── */
+.clarify-thesis{background:var(--card2);border-left:3px solid var(--gold);padding:14px 18px;border-radius:0 8px 8px 0;margin-bottom:28px;font-size:0.9rem;color:var(--dim);font-style:italic}
+.clarify-q{margin-bottom:24px}
+.clarify-q-text{font-size:1rem;font-weight:700;margin-bottom:14px;line-height:1.4}
+.clarify-chips{display:flex;flex-wrap:wrap;gap:8px}
+.clarify-chip{background:var(--card2);border:1.5px solid var(--border);border-radius:10px;padding:10px 18px;font-size:0.85rem;color:var(--dim);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:8px}
+.clarify-chip:hover{border-color:var(--gold);color:var(--text)}
+.clarify-chip.selected{background:var(--gold2);border-color:var(--gold);color:var(--gold);font-weight:600}
+.clarify-chip .ce{font-size:1.1rem}
+.clarify-actions{display:flex;gap:12px;margin-top:28px;align-items:center}
+.clarify-skip{background:transparent;border:1.5px solid var(--border);border-radius:10px;padding:10px 20px;font-size:0.85rem;color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .2s}
+.clarify-skip:hover{border-color:var(--dim);color:var(--text)}
+
+/* ── Loading state ── */
+.loading-wrap{text-align:center;padding:80px 20px}
+.loading-icon{font-size:2.5rem;margin-bottom:20px;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.loading-steps{display:flex;flex-direction:column;gap:8px;max-width:300px;margin:0 auto}
+.loading-step{font-size:0.85rem;color:var(--muted);display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;transition:all .4s}
+.loading-step.active{color:var(--text);background:rgba(30,58,95,0.3)}
+.loading-step.done{color:var(--green)}
+.loading-step .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.loading-step.active .dot{background:var(--gold);animation:blink 1s infinite}
+.loading-step.done .dot{background:var(--green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── Results state ── */
+.results-header{margin-bottom:28px}
+.results-strategy{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.strat-emoji{font-size:2rem}
+.strat-label{font-size:1.4rem;font-weight:900;letter-spacing:-0.02em}
+.strat-count{font-size:0.8rem;color:var(--muted);margin-top:2px}
+.criteria-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.criteria-pill{background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:0.78rem;color:var(--dim);display:flex;align-items:center;gap:6px}
+.criteria-pill::before{content:"✓";color:var(--green);font-size:0.7rem}
+.results-notice{font-size:0.75rem;color:var(--muted);background:rgba(30,58,95,0.3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.results-notice::before{content:"ℹ";font-size:0.85rem;flex-shrink:0}
+
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;transition:border-color .2s}
+.result-card:hover{border-color:rgba(245,166,35,0.4)}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px}
+.card-co{flex:1;min-width:0}
+.card-company{font-size:1rem;font-weight:800;line-height:1.2}
+.card-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
+.card-ticker{font-size:0.72rem;color:var(--muted);font-weight:700;letter-spacing:0.07em;background:rgba(30,58,95,0.5);padding:2px 8px;border-radius:4px;text-transform:uppercase}
+.card-market{font-size:0.65rem;padding:2px 7px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
+.card-market.us{background:rgba(56,189,248,0.12);color:var(--blue)}
+.card-market.uk{background:rgba(129,140,248,0.12);color:var(--purple)}
+.card-market.eu{background:rgba(16,185,129,0.12);color:var(--green)}
+.card-market.global{background:rgba(245,166,35,0.12);color:var(--gold)}
+.card-sector{font-size:0.72rem;color:var(--muted)}
+
+.card-why{font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.5}
+.card-now{font-size:0.82rem;color:var(--dim);margin-bottom:14px;line-height:1.5}
+
+.card-metrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.metric-chip{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;text-align:center;min-width:72px}
+.metric-chip .mc-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:2px}
+.metric-chip .mc-val{font-size:0.9rem;font-weight:700;color:var(--text)}
+.metric-chip .mc-unit{font-size:0.65rem;color:var(--muted)}
+.metric-chip.income .mc-val{color:var(--green)}
+.metric-chip.growth .mc-val{color:var(--blue)}
+.metric-chip.analyst .mc-val{color:var(--purple)}
+
+.deep-dive-btn{display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:8px 18px;font-weight:700;font-size:0.82rem;cursor:pointer;font-family:var(--font);text-decoration:none;transition:opacity .2s}
+.deep-dive-btn:hover{opacity:0.9}
+.deep-dive-btn .dd-arrow{font-size:0.9rem}
+
+.results-reset{margin-top:32px;text-align:center}
+.reset-btn{background:transparent;border:1.5px solid var(--border);border-radius:10px;padding:10px 24px;font-size:0.85rem;color:var(--muted);cursor:pointer;font-family:var(--font);transition:all .2s}
+.reset-btn:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ── Error ── */
+.error-box{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:16px;margin-top:12px;font-size:0.85rem;color:#fca5a5}
+
+/* ── Footer ── */
+.footer{border-top:1px solid var(--border);padding:32px 5%;text-align:center;color:var(--muted);font-size:0.78rem}
+.footer a{color:var(--muted)}
+.footer a:hover{color:var(--gold)}
+
+@media(max-width:600px){
+  .scout-title{font-size:1.5rem}
+  .nav-links{display:none}
+  .page{padding:32px 16px 60px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ NAV ═══ -->
+<nav class="nav">
+  <a class="nav-logo" href="/index.html">
+    Fintiq
+    <span class="nav-badge">Beta</span>
+  </a>
+  <div class="nav-links">
+    <a href="/bulletin.html">Bulletin</a>
+    <a href="/tools.html" class="active">Tools</a>
+    <a href="/deep-dive.html">Deep Dive</a>
+  </div>
+</nav>
+
+<!-- ═══ PAGE ═══ -->
+<div class="page">
+  <h1 class="page-h1">Fintiq Scout — AI Stock Scanner · S&amp;P 500 · NASDAQ 100 · FTSE 100 · Euro Stoxx 50</h1>
+
+  <!-- ── State: Input ── -->
+  <div id="state-input" class="active">
+
+    <div class="scout-hero">
+      <div class="scout-title">Find stocks that match<br><span class="hl">your thinking</span></div>
+      <div class="scout-sub">Describe what you're looking for in plain English. Scout scans 900+ stocks and finds the best matches — no jargon, no spreadsheets.</div>
+      <div class="scout-coverage">
+        <span class="cov-pill">S&amp;P 500</span>
+        <span class="cov-pill">NASDAQ 100</span>
+        <span class="cov-pill">Dow Jones 30</span>
+        <span class="cov-pill">FTSE 100</span>
+        <span class="cov-pill">Euro Stoxx 50</span>
+        <span class="cov-pill">Major ADRs</span>
+      </div>
+    </div>
+
+    <div class="thesis-box" id="thesis-box">
+      <textarea
+        id="thesis-input"
+        class="thesis-textarea"
+        placeholder="e.g. I want a safe dividend stock that won't crash in a recession…&#10;or: Companies riding the AI infrastructure wave…&#10;or: Stocks that benefit from a stronger dollar…"
+        rows="4"
+        maxlength="500"
+      ></textarea>
+      <div class="thesis-footer">
+        <span class="thesis-counter" id="thesis-counter">0 / 500</span>
+        <button class="scout-btn" id="scout-btn" disabled onclick="startScout()">
+          Scout it <span>→</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="input-error" style="display:none"></div>
+
+    <div class="examples-label">Or try one of these</div>
+    <div class="examples-grid">
+      <div class="example-chip" onclick="setExample(this)">Safe dividend stocks that survive a recession</div>
+      <div class="example-chip" onclick="setExample(this)">Companies riding the AI infrastructure wave</div>
+      <div class="example-chip" onclick="setExample(this)">Undervalued European stocks with strong cashflow</div>
+      <div class="example-chip" onclick="setExample(this)">UK companies benefiting from a weaker pound</div>
+      <div class="example-chip" onclick="setExample(this)">Defence companies as global tensions rise</div>
+      <div class="example-chip" onclick="setExample(this)">High-growth healthcare stocks under the radar</div>
+      <div class="example-chip" onclick="setExample(this)">Companies least exposed to Chinese tariff risk</div>
+      <div class="example-chip" onclick="setExample(this)">Renewable energy stocks for the long term</div>
+    </div>
+
+  </div><!-- /state-input -->
+
+  <!-- ── State: Clarify ── -->
+  <div id="state-clarify">
+    <div class="clarify-thesis" id="clarify-thesis-display"></div>
+
+    <div id="clarify-q1" class="clarify-q" style="display:none">
+      <div class="clarify-q-text" id="clarify-q1-text"></div>
+      <div class="clarify-chips" id="clarify-chips-1"></div>
+    </div>
+
+    <div id="clarify-q2" class="clarify-q" style="display:none">
+      <div class="clarify-q-text" id="clarify-q2-text"></div>
+      <div class="clarify-chips" id="clarify-chips-2"></div>
+    </div>
+
+    <div class="clarify-actions">
+      <button class="scout-btn" onclick="runScan()">Find my stocks →</button>
+      <button class="clarify-skip" onclick="runScan()">Skip &amp; Scan</button>
+    </div>
+  </div><!-- /state-clarify -->
+
+  <!-- ── State: Loading ── -->
+  <div id="state-loading">
+    <div class="loading-wrap">
+      <div class="loading-icon">🔭</div>
+      <div class="loading-steps">
+        <div class="loading-step active" id="ls-1"><span class="dot"></span>Reading your thesis…</div>
+        <div class="loading-step" id="ls-2"><span class="dot"></span>Scanning 900+ stocks…</div>
+        <div class="loading-step" id="ls-3"><span class="dot"></span>Selecting best matches…</div>
+      </div>
+    </div>
+  </div><!-- /state-loading -->
+
+  <!-- ── State: Results ── -->
+  <div id="state-results">
+    <div class="results-header">
+      <div class="results-strategy">
+        <span class="strat-emoji" id="res-emoji">🔍</span>
+        <div>
+          <div class="strat-label" id="res-label"></div>
+          <div class="strat-count" id="res-count"></div>
+        </div>
+      </div>
+      <div class="criteria-pills" id="res-criteria"></div>
+      <div class="results-notice" id="res-notice"></div>
+    </div>
+
+    <div id="res-cards"></div>
+
+    <div class="results-reset">
+      <button class="reset-btn" onclick="resetToInput()">← Try a different search</button>
+    </div>
+  </div><!-- /state-results -->
+
+</div><!-- /page -->
+
+<footer class="footer">
+  <a href="/index.html">Fintiq</a> &nbsp;·&nbsp;
+  <a href="/tools.html">Tools</a> &nbsp;·&nbsp;
+  <a href="/bulletin.html">Daily Bulletin</a> &nbsp;·&nbsp;
+  <a href="/deep-dive.html">Deep Dive</a>
+  <br><br>
+  Fundamentals updated weekly. This is not investment advice.
+  Always do your own research before making any investment decision.
+</footer>
+
+<script>
+const API = "https://api.fintiq.uk";
+
+// ── State ────────────────────────────────────────────────────────────────────
+let currentThesis = "";
+let clarifyData = null;
+let selectedAnswers = {};   // { q1: "value", q2: "value" }
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function showState(id) {
+  ["state-input","state-clarify","state-loading","state-results"].forEach(s => {
+    document.getElementById(s).classList.remove("active");
+  });
+  document.getElementById(id).classList.add("active");
+}
+
+function setExample(el) {
+  const ta = document.getElementById("thesis-input");
+  ta.value = el.textContent.trim();
+  ta.dispatchEvent(new Event("input"));
+  ta.focus();
+}
+
+// ── Input state ───────────────────────────────────────────────────────────────
+const ta = document.getElementById("thesis-input");
+const btn = document.getElementById("scout-btn");
+const counter = document.getElementById("thesis-counter");
+
+ta.addEventListener("input", () => {
+  const len = ta.value.trim().length;
+  counter.textContent = `${ta.value.length} / 500`;
+  btn.disabled = len < 5;
+  // Auto-resize
+  ta.style.height = "auto";
+  ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+});
+
+ta.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (!btn.disabled) startScout();
+  }
+});
+
+async function startScout() {
+  const thesis = ta.value.trim();
+  if (thesis.length < 5) return;
+  currentThesis = thesis;
+  selectedAnswers = {};
+
+  // Hide input errors
+  const errEl = document.getElementById("input-error");
+  errEl.style.display = "none";
+
+  showState("state-loading");
+  setLoadingStep(1);
+
+  try {
+    const res = await fetch(`${API}/scout/clarify`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({thesis})
+    });
+
+    if (!res.ok) throw new Error("Clarify call failed");
+    const data = await res.json();
+
+    if (data.needs_clarification) {
+      clarifyData = data;
+      showClarify(thesis, data);
+    } else {
+      // No clarification needed — go straight to scan
+      await runScan();
+    }
+  } catch (err) {
+    // On clarify failure, skip straight to scan
+    await runScan();
+  }
+}
+
+// ── Clarify state ─────────────────────────────────────────────────────────────
+function showClarify(thesis, data) {
+  document.getElementById("clarify-thesis-display").textContent = `"${thesis}"`;
+
+  const q1El = document.getElementById("clarify-q1");
+  const q2El = document.getElementById("clarify-q2");
+  q1El.style.display = "none";
+  q2El.style.display = "none";
+
+  if (data.question1 && data.options1) {
+    document.getElementById("clarify-q1-text").textContent = data.question1;
+    renderChips("clarify-chips-1", data.options1, "q1");
+    q1El.style.display = "block";
+  }
+  if (data.question2 && data.options2) {
+    document.getElementById("clarify-q2-text").textContent = data.question2;
+    renderChips("clarify-chips-2", data.options2, "q2");
+    q2El.style.display = "block";
+  }
+
+  showState("state-clarify");
+}
+
+function renderChips(containerId, options, key) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+  options.forEach(opt => {
+    const chip = document.createElement("div");
+    chip.className = "clarify-chip";
+    chip.innerHTML = opt.emoji
+      ? `<span class="ce">${opt.emoji}</span>${opt.label}`
+      : opt.label;
+    chip.dataset.value = opt.value || opt.label;
+    chip.addEventListener("click", () => {
+      // Toggle selection within this group
+      container.querySelectorAll(".clarify-chip").forEach(c => c.classList.remove("selected"));
+      chip.classList.add("selected");
+      selectedAnswers[key] = chip.dataset.value;
+    });
+    container.appendChild(chip);
+  });
+}
+
+// ── Scan ──────────────────────────────────────────────────────────────────────
+async function runScan() {
+  showState("state-loading");
+  setLoadingStep(1);
+
+  // Build clarifications object from selected answers
+  const clarifications = {};
+  if (selectedAnswers.q1 && clarifyData?.options1) {
+    // Map q1 key based on question type
+    const qText = (clarifyData.question1 || "").toLowerCase();
+    if (qText.includes("market") || qText.includes("country") || qText.includes("region")) {
+      clarifications.market = selectedAnswers.q1;
+    } else if (qText.includes("horizon") || qText.includes("term") || qText.includes("hold")) {
+      clarifications.horizon = selectedAnswers.q1;
+    } else if (qText.includes("direction") || qText.includes("benefit") || qText.includes("avoid")) {
+      clarifications.direction = selectedAnswers.q1;
+    } else if (qText.includes("size") || qText.includes("large") || qText.includes("small")) {
+      clarifications.size = selectedAnswers.q1;
+    } else {
+      clarifications.q1 = selectedAnswers.q1;
+    }
+  }
+  if (selectedAnswers.q2 && clarifyData?.options2) {
+    const qText = (clarifyData.question2 || "").toLowerCase();
+    if (qText.includes("horizon") || qText.includes("term")) {
+      clarifications.horizon = selectedAnswers.q2;
+    } else {
+      clarifications.q2 = selectedAnswers.q2;
+    }
+  }
+
+  setTimeout(() => setLoadingStep(2), 800);
+  setTimeout(() => setLoadingStep(3), 2000);
+
+  try {
+    const res = await fetch(`${API}/scout/scan`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({thesis: currentThesis, clarifications})
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Scan failed");
+    }
+
+    const data = await res.json();
+
+    if (data.error === "data_loading") {
+      showError(data.message);
+      return;
+    }
+
+    renderResults(data);
+
+  } catch (err) {
+    showError("Something went wrong — please try again. " + (err.message || ""));
+  }
+}
+
+function setLoadingStep(n) {
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById(`ls-${i}`);
+    el.classList.remove("active", "done");
+    if (i < n) el.classList.add("done");
+    else if (i === n) el.classList.add("active");
+  }
+}
+
+// ── Results ───────────────────────────────────────────────────────────────────
+function renderResults(data) {
+  document.getElementById("res-emoji").textContent = data.strategy_emoji || "🔍";
+  document.getElementById("res-label").textContent = data.strategy_label || "Custom Screen";
+  document.getElementById("res-count").textContent =
+    data.total_matched > 0
+      ? `${data.total_matched} stocks matched · showing top ${data.results.length}`
+      : "No stocks matched — try a broader description";
+
+  // Criteria pills
+  const criteriaEl = document.getElementById("res-criteria");
+  criteriaEl.innerHTML = "";
+  (data.key_criteria || []).forEach(c => {
+    const pill = document.createElement("div");
+    pill.className = "criteria-pill";
+    pill.textContent = c;
+    criteriaEl.appendChild(pill);
+  });
+
+  // Notice
+  document.getElementById("res-notice").textContent =
+    data.data_notice || "Fundamentals updated weekly — use Deep Dive for latest earnings data.";
+
+  // Cards
+  const cardsEl = document.getElementById("res-cards");
+  cardsEl.innerHTML = "";
+
+  if (!data.results || data.results.length === 0) {
+    cardsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">
+      No strong matches found. Try describing your idea differently — for example, add a sector or mention a specific theme.
+    </div>`;
+  } else {
+    data.results.forEach(r => {
+      cardsEl.appendChild(buildCard(r));
+    });
+  }
+
+  showState("state-results");
+}
+
+function buildCard(r) {
+  const card = document.createElement("div");
+  card.className = "result-card";
+
+  const marketClass = r.market || "global";
+  const marketLabel = {us:"US",uk:"UK",eu:"EU",global:"Global"}[r.market] || (r.market || "").toUpperCase();
+
+  const metricsHTML = (r.metrics || []).map(m => `
+    <div class="metric-chip ${m.category || ''}">
+      <div class="mc-label">${m.label}</div>
+      <div class="mc-val">${m.value}${m.unit || ''}</div>
+    </div>
+  `).join("");
+
+  const indexBadge = r.index_member
+    ? r.index_member.split(",").map(ix => ix.trim().toUpperCase().replace("SP500","S&P").replace("NASDAQ100","NDQ").replace("DJ30","DOW").replace("FTSE100","FTSE").replace("STOXX50","ESX").replace("ADR","ADR")).slice(0,2).join(" · ")
+    : "";
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-co">
+        <div class="card-company">${escHtml(r.company || r.ticker)}</div>
+        <div class="card-meta">
+          <span class="card-ticker">${escHtml(r.ticker)}</span>
+          <span class="card-market ${marketClass}">${marketLabel}</span>
+          ${r.sector ? `<span class="card-sector">${escHtml(r.sector)}</span>` : ""}
+          ${indexBadge ? `<span class="card-sector" style="color:var(--muted);opacity:0.7">${indexBadge}</span>` : ""}
+        </div>
+      </div>
+    </div>
+    <div class="card-why">${escHtml(r.why_it_fits || "")}</div>
+    <div class="card-now">${escHtml(r.interesting_now || "")}</div>
+    ${metricsHTML ? `<div class="card-metrics">${metricsHTML}</div>` : ""}
+    <a class="deep-dive-btn" href="${r.deep_dive_url || '/deep-dive.html?ticker=' + r.ticker}" target="_blank">
+      Deep Dive <span class="dd-arrow">↗</span>
+    </a>
+  `;
+  return card;
+}
+
+function escHtml(str) {
+  return (str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function showError(msg) {
+  const errEl = document.getElementById("input-error");
+  errEl.innerHTML = `<div class="error-box">${escHtml(msg)}</div>`;
+  errEl.style.display = "block";
+  showState("state-input");
+}
+
+function resetToInput() {
+  ta.value = "";
+  ta.style.height = "auto";
+  counter.textContent = "0 / 500";
+  btn.disabled = true;
+  currentThesis = "";
+  clarifyData = null;
+  selectedAnswers = {};
+  showState("state-input");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+</script>
+
+</body>
+</html>

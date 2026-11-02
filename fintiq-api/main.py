@@ -8017,3 +8017,1110 @@ async def portfolio_mark_sold(item_id: int, request: Request):
     conn.commit()
     conn.close()
     return {"ok": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# FINTIQ SCOUT — AI Stock Scanner
+# Universe: S&P 500 + NASDAQ 100 + DJ30 + FTSE 100 + Euro Stoxx 50 + ADRs
+# Refresh: Daily news  ·  Weekly fundamentals  ·  Monthly AI tagging
+# ══════════════════════════════════════════════════════════════════════════════
+import re as _re_scout
+import sqlite3 as _sqlite3
+
+# ── Scout DB ──────────────────────────────────────────────────────────────────
+_SCOUT_DB_PATH = "/data/scout.db" if os.path.isdir("/data") else "/tmp/scout.db"
+
+
+def _scout_db():
+    conn = _sqlite3.connect(_SCOUT_DB_PATH, timeout=30)
+    conn.row_factory = _sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn
+
+
+def _init_scout_db():
+    conn = _scout_db()
+    conn.executescript("""
+    CREATE TABLE IF NOT EXISTS scout_universe (
+        ticker TEXT PRIMARY KEY,
+        company TEXT,
+        sector TEXT,
+        industry TEXT,
+        exchange TEXT,
+        market TEXT,
+        country TEXT,
+        currency TEXT,
+        index_member TEXT,
+        active INTEGER DEFAULT 1,
+        added_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS scout_fundamentals (
+        ticker TEXT PRIMARY KEY,
+        company TEXT,
+        sector TEXT,
+        industry TEXT,
+        market TEXT,
+        country TEXT,
+        currency TEXT,
+        pe REAL, pb REAL, ps REAL, ev_ebitda REAL,
+        revenue_growth REAL, earnings_growth REAL,
+        gross_margin REAL, operating_margin REAL, net_margin REAL,
+        roe REAL, roic REAL,
+        debt_equity REAL, current_ratio REAL,
+        dividend_yield REAL, payout_ratio REAL,
+        market_cap_usd REAL, beta REAL, return_52w REAL,
+        analyst_rec TEXT, analyst_target_upside REAL,
+        updated_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS scout_profiles (
+        ticker TEXT PRIMARY KEY,
+        company TEXT,
+        description TEXT,
+        ai_score INTEGER DEFAULT 0,
+        defence_score INTEGER DEFAULT 0,
+        energy_score INTEGER DEFAULT 0,
+        healthcare_score INTEGER DEFAULT 0,
+        fintech_score INTEGER DEFAULT 0,
+        ev_renewable_score INTEGER DEFAULT 0,
+        cybersecurity_score INTEGER DEFAULT 0,
+        us_revenue_pct INTEGER DEFAULT 50,
+        china_revenue_pct INTEGER DEFAULT 0,
+        china_supply_chain_score INTEGER DEFAULT 0,
+        dollar_sensitivity INTEGER DEFAULT 0,
+        keywords TEXT,
+        primary_customers TEXT,
+        tagged_at TEXT
+    );
+    CREATE TABLE IF NOT EXISTS scout_news (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ticker TEXT,
+        headline TEXT,
+        url TEXT,
+        published_at TEXT,
+        keywords TEXT,
+        fetched_at TEXT,
+        UNIQUE(ticker, headline)
+    );
+    """)
+    conn.commit()
+    conn.close()
+
+
+# ── Universe data ─────────────────────────────────────────────────────────────
+_SCOUT_ADR = [
+    ("ASML", "ASML Holding", "Technology", "Semiconductors", "NASDAQ", "eu", "Netherlands", "USD"),
+    ("TSM", "Taiwan Semiconductor", "Technology", "Semiconductors", "NYSE", "global", "Taiwan", "USD"),
+    ("SAP", "SAP SE", "Technology", "Software", "NYSE", "eu", "Germany", "USD"),
+    ("NVO", "Novo Nordisk", "Healthcare", "Pharmaceuticals", "NYSE", "eu", "Denmark", "USD"),
+    ("AZN", "AstraZeneca", "Healthcare", "Pharmaceuticals", "NASDAQ", "global", "UK", "USD"),
+    ("NVS", "Novartis AG", "Healthcare", "Pharmaceuticals", "NYSE", "eu", "Switzerland", "USD"),
+    ("SNY", "Sanofi", "Healthcare", "Pharmaceuticals", "NASDAQ", "eu", "France", "USD"),
+    ("UL", "Unilever", "Consumer Staples", "Household Products", "NYSE", "global", "UK", "USD"),
+    ("DEO", "Diageo", "Consumer Staples", "Beverages", "NYSE", "global", "UK", "USD"),
+    ("BTI", "British American Tobacco", "Consumer Staples", "Tobacco", "NYSE", "global", "UK", "USD"),
+    ("BP", "BP p.l.c.", "Energy", "Oil & Gas", "NYSE", "global", "UK", "USD"),
+    ("SHEL", "Shell plc", "Energy", "Oil & Gas", "NYSE", "global", "UK", "USD"),
+    ("TTE", "TotalEnergies", "Energy", "Oil & Gas", "NYSE", "eu", "France", "USD"),
+    ("RIO", "Rio Tinto", "Materials", "Mining", "NYSE", "global", "Australia/UK", "USD"),
+    ("BHP", "BHP Group", "Materials", "Mining", "NYSE", "global", "Australia", "USD"),
+    ("VALE", "Vale S.A.", "Materials", "Mining", "NYSE", "global", "Brazil", "USD"),
+    ("HSBC", "HSBC Holdings", "Financials", "Banks", "NYSE", "global", "UK", "USD"),
+    ("SAN", "Banco Santander", "Financials", "Banks", "NYSE", "eu", "Spain", "USD"),
+    ("ING", "ING Groep", "Financials", "Banks", "NYSE", "eu", "Netherlands", "USD"),
+    ("SMFG", "Sumitomo Mitsui Financial", "Financials", "Banks", "NYSE", "global", "Japan", "USD"),
+    ("MUFG", "Mitsubishi UFJ Financial", "Financials", "Banks", "NYSE", "global", "Japan", "USD"),
+    ("BABA", "Alibaba Group", "Consumer Disc.", "Internet Retail", "NYSE", "global", "China", "USD"),
+    ("JD", "JD.com", "Consumer Disc.", "Internet Retail", "NASDAQ", "global", "China", "USD"),
+    ("TM", "Toyota Motor", "Consumer Disc.", "Auto Manufacturers", "NYSE", "global", "Japan", "USD"),
+    ("HMC", "Honda Motor", "Consumer Disc.", "Auto Manufacturers", "NYSE", "global", "Japan", "USD"),
+    ("SONY", "Sony Group", "Consumer Disc.", "Consumer Electronics", "NYSE", "global", "Japan", "USD"),
+    ("LVMUY", "LVMH", "Consumer Disc.", "Luxury Goods", "OTC", "eu", "France", "USD"),
+    ("MC", "LVMH (Paris)", "Consumer Disc.", "Luxury Goods", "PA", "eu", "France", "EUR"),
+    ("SIEGY", "Siemens AG", "Industrials", "Industrial Machinery", "OTC", "eu", "Germany", "USD"),
+    ("RHHBY", "Roche Holding", "Healthcare", "Pharmaceuticals", "OTC", "eu", "Switzerland", "USD"),
+]
+
+_SCOUT_STOXX50 = [
+    ("ABI.BR","AB InBev","Consumer Staples","Belgium","EUR"),
+    ("ADYEN.AS","Adyen","Technology","Netherlands","EUR"),
+    ("AI.PA","Air Liquide","Materials","France","EUR"),
+    ("AIR.PA","Airbus","Industrials","France","EUR"),
+    ("ALV.DE","Allianz","Financials","Germany","EUR"),
+    ("ASML.AS","ASML Holding","Technology","Netherlands","EUR"),
+    ("BAS.DE","BASF","Materials","Germany","EUR"),
+    ("BAYN.DE","Bayer","Healthcare","Germany","EUR"),
+    ("BBVA.MC","BBVA","Financials","Spain","EUR"),
+    ("BMW.DE","BMW","Consumer Disc.","Germany","EUR"),
+    ("BNP.PA","BNP Paribas","Financials","France","EUR"),
+    ("DBK.DE","Deutsche Bank","Financials","Germany","EUR"),
+    ("DTE.DE","Deutsche Telekom","Communications","Germany","EUR"),
+    ("ENEL.MI","Enel","Utilities","Italy","EUR"),
+    ("ENI.MI","Eni","Energy","Italy","EUR"),
+    ("EL.PA","EssilorLuxottica","Healthcare","France","EUR"),
+    ("IBE.MC","Iberdrola","Utilities","Spain","EUR"),
+    ("IFX.DE","Infineon Technologies","Technology","Germany","EUR"),
+    ("ITX.MC","Inditex","Consumer Disc.","Spain","EUR"),
+    ("KER.PA","Kering","Consumer Disc.","France","EUR"),
+    ("LIN.DE","Linde","Materials","Germany","EUR"),
+    ("MC.PA","LVMH","Consumer Disc.","France","EUR"),
+    ("MBG.DE","Mercedes-Benz","Consumer Disc.","Germany","EUR"),
+    ("MUV2.DE","Munich Re","Financials","Germany","EUR"),
+    ("NOKIA.HE","Nokia","Technology","Finland","EUR"),
+    ("OR.PA","L'Oreal","Consumer Staples","France","EUR"),
+    ("ORA.PA","Orange","Communications","France","EUR"),
+    ("PHIA.AS","Philips","Healthcare","Netherlands","EUR"),
+    ("PRX.AS","Prosus","Technology","Netherlands","EUR"),
+    ("RMS.PA","Hermes","Consumer Disc.","France","EUR"),
+    ("RWE.DE","RWE","Utilities","Germany","EUR"),
+    ("SAN.MC","Banco Santander","Financials","Spain","EUR"),
+    ("SAP.DE","SAP","Technology","Germany","EUR"),
+    ("SGO.PA","Saint-Gobain","Materials","France","EUR"),
+    ("SIE.DE","Siemens","Industrials","Germany","EUR"),
+    ("SU.PA","Schneider Electric","Industrials","France","EUR"),
+    ("TTE.PA","TotalEnergies","Energy","France","EUR"),
+    ("UMG.AS","Universal Music Group","Communications","Netherlands","EUR"),
+    ("VOW3.DE","Volkswagen","Consumer Disc.","Germany","EUR"),
+    ("WKL.AS","Wolters Kluwer","Technology","Netherlands","EUR"),
+]
+
+_SCOUT_DJ30 = [
+    "AAPL","AMGN","AXP","BA","CAT","CRM","CSCO","CVX","DIS","DOW",
+    "GS","HD","HON","IBM","JNJ","JPM","KO","MCD","MMM","MRK",
+    "MSFT","NKE","PG","TRV","UNH","V","VZ","WBA","WMT","INTC"
+]
+
+
+def _fetch_sp500_universe():
+    try:
+        tables = pd.read_html(
+            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
+            header=0, flavor="html5lib"
+        )
+        df = tables[0]
+        result = []
+        for _, row in df.iterrows():
+            ticker = str(row.get("Symbol", "") or "").strip().replace(".", "-")
+            company = str(row.get("Security", "") or "").strip()
+            sector = str(row.get("GICS Sector", "") or "").strip()
+            industry = str(row.get("GICS Sub-Industry", "") or "").strip()
+            if ticker and company and ticker != "nan":
+                result.append({"ticker": ticker, "company": company,
+                                "sector": sector, "industry": industry,
+                                "exchange": "NYSE/NASDAQ", "market": "us",
+                                "country": "United States", "currency": "USD",
+                                "index_member": "sp500"})
+        print(f"[SCOUT] S&P 500: {len(result)} tickers", flush=True)
+        return result
+    except Exception as e:
+        print(f"[SCOUT] S&P 500 fetch failed: {e}", flush=True)
+        return []
+
+
+def _fetch_nasdaq100_universe():
+    try:
+        tables = pd.read_html(
+            "https://en.wikipedia.org/wiki/Nasdaq-100",
+            header=0, flavor="html5lib"
+        )
+        df = None
+        for t in tables:
+            cols = [str(c).lower() for c in t.columns]
+            if any("ticker" in c or "symbol" in c for c in cols) and len(t) > 50:
+                df = t
+                break
+        if df is None:
+            return []
+        result = []
+        for _, row in df.iterrows():
+            ticker = None
+            for col in df.columns:
+                if "ticker" in str(col).lower() or "symbol" in str(col).lower():
+                    val = str(row[col]).strip().replace(".", "-")
+                    if val and val != "nan":
+                        ticker = val
+                    break
+            company = None
+            for col in df.columns:
+                if "company" in str(col).lower() or "name" in str(col).lower():
+                    company = str(row[col]).strip()
+                    break
+            if ticker and company and ticker != "nan":
+                result.append({"ticker": ticker, "company": company,
+                                "sector": "", "industry": "",
+                                "exchange": "NASDAQ", "market": "us",
+                                "country": "United States", "currency": "USD",
+                                "index_member": "nasdaq100"})
+        print(f"[SCOUT] NASDAQ 100: {len(result)} tickers", flush=True)
+        return result
+    except Exception as e:
+        print(f"[SCOUT] NASDAQ 100 fetch failed: {e}", flush=True)
+        return []
+
+
+def _fetch_ftse100_universe():
+    try:
+        tables = pd.read_html(
+            "https://en.wikipedia.org/wiki/FTSE_100_Index",
+            header=0, flavor="html5lib"
+        )
+        df = None
+        for t in tables:
+            cols = [str(c).lower() for c in t.columns]
+            if any(k in c for c in cols for k in ["ticker", "epic", "tidm", "symbol"]) and len(t) > 50:
+                df = t
+                break
+        if df is None:
+            return []
+        result = []
+        for _, row in df.iterrows():
+            ticker = None
+            for col in df.columns:
+                if any(k in str(col).lower() for k in ["ticker", "epic", "tidm", "symbol"]):
+                    val = str(row[col]).strip()
+                    if val and val != "nan" and len(val) <= 6:
+                        ticker = val + ".L"
+                    break
+            company = None
+            for col in df.columns:
+                if any(k in str(col).lower() for k in ["company", "name", "security"]):
+                    company = str(row[col]).strip()
+                    break
+            if ticker and company and company != "nan":
+                result.append({"ticker": ticker, "company": company,
+                                "sector": "", "industry": "",
+                                "exchange": "LSE", "market": "uk",
+                                "country": "United Kingdom", "currency": "GBP",
+                                "index_member": "ftse100"})
+        print(f"[SCOUT] FTSE 100: {len(result)} tickers", flush=True)
+        return result
+    except Exception as e:
+        print(f"[SCOUT] FTSE 100 fetch failed: {e}", flush=True)
+        return []
+
+
+def _build_scout_universe():
+    """Fetch all index constituents and populate scout_universe table."""
+    all_stocks = {}
+
+    for s in _fetch_sp500_universe():
+        all_stocks[s["ticker"]] = s
+
+    for s in _fetch_nasdaq100_universe():
+        if s["ticker"] not in all_stocks:
+            all_stocks[s["ticker"]] = s
+        else:
+            all_stocks[s["ticker"]]["index_member"] += ",nasdaq100"
+
+    for t in _SCOUT_DJ30:
+        if t in all_stocks:
+            if "dj30" not in all_stocks[t]["index_member"]:
+                all_stocks[t]["index_member"] += ",dj30"
+
+    for s in _fetch_ftse100_universe():
+        if s["ticker"] not in all_stocks:
+            all_stocks[s["ticker"]] = s
+
+    for item in _SCOUT_STOXX50:
+        ticker, company, sector, country, currency = item
+        if ticker not in all_stocks:
+            all_stocks[ticker] = {
+                "ticker": ticker, "company": company, "sector": sector,
+                "industry": "", "exchange": "Euronext/XETRA",
+                "market": "eu", "country": country, "currency": currency,
+                "index_member": "stoxx50"
+            }
+
+    for item in _SCOUT_ADR:
+        ticker = item[0]
+        if ticker not in all_stocks:
+            all_stocks[ticker] = {
+                "ticker": item[0], "company": item[1], "sector": item[2],
+                "industry": item[3], "exchange": item[4], "market": item[5],
+                "country": item[6], "currency": item[7], "index_member": "adr"
+            }
+
+    conn = _scout_db()
+    now = datetime.utcnow().isoformat()
+    conn.execute("UPDATE scout_universe SET active=0")
+    for ticker, s in all_stocks.items():
+        conn.execute("""
+            INSERT INTO scout_universe
+              (ticker,company,sector,industry,exchange,market,country,currency,index_member,active,added_at)
+            VALUES (?,?,?,?,?,?,?,?,?,1,?)
+            ON CONFLICT(ticker) DO UPDATE SET
+              company=excluded.company, sector=excluded.sector,
+              industry=excluded.industry, exchange=excluded.exchange,
+              market=excluded.market, country=excluded.country,
+              currency=excluded.currency, index_member=excluded.index_member,
+              active=1
+        """, (ticker, s.get("company",""), s.get("sector",""), s.get("industry",""),
+              s.get("exchange",""), s.get("market",""), s.get("country",""),
+              s.get("currency","USD"), s.get("index_member",""), now))
+    conn.commit()
+    conn.close()
+    print(f"[SCOUT] Universe built: {len(all_stocks)} stocks", flush=True)
+    return len(all_stocks)
+
+
+# ── Weekly fundamentals refresh ───────────────────────────────────────────────
+def _fetch_scout_fundamentals_for(ticker: str) -> dict:
+    try:
+        info = yf.Ticker(ticker).info
+        if not info or len(info) < 5:
+            return {}
+
+        def _safe(k, d=None):
+            v = info.get(k)
+            return v if v is not None else d
+
+        def _pct(k):
+            v = _safe(k)
+            return round(v * 100, 1) if v is not None else None
+
+        mc = _safe("marketCap", 0)
+        curr_price = _safe("currentPrice") or _safe("regularMarketPrice")
+        wk_low = _safe("fiftyTwoWeekLow")
+        ret52 = None
+        if curr_price and wk_low and wk_low > 0:
+            ret52 = round((curr_price - wk_low) / wk_low * 100, 1)
+
+        target = _safe("targetMeanPrice")
+        upside = None
+        if target and curr_price and curr_price > 0:
+            upside = round((target - curr_price) / curr_price * 100, 1)
+
+        de = _safe("debtToEquity")
+        if de is not None:
+            de = round(de / 100, 2)  # yfinance returns as percentage
+
+        return {
+            "company": _safe("longName") or _safe("shortName", ticker),
+            "sector": _safe("sector", ""),
+            "industry": _safe("industry", ""),
+            "pe": _safe("trailingPE"), "pb": _safe("priceToBook"),
+            "ps": _safe("priceToSalesTrailingOneTwelveMonths"),
+            "ev_ebitda": _safe("enterpriseToEbitda"),
+            "revenue_growth": _pct("revenueGrowth"),
+            "earnings_growth": _pct("earningsGrowth"),
+            "gross_margin": _pct("grossMargins"),
+            "operating_margin": _pct("operatingMargins"),
+            "net_margin": _pct("profitMargins"),
+            "roe": _pct("returnOnEquity"),
+            "roic": None,
+            "debt_equity": de, "current_ratio": _safe("currentRatio"),
+            "dividend_yield": _pct("dividendYield"),
+            "payout_ratio": _pct("payoutRatio"),
+            "market_cap_usd": round(mc / 1_000_000, 0) if mc else None,
+            "beta": _safe("beta"), "return_52w": ret52,
+            "analyst_rec": _safe("recommendationKey", ""),
+            "analyst_target_upside": upside,
+            "description": _safe("longBusinessSummary", ""),
+        }
+    except Exception:
+        return {}
+
+
+def _scout_weekly_refresh_bg():
+    """Background job: refresh fundamentals for all active universe stocks."""
+    _init_scout_db()
+    conn = _scout_db()
+    rows = conn.execute(
+        "SELECT ticker, market, company FROM scout_universe WHERE active=1"
+    ).fetchall()
+    conn.close()
+    tickers = [(r["ticker"], r["market"], r["company"]) for r in rows]
+    print(f"[SCOUT WEEKLY] Refreshing {len(tickers)} stocks…", flush=True)
+    now = datetime.utcnow().isoformat()
+    done = 0
+
+    def _fetch_one(args):
+        ticker, market, company = args
+        data = _fetch_scout_fundamentals_for(ticker)
+        return (ticker, market, company, data) if data else None
+
+    with ThreadPoolExecutor(max_workers=5) as ex:
+        for result in ex.map(_fetch_one, tickers):
+            if not result:
+                continue
+            ticker, market, company, data = result
+            try:
+                c = _scout_db()
+                c.execute("""
+                    INSERT INTO scout_fundamentals
+                      (ticker,company,sector,industry,market,country,currency,
+                       pe,pb,ps,ev_ebitda,revenue_growth,earnings_growth,
+                       gross_margin,operating_margin,net_margin,roe,roic,
+                       debt_equity,current_ratio,dividend_yield,payout_ratio,
+                       market_cap_usd,beta,return_52w,analyst_rec,analyst_target_upside,
+                       updated_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    ON CONFLICT(ticker) DO UPDATE SET
+                      company=excluded.company, sector=excluded.sector,
+                      industry=excluded.industry, pe=excluded.pe, pb=excluded.pb,
+                      ps=excluded.ps, ev_ebitda=excluded.ev_ebitda,
+                      revenue_growth=excluded.revenue_growth,
+                      earnings_growth=excluded.earnings_growth,
+                      gross_margin=excluded.gross_margin,
+                      operating_margin=excluded.operating_margin,
+                      net_margin=excluded.net_margin, roe=excluded.roe,
+                      debt_equity=excluded.debt_equity,
+                      current_ratio=excluded.current_ratio,
+                      dividend_yield=excluded.dividend_yield,
+                      payout_ratio=excluded.payout_ratio,
+                      market_cap_usd=excluded.market_cap_usd,
+                      beta=excluded.beta, return_52w=excluded.return_52w,
+                      analyst_rec=excluded.analyst_rec,
+                      analyst_target_upside=excluded.analyst_target_upside,
+                      updated_at=excluded.updated_at
+                """, (
+                    ticker, data.get("company") or company,
+                    data.get("sector",""), data.get("industry",""),
+                    market, "", "USD",
+                    data.get("pe"), data.get("pb"), data.get("ps"), data.get("ev_ebitda"),
+                    data.get("revenue_growth"), data.get("earnings_growth"),
+                    data.get("gross_margin"), data.get("operating_margin"),
+                    data.get("net_margin"), data.get("roe"), data.get("roic"),
+                    data.get("debt_equity"), data.get("current_ratio"),
+                    data.get("dividend_yield"), data.get("payout_ratio"),
+                    data.get("market_cap_usd"), data.get("beta"), data.get("return_52w"),
+                    data.get("analyst_rec"), data.get("analyst_target_upside"), now
+                ))
+                if data.get("description"):
+                    c.execute("""
+                        INSERT INTO scout_profiles (ticker, company, description, tagged_at)
+                        VALUES (?,?,?,'')
+                        ON CONFLICT(ticker) DO UPDATE SET
+                          company=excluded.company, description=excluded.description
+                    """, (ticker, data.get("company") or company, data["description"]))
+                c.commit()
+                c.close()
+                done += 1
+            except Exception as e:
+                print(f"[SCOUT WEEKLY] DB error {ticker}: {e}", flush=True)
+
+    print(f"[SCOUT WEEKLY] Done: {done}/{len(tickers)} refreshed", flush=True)
+
+
+# ── Monthly Claude tagging ─────────────────────────────────────────────────────
+def _scout_monthly_refresh_bg():
+    """Background job: rebuild universe + Claude-tag business descriptions."""
+    _init_scout_db()
+    print("[SCOUT MONTHLY] Rebuilding universe…", flush=True)
+    _build_scout_universe()
+
+    if not ANTHROPIC_API_KEY:
+        print("[SCOUT MONTHLY] No Anthropic key — skipping tagging", flush=True)
+        return
+
+    conn = _scout_db()
+    profiles = conn.execute(
+        "SELECT ticker, company, description FROM scout_profiles "
+        "WHERE description IS NOT NULL AND description != '' ORDER BY ticker"
+    ).fetchall()
+    conn.close()
+
+    print(f"[SCOUT MONTHLY] Tagging {len(profiles)} descriptions…", flush=True)
+    BATCH = 20
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    now = datetime.utcnow().isoformat()
+    tagged = 0
+
+    for i in range(0, len(profiles), BATCH):
+        batch = profiles[i:i + BATCH]
+        try:
+            items = "\n".join(
+                f"{p['ticker']}|{p['company']}|{(p['description'] or '')[:400]}"
+                for p in batch
+            )
+            prompt = (
+                "Analyze each company's business description and return structured theme scores.\n\n"
+                f"Companies (TICKER|Company|Description):\n{items}\n\n"
+                "For each ticker score 0-5 (0=none,5=core):\n"
+                "ai_score, defence_score, energy_score, healthcare_score, "
+                "fintech_score, ev_renewable_score, cybersecurity_score\n"
+                "Geography (0-100%): us_revenue_pct, china_revenue_pct\n"
+                "china_supply_chain_score 0-5\n"
+                "dollar_sensitivity -3 to +3 (positive=benefits from strong USD)\n"
+                "keywords: top 5 business keywords array\n"
+                "primary_customers: government/consumer/enterprise/financial/healthcare/mixed\n\n"
+                "Return JSON array only:\n"
+                '[{"ticker":"","ai_score":0,"defence_score":0,"energy_score":0,'
+                '"healthcare_score":0,"fintech_score":0,"ev_renewable_score":0,'
+                '"cybersecurity_score":0,"us_revenue_pct":50,"china_revenue_pct":0,'
+                '"china_supply_chain_score":0,"dollar_sensitivity":0,'
+                '"keywords":[],"primary_customers":"mixed"}]'
+            )
+            resp = client.messages.create(
+                model="claude-haiku-4-5-20251001", max_tokens=3000,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+            raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
+            raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
+            results = json.loads(raw)
+
+            conn = _scout_db()
+            for r in results:
+                t = r.get("ticker", "")
+                if not t:
+                    continue
+                conn.execute("""
+                    UPDATE scout_profiles SET
+                      ai_score=?,defence_score=?,energy_score=?,healthcare_score=?,
+                      fintech_score=?,ev_renewable_score=?,cybersecurity_score=?,
+                      us_revenue_pct=?,china_revenue_pct=?,
+                      china_supply_chain_score=?,dollar_sensitivity=?,
+                      keywords=?,primary_customers=?,tagged_at=?
+                    WHERE ticker=?
+                """, (
+                    r.get("ai_score", 0), r.get("defence_score", 0), r.get("energy_score", 0),
+                    r.get("healthcare_score", 0), r.get("fintech_score", 0),
+                    r.get("ev_renewable_score", 0), r.get("cybersecurity_score", 0),
+                    r.get("us_revenue_pct", 50), r.get("china_revenue_pct", 0),
+                    r.get("china_supply_chain_score", 0), r.get("dollar_sensitivity", 0),
+                    json.dumps(r.get("keywords", [])), r.get("primary_customers", "mixed"),
+                    now, t
+                ))
+                tagged += 1
+            conn.commit()
+            conn.close()
+        except Exception as e:
+            print(f"[SCOUT MONTHLY] Batch {i // BATCH} error: {e}", flush=True)
+        time.sleep(1)
+
+    print(f"[SCOUT MONTHLY] Tagged {tagged} stocks", flush=True)
+
+
+# ── Daily news refresh ─────────────────────────────────────────────────────────
+_SCOUT_NEWS_TERMS = _re_scout.compile(
+    r"\b(acquisition|merger|earnings|revenue|profit|loss|dividend|buyback|"
+    r"AI|artificial intelligence|defense|defence|energy|oil|drug|FDA|tariff|"
+    r"sanction|lawsuit|fine|CEO|layoff|restructur|guidance|forecast|upgrade|"
+    r"downgrade|record|beat|miss|growth|decline|surge|plunge|rally|crash)\b",
+    _re_scout.I
+)
+
+
+def _scout_news_refresh_bg():
+    """Background job: refresh recent news headlines for all stocks."""
+    _init_scout_db()
+    conn = _scout_db()
+    tickers = [r["ticker"] for r in
+               conn.execute("SELECT ticker FROM scout_universe WHERE active=1").fetchall()]
+    conn.close()
+
+    print(f"[SCOUT NEWS] Refreshing {len(tickers)} stocks…", flush=True)
+    now = datetime.utcnow().isoformat()
+    done = 0
+
+    def _fetch_news_one(ticker):
+        try:
+            news = yf.Ticker(ticker).news or []
+            items = []
+            for n in news[:5]:
+                title = n.get("title", "")
+                if not title:
+                    continue
+                kws = list({m.lower() for m in _SCOUT_NEWS_TERMS.findall(title)})[:8]
+                items.append({
+                    "ticker": ticker,
+                    "headline": title[:500],
+                    "url": n.get("link", ""),
+                    "published_at": (datetime.utcfromtimestamp(n["providerPublishTime"]).isoformat()
+                                     if n.get("providerPublishTime") else ""),
+                    "keywords": json.dumps(kws),
+                    "fetched_at": now
+                })
+            return items
+        except Exception:
+            return []
+
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        for news_items in ex.map(_fetch_news_one, tickers):
+            if not news_items:
+                continue
+            try:
+                c = _scout_db()
+                for item in news_items:
+                    c.execute("""
+                        INSERT OR IGNORE INTO scout_news
+                          (ticker,headline,url,published_at,keywords,fetched_at)
+                        VALUES (?,?,?,?,?,?)
+                    """, (item["ticker"], item["headline"], item["url"],
+                          item["published_at"], item["keywords"], item["fetched_at"]))
+                    done += 1
+                c.commit()
+                c.close()
+            except Exception:
+                pass
+
+    cutoff = (datetime.utcnow() - timedelta(days=14)).isoformat()
+    c = _scout_db()
+    c.execute("DELETE FROM scout_news WHERE fetched_at < ?", (cutoff,))
+    c.commit()
+    c.close()
+    print(f"[SCOUT NEWS] Done: {done} headlines stored", flush=True)
+
+
+# ── DATA_CAPABILITIES manifest (sent to Claude for thesis translation) ─────────
+_SCOUT_DATA_CAPABILITIES = """
+AVAILABLE SCREENING DATA:
+
+1. FINANCIALS (updated weekly):
+   pe (P/E), pb (P/Book), ps (P/Sales), ev_ebitda
+   revenue_growth (% YoY), earnings_growth (% YoY)
+   gross_margin (%), operating_margin (%), net_margin (%)
+   roe (%), debt_equity (ratio), current_ratio
+   dividend_yield (%), payout_ratio (%)
+   market_cap_usd ($ millions), beta, return_52w (% 52-week)
+   analyst_rec (strongbuy/buy/hold/sell/strongsell), analyst_target_upside (%)
+
+2. CLASSIFICATION:
+   sector: Technology / Healthcare / Financials / Energy / Industrials /
+           Consumer Disc. / Consumer Staples / Materials / Utilities /
+           Communications / Real Estate
+   industry (sub-sector text), market (us/uk/eu/global), country
+
+3. THEME SCORES (0-5, from AI analysis of business descriptions):
+   ai_score, defence_score, energy_score, healthcare_score,
+   fintech_score, ev_renewable_score, cybersecurity_score
+
+4. GEOGRAPHIC REVENUE (0-100):
+   us_revenue_pct, china_revenue_pct
+
+5. SUPPLY CHAIN:
+   china_supply_chain_score (0-5, 5=heavily China-dependent)
+
+6. DOLLAR SENSITIVITY (-3 to +3):
+   dollar_sensitivity (positive=benefits from strong USD)
+
+7. TEXT SEARCH:
+   description_include: keywords that MUST appear in business description
+   description_exclude: keywords that MUST NOT appear
+   news_include: keywords that must appear in recent headlines
+"""
+
+
+# ── Thesis → parameters (Claude Haiku) ────────────────────────────────────────
+def _translate_thesis_to_params(thesis: str, clarifications: dict) -> dict:
+    """Translate user investment thesis to screening parameter JSON."""
+    if not ANTHROPIC_API_KEY:
+        return {"error": "no_api_key"}
+
+    market_hint = clarifications.get("market", "global")
+    horizon_hint = clarifications.get("horizon", "")
+    direction_hint = clarifications.get("direction", "")
+
+    prompt = (
+        f'Investor thesis: "{thesis}"\n'
+        f'Market: "{market_hint}"  Horizon: "{horizon_hint}"  Direction: "{direction_hint}"\n\n'
+        f"{_SCOUT_DATA_CAPABILITIES}\n\n"
+        "Generate a precise screening recipe that returns 8-25 stocks.\n"
+        "Rules:\n"
+        "- Set null for parameters not relevant to this thesis\n"
+        "- For thematic/macro screens, use theme_scores + description keywords\n"
+        "- For traditional screens (value/growth/income), use financial metrics\n"
+        "- market: us/uk/eu/global (global = no filter)\n"
+        "- Keep theme score thresholds at 2+ for meaningful matches\n"
+        "- Use 2-5 description_include keywords for qualitative screens\n\n"
+        "Return ONLY valid JSON:\n"
+        '{"strategy_label":"2-4 word label","strategy_emoji":"one emoji",'
+        '"key_criteria":["plain English criterion 1","criterion 2","criterion 3"],'
+        '"filters":{"market":"global","pe_max":null,"pe_min":null,"pb_max":null,'
+        '"revenue_growth_min":null,"revenue_growth_max":null,'
+        '"operating_margin_min":null,"roe_min":null,"debt_equity_max":null,'
+        '"current_ratio_min":null,"dividend_yield_min":null,"dividend_yield_max":null,'
+        '"payout_ratio_max":null,"market_cap_min":null,"market_cap_max":null,'
+        '"beta_max":null,"return_52w_min":null,'
+        '"sectors_include":[],"sectors_exclude":[],"analyst_rec_include":[]},'
+        '"theme_filters":{"ai_score_min":null,"defence_score_min":null,'
+        '"energy_score_min":null,"healthcare_score_min":null,"fintech_score_min":null,'
+        '"ev_renewable_score_min":null,"cybersecurity_score_min":null,'
+        '"us_revenue_pct_min":null,"china_revenue_pct_max":null,'
+        '"china_supply_chain_score_max":null,'
+        '"dollar_sensitivity_min":null,"dollar_sensitivity_max":null},'
+        '"keyword_filters":{"description_include":[],"description_exclude":[],'
+        '"news_include":[]},'
+        '"rank_fields":["market_cap_usd"],"rank_desc":[true]}'
+    )
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001", max_tokens=1200,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+        raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
+        raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
+        return json.loads(raw)
+    except Exception as e:
+        print(f"[SCOUT] Translate error: {e}", flush=True)
+        return {"error": str(e)}
+
+
+# ── SQLite screener ─────────────────────────────────────────────────────────────
+def _screen_universe(params: dict) -> list:
+    conn = _scout_db()
+    rows = conn.execute("""
+        SELECT f.*, p.ai_score, p.defence_score, p.energy_score, p.healthcare_score,
+               p.fintech_score, p.ev_renewable_score, p.cybersecurity_score,
+               p.us_revenue_pct, p.china_revenue_pct,
+               p.china_supply_chain_score, p.dollar_sensitivity,
+               p.keywords, p.primary_customers, p.description,
+               u.index_member
+        FROM scout_fundamentals f
+        LEFT JOIN scout_profiles p ON f.ticker = p.ticker
+        LEFT JOIN scout_universe u ON f.ticker = u.ticker
+        WHERE u.active = 1
+    """).fetchall()
+
+    # Pre-load news keywords
+    news_map = {}
+    for nr in conn.execute("SELECT ticker, keywords FROM scout_news").fetchall():
+        t = nr["ticker"]
+        if t not in news_map:
+            news_map[t] = []
+        if nr["keywords"]:
+            try:
+                news_map[t].extend(json.loads(nr["keywords"]))
+            except Exception:
+                pass
+    conn.close()
+
+    filters = params.get("filters", {}) or {}
+    theme_f = params.get("theme_filters", {}) or {}
+    kw_f = params.get("keyword_filters", {}) or {}
+
+    def _v(row, key, default=None):
+        try:
+            val = row[key]
+            return val if val is not None else default
+        except Exception:
+            return default
+
+    def _ok(val, lo, hi):
+        if val is None:
+            return True
+        if lo is not None and val < lo:
+            return False
+        if hi is not None and val > hi:
+            return False
+        return True
+
+    candidates = []
+    for row in rows:
+        mkt = filters.get("market", "global")
+        if mkt and mkt != "global" and _v(row, "market", "") != mkt:
+            continue
+        if not _ok(_v(row, "pe"), filters.get("pe_min"), filters.get("pe_max")): continue
+        if not _ok(_v(row, "pb"), None, filters.get("pb_max")): continue
+        if not _ok(_v(row, "revenue_growth"), filters.get("revenue_growth_min"), filters.get("revenue_growth_max")): continue
+        if not _ok(_v(row, "operating_margin"), filters.get("operating_margin_min"), None): continue
+        if not _ok(_v(row, "roe"), filters.get("roe_min"), None): continue
+        if not _ok(_v(row, "debt_equity"), None, filters.get("debt_equity_max")): continue
+        if not _ok(_v(row, "current_ratio"), filters.get("current_ratio_min"), None): continue
+        if not _ok(_v(row, "dividend_yield"), filters.get("dividend_yield_min"), filters.get("dividend_yield_max")): continue
+        if not _ok(_v(row, "payout_ratio"), None, filters.get("payout_ratio_max")): continue
+        if not _ok(_v(row, "market_cap_usd"), filters.get("market_cap_min"), filters.get("market_cap_max")): continue
+        if not _ok(_v(row, "beta"), None, filters.get("beta_max")): continue
+        if not _ok(_v(row, "return_52w"), filters.get("return_52w_min"), None): continue
+
+        si = filters.get("sectors_include") or []
+        se = filters.get("sectors_exclude") or []
+        if si and _v(row, "sector", "") not in si: continue
+        if se and _v(row, "sector", "") in se: continue
+
+        ar = filters.get("analyst_rec_include") or []
+        if ar:
+            rec = (_v(row, "analyst_rec", "") or "").lower()
+            if not any(a.lower() in rec for a in ar): continue
+
+        if not _ok(_v(row, "ai_score", 0), theme_f.get("ai_score_min"), None): continue
+        if not _ok(_v(row, "defence_score", 0), theme_f.get("defence_score_min"), None): continue
+        if not _ok(_v(row, "energy_score", 0), theme_f.get("energy_score_min"), None): continue
+        if not _ok(_v(row, "healthcare_score", 0), theme_f.get("healthcare_score_min"), None): continue
+        if not _ok(_v(row, "fintech_score", 0), theme_f.get("fintech_score_min"), None): continue
+        if not _ok(_v(row, "ev_renewable_score", 0), theme_f.get("ev_renewable_score_min"), None): continue
+        if not _ok(_v(row, "cybersecurity_score", 0), theme_f.get("cybersecurity_score_min"), None): continue
+        if not _ok(_v(row, "us_revenue_pct", 50), theme_f.get("us_revenue_pct_min"), None): continue
+        if not _ok(_v(row, "china_revenue_pct", 0), None, theme_f.get("china_revenue_pct_max")): continue
+        if not _ok(_v(row, "china_supply_chain_score", 0), None, theme_f.get("china_supply_chain_score_max")): continue
+        if not _ok(_v(row, "dollar_sensitivity", 0), theme_f.get("dollar_sensitivity_min"), theme_f.get("dollar_sensitivity_max")): continue
+
+        desc = (_v(row, "description", "") or "").lower()
+        d_inc = kw_f.get("description_include") or []
+        d_exc = kw_f.get("description_exclude") or []
+        n_inc = kw_f.get("news_include") or []
+
+        if d_inc and not any(kw.lower() in desc for kw in d_inc): continue
+        if d_exc and any(kw.lower() in desc for kw in d_exc): continue
+        if n_inc:
+            news_kws = " ".join(news_map.get(row["ticker"], [])).lower()
+            if not any(kw.lower() in news_kws for kw in n_inc): continue
+
+        candidates.append(dict(row))
+
+    # Sort by first rank field if present
+    rank_fields = params.get("rank_fields") or ["market_cap_usd"]
+    rank_desc = params.get("rank_desc") or [True]
+    try:
+        primary = rank_fields[0] if rank_fields else "market_cap_usd"
+        desc_sort = rank_desc[0] if rank_desc else True
+        candidates.sort(
+            key=lambda x: (x.get(primary) or 0),
+            reverse=bool(desc_sort)
+        )
+    except Exception:
+        pass
+
+    return candidates
+
+
+# ── Display metrics builder ────────────────────────────────────────────────────
+def _build_display_metrics(s: dict) -> list:
+    candidates = [
+        ("Yield", s.get("dividend_yield"), "%", "income"),
+        ("P/E", s.get("pe"), "x", "value"),
+        ("Rev Growth", s.get("revenue_growth"), "%", "growth"),
+        ("Op Margin", s.get("operating_margin"), "%", "quality"),
+        ("ROE", s.get("roe"), "%", "quality"),
+        ("Debt/Eq", s.get("debt_equity"), "x", "health"),
+        ("Beta", s.get("beta"), "", "risk"),
+        ("52W Rtn", s.get("return_52w"), "%", "momentum"),
+        ("Analyst ↑", s.get("analyst_target_upside"), "%", "analyst"),
+    ]
+    metrics = []
+    for label, val, unit, cat in candidates:
+        if val is not None and len(metrics) < 3:
+            try:
+                metrics.append({"label": label, "value": round(float(val), 1),
+                                 "unit": unit, "category": cat})
+            except Exception:
+                pass
+    return metrics
+
+
+# ── Explanation writer (Claude Haiku) ─────────────────────────────────────────
+def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str) -> list:
+    if not candidates:
+        return []
+
+    if not ANTHROPIC_API_KEY:
+        return [{
+            "ticker": s["ticker"], "company": s.get("company", ""),
+            "sector": s.get("sector", ""), "market": s.get("market", ""),
+            "index_member": s.get("index_member", ""),
+            "why_it_fits": "Matches your screening criteria.",
+            "interesting_now": (s.get("description") or "")[:150],
+            "metrics": _build_display_metrics(s),
+            "deep_dive_url": f"/deep-dive.html?ticker={s['ticker']}"
+        } for s in candidates[:8]]
+
+    cand_lines = []
+    for s in candidates[:15]:
+        line = (f"{s['ticker']}|{s.get('company','')}|{s.get('sector','')}|"
+                f"PE:{s.get('pe')}|Yield:{s.get('dividend_yield')}%|"
+                f"RevGrowth:{s.get('revenue_growth')}%|OpMargin:{s.get('operating_margin')}%|"
+                f"MktCap:{s.get('market_cap_usd')}M|Market:{s.get('market','')}|"
+                f"Desc:{(s.get('description') or '')[:200]}")
+        cand_lines.append(line)
+
+    cand_block = "\n".join(cand_lines)
+    prompt = (
+        f'Investor thesis: "{thesis}"  Strategy: {strategy_label}\n\n'
+        f"Stocks that passed the quantitative screen:\n{cand_block}\n\n"
+        "Pick the BEST 5-8 stocks that most compellingly match this thesis.\n"
+        "For each write:\n"
+        "- why_it_fits: ONE sentence, plain English, specific to this company\n"
+        "- interesting_now: ONE concrete fact about its current position or opportunity\n"
+        "Prioritise variety across sectors.\n\n"
+        'Return ONLY JSON array: [{"ticker":"","why_it_fits":"","interesting_now":""}]'
+    )
+
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001", max_tokens=1500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+        raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
+        raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
+        explanations = json.loads(raw)
+
+        cand_map = {s["ticker"]: s for s in candidates}
+        results = []
+        for exp in explanations:
+            t = exp.get("ticker", "")
+            s = cand_map.get(t)
+            if not s:
+                continue
+            results.append({
+                "ticker": t,
+                "company": s.get("company", ""),
+                "sector": s.get("sector", ""),
+                "market": s.get("market", ""),
+                "index_member": s.get("index_member", ""),
+                "why_it_fits": exp.get("why_it_fits", ""),
+                "interesting_now": exp.get("interesting_now", ""),
+                "metrics": _build_display_metrics(s),
+                "deep_dive_url": f"/deep-dive.html?ticker={t}"
+            })
+        return results
+    except Exception as e:
+        print(f"[SCOUT] Explain error: {e}", flush=True)
+        return [{
+            "ticker": s["ticker"], "company": s.get("company", ""),
+            "sector": s.get("sector", ""), "market": s.get("market", ""),
+            "index_member": s.get("index_member", ""),
+            "why_it_fits": "Matches your screening criteria.",
+            "interesting_now": (s.get("description") or "")[:150],
+            "metrics": _build_display_metrics(s),
+            "deep_dive_url": f"/deep-dive.html?ticker={s['ticker']}"
+        } for s in candidates[:6]]
+
+
+# ── Clarify question generator ─────────────────────────────────────────────────
+def _get_clarify_question(thesis: str) -> dict:
+    if not ANTHROPIC_API_KEY:
+        return {"needs_clarification": False}
+
+    prompt = (
+        f'Retail investor typed this into an AI stock scanner: "{thesis}"\n\n'
+        "Decide if 1-2 clarifying questions would meaningfully improve scan results.\n"
+        "Only ask if the answer changes which stocks appear.\n"
+        "Allowed question types:\n"
+        "- market: US / UK / EU / Global\n"
+        "- horizon: Short-term trade vs Long-term hold\n"
+        "- direction: Benefiting FROM trend vs Avoiding exposure TO trend\n"
+        "- size: Large established companies vs Smaller growth companies\n\n"
+        "If thesis is already specific, set needs_clarification=false.\n\n"
+        "Return JSON only:\n"
+        '{"needs_clarification":true,"question1":"text or null","options1":null or '
+        '[{"label":"...","value":"...","emoji":"..."}],'
+        '"question2":null,"options2":null}'
+    )
+    try:
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        resp = client.messages.create(
+            model="claude-haiku-4-5-20251001", max_tokens=500,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+        raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
+        raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
+        return json.loads(raw)
+    except Exception:
+        return {"needs_clarification": False}
+
+
+# ── Scout API endpoints ────────────────────────────────────────────────────────
+@app.get("/scout/weekly-refresh")
+def scout_weekly_refresh(token: str = ""):
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _init_scout_db()
+    threading.Thread(target=_scout_weekly_refresh_bg, daemon=True).start()
+    return {"ok": True, "message": "Scout weekly fundamentals refresh started"}
+
+
+@app.get("/scout/monthly-refresh")
+def scout_monthly_refresh(token: str = ""):
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _init_scout_db()
+    threading.Thread(target=_scout_monthly_refresh_bg, daemon=True).start()
+    return {"ok": True, "message": "Scout monthly refresh started (universe rebuild + AI tagging)"}
+
+
+@app.get("/scout/news-refresh")
+def scout_news_refresh(token: str = ""):
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _init_scout_db()
+    threading.Thread(target=_scout_news_refresh_bg, daemon=True).start()
+    return {"ok": True, "message": "Scout news refresh started"}
+
+
+@app.get("/scout/status")
+def scout_status():
+    _init_scout_db()
+    conn = _scout_db()
+    universe_count = conn.execute("SELECT COUNT(*) FROM scout_universe WHERE active=1").fetchone()[0]
+    fund_count = conn.execute("SELECT COUNT(*) FROM scout_fundamentals").fetchone()[0]
+    tagged_count = conn.execute(
+        "SELECT COUNT(*) FROM scout_profiles WHERE tagged_at IS NOT NULL AND tagged_at != ''"
+    ).fetchone()[0]
+    news_count = conn.execute("SELECT COUNT(*) FROM scout_news").fetchone()[0]
+    last_update = conn.execute("SELECT MAX(updated_at) FROM scout_fundamentals").fetchone()[0]
+    conn.close()
+    return {
+        "universe": universe_count,
+        "fundamentals_cached": fund_count,
+        "ai_tagged": tagged_count,
+        "news_items": news_count,
+        "fundamentals_last_updated": last_update,
+        "ready": fund_count > 100
+    }
+
+
+@app.post("/scout/clarify")
+async def scout_clarify(request: Request):
+    body = await request.json()
+    thesis = (body.get("thesis") or "").strip()
+    if not thesis or len(thesis) < 5:
+        return {"needs_clarification": False}
+    return _get_clarify_question(thesis)
+
+
+@app.post("/scout/scan")
+async def scout_scan(request: Request):
+    body = await request.json()
+    thesis = (body.get("thesis") or "").strip()
+    clarifications = body.get("clarifications") or {}
+
+    if not thesis:
+        raise HTTPException(status_code=400, detail="thesis required")
+
+    _init_scout_db()
+    conn = _scout_db()
+    fund_count = conn.execute("SELECT COUNT(*) FROM scout_fundamentals").fetchone()[0]
+    conn.close()
+
+    if fund_count < 10:
+        return {
+            "error": "data_loading",
+            "message": "Scout data is loading for the first time — please check back in 30 minutes.",
+            "results": []
+        }
+
+    # Stage 1 — translate thesis to screening params
+    params = _translate_thesis_to_params(thesis, clarifications)
+    if "error" in params:
+        raise HTTPException(status_code=500, detail=params["error"])
+
+    # Stage 2 — screen SQLite cache
+    candidates = _screen_universe(params)
+
+    # If too few results, loosen the tightest theme score filters by 1
+    if len(candidates) < 4 and params.get("theme_filters"):
+        for key in ["ai_score_min", "defence_score_min", "energy_score_min",
+                    "healthcare_score_min", "ev_renewable_score_min",
+                    "cybersecurity_score_min", "fintech_score_min"]:
+            v = params["theme_filters"].get(key)
+            if v and v > 1:
+                params["theme_filters"][key] = v - 1
+        candidates = _screen_universe(params)
+
+    # Stage 3 — Claude picks best 5-8 and writes plain-English explanations
+    results = _write_scout_explanations(candidates, thesis, params.get("strategy_label", ""))
+
+    return {
+        "strategy_label": params.get("strategy_label", ""),
+        "strategy_emoji": params.get("strategy_emoji", "🔍"),
+        "key_criteria": params.get("key_criteria", []),
+        "total_matched": len(candidates),
+        "results": results,
+        "data_notice": "Fundamentals updated weekly — use Deep Dive for latest earnings data.",
+        "generated_at": datetime.utcnow().isoformat()
+    }
