@@ -8190,12 +8190,31 @@ _SCOUT_DJ30 = [
 ]
 
 
+_WIKI_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml",
+}
+
+
+def _wiki_tables(url: str):
+    """Fetch a Wikipedia page with a browser User-Agent and parse all tables."""
+    try:
+        resp = requests.get(url, headers=_WIKI_HEADERS, timeout=20)
+        resp.raise_for_status()
+        return pd.read_html(resp.text, header=0, flavor="lxml")
+    except Exception as e:
+        print(f"[SCOUT] Wikipedia fetch failed {url}: {e}", flush=True)
+        return []
+
+
 def _fetch_sp500_universe():
     try:
-        tables = pd.read_html(
-            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies",
-            header=0, flavor="html5lib"
+        tables = _wiki_tables(
+            "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
         )
+        if not tables:
+            return []
         df = tables[0]
         result = []
         for _, row in df.iterrows():
@@ -8218,10 +8237,9 @@ def _fetch_sp500_universe():
 
 def _fetch_nasdaq100_universe():
     try:
-        tables = pd.read_html(
-            "https://en.wikipedia.org/wiki/Nasdaq-100",
-            header=0, flavor="html5lib"
-        )
+        tables = _wiki_tables("https://en.wikipedia.org/wiki/Nasdaq-100")
+        if not tables:
+            return []
         df = None
         for t in tables:
             cols = [str(c).lower() for c in t.columns]
@@ -8259,10 +8277,9 @@ def _fetch_nasdaq100_universe():
 
 def _fetch_ftse100_universe():
     try:
-        tables = pd.read_html(
-            "https://en.wikipedia.org/wiki/FTSE_100_Index",
-            header=0, flavor="html5lib"
-        )
+        tables = _wiki_tables("https://en.wikipedia.org/wiki/FTSE_100_Index")
+        if not tables:
+            return []
         df = None
         for t in tables:
             cols = [str(c).lower() for c in t.columns]
