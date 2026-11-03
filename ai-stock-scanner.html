@@ -351,6 +351,8 @@ a{color:var(--gold);text-decoration:none}
       </select>
     </div>
 
+    <div id="res-error" style="display:none;margin-bottom:16px"></div>
+
     <div class="cards-grid" id="res-cards"></div>
 
     <div class="results-reset">
@@ -589,6 +591,7 @@ function renderResults(data) {
   // Store all results and render
   allResultCards = data.results || [];
   document.getElementById("sort-select").value = "default";
+  document.getElementById("res-error").style.display = "none";
   renderCards(allResultCards);
 
   // Chat chain
@@ -712,10 +715,20 @@ function escHtml(str) {
 }
 
 function showError(msg) {
-  const errEl = document.getElementById("input-error");
-  errEl.innerHTML = `<div class="error-box">${escHtml(msg)}</div>`;
-  errEl.style.display = "block";
-  showState("state-input");
+  // If we already have results visible, keep that state and show error inline
+  if (allResultCards.length > 0) {
+    const resErr = document.getElementById("res-error");
+    resErr.innerHTML = `<div class="error-box">${escHtml(msg)}</div>`;
+    resErr.style.display = "block";
+    renderChatChain();
+    showState("state-results");
+    window.scrollTo({top: 0, behavior: "smooth"});
+  } else {
+    const errEl = document.getElementById("input-error");
+    errEl.innerHTML = `<div class="error-box">${escHtml(msg)}</div>`;
+    errEl.style.display = "block";
+    showState("state-input");
+  }
 }
 
 function resetToInput() {
