@@ -8711,7 +8711,7 @@ def _fetch_scout_fundamentals_for(ticker: str) -> dict:
             "roe": _pct("returnOnEquity"),
             "roic": None,
             "debt_equity": de, "current_ratio": _safe("currentRatio"),
-            "dividend_yield": _pct("dividendYield"),
+            "dividend_yield": (lambda v: round(v if v > 1.0 else v * 100, 2) if v is not None else None)(_safe("dividendYield")),
             "payout_ratio": _pct("payoutRatio"),
             "market_cap_usd": round(mc / 1_000_000, 0) if mc else None,
             "beta": _safe("beta"), "return_52w": ret52,
