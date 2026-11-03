@@ -1800,6 +1800,43 @@ def _load_bulletin_from_disk() -> dict | None:
 def health():
     return {"status":"ok","service":"fintiq-api","time":datetime.now().isoformat(),"web_search":bool(TAVILY_API_KEY)}
 
+# ── Catalyst Atlas (free tool: catalyst-atlas.html) ──────────────────────────
+# Engine lives in catalyst_atlas.py. Results cached 12h per ticker in Upstash,
+# news labels 30 days, so Tavily + Haiku are only paid on a ticker's first look.
+from catalyst_atlas import build_atlas as _build_atlas
+from collections import defaultdict as _ca_dd, deque as _ca_dq
+from urllib.parse import urlparse as _ca_urlparse
+_CA_ORIGINS = {"https://fintiq.uk", "https://www.fintiq.uk", "https://app.fintiq.uk",
+               "http://localhost:3000", "http://localhost:8080", "http://127.0.0.1:5500"}
+_CA_HITS: dict = _ca_dd(_ca_dq)
+_CA_LIMIT, _CA_WINDOW = 30, 600   # 30 lookups per 10 minutes per IP
+
+@app.get("/catalyst-atlas/{ticker}")
+def catalyst_atlas(ticker: str, request: Request):
+    """Free Catalyst Atlas tool: why a stock moved, news footprints, price ranges."""
+    origin = request.headers.get("origin")
+    if not origin and request.headers.get("referer"):
+        p = _ca_urlparse(request.headers["referer"]); origin = f"{p.scheme}://{p.netloc}"
+    if origin not in _CA_ORIGINS:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    fwd = request.headers.get("x-forwarded-for", "")
+    ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")
+    q, now = _CA_HITS[ip], time.time()
+    while q and now - q[0] > _CA_WINDOW:
+        q.popleft()
+    if len(q) >= _CA_LIMIT:
+        raise HTTPException(status_code=429, detail="Too many lookups. Please try again in a few minutes.")
+    q.append(now)
+    try:
+        return _build_atlas(ticker, kv_get=_kv_get, kv_set=_kv_set,
+                            tavily_search=_tavily_search,
+                            anthropic_api_key=ANTHROPIC_API_KEY)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        print(f"[catalyst-atlas] {ticker}: {e}")
+        raise HTTPException(status_code=502, detail="We couldn't build this analysis right now. Please try again shortly.")
+
 @app.get("/prices/{ticker}")
 def get_prices(ticker: str, period: str = "1y"):
     """
