@@ -8426,6 +8426,177 @@ def _fetch_ftse100_universe():
     return result
 
 
+# FTSE 250 — UK mid-caps, hardcoded. Company/sector filled by yfinance weekly refresh.
+_FTSE250_TICKERS = [
+    # Asset managers & financial services
+    ("3IN.L","3i Infrastructure","Financials"),
+    ("AGR.L","Assura","Real Estate"),
+    ("AJB.L","AJ Bell","Financials"),
+    ("ALPH.L","Alpha Group International","Financials"),
+    ("APAX.L","Apax Global Alpha","Financials"),
+    ("ASHM.L","Ashmore Group","Financials"),
+    ("BEZ.L","Beazley","Financials"),
+    ("BGEO.L","Bank of Georgia Group","Financials"),
+    ("CLDN.L","Caledonia Investments","Financials"),
+    ("CLG.L","Close Brothers Group","Financials"),
+    ("CTY.L","City of London Investment Trust","Financials"),
+    ("DLG.L","Direct Line Insurance Group","Financials"),
+    ("EMG.L","Man Group","Financials"),
+    ("FCIT.L","F&C Investment Trust","Financials"),
+    ("FGT.L","Finsbury Growth & Income Trust","Financials"),
+    ("GCP.L","GCP Infrastructure Investments","Financials"),
+    ("HICL.L","HICL Infrastructure","Financials"),
+    ("IGG.L","IG Group Holdings","Financials"),
+    ("IMP.L","Impax Asset Management","Financials"),
+    ("INPP.L","International Public Partnerships","Financials"),
+    ("IPF.L","International Personal Finance","Financials"),
+    ("IPO.L","IP Group","Financials"),
+    ("JMG.L","Jupiter Fund Management","Financials"),
+    ("JTC.L","JTC PLC","Financials"),
+    ("JUST.L","Just Group","Financials"),
+    ("LIT.L","Litigation Capital Management","Financials"),
+    ("LRE.L","Lancashire Holdings","Financials"),
+    ("LSL.L","LSL Property Services","Financials"),
+    ("MRCH.L","Merchants Trust","Financials"),
+    ("MTW.L","Mattioli Woods","Financials"),
+    ("MUT.L","Murray Income Trust","Financials"),
+    ("NCYF.L","CQS New City High Yield Fund","Financials"),
+    ("NSF.L","Non-Standard Finance","Financials"),
+    ("OSB.L","OSB Group","Financials"),
+    ("PAY.L","PayPoint","Financials"),
+    ("PHNX.L","Phoenix Group Holdings","Financials"),
+    ("POLR.L","Polar Capital Holdings","Financials"),
+    ("RECI.L","Real Estate Credit Investments","Financials"),
+    ("SDR.L","Schroders","Financials"),
+    ("STB.L","Secure Trust Bank","Financials"),
+    ("TAM.L","Tatton Asset Management","Financials"),
+    ("TBC.L","TBC Bank Group","Financials"),
+    ("TFG.L","Tetragon Financial Group","Financials"),
+    ("TMPL.L","Temple Bar Investment Trust","Financials"),
+    ("TPN.L","TP ICAP Group","Financials"),
+    ("UIL.L","UIL Limited","Financials"),
+    ("VEIL.L","Vietnam Enterprise Investments","Financials"),
+    ("XPP.L","XPS Pensions Group","Financials"),
+    # Real Estate
+    ("BCPT.L","Balanced Commercial Property Trust","Real Estate"),
+    ("BWY.L","Bellway","Real Estate"),
+    ("CREI.L","Custodian Property Income REIT","Real Estate"),
+    ("EBOX.L","Tritax EuroBox","Real Estate"),
+    ("GPOR.L","Great Portland Estates","Real Estate"),
+    ("HMSO.L","Hammerson","Real Estate"),
+    ("LMP.L","LondonMetric Property","Real Estate"),
+    ("NRR.L","NewRiver REIT","Real Estate"),
+    ("PCTN.L","Picton Property Income","Real Estate"),
+    ("PHP.L","Primary Health Properties","Real Estate"),
+    ("PSN.L","Persimmon","Real Estate"),
+    ("RGL.L","Regional REIT","Real Estate"),
+    ("SAFE.L","Safestore Holdings","Real Estate"),
+    ("SHED.L","Urban Logistics REIT","Real Estate"),
+    ("SUPR.L","Supermarket Income REIT","Real Estate"),
+    ("THRL.L","Target Healthcare REIT","Real Estate"),
+    ("TRIG.L","Renewables Infrastructure Group","Utilities"),
+    ("VTY.L","Vistry Group","Real Estate"),
+    ("WKP.L","Workspace Group","Real Estate"),
+    # Consumer Discretionary & Leisure
+    ("AML.L","Aston Martin Lagonda","Consumer Disc."),
+    ("ASC.L","ASOS","Consumer Disc."),
+    ("ATG.L","Auction Technology Group","Technology"),
+    ("BOO.L","boohoo Group","Consumer Disc."),
+    ("CURY.L","Currys","Consumer Disc."),
+    ("DNLM.L","Dunelm Group","Consumer Disc."),
+    ("DTY.L","Dignity","Consumer Disc."),
+    ("EZJ.L","easyJet","Consumer Disc."),
+    ("FRAS.L","Frasers Group","Consumer Disc."),
+    ("GAW.L","Games Workshop Group","Consumer Disc."),
+    ("HFD.L","Halfords Group","Consumer Disc."),
+    ("ITV.L","ITV","Communication"),
+    ("JET2.L","Jet2 PLC","Consumer Disc."),
+    ("MAB.L","Mitchells & Butlers","Consumer Disc."),
+    ("MKS.L","Marks & Spencer","Consumer Disc."),
+    ("OTB.L","On the Beach Group","Consumer Disc."),
+    ("PETS.L","Pets at Home Group","Consumer Disc."),
+    ("RNK.L","Rank Group","Consumer Disc."),
+    ("RTN.L","Restaurant Group","Consumer Disc."),
+    ("SMWH.L","WH Smith","Consumer Disc."),
+    ("TRN.L","Trainline","Technology"),
+    ("TUI.L","TUI AG","Consumer Disc."),
+    ("WIZZ.L","Wizz Air Holdings","Consumer Disc."),
+    # Consumer Staples
+    ("CWR.L","Cranswick","Consumer Staples"),
+    ("GRG.L","Greggs","Consumer Staples"),
+    ("MCB.L","McBride","Consumer Staples"),
+    ("PFD.L","Premier Foods","Consumer Staples"),
+    ("PZC.L","PZ Cussons","Consumer Staples"),
+    # Healthcare
+    ("CVS.L","CVS Group","Healthcare"),
+    ("GNS.L","Genus","Healthcare"),
+    ("INDV.L","Indivior","Healthcare"),
+    # Industrials & Engineering
+    ("AVON.L","Avon Protection","Industrials"),
+    ("CHG.L","Chemring Group","Industrials"),
+    ("CKSN.L","Clarkson PLC","Industrials"),
+    ("COA.L","Coats Group","Industrials"),
+    ("CPI.L","Capita","Industrials"),
+    ("DCC.L","DCC PLC","Industrials"),
+    ("ESNT.L","Essentra","Industrials"),
+    ("FOUR.L","4imprint Group","Industrials"),
+    ("HIL.L","Hill & Smith Holdings","Industrials"),
+    ("HWDN.L","Howden Joinery Group","Industrials"),
+    ("KIER.L","Kier Group","Industrials"),
+    ("MER.L","Mears Group","Industrials"),
+    ("MRL.L","Marlowe","Industrials"),
+    ("NMR.L","Norcros","Industrials"),
+    ("NWF.L","NWF Group","Industrials"),
+    ("OCN.L","Ocean Wilsons Holdings","Industrials"),
+    ("PAG.L","Pagegroup","Industrials"),
+    ("QQ.L","QinetiQ Group","Industrials"),
+    ("RCDO.L","Ricardo","Industrials"),
+    ("RWS.L","RWS Holdings","Industrials"),
+    ("SFR.L","Severfield","Industrials"),
+    ("SHI.L","SIG PLC","Industrials"),
+    ("SNR.L","Senior PLC","Industrials"),
+    ("TPK.L","Travis Perkins","Industrials"),
+    # Technology
+    ("ALFA.L","Alfa Financial Software","Technology"),
+    ("AWE.L","Alphawave IP Group","Technology"),
+    ("BCG.L","Baltic Classifieds Group","Technology"),
+    ("FDM.L","FDM Group","Technology"),
+    ("GBG.L","GB Group","Technology"),
+    ("KNOS.L","Kainos Group","Technology"),
+    ("MONY.L","Moneysupermarket.com","Technology"),
+    ("NCC.L","NCC Group","Technology"),
+    ("SPT.L","Spirent Communications","Technology"),
+    ("TRMR.L","Tremor International","Technology"),
+    # Energy & Materials
+    ("CAML.L","Central Asia Metals","Materials"),
+    ("CNE.L","Capricorn Energy","Energy"),
+    ("ELM.L","Elementis","Materials"),
+    ("ENOG.L","Energean","Energy"),
+    ("FXPO.L","Ferrexpo","Materials"),
+    ("GKP.L","Gulf Keystone Petroleum","Energy"),
+    ("HBR.L","Harbour Energy","Energy"),
+    ("HOC.L","Hochschild Mining","Materials"),
+    ("HTG.L","Hunting","Energy"),
+    ("SLP.L","Sylvania Platinum","Materials"),
+    ("TLW.L","Tullow Oil","Energy"),
+    ("TVE.L","Treatt","Materials"),
+    ("VED.L","Vedanta Resources","Materials"),
+    ("YCA.L","Yellow Cake","Materials"),
+]
+
+
+def _fetch_ftse250_universe():
+    result = []
+    for ticker, company, sector in _FTSE250_TICKERS:
+        result.append({"ticker": ticker, "company": company,
+                        "sector": sector, "industry": "",
+                        "exchange": "LSE", "market": "uk",
+                        "country": "United Kingdom", "currency": "GBP",
+                        "index_member": "ftse250"})
+    print(f"[SCOUT] FTSE 250: {len(result)} tickers (hardcoded)", flush=True)
+    return result
+
+
 def _build_scout_universe():
     """Fetch all index constituents and populate scout_universe table."""
     all_stocks = {}
@@ -8445,6 +8616,10 @@ def _build_scout_universe():
                 all_stocks[t]["index_member"] += ",dj30"
 
     for s in _fetch_ftse100_universe():
+        if s["ticker"] not in all_stocks:
+            all_stocks[s["ticker"]] = s
+
+    for s in _fetch_ftse250_universe():
         if s["ticker"] not in all_stocks:
             all_stocks[s["ticker"]] = s
 
