@@ -881,10 +881,11 @@ async function applyFilter() {
 
   const universeTickers = sessionUniverse.map(r => r.ticker);
 
-  showState("state-loading");
-  setLoadingStep(1);
-  setTimeout(() => setLoadingStep(2), 600);
-  setTimeout(() => setLoadingStep(3), 1500);
+  // Stay on results page — show inline loading on the button only
+  const filterBtn = document.querySelector("#state-results .scout-btn[onclick*='applyFilter']");
+  const origBtnText = filterBtn ? filterBtn.textContent : "Filter →";
+  if (filterBtn) { filterBtn.textContent = "Filtering…"; filterBtn.disabled = true; }
+  document.getElementById("res-error").style.display = "none";
 
   try {
     const res = await fetch(`${API}/scout/filter`, {
@@ -913,12 +914,14 @@ async function applyFilter() {
     relevanceMin = 1;
     document.getElementById("relevance-slider").value = 1;
     document.getElementById("relevance-value-label").textContent = _relevanceLabel(1);
+    if (filterBtn) { filterBtn.textContent = origBtnText; filterBtn.disabled = false; }
     applyDisplayFilters();
     renderChatChain();
     showState("state-results");
     window.scrollTo({top: 0, behavior: "smooth"});
 
   } catch (err) {
+    if (filterBtn) { filterBtn.textContent = origBtnText; filterBtn.disabled = false; }
     activeFilter = null;
     showError("Filter failed — " + (err.message || "please try again."));
   }
