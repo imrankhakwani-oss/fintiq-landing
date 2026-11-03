@@ -51,7 +51,7 @@ a{color:var(--gold);text-decoration:none}
 }
 
 /* ── Page ── */
-.page{max-width:780px;margin:0 auto;padding:48px 20px 80px}
+.page{max-width:1060px;margin:0 auto;padding:48px 20px 80px}
 
 /* ── H1 for SEO ── */
 .page-h1{font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:center;margin-bottom:32px}
@@ -109,45 +109,69 @@ a{color:var(--gold);text-decoration:none}
 .loading-step.done .dot{background:var(--green)}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
+/* ── Chat chain ── */
+.chat-chain{margin-bottom:28px;display:flex;flex-direction:column;gap:10px}
+.chat-bubble{display:flex;gap:10px;align-items:flex-start}
+.chat-bubble.user{justify-content:flex-end}
+.chat-bubble.assistant{justify-content:flex-start}
+.bubble-inner{max-width:80%;padding:10px 14px;border-radius:14px;font-size:0.85rem;line-height:1.5}
+.chat-bubble.user .bubble-inner{background:var(--gold2);border:1px solid rgba(245,166,35,0.3);color:var(--text);border-radius:14px 14px 4px 14px}
+.chat-bubble.assistant .bubble-inner{background:var(--card2);border:1px solid var(--border);color:var(--dim);border-radius:14px 14px 14px 4px}
+.bubble-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
+.bubble-text{font-size:0.85rem;color:var(--text)}
+.bubble-edit{font-size:0.7rem;color:var(--gold);cursor:pointer;margin-left:8px;text-decoration:underline;opacity:0.7}
+.bubble-edit:hover{opacity:1}
+
 /* ── Results state ── */
-.results-header{margin-bottom:28px}
+.results-header{margin-bottom:20px}
 .results-strategy{display:flex;align-items:center;gap:12px;margin-bottom:16px}
 .strat-emoji{font-size:2rem}
 .strat-label{font-size:1.4rem;font-weight:900;letter-spacing:-0.02em}
 .strat-count{font-size:0.8rem;color:var(--muted);margin-top:2px}
-.criteria-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.criteria-pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
 .criteria-pill{background:var(--card2);border:1px solid var(--border);padding:6px 12px;border-radius:20px;font-size:0.78rem;color:var(--dim);display:flex;align-items:center;gap:6px}
 .criteria-pill::before{content:"✓";color:var(--green);font-size:0.7rem}
-.results-notice{font-size:0.75rem;color:var(--muted);background:rgba(30,58,95,0.3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.results-notice{font-size:0.75rem;color:var(--muted);background:rgba(30,58,95,0.3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .results-notice::before{content:"ℹ";font-size:0.85rem;flex-shrink:0}
 
-.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:14px;transition:border-color .2s}
+/* Sort bar */
+.sort-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:16px}
+.sort-label{font-size:0.75rem;color:var(--muted)}
+.sort-select{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--dim);font-family:var(--font);font-size:0.8rem;cursor:pointer;outline:none}
+.sort-select:focus{border-color:var(--gold)}
+
+/* Cards grid */
+.cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:700px){.cards-grid{grid-template-columns:1fr}}
+
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;transition:border-color .2s;display:flex;flex-direction:column}
 .result-card:hover{border-color:rgba(245,166,35,0.4)}
-.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:12px}
+.card-body{flex:1;display:flex;flex-direction:column}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px}
 .card-co{flex:1;min-width:0}
-.card-company{font-size:1rem;font-weight:800;line-height:1.2}
-.card-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap}
-.card-ticker{font-size:0.72rem;color:var(--muted);font-weight:700;letter-spacing:0.07em;background:rgba(30,58,95,0.5);padding:2px 8px;border-radius:4px;text-transform:uppercase}
-.card-market{font-size:0.65rem;padding:2px 7px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
+.card-company{font-size:0.95rem;font-weight:800;line-height:1.2}
+.card-meta{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap}
+.card-ticker{font-size:0.7rem;color:var(--muted);font-weight:700;letter-spacing:0.07em;background:rgba(30,58,95,0.5);padding:2px 7px;border-radius:4px;text-transform:uppercase}
+.card-market{font-size:0.62rem;padding:2px 6px;border-radius:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
 .card-market.us{background:rgba(56,189,248,0.12);color:var(--blue)}
 .card-market.uk{background:rgba(129,140,248,0.12);color:var(--purple)}
 .card-market.eu{background:rgba(16,185,129,0.12);color:var(--green)}
 .card-market.global{background:rgba(245,166,35,0.12);color:var(--gold)}
-.card-sector{font-size:0.72rem;color:var(--muted)}
+.card-sector{font-size:0.7rem;color:var(--muted)}
 
-.card-why{font-size:0.9rem;font-weight:600;color:var(--text);margin-bottom:6px;line-height:1.5}
-.card-now{font-size:0.82rem;color:var(--dim);margin-bottom:14px;line-height:1.5}
+.card-why{font-size:0.85rem;font-weight:600;color:var(--text);margin-bottom:5px;line-height:1.5}
+.card-now{font-size:0.8rem;color:var(--dim);margin-bottom:12px;line-height:1.5;flex:1}
 
-.card-metrics{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-.metric-chip{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 12px;text-align:center;min-width:72px}
-.metric-chip .mc-label{font-size:0.6rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:2px}
-.metric-chip .mc-val{font-size:0.9rem;font-weight:700;color:var(--text)}
-.metric-chip .mc-unit{font-size:0.65rem;color:var(--muted)}
+.card-metrics{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.metric-chip{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;text-align:center;min-width:64px}
+.metric-chip .mc-label{font-size:0.58rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:2px}
+.metric-chip .mc-val{font-size:0.85rem;font-weight:700;color:var(--text)}
+.metric-chip .mc-unit{font-size:0.62rem;color:var(--muted)}
 .metric-chip.income .mc-val{color:var(--green)}
 .metric-chip.growth .mc-val{color:var(--blue)}
 .metric-chip.analyst .mc-val{color:var(--purple)}
 
-.deep-dive-btn{display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:8px 18px;font-weight:700;font-size:0.82rem;cursor:pointer;font-family:var(--font);text-decoration:none;transition:opacity .2s}
+.deep-dive-btn{display:inline-flex;align-items:center;gap:6px;background:var(--gold);color:#050f1c;border:none;border-radius:8px;padding:7px 16px;font-weight:700;font-size:0.8rem;cursor:pointer;font-family:var(--font);text-decoration:none;transition:opacity .2s;align-self:flex-start;margin-top:auto}
 .deep-dive-btn:hover{opacity:0.9}
 .deep-dive-btn .dd-arrow{font-size:0.9rem}
 
@@ -293,8 +317,11 @@ a{color:var(--gold);text-decoration:none}
   <!-- ── State: Results ── -->
   <div id="state-results">
 
-    <!-- Inline search bar to try a new scan without losing context -->
-    <div style="display:flex;gap:8px;margin-bottom:28px;align-items:center">
+    <!-- Chat chain — shows the conversation so far -->
+    <div class="chat-chain" id="chat-chain"></div>
+
+    <!-- Refine search bar -->
+    <div style="display:flex;gap:8px;margin-bottom:24px;align-items:center">
       <input id="results-refine-input" type="text" placeholder="Try a new search…"
         style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 16px;color:var(--text);font-family:var(--font);font-size:0.9rem;outline:none"
         onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
@@ -314,7 +341,17 @@ a{color:var(--gold);text-decoration:none}
       <div class="results-notice" id="res-notice"></div>
     </div>
 
-    <div id="res-cards"></div>
+    <!-- Sort bar -->
+    <div class="sort-bar">
+      <span class="sort-label">Sort by</span>
+      <select class="sort-select" id="sort-select" onchange="sortCards()">
+        <option value="default">Best match</option>
+        <option value="mcap_desc">Market cap ↓ High to Low</option>
+        <option value="mcap_asc">Market cap ↑ Low to High</option>
+      </select>
+    </div>
+
+    <div class="cards-grid" id="res-cards"></div>
 
     <div class="results-reset">
       <button class="reset-btn" onclick="resetToInput()">← Try a different search</button>
@@ -340,6 +377,7 @@ const API = "https://api.fintiq.uk";
 let currentThesis = "";
 let clarifyData = null;
 let selectedAnswers = {};   // { q1: "value", q2: "value" }
+let allResultCards = [];    // store all result objects for client-side sort
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function showState(id) {
@@ -381,6 +419,7 @@ async function startScout() {
   if (thesis.length < 5) return;
   currentThesis = thesis;
   selectedAnswers = {};
+  allResultCards = [];
 
   // Hide input errors
   const errEl = document.getElementById("input-error");
@@ -530,7 +569,7 @@ function renderResults(data) {
   document.getElementById("res-label").textContent = data.strategy_label || "Custom Screen";
   document.getElementById("res-count").textContent =
     data.total_matched > 0
-      ? `${data.total_matched} stocks matched · showing top ${data.results.length}`
+      ? `${data.total_matched} stocks matched`
       : "No stocks matched — try a broader description";
 
   // Criteria pills
@@ -547,26 +586,81 @@ function renderResults(data) {
   document.getElementById("res-notice").textContent =
     data.data_notice || "Fundamentals updated weekly — use Deep Dive for latest earnings data.";
 
-  // Cards
+  // Store all results and render
+  allResultCards = data.results || [];
+  document.getElementById("sort-select").value = "default";
+  renderCards(allResultCards);
+
+  // Chat chain
+  renderChatChain();
+
+  showState("state-results");
+}
+
+function renderCards(results) {
   const cardsEl = document.getElementById("res-cards");
   cardsEl.innerHTML = "";
-
-  if (!data.results || data.results.length === 0) {
-    cardsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted)">
+  if (!results || results.length === 0) {
+    cardsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);grid-column:1/-1">
       No strong matches found. Try describing your idea differently — for example, add a sector or mention a specific theme.
     </div>`;
   } else {
-    data.results.forEach(r => {
-      cardsEl.appendChild(buildCard(r));
+    results.forEach(r => cardsEl.appendChild(buildCard(r)));
+  }
+}
+
+function sortCards() {
+  const order = document.getElementById("sort-select").value;
+  let sorted = [...allResultCards];
+  if (order === "mcap_desc") {
+    sorted.sort((a, b) => (b.market_cap_usd || 0) - (a.market_cap_usd || 0));
+  } else if (order === "mcap_asc") {
+    sorted.sort((a, b) => (a.market_cap_usd || 0) - (b.market_cap_usd || 0));
+  }
+  renderCards(sorted);
+}
+
+function renderChatChain() {
+  const chainEl = document.getElementById("chat-chain");
+  chainEl.innerHTML = "";
+
+  // User thesis bubble
+  const tb = document.createElement("div");
+  tb.className = "chat-bubble user";
+  tb.innerHTML = `<div class="bubble-inner">
+    <div class="bubble-label">Your search <span class="bubble-edit" onclick="resetToInput()">✎ Edit</span></div>
+    <div class="bubble-text">${escHtml(currentThesis)}</div>
+  </div>`;
+  chainEl.appendChild(tb);
+
+  // Clarification Q&As (if any answers were selected)
+  if (clarifyData) {
+    const qs = [
+      {q: clarifyData.question1, a: selectedAnswers.q1},
+      {q: clarifyData.question2, a: selectedAnswers.q2}
+    ];
+    qs.forEach(({q, a}) => {
+      if (!q) return;
+      // Scout question
+      const qb = document.createElement("div");
+      qb.className = "chat-bubble assistant";
+      qb.innerHTML = `<div class="bubble-inner"><div class="bubble-text">${escHtml(q)}</div></div>`;
+      chainEl.appendChild(qb);
+      // User answer (or skipped)
+      const ab = document.createElement("div");
+      ab.className = "chat-bubble user";
+      ab.innerHTML = `<div class="bubble-inner">
+        <div class="bubble-text">${a ? escHtml(a) : '<em style="opacity:0.5">Skipped</em>'}</div>
+      </div>`;
+      chainEl.appendChild(ab);
     });
   }
-
-  showState("state-results");
 }
 
 function buildCard(r) {
   const card = document.createElement("div");
   card.className = "result-card";
+  card.dataset.mcap = r.market_cap_usd || 0;
 
   const marketClass = r.market || "global";
   const marketLabel = {us:"US",uk:"UK",eu:"EU",global:"Global"}[r.market] || (r.market || "").toUpperCase();
@@ -579,27 +673,36 @@ function buildCard(r) {
   `).join("");
 
   const indexBadge = r.index_member
-    ? r.index_member.split(",").map(ix => ix.trim().toUpperCase().replace("SP500","S&P").replace("NASDAQ100","NDQ").replace("DJ30","DOW").replace("FTSE100","FTSE").replace("STOXX50","ESX").replace("ADR","ADR")).slice(0,2).join(" · ")
+    ? r.index_member.split(",").map(ix => ix.trim().toUpperCase()
+        .replace("SP500","S&P").replace("NASDAQ100","NDQ").replace("DJ30","DOW")
+        .replace("FTSE100","FTSE").replace("FTSE250","F250").replace("STOXX50","ESX")
+        .replace("ADR","ADR")).slice(0,2).join(" · ")
     : "";
 
+  const mcap = r.market_cap_usd || 0;
+  const mcapStr = mcap >= 1000 ? `$${(mcap/1000).toFixed(0)}B` : mcap > 0 ? `$${mcap}M` : "";
+
   card.innerHTML = `
-    <div class="card-header">
-      <div class="card-co">
-        <div class="card-company">${escHtml(r.company || r.ticker)}</div>
-        <div class="card-meta">
-          <span class="card-ticker">${escHtml(r.ticker)}</span>
-          <span class="card-market ${marketClass}">${marketLabel}</span>
-          ${r.sector ? `<span class="card-sector">${escHtml(r.sector)}</span>` : ""}
-          ${indexBadge ? `<span class="card-sector" style="color:var(--muted);opacity:0.7">${indexBadge}</span>` : ""}
+    <div class="card-body">
+      <div class="card-header">
+        <div class="card-co">
+          <div class="card-company">${escHtml(r.company || r.ticker)}</div>
+          <div class="card-meta">
+            <span class="card-ticker">${escHtml(r.ticker)}</span>
+            <span class="card-market ${marketClass}">${marketLabel}</span>
+            ${r.sector ? `<span class="card-sector">${escHtml(r.sector)}</span>` : ""}
+            ${indexBadge ? `<span class="card-sector" style="opacity:0.6">${indexBadge}</span>` : ""}
+            ${mcapStr ? `<span class="card-sector" style="color:var(--gold);opacity:0.8">${mcapStr}</span>` : ""}
+          </div>
         </div>
       </div>
+      <div class="card-why">${escHtml(r.why_it_fits || "")}</div>
+      <div class="card-now">${escHtml(r.interesting_now || "")}</div>
+      ${metricsHTML ? `<div class="card-metrics">${metricsHTML}</div>` : ""}
+      <a class="deep-dive-btn" href="${r.deep_dive_url || '/deep-dive.html?ticker=' + r.ticker}" target="_blank">
+        Deep Dive <span class="dd-arrow">↗</span>
+      </a>
     </div>
-    <div class="card-why">${escHtml(r.why_it_fits || "")}</div>
-    <div class="card-now">${escHtml(r.interesting_now || "")}</div>
-    ${metricsHTML ? `<div class="card-metrics">${metricsHTML}</div>` : ""}
-    <a class="deep-dive-btn" href="${r.deep_dive_url || '/deep-dive.html?ticker=' + r.ticker}" target="_blank">
-      Deep Dive <span class="dd-arrow">↗</span>
-    </a>
   `;
   return card;
 }
@@ -623,6 +726,7 @@ function resetToInput() {
   currentThesis = "";
   clarifyData = null;
   selectedAnswers = {};
+  allResultCards = [];
   showState("state-input");
   window.scrollTo({top:0, behavior:"smooth"});
 }

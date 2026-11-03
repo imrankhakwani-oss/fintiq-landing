@@ -9217,19 +9217,29 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
     if not candidates:
         return []
 
-    if not ANTHROPIC_API_KEY:
-        return [{
-            "ticker": s["ticker"], "company": s.get("company", ""),
-            "sector": s.get("sector", ""), "market": s.get("market", ""),
+    def _make_result(s, why="", now=""):
+        return {
+            "ticker": s["ticker"],
+            "company": s.get("company", ""),
+            "sector": s.get("sector", ""),
+            "market": s.get("market", ""),
             "index_member": s.get("index_member", ""),
-            "why_it_fits": "Matches your screening criteria.",
-            "interesting_now": (s.get("description") or "")[:150],
+            "market_cap_usd": s.get("market_cap_usd") or 0,
+            "why_it_fits": why or "Matches your screening criteria.",
+            "interesting_now": now or (s.get("description") or "")[:150],
             "metrics": _build_display_metrics(s),
             "deep_dive_url": f"/deep-dive.html?ticker={s['ticker']}"
-        } for s in candidates[:8]]
+        }
+
+    if not ANTHROPIC_API_KEY:
+        return [_make_result(s) for s in candidates]
+
+    # Ask Claude to explain up to 25 stocks; the rest get metrics-only cards appended
+    explain_batch = candidates[:25]
+    overflow = candidates[25:]
 
     cand_lines = []
-    for s in candidates[:15]:
+    for s in explain_batch:
         line = (f"{s['ticker']}|{s.get('company','')}|{s.get('sector','')}|"
                 f"PE:{s.get('pe')}|Yield:{s.get('dividend_yield')}%|"
                 f"RevGrowth:{s.get('revenue_growth')}%|OpMargin:{s.get('operating_margin')}%|"
@@ -9241,18 +9251,17 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
     prompt = (
         f'Investor thesis: "{thesis}"  Strategy: {strategy_label}\n\n'
         f"Stocks that passed the quantitative screen:\n{cand_block}\n\n"
-        "Pick the BEST 5-8 stocks that most compellingly match this thesis.\n"
+        "Write a short plain-English explanation for EVERY stock in the list above.\n"
         "For each write:\n"
         "- why_it_fits: ONE sentence, plain English, specific to this company\n"
-        "- interesting_now: ONE concrete fact about its current position or opportunity\n"
-        "Prioritise variety across sectors.\n\n"
-        'Return ONLY JSON array: [{"ticker":"","why_it_fits":"","interesting_now":""}]'
+        "- interesting_now: ONE concrete fact about its current position or opportunity\n\n"
+        'Return ONLY JSON array (one entry per stock): [{"ticker":"","why_it_fits":"","interesting_now":""}]'
     )
 
     try:
         client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
         resp = client.messages.create(
-            model="claude-haiku-4-5-20251001", max_tokens=1500,
+            model="claude-haiku-4-5-20251001", max_tokens=4000,
             messages=[{"role": "user", "content": prompt}]
         )
         raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
@@ -9261,35 +9270,27 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
         explanations = json.loads(raw)
 
         cand_map = {s["ticker"]: s for s in candidates}
+        explained_tickers = set()
         results = []
         for exp in explanations:
             t = exp.get("ticker", "")
             s = cand_map.get(t)
             if not s:
                 continue
-            results.append({
-                "ticker": t,
-                "company": s.get("company", ""),
-                "sector": s.get("sector", ""),
-                "market": s.get("market", ""),
-                "index_member": s.get("index_member", ""),
-                "why_it_fits": exp.get("why_it_fits", ""),
-                "interesting_now": exp.get("interesting_now", ""),
-                "metrics": _build_display_metrics(s),
-                "deep_dive_url": f"/deep-dive.html?ticker={t}"
-            })
+            explained_tickers.add(t)
+            results.append(_make_result(s, exp.get("why_it_fits",""), exp.get("interesting_now","")))
+
+        # Add any explain_batch stocks Claude missed, then overflow stocks
+        for s in explain_batch:
+            if s["ticker"] not in explained_tickers:
+                results.append(_make_result(s))
+        for s in overflow:
+            results.append(_make_result(s))
+
         return results
     except Exception as e:
         print(f"[SCOUT] Explain error: {e}", flush=True)
-        return [{
-            "ticker": s["ticker"], "company": s.get("company", ""),
-            "sector": s.get("sector", ""), "market": s.get("market", ""),
-            "index_member": s.get("index_member", ""),
-            "why_it_fits": "Matches your screening criteria.",
-            "interesting_now": (s.get("description") or "")[:150],
-            "metrics": _build_display_metrics(s),
-            "deep_dive_url": f"/deep-dive.html?ticker={s['ticker']}"
-        } for s in candidates[:6]]
+        return [_make_result(s) for s in candidates]
 
 
 # ── Clarify question generator ─────────────────────────────────────────────────
