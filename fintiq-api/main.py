@@ -9265,8 +9265,14 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
             messages=[{"role": "user", "content": prompt}]
         )
         raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+        # Strip code fences if present
         raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
         raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
+        # Extract just the JSON array — drop any trailing commentary
+        _start = raw.find("[")
+        _end = raw.rfind("]") + 1
+        if _start >= 0 and _end > _start:
+            raw = raw[_start:_end]
         explanations = json.loads(raw)
 
         cand_map = {s["ticker"]: s for s in candidates}
