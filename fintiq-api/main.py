@@ -9013,10 +9013,29 @@ def _translate_thesis_to_params(thesis: str, clarifications: dict) -> dict:
     market_hint = clarifications.get("market", "global")
     horizon_hint = clarifications.get("horizon", "")
     direction_hint = clarifications.get("direction", "")
+    size_hint = clarifications.get("size", "")
+
+    # Build explicit size/horizon rules to include in the prompt
+    size_rule = ""
+    if size_hint:
+        sl = size_hint.lower()
+        if any(w in sl for w in ["small", "smaller", "pure", "growth", "mid"]):
+            size_rule = "SIZE RULE: User wants smaller/growth companies — set market_cap_max=50000 (i.e. under $50B).\n"
+        elif any(w in sl for w in ["large", "big", "established", "mega", "giant"]):
+            size_rule = "SIZE RULE: User wants large/established companies — set market_cap_min=100000 (i.e. over $100B).\n"
+
+    horizon_rule = ""
+    if horizon_hint:
+        hl = horizon_hint.lower()
+        if any(w in hl for w in ["short", "trade", "week", "month", "momentum"]):
+            horizon_rule = "HORIZON RULE: Short-term trading — set return_52w_min=5, beta_max=2.0.\n"
+        elif any(w in hl for w in ["long", "hold", "year", "decade", "forever"]):
+            horizon_rule = "HORIZON RULE: Long-term holding — set roe_min=10, debt_equity_max=3.\n"
 
     prompt = (
         f'Investor thesis: "{thesis}"\n'
-        f'Market: "{market_hint}"  Horizon: "{horizon_hint}"  Direction: "{direction_hint}"\n\n'
+        f'Market: "{market_hint}"  Horizon: "{horizon_hint}"  Size: "{size_hint}"  Direction: "{direction_hint}"\n\n'
+        f"{size_rule}{horizon_rule}"
         f"{_SCOUT_DATA_CAPABILITIES}\n\n"
         "Generate a precise screening recipe that returns 8-25 stocks.\n"
         "Rules:\n"
@@ -9024,8 +9043,10 @@ def _translate_thesis_to_params(thesis: str, clarifications: dict) -> dict:
         "- For thematic/macro screens, use theme_scores + description keywords\n"
         "- For traditional screens (value/growth/income), use financial metrics\n"
         "- market: us/uk/eu/global (global = no filter)\n"
+        "- market_cap values are in millions USD (e.g. 50000 = $50B)\n"
         "- Keep theme score thresholds at 2+ for meaningful matches\n"
-        "- Use 2-5 description_include keywords for qualitative screens\n\n"
+        "- Use 2-5 description_include keywords for qualitative screens\n"
+        "- Apply any SIZE RULE or HORIZON RULE instructions above exactly as stated\n\n"
         "Return ONLY valid JSON:\n"
         '{"strategy_label":"2-4 word label","strategy_emoji":"one emoji",'
         '"key_criteria":["plain English criterion 1","criterion 2","criterion 3"],'
@@ -9062,7 +9083,7 @@ def _translate_thesis_to_params(thesis: str, clarifications: dict) -> dict:
 
 
 # ── SQLite screener ─────────────────────────────────────────────────────────────
-def _screen_universe(params: dict) -> list:
+def _screen_universe(params: dict, ticker_whitelist: list = None) -> list:
     conn = _scout_db()
     rows = conn.execute("""
         SELECT f.*, p.ai_score, p.defence_score, p.energy_score, p.healthcare_score,
@@ -9076,6 +9097,10 @@ def _screen_universe(params: dict) -> list:
         LEFT JOIN scout_universe u ON f.ticker = u.ticker
         WHERE u.active = 1
     """).fetchall()
+    # If a ticker whitelist is provided (filter mode), restrict to those tickers only
+    if ticker_whitelist:
+        _wl = set(ticker_whitelist)
+        rows = [r for r in rows if r["ticker"] in _wl]
     # Theme scores and text/description filters only work after AI tagging has run.
     # If tagging hasn't happened yet, skip those filters so sector+fundamentals still work.
     _tagged_count = conn.execute(
@@ -9306,16 +9331,22 @@ def _get_clarify_question(thesis: str) -> dict:
 
     prompt = (
         f'Retail investor typed this into an AI stock scanner: "{thesis}"\n\n'
-        "Decide if 1-2 clarifying questions would meaningfully improve scan results.\n"
-        "Only ask if the answer changes which stocks appear.\n"
-        "Allowed question types:\n"
-        "- market: US / UK / EU / Global\n"
-        "- horizon: Short-term trade vs Long-term hold\n"
-        "- direction: Benefiting FROM trend vs Avoiding exposure TO trend\n"
-        "- size: Large established companies vs Smaller growth companies\n\n"
-        "If thesis is already specific, set needs_clarification=false.\n\n"
+        "Decide if a clarifying question is ESSENTIAL to produce meaningful results.\n\n"
+        "Set needs_clarification=FALSE (run the scan directly) when:\n"
+        "- The thesis names a clear theme, sector, or strategy (AI, defence, dividends, tech, UK stocks...)\n"
+        "- The thesis mentions a specific financial criterion (P/E under 15, dividend yield, growth...)\n"
+        "- The thesis clearly implies a market or sector even without naming it\n"
+        "- ANY reasonable interpretation of the thesis would produce a valid screen\n\n"
+        "Set needs_clarification=TRUE ONLY when:\n"
+        "- The thesis is so vague it cannot be screened (e.g. 'good stocks', 'safe investment')\n"
+        "- The thesis is self-contradictory or impossible to map to financial data\n"
+        "- A single ambiguity would fundamentally change which stocks appear (e.g. US vs UK market)\n\n"
+        "If in doubt, set needs_clarification=FALSE and run the scan.\n\n"
+        "If clarification IS needed, ask at most ONE question.\n"
+        "Use short, lowercase values: market='us'/'uk'/'eu'/'global', direction='benefit'/'avoid'\n\n"
         "Return JSON only:\n"
-        '{"needs_clarification":true,"question1":"text or null","options1":null or '
+        '{"needs_clarification":false} or '
+        '{"needs_clarification":true,"question1":"text","options1":'
         '[{"label":"...","value":"...","emoji":"..."}],'
         '"question2":null,"options2":null}'
     )
@@ -9441,5 +9472,36 @@ async def scout_scan(request: Request):
         "total_matched": len(candidates),
         "results": results,
         "data_notice": "Fundamentals updated weekly — use Deep Dive for latest earnings data.",
+        "generated_at": datetime.utcnow().isoformat()
+    }
+
+
+@app.post("/scout/filter")
+async def scout_filter(request: Request):
+    """Filter within a session universe — applies a query only against a fixed ticker list."""
+    body = await request.json()
+    filter_query = (body.get("filter_query") or "").strip()
+    universe_tickers = body.get("universe_tickers") or []
+
+    if not filter_query or len(filter_query) < 5:
+        raise HTTPException(status_code=400, detail="filter_query required")
+    if not universe_tickers:
+        raise HTTPException(status_code=400, detail="universe_tickers required")
+
+    _init_scout_db()
+
+    params = _translate_thesis_to_params(filter_query, {})
+    if "error" in params:
+        raise HTTPException(status_code=500, detail=params["error"])
+
+    candidates = _screen_universe(params, ticker_whitelist=universe_tickers)
+    results = _write_scout_explanations(candidates, filter_query, params.get("strategy_label", ""))
+
+    return {
+        "strategy_label": params.get("strategy_label", ""),
+        "strategy_emoji": params.get("strategy_emoji", ""),
+        "key_criteria": params.get("key_criteria", []),
+        "total_matched": len(candidates),
+        "results": results,
         "generated_at": datetime.utcnow().isoformat()
     }

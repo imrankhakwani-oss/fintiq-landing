@@ -110,7 +110,7 @@ a{color:var(--gold);text-decoration:none}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
 /* ── Chat chain ── */
-.chat-chain{margin-bottom:28px;display:flex;flex-direction:column;gap:10px}
+.chat-chain{margin-bottom:20px;display:flex;flex-direction:column;gap:10px}
 .chat-bubble{display:flex;gap:10px;align-items:flex-start}
 .chat-bubble.user{justify-content:flex-end}
 .chat-bubble.assistant{justify-content:flex-start}
@@ -119,8 +119,14 @@ a{color:var(--gold);text-decoration:none}
 .chat-bubble.assistant .bubble-inner{background:var(--card2);border:1px solid var(--border);color:var(--dim);border-radius:14px 14px 14px 4px}
 .bubble-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--muted);margin-bottom:4px}
 .bubble-text{font-size:0.85rem;color:var(--text)}
-.bubble-edit{font-size:0.7rem;color:var(--gold);cursor:pointer;margin-left:8px;text-decoration:underline;opacity:0.7}
-.bubble-edit:hover{opacity:1}
+
+/* ── Active filter bar ── */
+.filter-active-bar{background:rgba(245,166,35,0.06);border:1px solid rgba(245,166,35,0.25);border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.filter-active-label{font-size:0.72rem;text-transform:uppercase;letter-spacing:0.07em;color:var(--gold);font-weight:700;flex-shrink:0}
+.filter-active-query{font-size:0.85rem;color:var(--text);flex:1}
+.filter-count{font-size:0.78rem;color:var(--muted);flex-shrink:0}
+.filter-clear-btn{background:transparent;border:1px solid rgba(245,166,35,0.4);border-radius:6px;padding:4px 10px;font-size:0.75rem;color:var(--gold);cursor:pointer;font-family:var(--font);transition:all .2s;flex-shrink:0}
+.filter-clear-btn:hover{background:var(--gold2)}
 
 /* ── Results state ── */
 .results-header{margin-bottom:20px}
@@ -320,13 +326,21 @@ a{color:var(--gold);text-decoration:none}
     <!-- Chat chain — shows the conversation so far -->
     <div class="chat-chain" id="chat-chain"></div>
 
-    <!-- Refine search bar -->
-    <div style="display:flex;gap:8px;margin-bottom:24px;align-items:center">
-      <input id="results-refine-input" type="text" placeholder="Try a new search…"
+    <!-- Filter bar — applies on top of the session universe -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+      <input id="filter-input" type="text" placeholder="Filter these results… e.g. earnings growing 3 years, P/E fallen"
         style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 16px;color:var(--text);font-family:var(--font);font-size:0.9rem;outline:none"
         onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
-        onkeydown="if(event.key==='Enter')refineSearch()">
-      <button class="scout-btn" style="padding:10px 20px;white-space:nowrap" onclick="refineSearch()">Scout →</button>
+        onkeydown="if(event.key==='Enter')applyFilter()">
+      <button class="scout-btn" style="padding:10px 20px;white-space:nowrap" onclick="applyFilter()">Filter →</button>
+    </div>
+
+    <!-- Active filter indicator -->
+    <div class="filter-active-bar" id="filter-active-bar" style="display:none">
+      <span class="filter-active-label">Filter active</span>
+      <span class="filter-active-query" id="filter-active-query"></span>
+      <span class="filter-count" id="filter-count"></span>
+      <button class="filter-clear-btn" onclick="clearFilter()">× Clear</button>
     </div>
 
     <div class="results-header">
@@ -341,7 +355,7 @@ a{color:var(--gold);text-decoration:none}
       <div class="results-notice" id="res-notice"></div>
     </div>
 
-    <!-- Sort bar -->
+    <!-- Sort + Download bar -->
     <div class="sort-bar">
       <span class="sort-label">Sort by</span>
       <select class="sort-select" id="sort-select" onchange="sortCards()">
@@ -349,6 +363,11 @@ a{color:var(--gold);text-decoration:none}
         <option value="mcap_desc">Market cap ↓ High to Low</option>
         <option value="mcap_asc">Market cap ↑ Low to High</option>
       </select>
+      <button onclick="downloadCSV()" style="margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.78rem;color:var(--dim);cursor:pointer;font-family:var(--font);transition:all .2s"
+        onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
+        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">
+        ↓ CSV
+      </button>
     </div>
 
     <div id="res-error" style="display:none;margin-bottom:16px"></div>
@@ -356,7 +375,7 @@ a{color:var(--gold);text-decoration:none}
     <div class="cards-grid" id="res-cards"></div>
 
     <div class="results-reset">
-      <button class="reset-btn" onclick="resetToInput()">← Try a different search</button>
+      <button class="reset-btn" onclick="resetToInput()">← New search</button>
     </div>
   </div><!-- /state-results -->
 
@@ -378,8 +397,10 @@ const API = "https://api.fintiq.uk";
 // ── State ────────────────────────────────────────────────────────────────────
 let currentThesis = "";
 let clarifyData = null;
-let selectedAnswers = {};   // { q1: "value", q2: "value" }
-let allResultCards = [];    // store all result objects for client-side sort
+let selectedAnswers = {};       // { q1: "value", q2: "value" }
+let sessionUniverse = [];       // original results — locked for the session
+let activeFilter = null;        // { query, results } or null
+let allResultCards = [];        // currently displayed results (universe or filtered)
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function showState(id) {
@@ -422,6 +443,8 @@ async function startScout() {
   currentThesis = thesis;
   selectedAnswers = {};
   allResultCards = [];
+  sessionUniverse = [];
+  activeFilter = null;
 
   // Hide input errors
   const errEl = document.getElementById("input-error");
@@ -588,10 +611,14 @@ function renderResults(data) {
   document.getElementById("res-notice").textContent =
     data.data_notice || "Fundamentals updated weekly — use Deep Dive for latest earnings data.";
 
-  // Store all results and render
-  allResultCards = data.results || [];
+  // Lock session universe on first scan (never overwrite it on filter calls)
+  sessionUniverse = data.results || [];
+  allResultCards = sessionUniverse;
+  activeFilter = null;
   document.getElementById("sort-select").value = "default";
   document.getElementById("res-error").style.display = "none";
+  document.getElementById("filter-active-bar").style.display = "none";
+  document.getElementById("filter-input").value = "";
   renderCards(allResultCards);
 
   // Chat chain
@@ -627,16 +654,16 @@ function renderChatChain() {
   const chainEl = document.getElementById("chat-chain");
   chainEl.innerHTML = "";
 
-  // User thesis bubble
+  // User thesis bubble — no edit button (thesis is locked for the session)
   const tb = document.createElement("div");
   tb.className = "chat-bubble user";
   tb.innerHTML = `<div class="bubble-inner">
-    <div class="bubble-label">Your search <span class="bubble-edit" onclick="resetToInput()">✎ Edit</span></div>
+    <div class="bubble-label">Your search</div>
     <div class="bubble-text">${escHtml(currentThesis)}</div>
   </div>`;
   chainEl.appendChild(tb);
 
-  // Clarification Q&As (if any answers were selected)
+  // Clarification Q&As (if any)
   if (clarifyData) {
     const qs = [
       {q: clarifyData.question1, a: selectedAnswers.q1},
@@ -644,12 +671,10 @@ function renderChatChain() {
     ];
     qs.forEach(({q, a}) => {
       if (!q) return;
-      // Scout question
       const qb = document.createElement("div");
       qb.className = "chat-bubble assistant";
       qb.innerHTML = `<div class="bubble-inner"><div class="bubble-text">${escHtml(q)}</div></div>`;
       chainEl.appendChild(qb);
-      // User answer (or skipped)
       const ab = document.createElement("div");
       ab.className = "chat-bubble user";
       ab.innerHTML = `<div class="bubble-inner">
@@ -657,6 +682,25 @@ function renderChatChain() {
       </div>`;
       chainEl.appendChild(ab);
     });
+  }
+
+  // Active filter bubble
+  if (activeFilter) {
+    const fb = document.createElement("div");
+    fb.className = "chat-bubble user";
+    fb.innerHTML = `<div class="bubble-inner" style="border-color:rgba(245,166,35,0.5)">
+      <div class="bubble-label" style="color:var(--gold)">Filter applied</div>
+      <div class="bubble-text">${escHtml(activeFilter.query)}</div>
+    </div>`;
+    chainEl.appendChild(fb);
+    const rb = document.createElement("div");
+    rb.className = "chat-bubble assistant";
+    rb.innerHTML = `<div class="bubble-inner">
+      <div class="bubble-text">${activeFilter.results.length} of ${sessionUniverse.length} stocks match this filter.
+        <span style="color:var(--gold);cursor:pointer;margin-left:8px;font-size:0.78rem" onclick="clearFilter()">× Clear filter</span>
+      </div>
+    </div>`;
+    chainEl.appendChild(rb);
   }
 }
 
@@ -715,8 +759,10 @@ function escHtml(str) {
 }
 
 function showError(msg) {
-  // If we already have results visible, keep that state and show error inline
-  if (allResultCards.length > 0) {
+  // If a session is active, stay in results state and show error inline
+  if (sessionUniverse.length > 0) {
+    allResultCards = sessionUniverse;  // restore universe on filter error
+    renderCards(allResultCards);
     const resErr = document.getElementById("res-error");
     resErr.innerHTML = `<div class="error-box">${escHtml(msg)}</div>`;
     resErr.style.display = "block";
@@ -740,21 +786,102 @@ function resetToInput() {
   clarifyData = null;
   selectedAnswers = {};
   allResultCards = [];
+  sessionUniverse = [];
+  activeFilter = null;
   showState("state-input");
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
-function refineSearch() {
-  const input = document.getElementById("results-refine-input");
-  const val = (input.value || "").trim();
-  if (val.length < 5) { input.focus(); return; }
-  ta.value = val;
-  ta.dispatchEvent(new Event("input"));
-  currentThesis = val;
-  clarifyData = null;
-  selectedAnswers = {};
-  input.value = "";
-  startScout();
+// ── Filter (session-aware) ────────────────────────────────────────────────────
+async function applyFilter() {
+  const input = document.getElementById("filter-input");
+  const query = (input.value || "").trim();
+  if (query.length < 5) { input.focus(); return; }
+  if (!sessionUniverse.length) return;
+
+  const universeTickers = sessionUniverse.map(r => r.ticker);
+
+  showState("state-loading");
+  setLoadingStep(1);
+  setTimeout(() => setLoadingStep(2), 600);
+  setTimeout(() => setLoadingStep(3), 1500);
+
+  try {
+    const res = await fetch(`${API}/scout/filter`, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({filter_query: query, universe_tickers: universeTickers})
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Filter failed");
+    }
+    const data = await res.json();
+
+    activeFilter = {query, results: data.results || []};
+    allResultCards = activeFilter.results;
+
+    // Show filter active bar
+    document.getElementById("filter-active-query").textContent = `"${query}"`;
+    document.getElementById("filter-count").textContent =
+      `${activeFilter.results.length} of ${sessionUniverse.length} stocks`;
+    document.getElementById("filter-active-bar").style.display = "flex";
+    document.getElementById("filter-input").value = "";
+    document.getElementById("res-error").style.display = "none";
+
+    document.getElementById("sort-select").value = "default";
+    renderCards(allResultCards);
+    renderChatChain();
+    showState("state-results");
+    window.scrollTo({top: 0, behavior: "smooth"});
+
+  } catch (err) {
+    activeFilter = null;
+    showError("Filter failed — " + (err.message || "please try again."));
+  }
+}
+
+function clearFilter() {
+  activeFilter = null;
+  allResultCards = sessionUniverse;
+  document.getElementById("filter-active-bar").style.display = "none";
+  document.getElementById("filter-input").value = "";
+  document.getElementById("sort-select").value = "default";
+  renderCards(allResultCards);
+  renderChatChain();
+}
+
+// ── CSV Download (Deep Dive customers only) ───────────────────────────────────
+function downloadCSV() {
+  // Check Deep Dive session
+  let ddSession = null;
+  try { ddSession = localStorage.getItem("dd_session"); } catch(e) {}
+  if (!ddSession) {
+    window.location.href = "/deep-dive.html?reason=scout-csv";
+    return;
+  }
+
+  const rows = activeFilter ? activeFilter.results : sessionUniverse;
+  if (!rows.length) return;
+
+  const headers = ["Ticker","Company","Sector","Market","Index","Market Cap (USD M)",
+                   "Why it fits","Interesting now"];
+  const lines = [headers.join(",")];
+  rows.forEach(r => {
+    const mcap = r.market_cap_usd || 0;
+    lines.push([
+      r.ticker, r.company, r.sector, r.market, r.index_member || "", mcap,
+      `"${(r.why_it_fits||"").replace(/"/g,'""')}"`,
+      `"${(r.interesting_now||"").replace(/"/g,'""')}"`
+    ].join(","));
+  });
+
+  const label = activeFilter ? "scout-filter" : "scout-results";
+  const blob = new Blob([lines.join("\n")], {type:"text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `fintiq-${label}.csv`;
+  a.click(); URL.revokeObjectURL(url);
 }
 </script>
 
