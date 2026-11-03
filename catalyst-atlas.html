@@ -1,18 +1,145 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Catalyst Atlas: Why Did This Share Price Move? — Fintiq</title>
-<meta name="description" content="Free tool: type a ticker and see, in plain English, why the share price moved, which news usually moves it, what happened 1 day to 3 months after past news, and the likely price range for the next week, month and quarter.">
-<meta name="robots" content="index, follow">
+<title>Why Did This Stock Move? Free Catalyst &amp; Earnings Reaction Tool | Fintiq</title>
+<meta name="description" content="Free tool: type a ticker to see why a share price moved, how it reacted to past earnings and news from day 0 to 3 months, and its likely price range. US &amp; UK stocks.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="author" content="Fintiq">
+<meta name="theme-color" content="#0A1628">
 <link rel="canonical" href="https://www.fintiq.uk/catalyst-atlas.html" />
 <meta property="og:type" content="website" />
+<meta property="og:locale" content="en_GB" />
+<meta property="og:site_name" content="Fintiq" />
 <meta property="og:url" content="https://www.fintiq.uk/catalyst-atlas.html" />
-<meta property="og:title" content="Catalyst Atlas: Why Did This Share Price Move? — Fintiq" />
-<meta property="og:description" content="See why a share price moved, what news usually moves it, and what typically happens next. Free, plain English, educational." />
+<meta property="og:title" content="Catalyst Atlas: Why Did This Stock Move? | Fintiq" />
+<meta property="og:description" content="See why a share price moved, which news usually moves it, what happened after past earnings and news, and a likely price range. Free, plain English." />
 <meta property="og:image" content="https://www.fintiq.uk/og-image.png" />
+<meta property="og:image:alt" content="Fintiq Catalyst Atlas: why a share price moved and what usually happens next" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@fintiq" />
+<meta name="twitter:title" content="Catalyst Atlas: Why Did This Stock Move? | Fintiq" />
+<meta name="twitter:description" content="Type a ticker: why it moved, how it reacted to past earnings and news, and a likely price range. Free for US &amp; UK stocks." />
+<meta name="twitter:image" content="https://www.fintiq.uk/og-image.png" />
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "WebApplication",
+ "name": "Catalyst Atlas",
+ "alternateName": "Why Did This Stock Move? Fintiq Catalyst Atlas",
+ "url": "https://www.fintiq.uk/catalyst-atlas.html",
+ "applicationCategory": "FinanceApplication",
+ "operatingSystem": "Any (web browser)",
+ "description": "Free tool that explains why a share price moved, separating market, sector and interest-rate effects from company news, shows how the stock reacted after past earnings and news from day 0 to 3 months, and gives a likely price range for the next week, month and quarter.",
+ "offers": {
+  "@type": "Offer",
+  "price": "0",
+  "priceCurrency": "GBP"
+ },
+ "featureList": [
+  "Why the share price moved: market, sector, interest rates and company news",
+  "Earnings beat and miss reaction history",
+  "Day 0 to 3 month reaction to each type of news",
+  "Likely price range for 1 week, 1 month and 3 months",
+  "Rallies and falls at weekly, monthly and yearly scales",
+  "US and UK shares"
+ ],
+ "isAccessibleForFree": true,
+ "inLanguage": "en-GB",
+ "publisher": {
+  "@type": "Organization",
+  "name": "Fintiq",
+  "url": "https://www.fintiq.uk",
+  "logo": {
+   "@type": "ImageObject",
+   "url": "https://www.fintiq.uk/og-image.png"
+  }
+ }
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "BreadcrumbList",
+ "itemListElement": [
+  {
+   "@type": "ListItem",
+   "position": 1,
+   "name": "Home",
+   "item": "https://www.fintiq.uk/"
+  },
+  {
+   "@type": "ListItem",
+   "position": 2,
+   "name": "Investing Tools",
+   "item": "https://www.fintiq.uk/tools.html"
+  },
+  {
+   "@type": "ListItem",
+   "position": 3,
+   "name": "Catalyst Atlas",
+   "item": "https://www.fintiq.uk/catalyst-atlas.html"
+  }
+ ]
+}
+</script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "What does Catalyst Atlas do?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Catalyst Atlas explains why a share price moved. Type a US or UK ticker and it splits each move into the part caused by the whole stock market, the sector and interest rates, and the part caused by the company's own news. It then shows how the shares reacted after each kind of news in the past, from the day of the news to three months later, and a likely price range for the next week, month and quarter."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "What is the difference between the actual move and the move vs market?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "The actual move is the real change in the share price. The move vs market is what is left after taking out the effect of the whole stock market (scaled by how strongly the share usually follows it), its sector and interest rates. It shows what the company's own news did, so one news day can be fairly compared with another."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How are the news days found?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "The tool looks for days when the company's own move (after taking out the market) was unusually large, plus every results day. Results are labelled as a beat or a miss against analyst forecasts. Other big days are labelled from news reports; when the news does not clearly explain a move, it is shown as unexplained."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "How is the likely price range worked out?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "The range uses how much the share price has been moving recently, or what the options market is pricing in where that is available. It shows a 7 in 10 range and a 9 in 10 range for one week, one month and three months ahead. It shows how far the price might move, not which way."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Does Catalyst Atlas work for UK shares?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Yes. Enter UK tickers with .L at the end, for example SHEL.L for Shell or BARC.L for Barclays. For UK shares the market adjustment uses the FTSE 100."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Is Catalyst Atlas financial advice?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "No. It is a free educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results."
+   }
+  }
+ ]
+}
+</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-SFD342RVKK"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-SFD342RVKK');</script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
@@ -137,13 +264,43 @@ footer{background:var(--bg2);border-top:1px solid rgba(245,158,11,0.2);padding:3
   .hero h1{font-size:1.7rem}
   .card{padding:18px}
 }
-
+.tag{display:inline-block;font:700 .6rem 'Inter',sans-serif;letter-spacing:.6px;padding:1px 6px;border-radius:4px;vertical-align:2px;white-space:nowrap;border:1px solid;cursor:help}
+.tag-act{color:#E2E8F0;border-color:rgba(226,232,240,.45);background:rgba(226,232,240,.06)}
+.tag-net{color:#F59E0B;border-color:rgba(245,158,11,.6);background:rgba(245,158,11,.08)}
+.tag-out{color:#A78BFA;border-color:rgba(167,139,250,.6);background:rgba(167,139,250,.08)}
+.muted{color:var(--dim)}
+.key{margin-bottom:18px;display:grid;gap:12px}
+.keygrid{display:grid;grid-template-columns:1fr 1.4fr;gap:18px;font-size:.92rem}
+.keygrid p{margin-bottom:6px;color:#CBD5E1}
+.keygrid ul{display:grid;gap:5px;padding-left:18px;color:#CBD5E1;font-size:.88rem}
+.why{font-size:.9rem;color:#CBD5E1;border-left:3px solid var(--amber);padding:6px 12px;background:rgba(245,158,11,0.05);border-radius:4px}
+.example{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.eq{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:end}
+.eq>span{display:grid;gap:2px}
+.eq small{font-size:.7rem;color:var(--dim);font-weight:600;white-space:nowrap}
+.eq b{font-size:1.05rem;font-variant-numeric:tabular-nums}
+.eq .op{color:var(--dim);font-weight:700;padding-bottom:2px}
+.list div.l4,.list div.lhead{grid-template-columns:1fr 60px 60px;row-gap:2px}
+.list div.l4 .t{grid-column:1/-1;color:#CBD5E1}
+.list div.lhead{font-size:.68rem;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;font-weight:700}
+.grouphead th{border-bottom:0;padding-bottom:0;text-align:center!important}
+th.g-net{border-bottom:2px solid rgba(245,158,11,.5)!important}
+td.muted{color:#A78BFA}
+@media(max-width:760px){.keygrid{grid-template-columns:1fr}}
 /* ── MOBILE BOTTOM NAV ── */
 .mobile-bottom-nav{display:none;position:fixed;bottom:0;top:auto;height:auto;left:0;right:0;z-index:300;background:rgba(8,18,32,0.97);border-top:1px solid rgba(245,158,11,0.2);backdrop-filter:blur(16px);padding:8px 0 max(8px,env(safe-area-inset-bottom))}
 .mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;align-items:center;margin:0;padding:0}
 .mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.62rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px}
 .mobile-bottom-nav li a.active,.mobile-bottom-nav li a:hover{color:#F59E0B}
 @media(max-width:768px){.mobile-bottom-nav{display:block}body{padding-bottom:68px}}
+.crumbs{font-size:.78rem;color:var(--dim);padding-top:14px}
+.crumbs a{color:var(--muted)}
+.faq{display:grid;gap:8px}
+.faq details{background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px 16px}
+.faq summary{cursor:pointer;font-weight:700;font-size:.95rem}
+.faq p{color:var(--muted);font-size:.9rem;margin-top:8px;max-width:75ch}
+.related{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:.88rem}
+noscript p{color:var(--muted);text-align:center;padding:12px}
 </style>
 </head>
 <body>
@@ -173,6 +330,7 @@ footer{background:var(--bg2);border-top:1px solid rgba(245,158,11,0.2);padding:3
 </nav>
 
 <div class="wrap">
+  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/tools.html">Tools</a> › <span>Catalyst Atlas</span></nav>
   <div class="hero">
     <div class="hero-tag">FREE TOOL · CATALYST ATLAS</div>
     <h1>Why did this share price move, and <span>what usually happens next?</span></h1>
@@ -189,16 +347,37 @@ footer{background:var(--bg2);border-top:1px solid rgba(245,158,11,0.2);padding:3
   <div class="banner" id="banner" hidden></div>
   <div class="status" id="status" hidden></div>
   <div id="out"></div>
+  <noscript><p>Catalyst Atlas needs JavaScript to analyse a ticker. Please enable JavaScript in your browser.</p></noscript>
 
+  <section id="faq">
+    <h2 style="font-size:1.3rem;font-weight:800;margin-bottom:12px">Frequently asked questions</h2>
+    <div class="faq">
+      <details><summary>What does Catalyst Atlas do?</summary><p>Catalyst Atlas explains why a share price moved. Type a US or UK ticker and it splits each move into the part caused by the whole stock market, the sector and interest rates, and the part caused by the company's own news. It then shows how the shares reacted after each kind of news in the past, from the day of the news to three months later, and a likely price range for the next week, month and quarter.</p></details>
+      <details><summary>What is the difference between the actual move and the move vs market?</summary><p>The actual move is the real change in the share price. The move vs market is what is left after taking out the effect of the whole stock market (scaled by how strongly the share usually follows it), its sector and interest rates. It shows what the company's own news did, so one news day can be fairly compared with another.</p></details>
+      <details><summary>How are the news days found?</summary><p>The tool looks for days when the company's own move (after taking out the market) was unusually large, plus every results day. Results are labelled as a beat or a miss against analyst forecasts. Other big days are labelled from news reports; when the news does not clearly explain a move, it is shown as unexplained.</p></details>
+      <details><summary>How is the likely price range worked out?</summary><p>The range uses how much the share price has been moving recently, or what the options market is pricing in where that is available. It shows a 7 in 10 range and a 9 in 10 range for one week, one month and three months ahead. It shows how far the price might move, not which way.</p></details>
+      <details><summary>Does Catalyst Atlas work for UK shares?</summary><p>Yes. Enter UK tickers with .L at the end, for example SHEL.L for Shell or BARC.L for Barclays. For UK shares the market adjustment uses the FTSE 100.</p></details>
+      <details><summary>Is Catalyst Atlas financial advice?</summary><p>No. It is a free educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results.</p></details>
+    </div>
+  </section>
+  <section>
+    <div class="related"><span class="label" style="margin:0">Related free tools</span>
+      <a href="/price-spectrum.html">PriceSpectrum: stock price probability ranges</a>
+      <a href="/deep-dive.html">Stock Deep Dive: full analysis of any stock</a>
+      <a href="/ai-stock-scanner.html">Fintiq Scout: AI stock scanner</a>
+      <a href="/learn/key-financial-metrics.html">Guide: key financial metrics</a>
+      <a href="/tools.html">All investing tools</a>
+    </div>
+  </section>
   <section>
     <details class="help">
       <summary>How to read this page</summary>
       <dl>
-        <dt>Company's own move</dt><dd>How much the share price moved after taking out what the whole stock market did that day. If the market fell 1% and the share fell 3%, the company's own move was roughly −1% to −2%, depending on how strongly it usually follows the market.</dd>
+        <dt>ACTUAL vs VS MARKET</dt><dd>Every % on this page is labelled. <b>Actual</b> is the real change in the share price. <b>Vs market</b> (the company's own move) is what is left after taking out the whole stock market (scaled by how strongly the share follows it), its sector and interest rates. Example: if the market fell 1% on a day the share fell 3%, and the share usually moves twice as much as the market, the own move was about −1%.</dd>
         <dt>Catalyst</dt><dd>A piece of news that moved the price: results, sales figures, a product launch, a lawsuit, a political story, and so on.</dd>
-        <dt>Day 0, 1 week, 1 month, 3 months</dt><dd>What the company's own move added up to on the news day, and then 5, 20 and 60 trading days later. This shows whether a reaction lasted or faded.</dd>
+        <dt>Day 0, 1 week, 1 month, 3 months</dt><dd>The company's own move (vs market) on the first trading day after the news, then added up over 5, 20 and 60 trading days. This shows whether a reaction lasted or faded. "Week before" is the own move in the 5 days before the news.</dd>
         <dt>"Worked 6 of 8 times"</dt><dd>A simple count from this company's own history. Small counts are weak evidence, which is why cards with fewer than 4 examples are marked "Few examples".</dd>
-        <dt>Price range</dt><dd>Based on how much the price has been swinging (or, where available, what the options market is pricing in). It is a range, not a forecast of direction.</dd>
+        <dt>Price range</dt><dd>Actual share prices. Based on how much the price has been swinging (or, where available, what the options market is pricing in). It is a range, not a forecast of direction.</dd>
       </dl>
     </details>
   </section>
@@ -289,35 +468,96 @@ function loadDemo() {
 }
 
 // ---------- render ----------
+// Two kinds of % on this page, always labelled:
+//   ACTUAL     = the real change in the share price
+//   VS MARKET  = the company's own move: actual change minus market, sector and interest-rate effects
+const TAG_ACT = '<span class="tag tag-act" title="Actual: the real change in the share price, what a shareholder gained or lost">ACTUAL</span>';
+const TAG_NET = '<span class="tag tag-net" title="Vs market: the share price change after taking out the whole stock market, the sector and interest rates. It shows the effect of the company\'s own news.">VS MARKET</span>';
+const TAG_OUT = '<span class="tag tag-out" title="The part of the move explained by the whole market, the sector and interest rates">TAKEN OUT</span>';
+
+function mktName() { return D.market === '^FTSE' ? 'the FTSE 100' : 'the US stock market (S&P 500)'; }
+function removedList() {
+  const b = (D.beta_now ?? 1).toFixed(1);
+  const idx = D.market === '^FTSE' ? 'FTSE 100' : 'S&P 500';
+  const items = [`<b>the whole stock market</b>: the ${idx}'s move that day × ${b}, because ${esc(D.name)} has recently tended to move about ${b} times as much as the market`];
+  if (D.sector_etf) items.push(`<b>its sector</b>: how other ${esc((D.sector || 'similar').toLowerCase())} companies moved that day (beyond the market)`);
+  if (D.sector_etf) items.push(`<b>interest rates</b>: the effect of changes in long-term US interest rates`);
+  return items;
+}
+// split of day i (or a span a..b) into market / sector+rates / own, scaled so the parts add up to the actual % change
+function splitSpan(a, b) {
+  const c = S().close; const lt = Math.log(c[b] / c[a]); const act = 100 * (c[b] / c[a] - 1); const k = lt ? act / (100 * lt) : 1;
+  let m = 0, s = 0, o = 0; for (let t = a + 1; t <= b; t++) { m += S().mkt[t] / 1e4; s += S().sec[t] / 1e4; o += S().own[t] / 1e4; }
+  return {act, mkt: 100 * m * k, sec: 100 * s * k, own: 100 * o * k};
+}
+function eqRow(x) {
+  return `<div class="eq"><span><small>Actual ${TAG_ACT}</small><b class="${cls(x.act)}">${pc(x.act)}</b></span><span class="op">=</span>
+    <span><small>Market</small><b class="${cls(x.mkt)}">${pc(x.mkt)}</b></span><span class="op">+</span>
+    ${D.sector_etf ? `<span><small>Sector &amp; rates</small><b class="${cls(x.sec)}">${pc(x.sec)}</b></span><span class="op">+</span>` : ''}
+    <span><small>Own move ${TAG_NET}</small><b class="${cls(x.own)}">${pc(x.own)}</b></span></div>`;
+}
+
 function render() {
   lens = 'months'; sel = null;
-  const s = D.summary, own = D.events;
-  const hasNews = s.recent_news ? `<p>${esc(s.recent_news)}</p>` : '';
+  if (!D.demo) document.title = `Why did ${D.name} (${D.ticker}) move? Catalyst Atlas | Fintiq`;
+  const s = D.summary, n = S().close.length;
+  const month = splitSpan(Math.max(0, n - 22), n - 1);
+  const leg = D.phases.months.legs[D.phases.months.legs.length - 1];
+  const parts = [['the whole stock market', leg.mkt], ['its sector and interest rates', leg.sec], ['company news days', leg.news], ['other buying and selling', leg.other]].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  const recent = D.events.filter(e => S().dates.indexOf(e.date) >= n - 21);
+  const rn = recent.length ? recent.reduce((a, b) => Math.abs(b.d0 || 0) > Math.abs(a.d0 || 0) ? b : a) : null;
+  // worked example: most recent event with a sizeable own move
+  const ex = D.events.slice().reverse().find(e => Math.abs(e.d0 || 0) >= 3) || D.events[D.events.length - 1];
+  const exI = ex ? S().dates.indexOf(ex.date) : -1;
+  const exSplit = exI > 0 ? splitSpan(exI - 1, exI) : null;
+
   $('out').innerHTML = `
   <div class="company"><h2>${esc(D.name)} <span style="color:var(--dim);font-weight:600;font-size:1rem">${esc(D.ticker)}</span></h2>
     <span class="px">${money(D.price)}</span><span class="meta">Closing price ${fmtDate(D.asof)}${D.sector ? ' · ' + esc(D.sector) : ''}</span></div>
+
+  <div class="card key">
+    <div class="label">Reading the numbers</div>
+    <h2>Two kinds of % change on this page</h2>
+    <div class="keygrid">
+      <div><p>${TAG_ACT} <b>Actual change</b></p><p>The real change in the share price: what a shareholder actually gained or lost.</p></div>
+      <div><p>${TAG_NET} <b>Company's own move</b></p><p>The actual change after we take out three things that move most shares at the same time:</p>
+        <ul>${removedList().map(x => `<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    <p class="why"><b>Why take these out?</b> On a day when the whole market falls 3%, most shares fall, whatever their own news. Taking the market out shows what the company's own news did, so one news day can be fairly compared with another.</p>
+    ${exSplit ? `<div class="example"><div class="label" style="margin-bottom:4px">Example: ${esc(fmtDate(ex.date))}, ${esc(ex.title)}</div>${eqRow(exSplit)}
+      <p class="note" style="margin-top:6px">Most of this day's move ${Math.abs(exSplit.own) >= Math.abs(exSplit.act - exSplit.own) ? 'was the company\'s own news' : 'came from the wider market'}. Parts are rounded and may not add up exactly.</p></div>` : ''}
+  </div>
+
   <div class="grid two">
     <div class="card"><div class="label">In a nutshell</div>
-      <div class="say"><p><b>${esc(s.headline)}</b></p><p>${esc(s.own_move)}</p><p>${esc(s.phase)}</p><p>${esc(s.beta)}</p>${hasNews}</div>
+      <div class="say">
+        <p><b>${esc(s.headline)}</b> ${TAG_ACT}</p>
+        <div><p style="margin-bottom:6px">Here is what last month's ${pc(month.act)} was made of:</p>${eqRow(month)}</div>
+        <p>Since ${fmtDate(S().dates[leg.a])} the shares are ${leg.chg >= 0 ? 'up' : 'down'} <b>${pc(leg.chg)}</b> ${TAG_ACT}. The biggest part of that came from ${parts[0][0]} (${pc(parts[0][1])} of the ${pc(leg.chg)}).</p>
+        <p>${esc(s.beta)} That is the "market" part we take out to find the company's own move.</p>
+        ${rn ? `<p>Biggest news day this month: ${esc(fmtDate(rn.date))}, ${esc(rn.title)}. Actual move ${pc(rn.ret)} ${TAG_ACT}, own move ${pc(rn.d0)} ${TAG_NET}.</p>` : ''}
+      </div>
       <div class="chartbox" style="margin-top:14px"><svg id="miniChart" role="img" aria-label="Price over the last year with news days"></svg></div>
       <div class="legend" id="miniLegend"></div>
+      <p class="note">Line: actual share price over the past year. Dots: news days (hover or tap for details).</p>
     </div>
-    <div class="card"><div class="label">Likely price range</div><h2>Where the price could be</h2>
-      <div class="sub">Based on ${esc(D.sigma_src)} (about ${D.sigma}% a year). It shows how far the price might move, not which way.</div>
+    <div class="card"><div class="label">Likely price range ${TAG_ACT}</div><h2>Where the price could be</h2>
+      <div class="sub">Actual share prices, not vs market. Based on ${esc(D.sigma_src)} (about ${D.sigma}% a year). It shows how far the price might move, not which way.</div>
       <div class="rng" id="ranges"></div>
       <p class="note">White line: today's price. Dark band: 7 in 10 chance. Light band: 9 in 10 chance.</p>
     </div>
   </div>
   <section><div class="card"><div class="label">Coming up</div><h2>Known events ahead</h2><div class="sub">Dates come from the company's published calendar.</div><div class="up" id="upcoming"></div></div></section>
   <section><div class="headrow"><div><div class="label">What moves ${esc(D.name)}</div><h2 style="font-size:1.3rem;font-weight:800">How the price reacted to each kind of news</h2>
-    <div class="note" style="margin-top:2px">All moves are the company's own move, after taking out what the whole market did.</div></div></div>
+    <div class="note" style="margin-top:2px">Every % in these cards is the company's own move ${TAG_NET}: the market, sector and interest-rate effects have been taken out, so you see the news itself. Day 0 is the first trading day after the news; later figures add up the own move from that day on.</div></div></div>
     <div class="cats" id="cats"></div></section>
   <section><div class="card"><div class="headrow"><div><div class="label">The story so far</div><h2>Rallies, falls and what drove them</h2><div class="sub" id="lensNote"></div></div>
     <div class="lens" role="group" aria-label="Time scale"><button data-l="weeks">Weeks</button><button data-l="months" aria-pressed="true">Months</button><button data-l="year">Years</button></div></div>
     <div class="chartbox"><svg id="bigChart" role="img" aria-label="Price history with rallies and falls"></svg></div>
     <div class="legend" id="bigLegend"></div>
     <div class="phase" id="phaseBox"></div></div></section>
-  <section><div class="card"><div class="label">Every news day we found</div><h2>Catalyst diary</h2><div class="sub">Company's own move before and after each event. Newest first.</div>
+  <section><div class="card"><div class="label">Every news day we found</div><h2>Catalyst diary</h2>
+    <div class="sub">For each news day: the actual move, the part we take out (market, sector and rates), and the company's own move before and after. Newest first.</div>
     <div class="tablewrap"><table id="evTable"></table></div></div></section>
   <section><div class="cta"><h3>Want the full picture on ${esc(D.ticker)}?</h3><p>The Stock Deep Dive adds fundamentals, valuation, technicals, risk and an AI analyst you can question.</p>
     <a class="btn" href="/deep-dive.html?ticker=${encodeURIComponent(D.ticker)}">Open the ${esc(D.ticker)} Deep Dive →</a></div></section>`;
@@ -343,7 +583,7 @@ function lineChart(svg, i0, opts = {}) {
   let p = ''; for (let i = i0; i < n; i++) p += (i === i0 ? 'M' : 'L') + xs(i).toFixed(1) + ',' + ys(c[i]).toFixed(1);
   g += `<path d="${p}" fill="none" stroke="#F1F5F9" stroke-width="1.6"/>`;
   const idx = {}; d.forEach((x, i) => idx[x] = i);
-  D.events.forEach(e => { const i = idx[e.date]; if (i == null || i < i0) return; g += `<circle cx="${xs(i)}" cy="${ys(c[i])}" r="4.5" fill="${CAT_COL[e.cat] || '#94A3B8'}" stroke="#0D1B2A" stroke-width="1.5"><title>${esc(fmtDate(e.date))}: ${esc(e.title)} (${pc(e.d0)} own move)</title></circle>`; });
+  D.events.forEach(e => { const i = idx[e.date]; if (i == null || i < i0) return; g += `<circle cx="${xs(i)}" cy="${ys(c[i])}" r="4.5" fill="${CAT_COL[e.cat] || '#94A3B8'}" stroke="#0D1B2A" stroke-width="1.5"><title>${esc(fmtDate(e.date))}: ${esc(e.title)}. Actual move ${pc(e.ret)}; own move vs market ${pc(e.d0)}</title></circle>`; });
   svg.innerHTML = g;
   return {xs, ys};
 }
@@ -358,10 +598,11 @@ function renderMini() { const n = S().close.length, i0 = Math.max(0, n - 252); l
 function renderRanges() {
   const R = D.ranges, lo = Math.min(...R.map(r => r.lo90)), hi = Math.max(...R.map(r => r.hi90)), X = v => (v - lo) / (hi - lo) * 100;
   const when = {"1 week": "a week from now", "1 month": "a month from now", "3 months": "three months from now"};
+  const chg = v => pc(100 * (v / D.price - 1), 0);
   $('ranges').innerHTML = R.map(r => `<div class="row"><div class="top"><span>${esc(r.label)}</span><b>${money(r.lo70)} – ${money(r.hi70)}</b></div>
     <div class="bar" aria-label="${esc(r.label)} range"><div class="b90" style="left:${X(r.lo90)}%;width:${X(r.hi90) - X(r.lo90)}%"></div><div class="b70" style="left:${X(r.lo70)}%;width:${X(r.hi70) - X(r.lo70)}%"></div><div class="now" style="left:${X(D.price)}%"></div></div>
     <div class="ends"><span>1 in 10 below ${money(r.lo90)}</span><span>1 in 10 above ${money(r.hi90)}</span></div>
-    <div class="note" style="margin-top:0">7 in 10 chance the price is between ${money(r.lo70)} and ${money(r.hi70)} ${when[r.label] || ''}.</div></div>`).join('');
+    <div class="note" style="margin-top:0">7 in 10 chance the price is between ${money(r.lo70)} and ${money(r.hi70)} ${when[r.label] || ''}, an actual change of ${chg(r.lo70)} to ${chg(r.hi70)} from today.</div></div>`).join('');
 }
 
 function grp(name) { return D.groups.find(g => g.name === name); }
@@ -372,13 +613,13 @@ function renderUpcoming() {
     const when = u.note || (u.days === 0 ? 'Today' : u.days === 1 ? 'Tomorrow' : `In ${u.days} days`) + ` (${fmtDate(u.date)})`;
     const b = grp('Earnings beat'), m = grp('Earnings miss'), ru = grp('Price ran up 5%+ before the news');
     const li = [];
-    if (u.avg_abs_move != null) li.push(`On past results days the share price moved about <b>±${u.avg_abs_move.toFixed(1)}%</b> on average (${u.n_past} results).`);
-    if (b) li.push(`When profit <b>beat</b> forecasts, the price beat the market on the day ${b.day0.hits} of ${b.day0.n} times, and was ahead a month later ${b.month.hits} of ${b.month.n} times.`);
-    if (m) li.push(`When profit <b>missed</b> forecasts, it fell behind the market on the day ${m.day0.hits} of ${m.day0.n} times, and was still behind a month later ${m.month.hits} of ${m.month.n} times.`);
+    if (u.avg_abs_move != null) li.push(`On past results days the share price moved about <b>±${u.avg_abs_move.toFixed(1)}%</b> on average, up or down (${u.n_past} results). ${TAG_ACT} This is the real swing in the share price, including whatever the market did that day.`);
+    if (b) li.push(`When profit <b>beat</b> forecasts, the shares did better than the market on the day ${b.day0.hits} of ${b.day0.n} times, and were still ahead of the market a month later ${b.month.hits} of ${b.month.n} times. ${TAG_NET}`);
+    if (m) li.push(`When profit <b>missed</b> forecasts, the shares did worse than the market on the day ${m.day0.hits} of ${m.day0.n} times, and were still behind the market a month later ${m.month.hits} of ${m.month.n} times. ${TAG_NET}`);
     if (u.eps_est != null) li.push(`Analysts expect earnings of about <b>${u.eps_est.toFixed(2)}</b> per share.`);
     let warn = '';
     if (u.runup_flag) {
-      warn = `<div class="warn">The shares have already risen about ${pc(u.runup5)} more than the market in the past week.` + (ru ? ` In ${D.name}'s history, after a rise like that before news, the price fell on the day ${ru.day0.hits} of ${ru.day0.n} times${ru.day0.n < 4 ? ' (few examples)' : ''}.` : '') + `</div>`;
+      warn = `<div class="warn">In the past week the shares have risen about <b>${pc(u.runup5)}</b> more than the market ${TAG_NET}, after taking out the market, sector and interest rates.` + (ru ? ` In ${esc(D.name)}'s history, after a rise like that before news, the shares did worse than the market on the news day ${ru.day0.hits} of ${ru.day0.n} times${ru.day0.n < 4 ? ' (few examples)' : ''}.` : '') + `</div>`;
     }
     return `<div class="ev"><div class="when">${esc(u.type)} results · ${esc(when)}</div><ul>${li.map(x => `<li>${x}</li>`).join('')}</ul>${warn}</div>`;
   }).join('');
@@ -386,21 +627,21 @@ function renderUpcoming() {
 
 function sentence(g) {
   const n = g.day0.n;
-  if (g.name === 'Earnings beat') return `When profit beat forecasts (${n} times), the price beat the market on the day ${g.day0.hits} of ${n} times. A month later it was ahead ${g.month.hits} of ${g.month.n} times.`;
-  if (g.name === 'Earnings miss') return `When profit missed forecasts (${n} times), the price fell behind the market on the day ${g.day0.hits} of ${n} times. A month later it was still behind ${g.month.hits} of ${g.month.n} times.`;
-  if (g.name.startsWith('Price ran up')) return `When the price had already jumped 5%+ (beyond the market) in the week before news, it fell on the news day ${g.day0.hits} of ${n} times.`;
-  const what = g.name === 'Big moves with no clear news' ? 'Big moves with no clear news behind them' : `Big "${g.name.toLowerCase()}" news`;
-  return `${what} moved the price about ±${(g.avg_abs_day0 || 0).toFixed(1)}% on the day (${n} times). The move was still there a month later ${g.month.hits} of ${g.month.n} times.`;
+  if (g.name === 'Earnings beat') return `When profit beat forecasts (${n} times), the shares did better than the market on the day ${g.day0.hits} of ${n} times. A month later they were still ahead of the market ${g.month.hits} of ${g.month.n} times.`;
+  if (g.name === 'Earnings miss') return `When profit missed forecasts (${n} times), the shares did worse than the market on the day ${g.day0.hits} of ${n} times. A month later they were still behind the market ${g.month.hits} of ${g.month.n} times.`;
+  if (g.name.startsWith('Price ran up')) return `When the shares had already risen 5% or more than the market in the week before news, they did worse than the market on the news day ${g.day0.hits} of ${n} times.`;
+  const what = g.name === 'Big moves with no clear news' ? 'Big moves with no clear news behind them' : `Big "${esc(g.name.toLowerCase())}" news`;
+  return `${what} moved the shares on average <b>${(g.avg_abs_day0 || 0).toFixed(1)}%</b> up or down beyond what the market did, on the day (${n} times). The move was still there a month later ${g.month.hits} of ${g.month.n} times.`;
 }
 function pathSvg(g) {
-  // average path of the company's own move, day 0 to 60; "stick" groups are aligned so every move points up
+  // average own move (vs market), day 0 to 60; "stick" groups are aligned so every move points up
   const evs = D.events.filter(e => g.dates.includes(e.date));
   const flip = g.expects === 'stick';
   const paths = evs.map(e => e.path.map(v => v == null ? null : (flip ? Math.sign(e.d0 || 1) * v : v)));
   const avg = [], lo = [], hi = [];
   for (let k = 0; k <= 60; k++) { const v = paths.map(p => p[k]).filter(x => x != null); avg.push(v.length >= 2 ? v.reduce((a, b) => a + b, 0) / v.length : null); lo.push(v.length >= 2 ? Math.min(...v) : null); hi.push(v.length >= 2 ? Math.max(...v) : null); }
   const vals = [...lo, ...hi, 0].filter(x => x != null); let mn = Math.min(...vals), mx = Math.max(...vals); const pad = (mx - mn) * .1 || 1; mn -= pad; mx += pad;
-  const W = 290, H = 110, pl = 30, pr = 6, pt = 6, pb = 18, xs = k => pl + k / 60 * (W - pl - pr), ys = v => pt + (mx - v) / (mx - mn) * (H - pt - pb);
+  const W = 290, H = 120, pl = 30, pr = 6, pt = 14, pb = 18, xs = k => pl + k / 60 * (W - pl - pr), ys = v => pt + (mx - v) / (mx - mn) * (H - pt - pb);
   let band = '', line = '';
   const ks = [...Array(61).keys()].filter(k => avg[k] != null);
   if (ks.length) {
@@ -409,10 +650,11 @@ function pathSvg(g) {
   }
   const last = ks.length ? avg[ks[ks.length - 1]] : null;
   const col = last == null ? '#94A3B8' : last >= 0 ? '#22c55e' : '#ef4444';
-  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Average move from day 0 to day 60">
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Average own move versus the market from day 0 to day 60">
+    <text x="${pl}" y="9" style="fill:#F59E0B;font-weight:700;font-size:9.5px;letter-spacing:.5px">OWN MOVE VS MARKET</text>
     <line x1="${pl}" x2="${W - pr}" y1="${ys(0)}" y2="${ys(0)}" stroke="rgba(255,255,255,0.15)"/>
-    <text x="${pl - 4}" y="${ys(0) + 4}" text-anchor="end">0%</text><text x="${pl - 4}" y="${ys(mx - pad) + 8}" text-anchor="end">${Math.round(mx - pad)}%</text><text x="${pl - 4}" y="${ys(mn + pad)}" text-anchor="end">${Math.round(mn + pad)}%</text>
-    ${[0, 5, 20, 60].map(k => `<line x1="${xs(k)}" x2="${xs(k)}" y1="${pt}" y2="${H - pb}" stroke="rgba(255,255,255,0.05)"/><text x="${xs(k)}" y="${H - 5}" text-anchor="middle">${k === 0 ? 'Day 0' : k === 5 ? '1w' : k === 20 ? '1m' : '3m'}</text>`).join('')}
+    <text x="${pl - 4}" y="${ys(0) + 4}" text-anchor="end">0%</text>${Math.abs(ys(mx - pad) - ys(0)) > 14 ? `<text x="${pl - 4}" y="${ys(mx - pad) + 8}" text-anchor="end">${Math.round(mx - pad)}%</text>` : ''}${Math.abs(ys(mn + pad) - ys(0)) > 14 ? `<text x="${pl - 4}" y="${ys(mn + pad)}" text-anchor="end">${Math.round(mn + pad)}%</text>` : ''}
+    ${[0, 5, 20, 60].map(k => `<line x1="${xs(k)}" x2="${xs(k)}" y1="${pt}" y2="${H - pb}" stroke="rgba(255,255,255,0.05)"/>${k === 5 ? '' : `<text x="${xs(k)}" y="${H - 5}" text-anchor="${k === 0 ? 'start' : k === 60 ? 'end' : 'middle'}">${k === 0 ? 'Day 0' : k === 20 ? '1 month' : '3 months'}</text>`}`).join('')}
     <path d="${band}" fill="rgba(245,158,11,0.12)"/><path d="${line}" fill="none" stroke="${col}" stroke-width="2.2"/></svg>`;
 }
 function renderCats() {
@@ -422,26 +664,35 @@ function renderCats() {
   $('cats').innerHTML = gs.map((g, k) => {
     const key = g.expects === 'stick' ? g.month : g.name.startsWith('Price ran up') ? g.day0 : g.month;
     const evs = D.events.filter(e => g.dates.includes(e.date)).slice().reverse();
-    return `<div class="cat"><h3><span>${esc(g.name)}</span>${pill(key.score, key.n)}</h3><p>${esc(sentence(g))}</p>
+    return `<div class="cat"><h3><span>${esc(g.name)}</span>${pill(key.score, key.n)}</h3><p>${sentence(g)} ${TAG_NET}</p>
       ${pathSvg(g)}
-      <div class="note" style="margin-top:-4px">${g.expects === 'stick' ? 'Line: average size of the move, with falls flipped so every case points up. If it stays above 0, moves tended to last.' : 'Line: average own move from the news day to 3 months later. Shaded: best and worst cases.'}</div>
-      <div class="stats"><span>Day 0 <b class="${cls(g.avg_day0)}">${pc(g.avg_day0)}</b></span><span>1 month <b class="${cls(g.avg_month)}">${pc(g.avg_month)}</b></span><span>Examples <b>${g.day0.n}</b></span></div>
+      <div class="note" style="margin-top:-4px">${g.expects === 'stick' ? 'Line: average size of the own move, with falls flipped so every case points up. If it stays above 0, moves tended to last.' : 'Line: average own move from the news day to 3 months later. Shaded: best and worst cases.'}</div>
+      <div class="stats"><span>Avg day 0 <b class="${cls(g.avg_day0)}">${pc(g.avg_day0)}</b></span><span>Avg after 1 month <b class="${cls(g.avg_month)}">${pc(g.avg_month)}</b></span><span>Examples <b>${g.day0.n}</b></span>${TAG_NET}</div>
       <button class="more" aria-expanded="false" data-k="${k}">Show each time ▾</button>
-      <div class="list" hidden>${evs.map(e => `<div><span>${esc(fmtDate(e.date))}</span><span>${esc(e.title)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span></div>`).join('')}</div></div>`;
+      <div class="list" hidden><div class="lhead"><span>Date and news</span><span class="num">Actual</span><span class="num">Own</span></div>
+        ${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${esc(e.title)}</span></div>`).join('')}
+        <p class="note">Actual: real share price change that day. Own: the move vs market.</p></div></div>`;
   }).join('');
   $('cats').querySelectorAll('.more').forEach(b => b.onclick = () => { const l = b.nextElementSibling; l.hidden = !l.hidden; b.setAttribute('aria-expanded', !l.hidden); b.textContent = l.hidden ? 'Show each time ▾' : 'Hide ▴'; });
 }
 function renderTable() {
-  $('evTable').innerHTML = `<thead><tr><th>Date</th><th>What happened</th><th>Price that day</th><th>Week before</th><th>Day 0</th><th>1 week</th><th>1 month</th><th>3 months</th></tr></thead><tbody>` +
-    D.events.slice().reverse().map(e => `<tr><td>${esc(fmtDate(e.date))}</td><td><span style="color:${CAT_COL[e.cat] || '#94A3B8'};font-weight:700;font-size:.75rem">${esc(e.kind === 'Unexplained' ? 'No clear news' : e.kind)}</span><br>${esc(e.title)}</td>` +
-    ['ret', 'pre', 'd0', 'd5', 'd20', 'd60'].map(k => `<td class="${cls(e[k])}">${pc(e[k])}</td>`).join('') + '</tr>').join('') + '</tbody>';
+  $('evTable').innerHTML = `<thead>
+    <tr class="grouphead"><th colspan="2"></th><th class="g-act">${TAG_ACT}</th><th class="g-out">${TAG_OUT}</th><th colspan="5" class="g-net">Company's own move ${TAG_NET}</th></tr>
+    <tr><th>Date</th><th>What happened</th><th>Actual move<br>on the day</th><th>Market, sector<br>&amp; rates</th><th>Week<br>before</th><th>Day 0</th><th>After<br>1 week</th><th>After<br>1 month</th><th>After<br>3 months</th></tr></thead><tbody>` +
+    D.events.slice().reverse().map(e => {
+      const out = (e.ret != null && e.d0 != null) ? e.ret - e.d0 : null;
+      return `<tr><td>${esc(fmtDate(e.date))}</td><td><span style="color:${CAT_COL[e.cat] || '#94A3B8'};font-weight:700;font-size:.75rem">${esc(e.kind === 'Unexplained' ? 'No clear news' : e.kind)}</span><br>${esc(e.title)}</td>` +
+        `<td class="${cls(e.ret)}">${pc(e.ret)}</td><td class="muted">${pc(out)}</td>` +
+        ['pre', 'd0', 'd5', 'd20', 'd60'].map(k => `<td class="${cls(e[k])}">${pc(e[k])}</td>`).join('') + '</tr>';
+    }).join('') + '</tbody>';
+  $('evTable').insertAdjacentHTML('afterend', '');
 }
-const LENS_NOTE = {weeks: 'Swings of about {t}% or more, usually a few weeks long.', months: 'Moves of about {t}% or more, usually one to four months.', year: 'The big trends: moves of about {t}% or more.'};
+const LENS_NOTE = {weeks: 'Swings of about {t}% or more (actual price), usually a few weeks long.', months: 'Moves of about {t}% or more (actual price), usually one to four months.', year: 'The big trends: moves of about {t}% or more (actual price).'};
 function renderBig() {
   const P = D.phases[lens], legs = P.legs;
   $('lensNote').textContent = LENS_NOTE[lens].replace('{t}', P.threshold) + ' Tap a section of the chart to see what drove it.';
   const svg = $('bigChart');
-  const {xs} = lineChart(svg, 0, {h: 300, under: (xs, ys, top, bot) => {
+  lineChart(svg, 0, {h: 300, under: (xs, ys, top, bot) => {
     let g = '';
     (D.quiet || []).forEach(([a, b]) => g += `<rect x="${xs(a)}" y="${top}" width="${xs(b) - xs(a)}" height="${bot - top}" fill="rgba(255,255,255,0.035)"/>`);
     legs.forEach((l, k) => {
@@ -454,15 +705,15 @@ function renderBig() {
   }});
   svg.querySelectorAll('.leg').forEach(r => r.onclick = () => { sel = +r.dataset.k; renderBig(); });
   legendFor('bigLegend', 0);
-  $('bigLegend').insertAdjacentHTML('beforeend', '<span><i style="background:rgba(255,255,255,0.25);border-radius:2px"></i>Quiet spell</span>');
+  $('bigLegend').insertAdjacentHTML('beforeend', '<span><i style="background:rgba(255,255,255,0.25);border-radius:2px"></i>Quiet spell</span><span>Labels on the chart are actual % changes</span>');
   const k = sel ?? legs.length - 1, l = legs[k];
-  const parts = [['Whole stock market', l.mkt, '#60A5FA'], ['Its sector and interest rates', l.sec, '#A78BFA'], ['Company news (the dots)', l.news, '#F59E0B'], ['Other buying and selling', l.other, '#64748B']];
+  const parts = [['Whole stock market', l.mkt, '#60A5FA', 'market'], ['Its sector and interest rates', l.sec, '#A78BFA', 'out'], ['Company news days (the dots)', l.news, '#F59E0B', 'own'], ['Other buying and selling', l.other, '#64748B', 'own']];
   const evs = (l.events || []).map(i => D.events[i]).filter(Boolean);
   $('phaseBox').innerHTML = `<div><div class="label">${l.chg >= 0 ? 'Rally' : 'Fall'} · ${l.days} trading days</div>
-      <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px">${fmtDate(S().dates[l.a])} → ${fmtDate(S().dates[l.b])}: <span class="${cls(l.chg)}">${pc(l.chg)}</span></h3>
-      <p class="note" style="margin:0 0 10px">${money(S().close[l.a])} → ${money(S().close[l.b])}. Here's what that move was made of, in percentage points:</p>
-      <div class="split">${parts.map(([n, v, c]) => `<div><i style="background:${c}"></i><span>${n}</span><b class="${cls(v)}">${pc(v)}</b></div>`).join('')}</div></div>
-    <div><div class="label">News inside this period</div><div class="list">${evs.length ? evs.map(e => `<div><span>${esc(fmtDate(e.date))}</span><span>${esc(e.title)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span></div>`).join('') : '<p class="note">No big news days. The market and steady buying or selling did the work.</p>'}</div></div>`;
+      <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px">${fmtDate(S().dates[l.a])} → ${fmtDate(S().dates[l.b])}: <span class="${cls(l.chg)}">${pc(l.chg)}</span> ${TAG_ACT}</h3>
+      <p class="note" style="margin:0 0 10px">${money(S().close[l.a])} → ${money(S().close[l.b])}. The four parts below add up to that actual ${pc(l.chg)}. The first two are the market, sector and rate effects we take out; the last two are the company's own move ${TAG_NET}.</p>
+      <div class="split">${parts.map(([n, v, c, t]) => `<div><i style="background:${c}"></i><span>${n} ${t === 'own' ? '<small class="muted">own move</small>' : '<small class="muted">taken out</small>'}</span><b class="${cls(v)}">${pc(v)} pts</b></div>`).join('')}</div></div>
+    <div><div class="label">News inside this period</div>${evs.length ? `<div class="list"><div class="lhead"><span>Date and news</span><span class="num">Actual</span><span class="num">Own</span></div>${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${esc(e.title)}</span></div>`).join('')}<p class="note">Actual: real share price change that day. Own: the move vs market.</p></div>` : '<p class="note">No big news days. The market and steady buying or selling did the work.</p>'}</div>`;
 }
 
 // ---------- start ----------
@@ -472,7 +723,6 @@ window.addEventListener('resize', () => { if (D) { renderMini(); renderBig(); } 
 const qp = new URLSearchParams(location.search).get('ticker');
 if (qp) load(qp); else loadDemo();
 </script>
-
 <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
   <ul>
     <li><a href="/index.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>Home</a></li>
