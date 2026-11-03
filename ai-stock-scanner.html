@@ -216,7 +216,18 @@ a{color:var(--gold);text-decoration:none}
 
 <!-- ═══ NAV ═══ -->
 <nav class="nav">
-  <a class="nav-logo" href="/index.html">Fintiq</a>
+  <a class="nav-logo" href="/index.html" style="display:flex;align-items:center;gap:8px;text-decoration:none">
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+      <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+      <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+      <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+      <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
+    </svg>
+    Fintiq
+  </a>
   <div style="display:flex;align-items:center;gap:10px">
     <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
       <svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none">
@@ -275,10 +286,11 @@ a{color:var(--gold);text-decoration:none}
         placeholder="e.g. I want a safe dividend stock that won't crash in a recession…&#10;or: Companies riding the AI infrastructure wave…&#10;or: Stocks that benefit from a stronger dollar…"
         rows="4"
         maxlength="500"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startScout();}"
       ></textarea>
       <div class="thesis-footer">
         <span class="thesis-counter" id="thesis-counter">0 / 500</span>
-        <button class="scout-btn" id="scout-btn" disabled onclick="startScout()">
+<button class="scout-btn" id="scout-btn" disabled onclick="startScout()">
           Scout it <span>→</span>
         </button>
       </div>
