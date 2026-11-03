@@ -370,10 +370,13 @@ a{color:var(--gold);text-decoration:none}
     <!-- Sort + Download bar -->
     <div class="sort-bar">
       <span class="sort-label">Sort by</span>
-      <select class="sort-select" id="sort-select" onchange="sortCards()">
+      <select class="sort-select" id="sort-select" onchange="applyDisplayFilters()">
         <option value="default">Default order</option>
         <option value="mcap_desc">Market cap ↓ High to Low</option>
         <option value="mcap_asc">Market cap ↑ Low to High</option>
+        <option value="yield_desc">Div Yield ↓ Highest first</option>
+        <option value="pe_asc">P/E ↑ Lowest first</option>
+        <option value="rev_growth_desc">Rev Growth ↓ Highest first</option>
       </select>
       <button onclick="downloadCSV()" style="margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:0.78rem;color:var(--dim);cursor:pointer;font-family:var(--font);transition:all .2s"
         onmouseover="this.style.borderColor='var(--gold)';this.style.color='var(--gold)'"
@@ -636,7 +639,7 @@ function renderResults(data) {
 
   // Notice
   document.getElementById("res-notice").textContent =
-    data.data_notice || "Fundamentals updated weekly — use Deep Dive for latest earnings data.";
+    data.data_notice || "Fundamentals updated weekly. Rev Growth = most recent quarter YoY — use Deep Dive for full trend.";
 
   // Lock session universe on first scan (never overwrite it on filter calls)
   sessionUniverse = data.results || [];
@@ -700,6 +703,16 @@ function applyDisplayFilters() {
     visible.sort((a, b) => (b.market_cap_usd || 0) - (a.market_cap_usd || 0));
   } else if (order === "mcap_asc") {
     visible.sort((a, b) => (a.market_cap_usd || 0) - (b.market_cap_usd || 0));
+  } else if (order === "yield_desc") {
+    visible.sort((a, b) => (b.dividend_yield || 0) - (a.dividend_yield || 0));
+  } else if (order === "pe_asc") {
+    // Push nulls to end
+    visible.sort((a, b) => {
+      if (a.pe == null) return 1; if (b.pe == null) return -1;
+      return a.pe - b.pe;
+    });
+  } else if (order === "rev_growth_desc") {
+    visible.sort((a, b) => (b.revenue_growth || 0) - (a.revenue_growth || 0));
   }
 
   // Update label with live count
