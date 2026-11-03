@@ -36,12 +36,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 a{color:var(--gold);text-decoration:none}
 
 /* ── Nav ── */
-.nav{background:rgba(8,18,32,0.96);border-bottom:1px solid var(--border);padding:0 5%;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.nav{background:rgba(8,18,32,0.96);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 5%;height:64px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
 .nav-logo{font-weight:900;font-size:1.45rem;color:var(--gold);letter-spacing:-0.5px;display:flex;align-items:center;gap:8px;text-decoration:none}
-.nav-badge{font-size:0.6rem;font-weight:700;letter-spacing:0.1em;background:var(--gold2);border:1px solid rgba(245,166,35,0.3);color:var(--gold);padding:2px 7px;border-radius:4px;text-transform:uppercase}
+.nav-hamburger{display:none;background:none;border:none;color:var(--text);cursor:pointer;padding:4px}
 .nav-links{display:flex;gap:2rem;align-items:center}
-.nav-links a{color:var(--muted);font-size:0.9rem;text-decoration:none;transition:color .2s}
+.nav-links a{color:#94A3B8;font-size:0.9rem;text-decoration:none;transition:color .2s}
 .nav-links a:hover,.nav-links a.active{color:var(--gold)}
+@media(max-width:768px){
+  .nav-hamburger{display:block}
+  .nav-links{display:none;position:absolute;top:64px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,166,35,0.2)}
+  .nav-links.mobile-open{display:flex}
+  .nav-links a{padding:13px 24px;font-size:0.95rem;border-bottom:1px solid rgba(255,255,255,0.05);color:#94A3B8}
+  .nav-links a:hover{background:rgba(245,166,35,0.06);color:var(--gold)}
+}
 
 /* ── Page ── */
 .page{max-width:780px;margin:0 auto;padding:48px 20px 80px}
@@ -167,16 +174,36 @@ a{color:var(--gold);text-decoration:none}
 
 <!-- ═══ NAV ═══ -->
 <nav class="nav">
-  <a class="nav-logo" href="/index.html">
-    Fintiq
-    <span class="nav-badge">Beta</span>
-  </a>
-  <div class="nav-links">
-    <a href="/bulletin.html">Bulletin</a>
+  <a class="nav-logo" href="/index.html">Fintiq</a>
+  <div style="display:flex;align-items:center;gap:10px">
+    <button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false">
+      <svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect y="4" width="22" height="2" rx="1" fill="currentColor"/>
+        <rect y="10" width="22" height="2" rx="1" fill="currentColor"/>
+        <rect y="16" width="22" height="2" rx="1" fill="currentColor"/>
+      </svg>
+    </button>
+  </div>
+  <div class="nav-links" id="navLinks">
+    <a href="/index.html">Home</a>
+    <a href="/bulletin.html">Market Bulletin</a>
+    <a href="/deep-dive.html">Stock Deep Dive</a>
     <a href="/tools.html" class="active">Tools</a>
-    <a href="/deep-dive.html">Deep Dive</a>
+    <a href="/learn.html">Learn</a>
   </div>
 </nav>
+<script>
+(function(){
+  var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks'),i=document.getElementById('hamburgerIcon');
+  if(!h)return;
+  h.addEventListener('click',function(){
+    var o=n.classList.toggle('mobile-open');
+    h.setAttribute('aria-expanded',o);
+    i.innerHTML=o?'<line x1="3" y1="3" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="3" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';
+  });
+  n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('mobile-open');h.setAttribute('aria-expanded','false');i.innerHTML='<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});});
+})();
+</script>
 
 <!-- ═══ PAGE ═══ -->
 <div class="page">
@@ -193,6 +220,7 @@ a{color:var(--gold);text-decoration:none}
         <span class="cov-pill">NASDAQ 100</span>
         <span class="cov-pill">Dow Jones 30</span>
         <span class="cov-pill">FTSE 100</span>
+        <span class="cov-pill">FTSE 250</span>
         <span class="cov-pill">Euro Stoxx 50</span>
         <span class="cov-pill">Major ADRs</span>
       </div>
@@ -264,6 +292,16 @@ a{color:var(--gold);text-decoration:none}
 
   <!-- ── State: Results ── -->
   <div id="state-results">
+
+    <!-- Inline search bar to try a new scan without losing context -->
+    <div style="display:flex;gap:8px;margin-bottom:28px;align-items:center">
+      <input id="results-refine-input" type="text" placeholder="Try a new search…"
+        style="flex:1;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:10px 16px;color:var(--text);font-family:var(--font);font-size:0.9rem;outline:none"
+        onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter')refineSearch()">
+      <button class="scout-btn" style="padding:10px 20px;white-space:nowrap" onclick="refineSearch()">Scout →</button>
+    </div>
+
     <div class="results-header">
       <div class="results-strategy">
         <span class="strat-emoji" id="res-emoji">🔍</span>
@@ -587,6 +625,19 @@ function resetToInput() {
   selectedAnswers = {};
   showState("state-input");
   window.scrollTo({top:0, behavior:"smooth"});
+}
+
+function refineSearch() {
+  const input = document.getElementById("results-refine-input");
+  const val = (input.value || "").trim();
+  if (val.length < 5) { input.focus(); return; }
+  ta.value = val;
+  ta.dispatchEvent(new Event("input"));
+  currentThesis = val;
+  clarifyData = null;
+  selectedAnswers = {};
+  input.value = "";
+  startScout();
 }
 </script>
 

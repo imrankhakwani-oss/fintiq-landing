@@ -9076,6 +9076,12 @@ def _screen_universe(params: dict) -> list:
         LEFT JOIN scout_universe u ON f.ticker = u.ticker
         WHERE u.active = 1
     """).fetchall()
+    # Theme scores and text/description filters only work after AI tagging has run.
+    # If tagging hasn't happened yet, skip those filters so sector+fundamentals still work.
+    _tagged_count = conn.execute(
+        "SELECT COUNT(*) FROM scout_profiles WHERE tagged_at IS NOT NULL AND tagged_at != ''"
+    ).fetchone()[0]
+    _use_advanced = _tagged_count > 50
 
     # Pre-load news keywords
     news_map = {}
@@ -9138,28 +9144,31 @@ def _screen_universe(params: dict) -> list:
             rec = (_v(row, "analyst_rec", "") or "").lower()
             if not any(a.lower() in rec for a in ar): continue
 
-        if not _ok(_v(row, "ai_score", 0), theme_f.get("ai_score_min"), None): continue
-        if not _ok(_v(row, "defence_score", 0), theme_f.get("defence_score_min"), None): continue
-        if not _ok(_v(row, "energy_score", 0), theme_f.get("energy_score_min"), None): continue
-        if not _ok(_v(row, "healthcare_score", 0), theme_f.get("healthcare_score_min"), None): continue
-        if not _ok(_v(row, "fintech_score", 0), theme_f.get("fintech_score_min"), None): continue
-        if not _ok(_v(row, "ev_renewable_score", 0), theme_f.get("ev_renewable_score_min"), None): continue
-        if not _ok(_v(row, "cybersecurity_score", 0), theme_f.get("cybersecurity_score_min"), None): continue
-        if not _ok(_v(row, "us_revenue_pct", 50), theme_f.get("us_revenue_pct_min"), None): continue
-        if not _ok(_v(row, "china_revenue_pct", 0), None, theme_f.get("china_revenue_pct_max")): continue
-        if not _ok(_v(row, "china_supply_chain_score", 0), None, theme_f.get("china_supply_chain_score_max")): continue
-        if not _ok(_v(row, "dollar_sensitivity", 0), theme_f.get("dollar_sensitivity_min"), theme_f.get("dollar_sensitivity_max")): continue
+        # Theme scores and text filters only apply once AI tagging has run.
+        # Before tagging, all scores are 0 — skip to avoid zero results.
+        if _use_advanced:
+            if not _ok(_v(row, "ai_score", 0), theme_f.get("ai_score_min"), None): continue
+            if not _ok(_v(row, "defence_score", 0), theme_f.get("defence_score_min"), None): continue
+            if not _ok(_v(row, "energy_score", 0), theme_f.get("energy_score_min"), None): continue
+            if not _ok(_v(row, "healthcare_score", 0), theme_f.get("healthcare_score_min"), None): continue
+            if not _ok(_v(row, "fintech_score", 0), theme_f.get("fintech_score_min"), None): continue
+            if not _ok(_v(row, "ev_renewable_score", 0), theme_f.get("ev_renewable_score_min"), None): continue
+            if not _ok(_v(row, "cybersecurity_score", 0), theme_f.get("cybersecurity_score_min"), None): continue
+            if not _ok(_v(row, "us_revenue_pct", 50), theme_f.get("us_revenue_pct_min"), None): continue
+            if not _ok(_v(row, "china_revenue_pct", 0), None, theme_f.get("china_revenue_pct_max")): continue
+            if not _ok(_v(row, "china_supply_chain_score", 0), None, theme_f.get("china_supply_chain_score_max")): continue
+            if not _ok(_v(row, "dollar_sensitivity", 0), theme_f.get("dollar_sensitivity_min"), theme_f.get("dollar_sensitivity_max")): continue
 
-        desc = (_v(row, "description", "") or "").lower()
-        d_inc = kw_f.get("description_include") or []
-        d_exc = kw_f.get("description_exclude") or []
-        n_inc = kw_f.get("news_include") or []
+            desc = (_v(row, "description", "") or "").lower()
+            d_inc = kw_f.get("description_include") or []
+            d_exc = kw_f.get("description_exclude") or []
+            n_inc = kw_f.get("news_include") or []
 
-        if d_inc and not any(kw.lower() in desc for kw in d_inc): continue
-        if d_exc and any(kw.lower() in desc for kw in d_exc): continue
-        if n_inc:
-            news_kws = " ".join(news_map.get(row["ticker"], [])).lower()
-            if not any(kw.lower() in news_kws for kw in n_inc): continue
+            if d_inc and not any(kw.lower() in desc for kw in d_inc): continue
+            if d_exc and any(kw.lower() in desc for kw in d_exc): continue
+            if n_inc:
+                news_kws = " ".join(news_map.get(row["ticker"], [])).lower()
+                if not any(kw.lower() in news_kws for kw in n_inc): continue
 
         candidates.append(dict(row))
 
