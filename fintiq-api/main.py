@@ -9225,9 +9225,9 @@ def _screen_universe(params: dict, ticker_whitelist: list = None) -> list:
 # ── Display metrics builder ────────────────────────────────────────────────────
 def _build_display_metrics(s: dict) -> list:
     candidates = [
-        ("Yield", s.get("dividend_yield"), "%", "income"),
+        ("Div Yield", s.get("dividend_yield"), "%", "income"),
         ("P/E", s.get("pe"), "x", "value"),
-        ("Rev Growth", s.get("revenue_growth"), "%", "growth"),
+        ("Rev Growth", min(max(s.get("revenue_growth") or 0, -99), 300) if s.get("revenue_growth") is not None else None, "%", "growth"),
         ("Op Margin", s.get("operating_margin"), "%", "quality"),
         ("ROE", s.get("roe"), "%", "quality"),
         ("Debt/Eq", s.get("debt_equity"), "x", "health"),
@@ -9261,6 +9261,9 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
             "market": s.get("market", ""),
             "index_member": s.get("index_member", ""),
             "market_cap_usd": s.get("market_cap_usd") or 0,
+            "pe": s.get("pe"),
+            "dividend_yield": s.get("dividend_yield"),
+            "revenue_growth": s.get("revenue_growth"),
             "primary_theme_score": int(relevance) if relevance else 1,
             "why_it_fits": why or "Matches your screening criteria.",
             "interesting_now": now or (s.get("description") or "")[:150],
