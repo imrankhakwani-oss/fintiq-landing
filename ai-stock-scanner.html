@@ -140,6 +140,18 @@ a{color:var(--gold);text-decoration:none}
 .results-notice{font-size:0.75rem;color:var(--muted);background:rgba(30,58,95,0.3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:20px;display:flex;align-items:center;gap:8px}
 .results-notice::before{content:"ℹ";font-size:0.85rem;flex-shrink:0}
 
+/* Relevance slider */
+.relevance-bar{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:none}
+.relevance-bar.visible{display:block}
+.relevance-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.relevance-title{font-size:0.75rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.06em}
+.relevance-value{font-size:0.82rem;color:var(--gold);font-weight:700}
+.relevance-slider{width:100%;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border);outline:none;cursor:pointer}
+.relevance-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg)}
+.relevance-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--gold);cursor:pointer;border:2px solid var(--bg)}
+.relevance-labels{display:flex;justify-content:space-between;margin-top:6px}
+.relevance-labels span{font-size:0.68rem;color:var(--muted)}
+
 /* Sort bar */
 .sort-bar{display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-bottom:16px}
 .sort-label{font-size:0.75rem;color:var(--muted)}
@@ -359,7 +371,7 @@ a{color:var(--gold);text-decoration:none}
     <div class="sort-bar">
       <span class="sort-label">Sort by</span>
       <select class="sort-select" id="sort-select" onchange="sortCards()">
-        <option value="default">Best match</option>
+        <option value="default">Default order</option>
         <option value="mcap_desc">Market cap ↓ High to Low</option>
         <option value="mcap_asc">Market cap ↑ Low to High</option>
       </select>
@@ -368,6 +380,19 @@ a{color:var(--gold);text-decoration:none}
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--dim)'">
         ↓ CSV
       </button>
+    </div>
+
+    <!-- Relevance threshold slider (shown only for thematic searches) -->
+    <div class="relevance-bar" id="relevance-bar">
+      <div class="relevance-top">
+        <span class="relevance-title">Relevance</span>
+        <span class="relevance-value" id="relevance-value-label">Any exposure</span>
+      </div>
+      <input type="range" class="relevance-slider" id="relevance-slider"
+             min="1" max="5" step="1" value="1" oninput="onRelevanceSlide()">
+      <div class="relevance-labels">
+        <span>Any</span><span>Some</span><span>Moderate</span><span>Strong</span><span>Core play</span>
+      </div>
     </div>
 
     <div id="res-error" style="display:none;margin-bottom:16px"></div>
@@ -401,6 +426,8 @@ let selectedAnswers = {};       // { q1: "value", q2: "value" }
 let sessionUniverse = [];       // original results — locked for the session
 let activeFilter = null;        // { query, results } or null
 let allResultCards = [];        // currently displayed results (universe or filtered)
+let primaryThemeLabel = null;   // e.g. "AI relevance" — null for non-thematic searches
+let relevanceMin = 1;           // current slider value (1–5)
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
 function showState(id) {
@@ -615,11 +642,24 @@ function renderResults(data) {
   sessionUniverse = data.results || [];
   allResultCards = sessionUniverse;
   activeFilter = null;
+  relevanceMin = 1;
   document.getElementById("sort-select").value = "default";
   document.getElementById("res-error").style.display = "none";
   document.getElementById("filter-active-bar").style.display = "none";
   document.getElementById("filter-input").value = "";
-  renderCards(allResultCards);
+
+  // Relevance slider — show only for thematic searches
+  primaryThemeLabel = data.primary_theme_label || null;
+  const relBar = document.getElementById("relevance-bar");
+  if (primaryThemeLabel) {
+    document.getElementById("relevance-slider").value = 1;
+    document.getElementById("relevance-value-label").textContent = _relevanceLabel(1);
+    relBar.classList.add("visible");
+  } else {
+    relBar.classList.remove("visible");
+  }
+
+  applyDisplayFilters();
 
   // Chat chain
   renderChatChain();
@@ -639,15 +679,42 @@ function renderCards(results) {
   }
 }
 
-function sortCards() {
-  const order = document.getElementById("sort-select").value;
-  let sorted = [...allResultCards];
-  if (order === "mcap_desc") {
-    sorted.sort((a, b) => (b.market_cap_usd || 0) - (a.market_cap_usd || 0));
-  } else if (order === "mcap_asc") {
-    sorted.sort((a, b) => (a.market_cap_usd || 0) - (b.market_cap_usd || 0));
+// ── Relevance slider ─────────────────────────────────────────────────────────
+const _RELEVANCE_LABELS = ["", "Any exposure", "Some exposure", "Moderate", "Strong", "Core play"];
+
+function _relevanceLabel(v) { return _RELEVANCE_LABELS[v] || "Any exposure"; }
+
+function onRelevanceSlide() {
+  relevanceMin = parseInt(document.getElementById("relevance-slider").value, 10);
+  document.getElementById("relevance-value-label").textContent = _relevanceLabel(relevanceMin);
+  applyDisplayFilters();
+}
+
+// Central display filter — applies relevance + sort to allResultCards
+function applyDisplayFilters() {
+  let visible = [...allResultCards];
+  if (primaryThemeLabel && relevanceMin > 1) {
+    visible = visible.filter(r => (r.primary_theme_score || 0) >= relevanceMin);
   }
-  renderCards(sorted);
+  const order = document.getElementById("sort-select").value;
+  if (order === "mcap_desc") {
+    visible.sort((a, b) => (b.market_cap_usd || 0) - (a.market_cap_usd || 0));
+  } else if (order === "mcap_asc") {
+    visible.sort((a, b) => (a.market_cap_usd || 0) - (b.market_cap_usd || 0));
+  }
+  const cardsEl = document.getElementById("res-cards");
+  cardsEl.innerHTML = "";
+  if (!visible.length) {
+    cardsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);grid-column:1/-1">
+      No stocks at this relevance level — move the slider left to widen the net.
+    </div>`;
+  } else {
+    visible.forEach(r => cardsEl.appendChild(buildCard(r)));
+  }
+}
+
+function sortCards() {
+  applyDisplayFilters();
 }
 
 function renderChatChain() {
@@ -762,7 +829,7 @@ function showError(msg) {
   // If a session is active, stay in results state and show error inline
   if (sessionUniverse.length > 0) {
     allResultCards = sessionUniverse;  // restore universe on filter error
-    renderCards(allResultCards);
+    applyDisplayFilters();
     const resErr = document.getElementById("res-error");
     resErr.innerHTML = `<div class="error-box">${escHtml(msg)}</div>`;
     resErr.style.display = "block";
@@ -788,6 +855,9 @@ function resetToInput() {
   allResultCards = [];
   sessionUniverse = [];
   activeFilter = null;
+  primaryThemeLabel = null;
+  relevanceMin = 1;
+  document.getElementById("relevance-bar").classList.remove("visible");
   showState("state-input");
   window.scrollTo({top:0, behavior:"smooth"});
 }
@@ -830,7 +900,10 @@ async function applyFilter() {
     document.getElementById("res-error").style.display = "none";
 
     document.getElementById("sort-select").value = "default";
-    renderCards(allResultCards);
+    relevanceMin = 1;
+    document.getElementById("relevance-slider").value = 1;
+    document.getElementById("relevance-value-label").textContent = _relevanceLabel(1);
+    applyDisplayFilters();
     renderChatChain();
     showState("state-results");
     window.scrollTo({top: 0, behavior: "smooth"});
@@ -847,7 +920,11 @@ function clearFilter() {
   document.getElementById("filter-active-bar").style.display = "none";
   document.getElementById("filter-input").value = "";
   document.getElementById("sort-select").value = "default";
-  renderCards(allResultCards);
+  // Reset relevance slider to "Any" when clearing filter
+  relevanceMin = 1;
+  document.getElementById("relevance-slider").value = 1;
+  document.getElementById("relevance-value-label").textContent = _relevanceLabel(1);
+  applyDisplayFilters();
   renderChatChain();
 }
 

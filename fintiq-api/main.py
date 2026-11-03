@@ -9044,8 +9044,10 @@ def _translate_thesis_to_params(thesis: str, clarifications: dict) -> dict:
         "- For traditional screens (value/growth/income), use financial metrics\n"
         "- market: us/uk/eu/global (global = no filter)\n"
         "- market_cap values are in millions USD (e.g. 50000 = $50B)\n"
-        "- Keep theme score thresholds at 2+ for meaningful matches\n"
-        "- Use 2-5 description_include keywords for qualitative screens\n"
+        "- IMPORTANT: For theme score filters, always set the minimum threshold to 1 (not 2 or 3).\n"
+        "  Theme scores range 0-10. A threshold of 1 means 'has any exposure' — this keeps the net wide.\n"
+        "  The user will filter further themselves. Do NOT use thresholds above 1 for theme scores.\n"
+        "- Use 2-4 description_include keywords for qualitative screens — keep them broad, not restrictive\n"
         "- Apply any SIZE RULE or HORIZON RULE instructions above exactly as stated\n\n"
         "Return ONLY valid JSON:\n"
         '{"strategy_label":"2-4 word label","strategy_emoji":"one emoji",'
@@ -9238,11 +9240,34 @@ def _build_display_metrics(s: dict) -> list:
 
 
 # ── Explanation writer (Claude Haiku) ─────────────────────────────────────────
-def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str) -> list:
+# Maps theme filter key → score field name
+_THEME_MAP = {
+    "ai_score_min":             "ai_score",
+    "defence_score_min":        "defence_score",
+    "energy_score_min":         "energy_score",
+    "healthcare_score_min":     "healthcare_score",
+    "ev_renewable_score_min":   "ev_renewable_score",
+    "cybersecurity_score_min":  "cybersecurity_score",
+    "fintech_score_min":        "fintech_score",
+}
+
+def _detect_primary_theme(params: dict) -> tuple:
+    """Return (score_field, 'relevance') for the dominant theme in params, or (None, None).
+    The label is always 'relevance' — generic, not theme-specific."""
+    theme_f = params.get("theme_filters") or {}
+    for k, field in _THEME_MAP.items():
+        if theme_f.get(k):
+            return field, "relevance"
+    return None, None
+
+
+def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str,
+                               theme_key: str = None) -> list:
     if not candidates:
         return []
 
     def _make_result(s, why="", now=""):
+        score = s.get(theme_key, 0) if theme_key else 0
         return {
             "ticker": s["ticker"],
             "company": s.get("company", ""),
@@ -9250,6 +9275,7 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
             "market": s.get("market", ""),
             "index_member": s.get("index_member", ""),
             "market_cap_usd": s.get("market_cap_usd") or 0,
+            "primary_theme_score": int(score) if score else 0,
             "why_it_fits": why or "Matches your screening criteria.",
             "interesting_now": now or (s.get("description") or "")[:150],
             "metrics": _build_display_metrics(s),
@@ -9463,7 +9489,9 @@ async def scout_scan(request: Request):
         candidates = _screen_universe(params)
 
     # Stage 3 — Claude picks best 5-8 and writes plain-English explanations
-    results = _write_scout_explanations(candidates, thesis, params.get("strategy_label", ""))
+    _theme_key, _theme_label = _detect_primary_theme(params)
+    results = _write_scout_explanations(candidates, thesis, params.get("strategy_label", ""),
+                                        theme_key=_theme_key)
 
     return {
         "strategy_label": params.get("strategy_label", ""),
@@ -9471,6 +9499,7 @@ async def scout_scan(request: Request):
         "key_criteria": params.get("key_criteria", []),
         "total_matched": len(candidates),
         "results": results,
+        "primary_theme_label": _theme_label,   # e.g. "AI relevance" — None if non-thematic
         "data_notice": "Fundamentals updated weekly — use Deep Dive for latest earnings data.",
         "generated_at": datetime.utcnow().isoformat()
     }
@@ -9495,7 +9524,9 @@ async def scout_filter(request: Request):
         raise HTTPException(status_code=500, detail=params["error"])
 
     candidates = _screen_universe(params, ticker_whitelist=universe_tickers)
-    results = _write_scout_explanations(candidates, filter_query, params.get("strategy_label", ""))
+    _theme_key, _theme_label = _detect_primary_theme(params)
+    results = _write_scout_explanations(candidates, filter_query, params.get("strategy_label", ""),
+                                        theme_key=_theme_key)
 
     return {
         "strategy_label": params.get("strategy_label", ""),
@@ -9503,5 +9534,6 @@ async def scout_filter(request: Request):
         "key_criteria": params.get("key_criteria", []),
         "total_matched": len(candidates),
         "results": results,
+        "primary_theme_label": _theme_label,
         "generated_at": datetime.utcnow().isoformat()
     }
