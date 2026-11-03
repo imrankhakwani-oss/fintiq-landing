@@ -693,20 +693,30 @@ function onRelevanceSlide() {
 // Central display filter — applies relevance + sort to allResultCards
 function applyDisplayFilters() {
   let visible = [...allResultCards];
+
+  // Hard score cutoff — only show stocks that genuinely score this high
   if (primaryThemeLabel && relevanceMin > 1) {
     visible = visible.filter(r => (r.primary_theme_score || 0) >= relevanceMin);
   }
+
   const order = document.getElementById("sort-select").value;
   if (order === "mcap_desc") {
     visible.sort((a, b) => (b.market_cap_usd || 0) - (a.market_cap_usd || 0));
   } else if (order === "mcap_asc") {
     visible.sort((a, b) => (a.market_cap_usd || 0) - (b.market_cap_usd || 0));
   }
+
+  // Update label with live count
+  if (primaryThemeLabel) {
+    document.getElementById("relevance-value-label").textContent =
+      `${_relevanceLabel(relevanceMin)}${relevanceMin > 1 ? " · " + visible.length + " stocks" : ""}`;
+  }
+
   const cardsEl = document.getElementById("res-cards");
   cardsEl.innerHTML = "";
   if (!visible.length) {
     cardsEl.innerHTML = `<div style="text-align:center;padding:40px;color:var(--muted);grid-column:1/-1">
-      No stocks at this relevance level — move the slider left to widen the net.
+      No stocks score this high — move the slider left to see more results.
     </div>`;
   } else {
     visible.forEach(r => cardsEl.appendChild(buildCard(r)));
