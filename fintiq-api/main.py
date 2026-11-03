@@ -8838,8 +8838,15 @@ def _scout_monthly_refresh_bg():
             prompt = (
                 "Analyze each company's business description and return structured theme scores.\n\n"
                 f"Companies (TICKER|Company|Description):\n{items}\n\n"
-                "For each ticker score 0-5 (0=none,5=core):\n"
-                "ai_score, defence_score, energy_score, healthcare_score, "
+                "Score each theme 0-5 using these STRICT criteria:\n"
+                "  0 = No involvement\n"
+                "  1 = Mentioned or minor internal use (e.g. 'uses AI tools')\n"
+                "  2 = Has AI/theme-powered products or features as part of offering\n"
+                "  3 = Theme is a significant and growing revenue driver\n"
+                "  4 = Theme is a core business driver — major product line or segment\n"
+                "  5 = Pure-play — the theme IS the primary business\n"
+                "Be discriminating: most companies should score 0-2. Reserve 4-5 for genuine leaders.\n"
+                "Themes: ai_score, defence_score, energy_score, healthcare_score, "
                 "fintech_score, ev_renewable_score, cybersecurity_score\n"
                 "Geography (0-100%): us_revenue_pct, china_revenue_pct\n"
                 "china_supply_chain_score 0-5\n"
@@ -9407,6 +9414,96 @@ def scout_monthly_refresh(token: str = ""):
     _init_scout_db()
     threading.Thread(target=_scout_monthly_refresh_bg, daemon=True).start()
     return {"ok": True, "message": "Scout monthly refresh started (universe rebuild + AI tagging)"}
+
+
+@app.get("/scout/retag")
+def scout_retag(token: str = ""):
+    """Re-score all profiles with the current tagger prompt (no universe rebuild)."""
+    if token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    _init_scout_db()
+    def _retag_only():
+        if not ANTHROPIC_API_KEY:
+            return
+        conn = _scout_db()
+        profiles = conn.execute(
+            "SELECT ticker, company, description FROM scout_profiles "
+            "WHERE description IS NOT NULL AND description != '' ORDER BY ticker"
+        ).fetchall()
+        conn.close()
+        print(f"[SCOUT RETAG] Re-scoring {len(profiles)} profiles…", flush=True)
+        BATCH = 20
+        client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        now = datetime.utcnow().isoformat()
+        tagged = 0
+        for i in range(0, len(profiles), BATCH):
+            batch = profiles[i:i + BATCH]
+            try:
+                items = "\n".join(
+                    f"{p['ticker']}|{p['company']}|{(p['description'] or '')[:400]}"
+                    for p in batch
+                )
+                prompt = (
+                    "Analyze each company's business description and return structured theme scores.\n\n"
+                    f"Companies (TICKER|Company|Description):\n{items}\n\n"
+                    "Score each theme 0-5 using these STRICT criteria:\n"
+                    "  0 = No involvement\n"
+                    "  1 = Mentioned or minor internal use (e.g. 'uses AI tools')\n"
+                    "  2 = Has AI/theme-powered products or features as part of offering\n"
+                    "  3 = Theme is a significant and growing revenue driver\n"
+                    "  4 = Theme is a core business driver — major product line or segment\n"
+                    "  5 = Pure-play — the theme IS the primary business\n"
+                    "Be discriminating: most companies should score 0-2. Reserve 4-5 for genuine leaders.\n"
+                    "Themes: ai_score, defence_score, energy_score, healthcare_score, "
+                    "fintech_score, ev_renewable_score, cybersecurity_score\n"
+                    "Geography (0-100%): us_revenue_pct, china_revenue_pct\n"
+                    "china_supply_chain_score 0-5\n"
+                    "dollar_sensitivity -3 to +3 (positive=benefits from strong USD)\n"
+                    "keywords: top 5 business keywords array\n"
+                    "primary_customers: government/consumer/enterprise/financial/healthcare/mixed\n\n"
+                    "Return JSON array only:\n"
+                    '[{"ticker":"","ai_score":0,"defence_score":0,"energy_score":0,'
+                    '"healthcare_score":0,"fintech_score":0,"ev_renewable_score":0,'
+                    '"cybersecurity_score":0,"us_revenue_pct":50,"china_revenue_pct":0,'
+                    '"china_supply_chain_score":0,"dollar_sensitivity":0,'
+                    '"keywords":[],"primary_customers":"mixed"}]'
+                )
+                resp = client.messages.create(
+                    model="claude-haiku-4-5-20251001", max_tokens=4000,
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
+                raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
+                raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
+                _s = raw.find("["); _e = raw.rfind("]") + 1
+                if _s >= 0 and _e > _s: raw = raw[_s:_e]
+                results = json.loads(raw)
+                c = _scout_db()
+                for r in results:
+                    c.execute("""
+                        UPDATE scout_profiles SET
+                          ai_score=?,defence_score=?,energy_score=?,healthcare_score=?,
+                          fintech_score=?,ev_renewable_score=?,cybersecurity_score=?,
+                          us_revenue_pct=?,china_revenue_pct=?,
+                          china_supply_chain_score=?,dollar_sensitivity=?,
+                          keywords=?,primary_customers=?,tagged_at=?
+                        WHERE ticker=?
+                    """, (
+                        r.get("ai_score", 0), r.get("defence_score", 0), r.get("energy_score", 0),
+                        r.get("healthcare_score", 0), r.get("fintech_score", 0),
+                        r.get("ev_renewable_score", 0), r.get("cybersecurity_score", 0),
+                        r.get("us_revenue_pct", 50), r.get("china_revenue_pct", 0),
+                        r.get("china_supply_chain_score", 0), r.get("dollar_sensitivity", 0),
+                        json.dumps(r.get("keywords", [])), r.get("primary_customers", "mixed"), now,
+                        r["ticker"]
+                    ))
+                c.commit(); c.close()
+                tagged += len(results)
+            except Exception as e:
+                print(f"[SCOUT RETAG] Batch error: {e}", flush=True)
+        print(f"[SCOUT RETAG] Done — {tagged} profiles re-scored", flush=True)
+    threading.Thread(target=_retag_only, daemon=True).start()
+    return {"ok": True, "message": "Scout re-tagging started with improved scoring criteria"}
 
 
 @app.get("/scout/news-refresh")
