@@ -941,7 +941,7 @@ function clearFilter() {
 function downloadCSV() {
   // Check Deep Dive session
   let ddSession = null;
-  try { ddSession = localStorage.getItem("dd_session"); } catch(e) {}
+  try { ddSession = localStorage.getItem("fintiq_session"); } catch(e) {}
   if (!ddSession) {
     window.location.href = "/deep-dive.html?reason=scout-csv";
     return;
