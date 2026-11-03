@@ -9247,34 +9247,13 @@ def _build_display_metrics(s: dict) -> list:
 
 
 # ── Explanation writer (Claude Haiku) ─────────────────────────────────────────
-# Maps theme filter key → score field name
-_THEME_MAP = {
-    "ai_score_min":             "ai_score",
-    "defence_score_min":        "defence_score",
-    "energy_score_min":         "energy_score",
-    "healthcare_score_min":     "healthcare_score",
-    "ev_renewable_score_min":   "ev_renewable_score",
-    "cybersecurity_score_min":  "cybersecurity_score",
-    "fintech_score_min":        "fintech_score",
-}
-
-def _detect_primary_theme(params: dict) -> tuple:
-    """Return (score_field, 'relevance') for the dominant theme in params, or (None, None).
-    The label is always 'relevance' — generic, not theme-specific."""
-    theme_f = params.get("theme_filters") or {}
-    for k, field in _THEME_MAP.items():
-        if theme_f.get(k):
-            return field, "relevance"
-    return None, None
-
-
-def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str,
-                               theme_key: str = None) -> list:
+def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str) -> list:
+    """Generate plain-English explanations + per-query relevance score for each candidate.
+    relevance_score 1-5 is scored by Claude against the specific thesis — works for any theme."""
     if not candidates:
         return []
 
-    def _make_result(s, why="", now=""):
-        score = s.get(theme_key, 0) if theme_key else 0
+    def _make_result(s, why="", now="", relevance=1):
         return {
             "ticker": s["ticker"],
             "company": s.get("company", ""),
@@ -9282,7 +9261,7 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
             "market": s.get("market", ""),
             "index_member": s.get("index_member", ""),
             "market_cap_usd": s.get("market_cap_usd") or 0,
-            "primary_theme_score": int(score) if score else 0,
+            "primary_theme_score": int(relevance) if relevance else 1,
             "why_it_fits": why or "Matches your screening criteria.",
             "interesting_now": now or (s.get("description") or "")[:150],
             "metrics": _build_display_metrics(s),
@@ -9292,7 +9271,7 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
     if not ANTHROPIC_API_KEY:
         return [_make_result(s) for s in candidates]
 
-    # Ask Claude to explain up to 25 stocks; the rest get metrics-only cards appended
+    # Ask Claude to explain up to 25 stocks; the rest get score=1 cards appended
     explain_batch = candidates[:25]
     overflow = candidates[25:]
 
@@ -9309,11 +9288,17 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
     prompt = (
         f'Investor thesis: "{thesis}"  Strategy: {strategy_label}\n\n'
         f"Stocks that passed the quantitative screen:\n{cand_block}\n\n"
-        "Write a short plain-English explanation for EVERY stock in the list above.\n"
-        "For each write:\n"
+        "For EVERY stock write a plain-English explanation AND score its relevance to the thesis.\n\n"
+        "Fields:\n"
         "- why_it_fits: ONE sentence, plain English, specific to this company\n"
-        "- interesting_now: ONE concrete fact about its current position or opportunity\n\n"
-        'Return ONLY JSON array (one entry per stock): [{"ticker":"","why_it_fits":"","interesting_now":""}]'
+        "- interesting_now: ONE concrete fact about its current position or opportunity\n"
+        "- relevance_score: integer 1-5 — how directly this company's business matches the thesis:\n"
+        "    1 = tangential (general sector exposure only)\n"
+        "    2 = indirect exposure (supply chain, customer base, macro sensitivity)\n"
+        "    3 = meaningful exposure (significant revenue or cost impact)\n"
+        "    4 = core driver (theme is a major part of this business)\n"
+        "    5 = pure play (this IS the thesis — primary business)\n\n"
+        'Return ONLY JSON array: [{"ticker":"","why_it_fits":"","interesting_now":"","relevance_score":1}]'
     )
 
     try:
@@ -9323,12 +9308,9 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
             messages=[{"role": "user", "content": prompt}]
         )
         raw = next(b.text for b in resp.content if hasattr(b, "text")).strip()
-        # Strip code fences if present
         raw = _re_scout.sub(r"^```(?:json)?\s*", "", raw, flags=_re_scout.M)
         raw = _re_scout.sub(r"\s*```$", "", raw, flags=_re_scout.M).strip()
-        # Extract just the JSON array — drop any trailing commentary
-        _start = raw.find("[")
-        _end = raw.rfind("]") + 1
+        _start = raw.find("["); _end = raw.rfind("]") + 1
         if _start >= 0 and _end > _start:
             raw = raw[_start:_end]
         explanations = json.loads(raw)
@@ -9342,7 +9324,12 @@ def _write_scout_explanations(candidates: list, thesis: str, strategy_label: str
             if not s:
                 continue
             explained_tickers.add(t)
-            results.append(_make_result(s, exp.get("why_it_fits",""), exp.get("interesting_now","")))
+            results.append(_make_result(
+                s,
+                exp.get("why_it_fits", ""),
+                exp.get("interesting_now", ""),
+                exp.get("relevance_score", 1)
+            ))
 
         # Add any explain_batch stocks Claude missed, then overflow stocks
         for s in explain_batch:
@@ -9585,10 +9572,8 @@ async def scout_scan(request: Request):
                 params["theme_filters"][key] = v - 1
         candidates = _screen_universe(params)
 
-    # Stage 3 — Claude picks best 5-8 and writes plain-English explanations
-    _theme_key, _theme_label = _detect_primary_theme(params)
-    results = _write_scout_explanations(candidates, thesis, params.get("strategy_label", ""),
-                                        theme_key=_theme_key)
+    # Stage 3 — write explanations + per-query relevance scores
+    results = _write_scout_explanations(candidates, thesis, params.get("strategy_label", ""))
 
     return {
         "strategy_label": params.get("strategy_label", ""),
@@ -9596,7 +9581,7 @@ async def scout_scan(request: Request):
         "key_criteria": params.get("key_criteria", []),
         "total_matched": len(candidates),
         "results": results,
-        "primary_theme_label": _theme_label,   # e.g. "AI relevance" — None if non-thematic
+        "primary_theme_label": "relevance",   # always shown — scored per-query by Claude
         "data_notice": "Fundamentals updated weekly — use Deep Dive for latest earnings data.",
         "generated_at": datetime.utcnow().isoformat()
     }
@@ -9621,9 +9606,7 @@ async def scout_filter(request: Request):
         raise HTTPException(status_code=500, detail=params["error"])
 
     candidates = _screen_universe(params, ticker_whitelist=universe_tickers)
-    _theme_key, _theme_label = _detect_primary_theme(params)
-    results = _write_scout_explanations(candidates, filter_query, params.get("strategy_label", ""),
-                                        theme_key=_theme_key)
+    results = _write_scout_explanations(candidates, filter_query, params.get("strategy_label", ""))
 
     return {
         "strategy_label": params.get("strategy_label", ""),
@@ -9631,6 +9614,6 @@ async def scout_filter(request: Request):
         "key_criteria": params.get("key_criteria", []),
         "total_matched": len(candidates),
         "results": results,
-        "primary_theme_label": _theme_label,
+        "primary_theme_label": "relevance",
         "generated_at": datetime.utcnow().isoformat()
     }

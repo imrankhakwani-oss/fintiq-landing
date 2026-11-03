@@ -648,16 +648,12 @@ function renderResults(data) {
   document.getElementById("filter-active-bar").style.display = "none";
   document.getElementById("filter-input").value = "";
 
-  // Relevance slider — show only for thematic searches
-  primaryThemeLabel = data.primary_theme_label || null;
+  // Relevance slider — always show when results exist (scored per-query by Claude)
+  primaryThemeLabel = "relevance";
   const relBar = document.getElementById("relevance-bar");
-  if (primaryThemeLabel) {
-    document.getElementById("relevance-slider").value = 1;
-    document.getElementById("relevance-value-label").textContent = _relevanceLabel(1);
-    relBar.classList.add("visible");
-  } else {
-    relBar.classList.remove("visible");
-  }
+  document.getElementById("relevance-slider").value = 1;
+  document.getElementById("relevance-value-label").textContent = _relevanceLabel(1);
+  relBar.classList.add("visible");
 
   applyDisplayFilters();
 
