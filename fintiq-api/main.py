@@ -1813,7 +1813,8 @@ _CA_LIMIT, _CA_WINDOW = 30, 600   # 30 lookups per 10 minutes per IP
 
 @app.get("/catalyst-atlas/{ticker}")
 def catalyst_atlas(ticker: str, request: Request):
-    """Free Catalyst Atlas tool: why a stock moved, news footprints, price ranges."""
+    """Catalyst Atlas: why a stock moved, news footprints, price ranges.
+    Tesla is free; other tickers use the free search, a 24h unlock, or a paid credit."""
     origin = request.headers.get("origin")
     if not origin and request.headers.get("referer"):
         p = _ca_urlparse(request.headers["referer"]); origin = f"{p.scheme}://{p.netloc}"
@@ -1827,11 +1828,31 @@ def catalyst_atlas(ticker: str, request: Request):
     if len(q) >= _CA_LIMIT:
         raise HTTPException(status_code=429, detail="Too many lookups. Please try again in a few minutes.")
     q.append(now)
+    tkr = (ticker or "").upper().strip()
+    # Paywall: Tesla is free for everyone; other tickers need a signed-in user with
+    # an unused free search, an unlock from the last 24 hours, or a credit.
+    charge, email = None, None
+    if tkr not in ATLAS_FREE_TICKERS:
+        user = _get_session_user(request)
+        if not user:
+            raise HTTPException(status_code=401, detail={"code": "signin",
+                                "message": "Sign in with your email to search other companies. Your first search is free."})
+        email = user["email"]
+        charge = _atlas_charge_needed(email, tkr)
+        if charge is None:
+            raise HTTPException(status_code=402, detail={"code": "no_credits",
+                                "message": "You've used your searches. Buy a pack to keep exploring."})
     try:
-        return _build_atlas(ticker, kv_get=_kv_get, kv_set=_kv_set,
-                            tavily_search=_tavily_search,
-                            anthropic_api_key=ANTHROPIC_API_KEY,
-                            tavily_api_key=TAVILY_API_KEY)
+        result = _build_atlas(tkr, kv_get=_kv_get, kv_set=_kv_set,
+                              tavily_search=_tavily_search,
+                              anthropic_api_key=ANTHROPIC_API_KEY,
+                              tavily_api_key=TAVILY_API_KEY)
+        if email:
+            _atlas_apply_charge(email, tkr, charge)
+            result = {**result, "account": _atlas_account(email)}
+        return result
+    except HTTPException:
+        raise
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -2501,9 +2522,9 @@ async def startup_prewarm():
     #   21:00 UTC → 22:00 BST (summer) / 21:00 GMT (winter) — ~30min-1h after US close (16:00 ET)
     # IMPORTANT: this in-process cron is a safety net. The primary trigger is the
     # external cron-job.org schedule that POSTs to /bulletin/refresh?token=<REFRESH_TOKEN>
-    # at 06:30, 09:00, 14:00, and 21:00 UTC daily. That survives container restarts.
+    # at 06:30, 09:00, 13:00, 17:00, and 21:00 UTC daily. That survives container restarts.
     def _bulletin_cron():
-        TARGET_BUCKETS = {6 * 60 + 30, 9 * 60 + 0, 14 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
+        TARGET_BUCKETS = {6 * 60 + 30, 9 * 60 + 0, 13 * 60 + 0, 17 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
         last_fired: set = set()
         while True:
             now_utc = datetime.utcnow()
@@ -7675,6 +7696,16 @@ async def stripe_webhook(request: Request):
     event_type = event.get("type", "")
     print(f"[Stripe] Webhook: {event_type}")
 
+    if event_type == "checkout.session.completed" and \
+            (event["data"]["object"].get("metadata") or {}).get("product") == "atlas_credits":
+        # Catalyst Atlas credit pack (one-off payment): add credits, never a subscription
+        s = event["data"]["object"]
+        if s.get("payment_status") == "paid":
+            _atlas_add_credits(s.get("id", ""),
+                               (s.get("metadata", {}).get("fintiq_email") or s.get("customer_email") or "").strip().lower(),
+                               int(s.get("metadata", {}).get("credits") or ATLAS_PACK_CREDITS))
+        return {"ok": True}
+
     if event_type == "checkout.session.completed":
         session = event["data"]["object"]
         email   = (session.get("customer_email") or
@@ -7711,6 +7742,141 @@ async def stripe_webhook(request: Request):
                 print(f"[Stripe] Webhook unsubscribe error: {e}")
 
     return {"ok": True}
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# CATALYST ATLAS — search credits (pay-as-you-go packs)
+# Tesla is free. Each signed-in user gets 1 free search; after that each new company
+# costs 1 credit. Re-opening the same company within 24 hours is free.
+# Packs are one-off Stripe payments (no subscription). Stored in /data/auth.db.
+# ══════════════════════════════════════════════════════════════════════════════
+ATLAS_FREE_TICKERS  = {"TSLA"}
+ATLAS_PACK_CREDITS  = int(os.environ.get("ATLAS_PACK_CREDITS", "10"))
+ATLAS_PACK_PENCE    = int(os.environ.get("ATLAS_PACK_PENCE", "229"))    # £2.29
+ATLAS_PACK_CENTS    = int(os.environ.get("ATLAS_PACK_CENTS", "299"))    # $2.99
+ATLAS_UNLOCK_HOURS  = 24
+
+
+def _atlas_db():
+    conn = _auth_db()
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS atlas_credits (
+            email TEXT PRIMARY KEY, credits INTEGER DEFAULT 0,
+            free_used INTEGER DEFAULT 0, updated_at TEXT);
+        CREATE TABLE IF NOT EXISTS atlas_unlocks (
+            email TEXT NOT NULL, ticker TEXT NOT NULL, expires_at TEXT NOT NULL,
+            PRIMARY KEY (email, ticker));
+        CREATE TABLE IF NOT EXISTS atlas_payments (
+            session_id TEXT PRIMARY KEY, email TEXT, credits INTEGER, created_at TEXT);
+    """)
+    conn.commit()
+    return conn
+
+
+def _atlas_account(email: str) -> dict:
+    conn = _atlas_db()
+    row = conn.execute("SELECT credits, free_used FROM atlas_credits WHERE email=?", (email,)).fetchone()
+    conn.close()
+    credits = int(row["credits"]) if row else 0
+    free_available = not (row and row["free_used"])
+    return {"email": email, "credits": credits, "free_available": free_available,
+            "pack": {"credits": ATLAS_PACK_CREDITS, "gbp": ATLAS_PACK_PENCE / 100, "usd": ATLAS_PACK_CENTS / 100}}
+
+
+def _atlas_charge_needed(email: str, ticker: str):
+    """'unlocked' | 'free' | 'credit' | None (nothing left)."""
+    conn = _atlas_db()
+    now = datetime.now(timezone.utc).isoformat()
+    u = conn.execute("SELECT expires_at FROM atlas_unlocks WHERE email=? AND ticker=?", (email, ticker)).fetchone()
+    row = conn.execute("SELECT credits, free_used FROM atlas_credits WHERE email=?", (email,)).fetchone()
+    conn.close()
+    if u and u["expires_at"] > now:
+        return "unlocked"
+    if not row or not row["free_used"]:
+        return "free"
+    if int(row["credits"] or 0) > 0:
+        return "credit"
+    return None
+
+
+def _atlas_apply_charge(email: str, ticker: str, charge: str):
+    now = datetime.now(timezone.utc)
+    conn = _atlas_db()
+    try:
+        conn.execute("INSERT OR IGNORE INTO atlas_credits (email, credits, free_used, updated_at) VALUES (?,0,0,?)",
+                     (email, now.isoformat()))
+        if charge == "free":
+            conn.execute("UPDATE atlas_credits SET free_used=1, updated_at=? WHERE email=?", (now.isoformat(), email))
+        elif charge == "credit":
+            conn.execute("UPDATE atlas_credits SET credits=credits-1, updated_at=? WHERE email=? AND credits>0",
+                         (now.isoformat(), email))
+        if charge in ("free", "credit"):
+            exp = (now + timedelta(hours=ATLAS_UNLOCK_HOURS)).isoformat()
+            conn.execute("INSERT INTO atlas_unlocks (email, ticker, expires_at) VALUES (?,?,?) "
+                         "ON CONFLICT(email, ticker) DO UPDATE SET expires_at=excluded.expires_at",
+                         (email, ticker, exp))
+        conn.commit()
+        print(f"[catalyst-atlas] charge {charge} {email} {ticker}")
+    finally:
+        conn.close()
+
+
+def _atlas_add_credits(session_id: str, email: str, credits: int):
+    if not (session_id and email and credits > 0):
+        return
+    conn = _atlas_db()
+    try:
+        cur = conn.execute("INSERT OR IGNORE INTO atlas_payments (session_id, email, credits, created_at) VALUES (?,?,?,?)",
+                           (session_id, email, credits, datetime.now(timezone.utc).isoformat()))
+        if cur.rowcount:                      # first time we see this payment
+            conn.execute("INSERT OR IGNORE INTO atlas_credits (email, credits, free_used, updated_at) VALUES (?,0,0,?)",
+                         (email, datetime.now(timezone.utc).isoformat()))
+            conn.execute("UPDATE atlas_credits SET credits=credits+?, updated_at=? WHERE email=?",
+                         (credits, datetime.now(timezone.utc).isoformat(), email))
+            print(f"[Stripe] ✓ Catalyst Atlas: +{credits} credits for {email}")
+        conn.commit()
+    finally:
+        conn.close()
+
+
+@app.get("/atlas/account")
+def atlas_account(request: Request):
+    user = _get_session_user(request)
+    if not user:
+        return {"signed_in": False, "pack": {"credits": ATLAS_PACK_CREDITS, "gbp": ATLAS_PACK_PENCE / 100,
+                                             "usd": ATLAS_PACK_CENTS / 100}}
+    return {"signed_in": True, **_atlas_account(user["email"])}
+
+
+@app.post("/atlas/checkout")
+async def atlas_checkout(request: Request):
+    """One-off Stripe payment for a Catalyst Atlas search pack."""
+    user = _get_session_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Please sign in first.")
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=500, detail="Payments are not set up yet.")
+    body = await request.json()
+    usd = (body.get("currency") or "gbp").lower() == "usd"
+    tkr = "".join(ch for ch in str(body.get("ticker") or "").upper() if ch.isalnum() or ch in ".-^=")[:15]
+    back = "https://www.fintiq.uk/catalyst-atlas.html" + (f"?ticker={tkr}" if tkr else "")
+    r = requests.post("https://api.stripe.com/v1/checkout/sessions", auth=(STRIPE_SECRET_KEY, ""), timeout=10, data={
+        "mode": "payment",
+        "customer_email": user["email"],
+        "line_items[0][price_data][currency]": "usd" if usd else "gbp",
+        "line_items[0][price_data][unit_amount]": str(ATLAS_PACK_CENTS if usd else ATLAS_PACK_PENCE),
+        "line_items[0][price_data][product_data][name]": f"Catalyst Atlas: {ATLAS_PACK_CREDITS} company searches",
+        "line_items[0][quantity]": "1",
+        "metadata[product]": "atlas_credits",
+        "metadata[fintiq_email]": user["email"],
+        "metadata[credits]": str(ATLAS_PACK_CREDITS),
+        "success_url": back + ("&" if tkr else "?") + "paid=1",
+        "cancel_url": back,
+    })
+    if r.status_code not in (200, 201):
+        print(f"[Stripe] Atlas checkout error {r.status_code}: {r.text[:300]}")
+        raise HTTPException(status_code=500, detail="Could not start the payment. Please try again.")
+    return {"checkout_url": r.json()["url"]}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
