@@ -632,7 +632,10 @@ document.getElementById('navHamburger').addEventListener('click',()=>{
 });
 
 // ── Clock ─────────────────────────────────────────────────────────────
-function updateClock(){const u=new Date().toUTCString().match(/(\d\d:\d\d):\d\d GMT/);if(u)document.getElementById('clockSpan').textContent=u[1]+' UTC';}
+let _bulletinGenAt = null;
+function liveAgeMinutes(){if(!_bulletinGenAt)return 0;const ms=Date.now()-new Date(_bulletinGenAt.slice(0,19)+'Z').getTime();return Math.max(0,Math.round(ms/60000));}
+function updateAge(){const el=document.getElementById('ageSpan');if(!el||el.dataset.refreshing==='1')return;el.textContent=ageStr(liveAgeMinutes());}
+function updateClock(){const u=new Date().toUTCString().match(/(\d\d:\d\d):\d\d GMT/);if(u)document.getElementById('clockSpan').textContent=u[1]+' UTC';updateAge();}
 setInterval(updateClock,1000);updateClock();
 function ageStr(m){if(m<2)return 'Just refreshed';if(m<60)return m+'m ago';const h=Math.floor(m/60),r=m%60;return r?h+'h '+r+'m ago':h+'h ago';}
 
@@ -1509,21 +1512,29 @@ function mpFromMarketData(md){
   const macro=md.macro_indicators||{};
   const mm={};for(const m of(md.major_markets||[]))mm[m.symbol]=m;
   const bp=(p,c)=>({price:p,chg_pct:c});
-  return{
+  const r={
     vix:bp(macro.vix,null),tnx:bp(macro.treasury_10y,null),
     gold:bp(macro.gold,null),brent:bp(macro.brent,null),
-    spx:mm['^GSPC']?bp(mm['^GSPC'].price,mm['^GSPC'].chg_pct):{},
-    nqf:mm['^NDX']?bp(mm['^NDX'].price,mm['^NDX'].chg_pct):{},
   };
+  if(mm['^GSPC'])r.spx=bp(mm['^GSPC'].price,mm['^GSPC'].chg_pct);
+  if(mm['^DJI']) r.dji=bp(mm['^DJI'].price, mm['^DJI'].chg_pct);
+  if(mm['^NDX']) r.nqf=bp(mm['^NDX'].price, mm['^NDX'].chg_pct);
+  return r;
 }
 
 // ── Main render ────────────────────────────────────────────────────────
 function render(d,md){
   document.getElementById('sessionChip').textContent=d.session?d.session.toUpperCase():'SESSION';
-  document.getElementById('ageSpan').textContent=(d.refreshing?'🔄 Refreshing… ':'')+ageStr(d.age_minutes||0);
+  _bulletinGenAt = d.generated_at || null;
+  const _ageSpanEl = document.getElementById('ageSpan');
+  if(d.refreshing){_ageSpanEl.dataset.refreshing='1';_ageSpanEl.textContent='🔄 Refreshing…';}
+  else{_ageSpanEl.dataset.refreshing='';updateAge();}
   const tc=d.the_call||{};
   if(tc.headline)document.getElementById('callText').textContent=tc.headline;
-  const mp=(d.market_prices&&Object.keys(d.market_prices).length>0)?d.market_prices:mpFromMarketData(md);
+  // Merge: live md prices override stale bulletin prices for the 8 main tiles;
+  // keep vix9d/vix3m/etc from bulletin for VIX term structure.
+  const _liveMp=mpFromMarketData(md);
+  const mp=_liveMp?{...(d.market_prices||{}),..._liveMp}:(d.market_prices&&Object.keys(d.market_prices).length>0?d.market_prices:null);
   const y2=d.yield_2y??md?.macro_indicators?.yield_curve_spread;
   renderMkt(mp,y2);
   renderSentiment(d.sentiment);
