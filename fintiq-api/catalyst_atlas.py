@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v3"
+VERSION = "v4"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -62,8 +62,8 @@ SECTOR_ETF_FALLBACK = {
 NEWS_CATEGORIES = [
     "Earnings & guidance", "Sales & delivery data", "Product & technology",
     "Analyst rating", "Deals & partnerships", "Legal & regulation",
-    "Management & leadership", "Politics & policy", "Market-wide news",
-    "Unexplained",
+    "Management & leadership", "Politics & policy", "Competition",
+    "Customer & industry demand", "Market-wide news", "Unexplained",
 ]
 
 WINDOW = 250
@@ -223,6 +223,11 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
             "confident about, you may use it and set \"src\" to \"knowledge\".\n"
             "Otherwise use category \"Unexplained\". Never guess.\n"
             f"Allowed categories: {', '.join(NEWS_CATEGORIES)}.\n"
+            "Category guide: 'Sales & delivery data' = the company's own sales, deliveries or user numbers; "
+            "'Customer & industry demand' = news about customers' spending or demand in its industry "
+            "(e.g. a big customer raising its budget); 'Competition' = rivals' products, pricing, market-share "
+            "changes or customers building their own alternative; 'Market-wide news' = only when the whole "
+            "stock market or a whole sector moved on general news.\n"
             "Reply with a JSON array only, one object per date: "
             "{\"date\":\"YYYY-MM-DD\",\"category\":\"...\",\"title\":\"plain-English cause, max 12 words\","
             "\"src\":\"news\" or \"knowledge\"}.\n\n" + "\n".join(chunk)
