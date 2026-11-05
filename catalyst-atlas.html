@@ -301,6 +301,12 @@ td.muted{color:#A78BFA}
 .faq p{color:var(--muted);font-size:.9rem;margin-top:8px;max-width:75ch}
 .related{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;font-size:.88rem}
 noscript p{color:var(--muted);text-align:center;padding:12px}
+.keyfold{display:block}
+.keyfold>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.keyfold>summary::-webkit-details-marker{display:none}
+.keysum{color:#CBD5E1;font-size:.9rem}
+.keyfold[open] .keysum .more{display:none}
+.keyfold>*:not(summary){margin-top:12px}
 </style>
 </head>
 <body>
@@ -406,7 +412,7 @@ const sgn = v => v > 0 ? '+' : v < 0 ? '−' : '';
 const pc = (v, d = 1) => v == null ? '–' : sgn(v) + Math.abs(v).toFixed(d) + '%';
 const cls = v => v == null ? '' : v >= 0 ? 'pos' : 'neg';
 const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', {day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'});
-const CAT_COL = {"Earnings":"#F59E0B","Sales & delivery data":"#60A5FA","Product & technology":"#22c55e","Analyst rating":"#A78BFA","Deals & partnerships":"#2DD4BF","Legal & regulation":"#F472B6","Management & leadership":"#FB923C","Politics & policy":"#EF4444","Market-wide news":"#94A3B8","Unexplained":"#64748B"};
+const CAT_COL = {"Competition":"#F43F5E","Customer & industry demand":"#38BDF8","Earnings":"#F59E0B","Sales & delivery data":"#60A5FA","Product & technology":"#22c55e","Analyst rating":"#A78BFA","Deals & partnerships":"#2DD4BF","Legal & regulation":"#F472B6","Management & leadership":"#FB923C","Politics & policy":"#EF4444","Market-wide news":"#94A3B8","Unexplained":"#64748B"};
 let D = null, lens = 'months', sel = null;
 
 function money(v) {
@@ -515,9 +521,10 @@ function render() {
   <div class="company"><h2>${esc(D.name)} <span style="color:var(--dim);font-weight:600;font-size:1rem">${esc(D.ticker)}</span></h2>
     <span class="px">${money(D.price)}</span><span class="meta">Closing price ${fmtDate(D.asof)}${D.sector ? ' · ' + esc(D.sector) : ''}</span></div>
 
-  <div class="card key">
-    <div class="label">Reading the numbers</div>
-    <h2>Two kinds of % change on this page</h2>
+  <details class="card key keyfold">
+    <summary><span class="label" style="margin:0">Reading the numbers</span>
+      <span class="keysum">What do ${TAG_ACT} and ${TAG_NET} mean? <span class="more">Tap to read ▾</span></span></summary>
+    <h2 style="margin-top:12px">Two kinds of % change on this page</h2>
     <div class="keygrid">
       <div><p>${TAG_ACT} <b>Actual change</b></p><p>The real change in the share price: what a shareholder actually gained or lost.</p></div>
       <div><p>${TAG_NET} <b>Company's own move</b></p><p>The actual change after we take out three things that move most shares at the same time:</p>
@@ -526,7 +533,8 @@ function render() {
     <p class="why"><b>Why take these out?</b> On a day when the whole market falls 3%, most shares fall, whatever their own news. Taking the market out shows what the company's own news did, so one news day can be fairly compared with another.</p>
     ${exSplit ? `<div class="example"><div class="label" style="margin-bottom:4px">Example: ${esc(fmtDate(ex.date))}, ${esc(ex.title)}</div>${eqRow(exSplit)}
       <p class="note" style="margin-top:6px">Most of this day's move ${Math.abs(exSplit.own) >= Math.abs(exSplit.act - exSplit.own) ? 'was the company\'s own news' : 'came from the wider market'}. Parts are rounded and may not add up exactly.</p></div>` : ''}
-  </div>
+  
+  </details>
 
   <div class="grid two">
     <div class="card"><div class="label">In a nutshell</div>
