@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v6"
+VERSION = "v7"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -180,6 +180,32 @@ def _atm_implied_vol(tk, spot: float) -> Optional[float]:
 # ─────────────────────────────────────────────────────────────────────────────
 # News labelling for big company-specific days (Tavily + Claude Haiku)
 # ─────────────────────────────────────────────────────────────────────────────
+def _pub_date(r: dict):
+    """Tavily dates come as ISO ('2026-10-23...') or RFC ('Tue, 02 Apr 2024 ...')."""
+    p = str(r.get("published_date") or "").strip()
+    if not p:
+        return None
+    try:
+        return dt.date.fromisoformat(p[:10])
+    except Exception:
+        pass
+    try:
+        from email.utils import parsedate_to_datetime
+        return parsedate_to_datetime(p).date()
+    except Exception:
+        return None
+
+
+_JUNK = re.compile(r"(stock price|share price|price quote|\bquote\b|stock news|historical prices|"
+                   r"stock chart|market cap|investor relations|financials?\s*$)", re.I)
+
+
+def _is_junk(r: dict, name: str) -> bool:
+    """Quote pages and home pages, which never explain a particular day's move."""
+    title = str(r.get("title") or "").strip()
+    return (not title) or bool(_JUNK.search(title)) or title.lower() == name.lower()
+
+
 def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: str = "",
                  tavily_search: Optional[Callable] = None) -> list:
     """News articles published around one date.
@@ -202,11 +228,8 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
     found, seen = [], set()
 
     def in_window(r):
-        p = str(r.get("published_date") or "")[:10]
-        try:
-            return -3 <= (dt.date.fromisoformat(p) - d).days <= 1
-        except Exception:
-            return None
+        p = _pub_date(r)
+        return None if p is None else -3 <= (p - d).days <= 1
 
     for k, (query, extra) in enumerate(searches):
         if k == 2 and sum(1 for r in found if in_window(r)) >= 2:
@@ -230,10 +253,12 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
                 print(f"[catalyst-atlas] tavily_search error {ticker} {day}: {e}")
         for x in res:
             u = x.get("url") or x.get("title")
-            if u and u not in seen:
+            if u and u not in seen and not _is_junk(x, name):
                 seen.add(u); found.append(x)
-    found.sort(key=lambda r: {True: 0, None: 1, False: 2}[in_window(r)])
-    return found[:8]
+    dated = [r for r in found if in_window(r)]
+    if dated:                       # articles from those days exist: use only them
+        return dated[:6]
+    return [r for r in found if in_window(r) is None][:4]   # otherwise undated items, flagged in the prompt
 
 
 def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[Callable],
@@ -253,9 +278,9 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
         if res:
             diag["with_results"] += 1
         diag.setdefault("samples", {})[d["date"]] = [
-            f"{str(r.get('published_date') or '?')[:10]} {str(r.get('title',''))[:90]}" for r in res[:4]]
+            f"{_pub_date(r) or '?'} {str(r.get('title',''))[:90]}" for r in res[:4]]
         snippets = " | ".join(
-            f"[published {str(r.get('published_date') or 'date unknown')[:10]}] {r.get('title','')}: {str(r.get('content',''))[:400]}"
+            f"[published {_pub_date(r) or 'DATE UNKNOWN'}] {r.get('title','')}: {str(r.get('content',''))[:400]}"
             for r in res[:6]) or "no articles found"
         blocks.append(f"DATE {d['date']} (company-specific move {d['move']:+.1f}%): {snippets}")
 
@@ -270,7 +295,8 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
             "Use the news snippets first. Each shows its publication date. Use stories published on that date, "
             "the day before, or the day after that are about this company, its industry or the price of what it "
             "sells (e.g. oil for energy companies). Pick the most likely cause of a move of that size and "
-            "direction. Ignore stories that are clearly about other dates.\n"
+            "direction. Ignore stories that are clearly about other dates. Items marked DATE UNKNOWN are weak "
+            "evidence: only use one if its text clearly refers to events of that exact date.\n"
             "If the snippets don't explain it but the cause is a widely reported event you are highly "
             "confident about, you may use it and set \"src\" to \"knowledge\".\n"
             "Otherwise use category \"Unexplained\". Never guess.\n"
