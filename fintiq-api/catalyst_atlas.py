@@ -40,10 +40,11 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v7"
+VERSION = "v8"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
+SONNET_MODEL = "claude-sonnet-4-6"   # same model the rest of the Fintiq API uses
 TICKER_RE = re.compile(r"^[A-Z0-9.\-^=]{1,15}$")
 
 # Equal-weight sector funds, so a giant company (e.g. Tesla in XLY) does not
@@ -261,6 +262,27 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
     return [r for r in found if in_window(r) is None][:4]   # otherwise undated items, flagged in the prompt
 
 
+_QWORDS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "1st": 1, "2nd": 2, "3rd": 3, "4th": 4}
+
+
+def _impossible_period(title: str, day: str) -> bool:
+    """True if a label talks about results for a period that had not ended on that day,
+    e.g. 'Q4 2025 results' on 10 June 2025."""
+    d = dt.date.fromisoformat(day)
+    s = title or ""
+    for q, y in re.findall(r"\bQ([1-4])\s*(?:FY)?\s*'?(20\d\d|\d\d)\b", s, flags=re.I):
+        y = int(y) + (2000 if len(y) == 2 else 0)
+        if dt.date(y, 3 * int(q), 28) > d:
+            return True
+    for w, y in re.findall(r"\b(first|second|third|fourth|1st|2nd|3rd|4th)[- ]quarter (20\d\d)\b", s, flags=re.I):
+        if dt.date(int(y), 3 * _QWORDS[w.lower()], 28) > d:
+            return True
+    for y in re.findall(r"\b(?:full[- ]year|annual|FY)\s*(20\d\d)\b", s, flags=re.I):
+        if int(y) >= d.year:
+            return True
+    return False
+
+
 def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[Callable],
                    anthropic_api_key: str, tavily_api_key: str = "") -> tuple:
     """days: [{"date": "YYYY-MM-DD", "move": -7.2}]
@@ -325,7 +347,13 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
                 continue
             cat = o.get("category") if o.get("category") in NEWS_CATEGORIES else "Unexplained"
             title = str(o.get("title") or "")[:90] or "Large company-specific move"
-            out[str(o["date"])[:10]] = {"cat": cat, "title": title, "src": o.get("src") or "news"}
+            day = str(o["date"])[:10]
+            try:
+                if _impossible_period(title, day):
+                    cat, title = "Unexplained", "Large company-specific move (no clear news found)"
+            except Exception:
+                pass
+            out[day] = {"cat": cat, "title": title, "src": o.get("src") or "news"}
             if cat != "Unexplained":
                 diag["labelled"] += 1
     print(f"[catalyst-atlas] {ticker} labels: {diag}")
@@ -628,6 +656,22 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
                          "n_past": len(er), "runup5": _r(run5),
                          "runup_flag": run5 > 5})
 
+    # price change at a glance: last week / month / quarter / year (actual price)
+    periods = []
+    simple = np.r_[0.0, c[1:] / c[:-1] - 1]
+    for label, h in (("Last week", 5), ("Last month", 21), ("Last quarter", 63), ("Last year", 252)):
+        if n > h:
+            seg = simple[n - h:]
+            periods.append({"label": label, "days": h, "total": _r(100 * (c[-1] / c[n - 1 - h] - 1)),
+                            "avg_daily": _r(100 * float(np.mean(seg)), 2),
+                            "typical_swing": _r(100 * float(np.mean(np.abs(seg))), 2),
+                            "up_days": int(np.sum(seg > 0)), "down_days": int(np.sum(seg < 0))})
+    # what drives the daily moves over the last year (share of day-to-day ups and downs)
+    w = slice(max(1, n - 252), n)
+    vm, vs, va = float(np.var(M[w])), float(np.var(S[w])), float(np.var(A[w]))
+    tot = (vm + vs + va) or 1.0
+    driver_share = {"market": round(100 * vm / tot), "sector": round(100 * vs / tot), "own": round(100 * va / tot)}
+
     def enc(arr, k=10000):
         return [int(round(float(v) * k)) for v in arr]
 
@@ -643,8 +687,112 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
         "groups": groups, "phases": phases, "quiet": quiet,
         "series": {"dates": D, "close": [round(float(x), 2) for x in c], "own": enc(A), "mkt": enc(M), "sec": enc(S)},
         "generated": dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
+        "periods": periods, "driver_share": driver_share, "market_vol": _r(100 * float(np.std(rm[1:]) * math.sqrt(252))),
         "disclaimer": "Educational research only. Past patterns do not guarantee future results. Not financial advice.",
     }
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Fintiq Analyst's view: plain-English summary written by Claude from the page's
+# own figures only. No buy/sell/hold, no price targets.
+# ─────────────────────────────────────────────────────────────────────────────
+def _view_facts(res: dict) -> dict:
+    pence = res.get("currency") in ("GBp", "GBX", "GBx")
+    k = 0.01 if pence else 1.0
+    sym = "£" if (pence or res.get("currency") == "GBP") else ("$" if res.get("currency") == "USD" else "")
+    money = lambda v: None if v is None else f"{sym}{v * k:,.2f}"
+    unit = sym or "£"
+    s = res["series"]; d, c = s["dates"], s["close"]
+    sector_word = ("the oil price" if res.get("sector_etf") == "BZ=F"
+                   else ("its sector and interest rates" if res.get("sector_etf") else "its sector"))
+    mkt = "the FTSE 100" if res.get("market") == "^FTSE" else "the US stock market (S&P 500)"
+    legs = []
+    for lens in ("year", "months"):
+        for l in res["phases"][lens]["legs"][-3:]:
+            legs.append({"scale": lens, "from": d[l["a"]], "to": d[l["b"]], "change_pct": l["chg"],
+                         "parts_pct_points": {"market": l["mkt"], sector_word: l["sec"],
+                                              "company_news_days": l["news"], "other_trading": l["other"]}})
+    groups = [{"news_type": g["name"], "examples": g["day0"]["n"], "what_counts_as_success": g["expects"],
+               "worked_on_day0": f'{g["day0"]["hits"]} of {g["day0"]["n"]}',
+               "still_true_after_1_month": f'{g["month"]["hits"]} of {g["month"]["n"]}',
+               "avg_own_move_day0_pct": g["avg_day0"], "avg_own_move_after_1_month_pct": g["avg_month"],
+               "typical_size_day0_pct": g.get("avg_abs_day0")} for g in res["groups"]]
+    ranges = [{"horizon": r["label"],
+               "seven_in_ten_price": f'{money(r["lo70"])} to {money(r["hi70"])}',
+               "one_in_ten_below": money(r["lo90"]), "one_in_ten_above": money(r["hi90"]),
+               f"{unit}1,000_invested_becomes_7_in_10": f'{unit}{1000 * r["lo70"] / res["price"]:,.0f} to {unit}{1000 * r["hi70"] / res["price"]:,.0f}',
+               f"{unit}1,000_invested_1_in_10_below": f'{unit}{1000 * r["lo90"] / res["price"]:,.0f}'} for r in res["ranges"]]
+    recent = [{"date": e["date"], "type": e["kind"], "what": e["title"], "actual_move_pct": e["ret"],
+               "own_move_pct": e["d0"]} for e in res["events"][-8:]]
+    return {
+        "company": res["name"], "ticker": res["ticker"], "price_now": money(res["price"]), "as_of": res["asof"],
+        "price_3y_ago": money(c[0]), "date_3y_ago": d[0], "change_since_pct": round(100 * (c[-1] / c[0] - 1), 1),
+        "market_used": mkt, "other_factor_taken_out": sector_word,
+        "beta_now": res["beta_now"], "beta_3y_avg": res["beta_avg"],
+        "share_of_daily_moves_last_year_pct": {"market": res["driver_share"]["market"],
+                                               sector_word: res["driver_share"]["sector"],
+                                               "company_own": res["driver_share"]["own"]},
+        "yearly_volatility_pct": res["vol"], "market_yearly_volatility_pct": res.get("market_vol"),
+        "price_change_by_period": res.get("periods"),
+        "phases": legs, "news_patterns": groups, "recent_news_days": recent,
+        "likely_ranges_from_recent_swings": ranges,
+        "next_results": (res["upcoming"][0] if res.get("upcoming") else None),
+    }
+
+
+def analyst_view(res: dict, anthropic_api_key: str) -> Optional[dict]:
+    if not anthropic_api_key:
+        return None
+    facts = _view_facts(res)
+    prompt = (
+        "You are a senior equity analyst writing for Fintiq, a UK investing education site. Write the "
+        "'Fintiq Analyst's view' of this share for someone with savings but no finance background.\n\n"
+        "Rules:\n"
+        "- Use ONLY the facts in the JSON below. Do not add news, forecasts, opinions about the company's "
+        "future, or anything you know from elsewhere.\n"
+        "- Never say buy, sell, hold, cheap, expensive, undervalued, a good investment, or give a price target. "
+        "Never tell the reader what to do.\n"
+        "- Plain British English. Short sentences. No jargon: never write beta, volatility, alpha, catalyst or "
+        "abnormal return. Say 'the overall stock market' rather than an index code.\n"
+        "- Use the money amounts exactly as given (already in the right currency). Round percentages sensibly.\n"
+        "- Explain counts in everyday words, e.g. 'a month later it had beaten the overall market only 4 times "
+        "out of 9, close to a coin toss' or 'the move was still there a month later in 6 of 6 cases, so this kind "
+        "of news had a lasting effect'.\n"
+        "- If a pattern has fewer than 4 examples, say the evidence is thin.\n"
+        "- 170 to 260 words in total.\n\n"
+        "Reply with JSON only, with these keys, each 1-3 sentences:\n"
+        "{\"story\": the share's journey in plain words,\n"
+        " \"drivers\": what really moves it day to day, using share_of_daily_moves_last_year_pct and phases,\n"
+        " \"news\": how it has reacted to results and other news, and whether reactions lasted,\n"
+        " \"swing\": how much it typically moves, compared with the overall market, including the £1,000 example "
+        "for 3 months (use the currency shown in the facts),\n"
+        " \"coming_up\": the next known event and what usually happens,\n"
+        " \"questions\": [three short questions a person should ask themselves before investing]}\n\n"
+        "FACTS:\n" + json.dumps(facts, default=str)
+    )
+    try:
+        import anthropic
+        client = anthropic.Anthropic(api_key=anthropic_api_key)
+        resp = client.messages.create(model=SONNET_MODEL, max_tokens=1500,
+                                      messages=[{"role": "user", "content": prompt}])
+        text = "".join(getattr(b, "text", "") for b in resp.content)
+        v = json.loads(text[text.find("{"): text.rfind("}") + 1])
+    except Exception as e:
+        print(f"[catalyst-atlas] analyst view failed for {res.get('ticker')}: {type(e).__name__}: {str(e)[:200]}")
+        return None
+    banned = re.compile(r"\b(you should|we recommend|i recommend|price target|undervalued|overvalued|"
+                        r"good investment|time to (?:buy|sell)|(?:buy|sell|hold) rating)\b|\b(?:buy|sell)\b(?!-off| off)", re.I)
+    out = {}
+    for key in ("story", "drivers", "news", "swing", "coming_up"):
+        val = str(v.get(key) or "").strip()
+        if banned.search(val):
+            print(f"[catalyst-atlas] analyst view rejected ({key}) for {res.get('ticker')}")
+            return None
+        out[key] = val
+    out["questions"] = [str(q).strip() for q in (v.get("questions") or [])][:3]
+    if not out["story"]:
+        return None
+    return out
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -689,6 +837,7 @@ def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
     result = analyse(data, labeler=labeler)
     d = diag_box["diag"]
     result["label_diag"] = d
+    result["analyst_view"] = analyst_view(result, anthropic_api_key)
     failed = bool(d.get("error")) or (d.get("days", 0) > 0 and d.get("with_results", 0) == 0)
     result["_ttl"] = 3600 if failed else CACHE_TTL   # retry within an hour if news lookup failed
     if kv_set:
