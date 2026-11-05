@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v4"
+VERSION = "v5"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -73,6 +73,26 @@ MIN_WINDOW = 60
 # ─────────────────────────────────────────────────────────────────────────────
 # Data fetching (yfinance). Kept separate so the analysis can be tested offline.
 # ─────────────────────────────────────────────────────────────────────────────
+OIL = "BZ=F"   # Brent crude futures
+
+
+def clean_name(raw: str) -> str:
+    """'SHELL PLC ORD EUR0.07' -> 'Shell plc'; 'NVIDIA Corporation' unchanged."""
+    import re as _re
+    s = str(raw or "").strip()
+    s = _re.split(r"\s+(ORD|ORDINARY|SHS|SHARES|ADR|CL\s+[A-Z]|CLASS\s+[A-Z])\b", s, flags=_re.I)[0]
+    s = _re.sub(r"\s+[$€£]?\d+(\.\d+)?[PpGg]?$", "", s).strip(" ,-")
+    if s.isupper() and len(s) > 4:
+        def fix(w):
+            if w == "PLC":
+                return "plc"
+            if len(w) <= 4 and w.isalpha():
+                return w                      # BP, HSBC, AG, SA keep capitals
+            return "-".join(p.capitalize() for p in w.split("-"))
+        s = " ".join(fix(w) for w in s.split())
+    return s or str(raw)
+
+
 def fetch_market_data(ticker: str, period: str = "3y") -> dict:
     import yfinance as yf
 
@@ -83,10 +103,15 @@ def fetch_market_data(ticker: str, period: str = "3y") -> dict:
     except Exception:
         pass
     uk = ticker.endswith(".L")
-    name = info.get("shortName") or info.get("longName") or ticker
+    name = clean_name(info.get("longName") or info.get("shortName") or ticker)
     sector_name = info.get("sector")
     market = "^FTSE" if uk else "SPY"
-    sector = None if uk else SECTOR_ETF.get(sector_name or "")
+    # Energy companies (US or UK) follow the oil price far more than their stock index,
+    # so Brent crude is used as their "sector" factor.
+    if sector_name == "Energy":
+        sector = OIL
+    else:
+        sector = None if uk else SECTOR_ETF.get(sector_name or "")
     rates = None if uk else "^TNX"
 
     syms = [s for s in [ticker, market, sector, rates] if s]
@@ -96,6 +121,9 @@ def fetch_market_data(ticker: str, period: str = "3y") -> dict:
     closes.index = pd.to_datetime(closes.index).tz_localize(None)
     if sector and (sector not in closes or closes[sector].dropna().shape[0] < 200):
         fb = SECTOR_ETF_FALLBACK.get(sector)
+        if not fb:
+            sector = None
+    if sector and (sector not in closes or closes[sector].dropna().shape[0] < 200):
         try:
             extra = yf.download(fb, period=period, interval="1d", auto_adjust=True, progress=False)["Close"]
             extra.index = pd.to_datetime(extra.index).tz_localize(None)
@@ -159,7 +187,9 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
     import requests
     d = dt.date.fromisoformat(day)
     human = f"{d.strftime('%B')} {d.day}, {d.year}"
-    query = f"{name} {ticker} stock {'jumps' if move > 0 else 'falls'} {human}"
+    base = ticker.split(".")[0]
+    word = "shares" if ticker.endswith(".L") else "stock"
+    query = f"{name} ({base}) {word} {'rise' if move > 0 else 'fall'} {human}"
     if tavily_api_key:
         bodies = [
             {"topic": "news", "start_date": (d - dt.timedelta(days=2)).isoformat(),
@@ -227,7 +257,8 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
             "'Customer & industry demand' = news about customers' spending or demand in its industry "
             "(e.g. a big customer raising its budget); 'Competition' = rivals' products, pricing, market-share "
             "changes or customers building their own alternative; 'Market-wide news' = only when the whole "
-            "stock market or a whole sector moved on general news.\n"
+            "stock market or a whole sector moved on general news; oil-price news belongs in 'Customer & industry demand' "
+            "unless it is about the company itself.\n"
             "Reply with a JSON array only, one object per date: "
             "{\"date\":\"YYYY-MM-DD\",\"category\":\"...\",\"title\":\"plain-English cause, max 12 words\","
             "\"src\":\"news\" or \"knowledge\"}.\n\n" + "\n".join(chunk)
@@ -555,6 +586,7 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
     return {
         "version": VERSION, "ticker": ticker, "name": name, "sector": data.get("sector"),
         "currency": data.get("currency"), "market": data["market"], "sector_etf": data.get("sector_etf"),
+        "rates": data.get("rates") if data.get("rates") in closes else None,
         "asof": D[-1], "price": _r(P, 2), "vol": _r(100 * vol), "sd_own_day": _r(100 * sd_a, 2),
         "beta_now": _r(b_now, 2), "beta_avg": _r(float(np.nanmean(beta[1:])), 2),
         "summary": summary, "ranges": ranges, "sigma": _r(100 * sigma), "sigma_src": sigma_src,
