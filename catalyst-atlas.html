@@ -561,6 +561,10 @@ function render() {
     <div class="tablewrap"><table id="evTable"></table></div></div></section>
   <section><div class="cta"><h3>Want the full picture on ${esc(D.ticker)}?</h3><p>The Stock Deep Dive adds fundamentals, valuation, technicals, risk and an AI analyst you can question.</p>
     <a class="btn" href="/deep-dive.html?ticker=${encodeURIComponent(D.ticker)}">Open the ${esc(D.ticker)} Deep Dive →</a></div></section>`;
+  const ld = D.label_diag;
+  if (ld && ld.days > 0 && (ld.error || ld.with_results === 0)) {
+    $('out').insertAdjacentHTML('afterbegin', '<div class="banner" style="margin-bottom:12px">We couldn\'t look up the news behind some big moves this time, so they show as "no clear news". This usually clears up within an hour. Please check back later.</div>');
+  }
   renderMini(); renderRanges(); renderUpcoming(); renderCats(); renderTable(); renderBig();
   document.querySelectorAll('.lens button').forEach(b => b.onclick = () => { lens = b.dataset.l; sel = null; document.querySelectorAll('.lens button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderBig(); });
   window.scrollTo({top: $('out').offsetTop - 70, behavior: 'smooth'});
@@ -583,7 +587,7 @@ function lineChart(svg, i0, opts = {}) {
   let p = ''; for (let i = i0; i < n; i++) p += (i === i0 ? 'M' : 'L') + xs(i).toFixed(1) + ',' + ys(c[i]).toFixed(1);
   g += `<path d="${p}" fill="none" stroke="#F1F5F9" stroke-width="1.6"/>`;
   const idx = {}; d.forEach((x, i) => idx[x] = i);
-  D.events.forEach(e => { const i = idx[e.date]; if (i == null || i < i0) return; g += `<circle cx="${xs(i)}" cy="${ys(c[i])}" r="4.5" fill="${CAT_COL[e.cat] || '#94A3B8'}" stroke="#0D1B2A" stroke-width="1.5"><title>${esc(fmtDate(e.date))}: ${esc(e.title)}. Actual move ${pc(e.ret)}; own move vs market ${pc(e.d0)}</title></circle>`; });
+  D.events.forEach(e => { const i = idx[e.date]; if (i == null || i < i0) return; g += `<circle cx="${xs(i)}" cy="${ys(c[i])}" r="4.5" fill="${CAT_COL[e.cat] || '#94A3B8'}" stroke="#0D1B2A" stroke-width="1.5"><title>${esc(fmtDate(e.date))}: ${evTitle(e)}. Actual move ${pc(e.ret)}; own move vs market ${pc(e.d0)}</title></circle>`; });
   svg.innerHTML = g;
   return {xs, ys};
 }
@@ -605,6 +609,7 @@ function renderRanges() {
     <div class="note" style="margin-top:0">7 in 10 chance the price is between ${money(r.lo70)} and ${money(r.hi70)} ${when[r.label] || ''}, an actual change of ${chg(r.lo70)} to ${chg(r.hi70)} from today.</div></div>`).join('');
 }
 
+function evTitle(e) { return esc(e.title) + (e.src === 'knowledge' ? ' <span class="muted" title="No matching news article was found for this date, so the cause comes from the AI\'s general knowledge of widely reported events.">(general knowledge)</span>' : ''); }
 function grp(name) { return D.groups.find(g => g.name === name); }
 function renderUpcoming() {
   const el = $('upcoming');
@@ -670,7 +675,7 @@ function renderCats() {
       <div class="stats"><span>Avg day 0 <b class="${cls(g.avg_day0)}">${pc(g.avg_day0)}</b></span><span>Avg after 1 month <b class="${cls(g.avg_month)}">${pc(g.avg_month)}</b></span><span>Examples <b>${g.day0.n}</b></span>${TAG_NET}</div>
       <button class="more" aria-expanded="false" data-k="${k}">Show each time ▾</button>
       <div class="list" hidden><div class="lhead"><span>Date and news</span><span class="num">Actual</span><span class="num">Own</span></div>
-        ${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${esc(e.title)}</span></div>`).join('')}
+        ${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${evTitle(e)}</span></div>`).join('')}
         <p class="note">Actual: real share price change that day. Own: the move vs market.</p></div></div>`;
   }).join('');
   $('cats').querySelectorAll('.more').forEach(b => b.onclick = () => { const l = b.nextElementSibling; l.hidden = !l.hidden; b.setAttribute('aria-expanded', !l.hidden); b.textContent = l.hidden ? 'Show each time ▾' : 'Hide ▴'; });
@@ -681,7 +686,7 @@ function renderTable() {
     <tr><th>Date</th><th>What happened</th><th>Actual move<br>on the day</th><th>Market, sector<br>&amp; rates</th><th>Week<br>before</th><th>Day 0</th><th>After<br>1 week</th><th>After<br>1 month</th><th>After<br>3 months</th></tr></thead><tbody>` +
     D.events.slice().reverse().map(e => {
       const out = (e.ret != null && e.d0 != null) ? e.ret - e.d0 : null;
-      return `<tr><td>${esc(fmtDate(e.date))}</td><td><span style="color:${CAT_COL[e.cat] || '#94A3B8'};font-weight:700;font-size:.75rem">${esc(e.kind === 'Unexplained' ? 'No clear news' : e.kind)}</span><br>${esc(e.title)}</td>` +
+      return `<tr><td>${esc(fmtDate(e.date))}</td><td><span style="color:${CAT_COL[e.cat] || '#94A3B8'};font-weight:700;font-size:.75rem">${esc(e.kind === 'Unexplained' ? 'No clear news' : e.kind)}</span><br>${evTitle(e)}</td>` +
         `<td class="${cls(e.ret)}">${pc(e.ret)}</td><td class="muted">${pc(out)}</td>` +
         ['pre', 'd0', 'd5', 'd20', 'd60'].map(k => `<td class="${cls(e[k])}">${pc(e[k])}</td>`).join('') + '</tr>';
     }).join('') + '</tbody>';
@@ -713,7 +718,7 @@ function renderBig() {
       <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px">${fmtDate(S().dates[l.a])} → ${fmtDate(S().dates[l.b])}: <span class="${cls(l.chg)}">${pc(l.chg)}</span> ${TAG_ACT}</h3>
       <p class="note" style="margin:0 0 10px">${money(S().close[l.a])} → ${money(S().close[l.b])}. The four parts below add up to that actual ${pc(l.chg)}. The first two are the market, sector and rate effects we take out; the last two are the company's own move ${TAG_NET}.</p>
       <div class="split">${parts.map(([n, v, c, t]) => `<div><i style="background:${c}"></i><span>${n} ${t === 'own' ? '<small class="muted">own move</small>' : '<small class="muted">taken out</small>'}</span><b class="${cls(v)}">${pc(v)} pts</b></div>`).join('')}</div></div>
-    <div><div class="label">News inside this period</div>${evs.length ? `<div class="list"><div class="lhead"><span>Date and news</span><span class="num">Actual</span><span class="num">Own</span></div>${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${esc(e.title)}</span></div>`).join('')}<p class="note">Actual: real share price change that day. Own: the move vs market.</p></div>` : '<p class="note">No big news days. The market and steady buying or selling did the work.</p>'}</div>`;
+    <div><div class="label">News inside this period</div>${evs.length ? `<div class="list"><div class="lhead"><span>Date and news</span><span class="num">Actual</span><span class="num">Own</span></div>${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${evTitle(e)}</span></div>`).join('')}<p class="note">Actual: real share price change that day. Own: the move vs market.</p></div>` : '<p class="note">No big news days. The market and steady buying or selling did the work.</p>'}</div>`;
 }
 
 // ---------- start ----------
