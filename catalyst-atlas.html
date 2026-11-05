@@ -336,7 +336,6 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
 </nav>
 
 <div class="wrap">
-  <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a> › <a href="/tools.html">Tools</a> › <span>Catalyst Atlas</span></nav>
   <div class="hero">
     <div class="hero-tag">FREE TOOL · CATALYST ATLAS</div>
     <h1>Why did this share price move, and <span>what usually happens next?</span></h1>
@@ -415,12 +414,26 @@ const fmtDate = d => new Date(d + 'T00:00:00Z').toLocaleDateString('en-GB', {day
 const CAT_COL = {"Competition":"#F43F5E","Customer & industry demand":"#38BDF8","Earnings":"#F59E0B","Sales & delivery data":"#60A5FA","Product & technology":"#22c55e","Analyst rating":"#A78BFA","Deals & partnerships":"#2DD4BF","Legal & regulation":"#F472B6","Management & leadership":"#FB923C","Politics & policy":"#EF4444","Market-wide news":"#94A3B8","Unexplained":"#64748B"};
 let D = null, lens = 'months', sel = null;
 
+// UK shares are quoted in pence by the data feed: show them in pounds
+function toPounds(d) {
+  if (!d || !['GBp', 'GBX', 'GBx'].includes(d.currency)) return d;
+  const k = v => v == null ? v : v / 100;
+  d.price = k(d.price);
+  (d.ranges || []).forEach(r => ['lo70', 'hi70', 'lo90', 'hi90'].forEach(f => r[f] = k(r[f])));
+  if (d.series) d.series.close = d.series.close.map(k);
+  d.currency = 'GBP';
+  return d;
+}
+function hasRates() { return D.rates !== undefined ? !!D.rates : D.market !== '^FTSE'; }
+function isOil() { return D.sector_etf === 'BZ=F'; }
+function secShort() { return isOil() ? (hasRates() ? 'Oil &amp; rates' : 'Oil price') : (hasRates() ? 'Sector &amp; rates' : 'Sector'); }
+function secLong() { return isOil() ? (hasRates() ? 'The oil price and interest rates' : 'The oil price') : (hasRates() ? 'Its sector and interest rates' : 'Its sector'); }
 function money(v) {
   if (v == null) return '–';
   const c = (D && D.currency) || 'USD';
   if (c === 'GBp' || c === 'GBX') return v.toFixed(v < 100 ? 2 : 0) + 'p';
   const sym = {USD: '$', GBP: '£', EUR: '€'}[c] || '';
-  return sym + v.toFixed(2) + (sym ? '' : ' ' + c);
+  return sym + v.toLocaleString('en-GB', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + (sym ? '' : ' ' + c);
 }
 function pill(score, n) {
   if (n < 4) return '<span class="pill p-few">Few examples</span>';
@@ -457,7 +470,7 @@ async function load(ticker) {
     const r = await fetch(`${API}/catalyst-atlas/${encodeURIComponent(ticker)}`, {signal: ctrl.signal});
     clearTimeout(to);
     if (!r.ok) { let m = `We couldn't analyse ${ticker} right now.`; try { const j = await r.json(); if (j.detail) m = j.detail; } catch (e) {} throw new Error(m); }
-    D = await r.json();
+    D = toPounds(await r.json());
     clearInterval(stepTimer); $('status').hidden = true;
     if (typeof gtag === 'function') gtag('event', 'catalyst_atlas_view', {ticker});
     render();
@@ -467,7 +480,7 @@ async function load(ticker) {
 }
 function loadDemo() {
   clearInterval(stepTimer); $('status').hidden = true;
-  D = JSON.parse($('demoData').textContent);
+  D = toPounds(JSON.parse($('demoData').textContent));
   $('tickerInput').value = '';
   $('banner').hidden = false; $('banner').textContent = 'Example: ' + D.demo_note + ' Type any ticker above to see live analysis.';
   render();
@@ -486,8 +499,9 @@ function removedList() {
   const b = (D.beta_now ?? 1).toFixed(1);
   const idx = D.market === '^FTSE' ? 'FTSE 100' : 'S&P 500';
   const items = [`<b>the whole stock market</b>: the ${idx}'s move that day × ${b}, because ${esc(D.name)} has recently tended to move about ${b} times as much as the market`];
-  if (D.sector_etf) items.push(`<b>its sector</b>: how other ${esc((D.sector || 'similar').toLowerCase())} companies moved that day (beyond the market)`);
-  if (D.sector_etf) items.push(`<b>interest rates</b>: the effect of changes in long-term US interest rates`);
+  if (isOil()) items.push(`<b>the oil price</b>: how Brent crude moved that day (beyond the market), because energy companies follow oil closely`);
+  else if (D.sector_etf) items.push(`<b>its sector</b>: how other ${esc((D.sector || 'similar').toLowerCase())} companies moved that day (beyond the market)`);
+  if (D.sector_etf && hasRates()) items.push(`<b>interest rates</b>: the effect of changes in long-term US interest rates`);
   return items;
 }
 // split of day i (or a span a..b) into market / sector+rates / own, scaled so the parts add up to the actual % change
@@ -499,7 +513,7 @@ function splitSpan(a, b) {
 function eqRow(x) {
   return `<div class="eq"><span><small>Actual ${TAG_ACT}</small><b class="${cls(x.act)}">${pc(x.act)}</b></span><span class="op">=</span>
     <span><small>Market</small><b class="${cls(x.mkt)}">${pc(x.mkt)}</b></span><span class="op">+</span>
-    ${D.sector_etf ? `<span><small>Sector &amp; rates</small><b class="${cls(x.sec)}">${pc(x.sec)}</b></span><span class="op">+</span>` : ''}
+    ${D.sector_etf ? `<span><small>${secShort()}</small><b class="${cls(x.sec)}">${pc(x.sec)}</b></span><span class="op">+</span>` : ''}
     <span><small>Own move ${TAG_NET}</small><b class="${cls(x.own)}">${pc(x.own)}</b></span></div>`;
 }
 
@@ -509,7 +523,7 @@ function render() {
   const s = D.summary, n = S().close.length;
   const month = splitSpan(Math.max(0, n - 22), n - 1);
   const leg = D.phases.months.legs[D.phases.months.legs.length - 1];
-  const parts = [['the whole stock market', leg.mkt], ['its sector and interest rates', leg.sec], ['company news days', leg.news], ['other buying and selling', leg.other]].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+  const parts = [['the whole stock market', leg.mkt], [secLong().toLowerCase(), leg.sec], ['company news days', leg.news], ['other buying and selling', leg.other]].sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
   const recent = D.events.filter(e => S().dates.indexOf(e.date) >= n - 21);
   const rn = recent.length ? recent.reduce((a, b) => Math.abs(b.d0 || 0) > Math.abs(a.d0 || 0) ? b : a) : null;
   // worked example: most recent event with a sizeable own move
@@ -527,7 +541,7 @@ function render() {
     <h2 style="margin-top:12px">Two kinds of % change on this page</h2>
     <div class="keygrid">
       <div><p>${TAG_ACT} <b>Actual change</b></p><p>The real change in the share price: what a shareholder actually gained or lost.</p></div>
-      <div><p>${TAG_NET} <b>Company's own move</b></p><p>The actual change after we take out three things that move most shares at the same time:</p>
+      <div><p>${TAG_NET} <b>Company's own move</b></p><p>The actual change after we take out things that move many shares at the same time:</p>
         <ul>${removedList().map(x => `<li>${x}</li>`).join('')}</ul></div>
     </div>
     <p class="why"><b>Why take these out?</b> On a day when the whole market falls 3%, most shares fall, whatever their own news. Taking the market out shows what the company's own news did, so one news day can be fairly compared with another.</p>
@@ -720,7 +734,7 @@ function renderBig() {
   legendFor('bigLegend', 0);
   $('bigLegend').insertAdjacentHTML('beforeend', '<span><i style="background:rgba(255,255,255,0.25);border-radius:2px"></i>Quiet spell</span><span>Labels on the chart are actual % changes</span>');
   const k = sel ?? legs.length - 1, l = legs[k];
-  const parts = [['Whole stock market', l.mkt, '#60A5FA', 'market'], ['Its sector and interest rates', l.sec, '#A78BFA', 'out'], ['Company news days (the dots)', l.news, '#F59E0B', 'own'], ['Other buying and selling', l.other, '#64748B', 'own']];
+  const parts = [['Whole stock market', l.mkt, '#60A5FA', 'market'], [secLong(), l.sec, '#A78BFA', 'out'], ['Company news days (the dots)', l.news, '#F59E0B', 'own'], ['Other buying and selling', l.other, '#64748B', 'own']];
   const evs = (l.events || []).map(i => D.events[i]).filter(Boolean);
   $('phaseBox').innerHTML = `<div><div class="label">${l.chg >= 0 ? 'Rally' : 'Fall'} · ${l.days} trading days</div>
       <h3 style="font-size:1.05rem;font-weight:800;margin-bottom:6px">${fmtDate(S().dates[l.a])} → ${fmtDate(S().dates[l.b])}: <span class="${cls(l.chg)}">${pc(l.chg)}</span> ${TAG_ACT}</h3>
