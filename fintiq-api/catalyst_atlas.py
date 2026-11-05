@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v1"
+VERSION = "v2"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -152,46 +152,100 @@ def _atm_implied_vol(tk, spot: float) -> Optional[float]:
 # ─────────────────────────────────────────────────────────────────────────────
 # News labelling for big company-specific days (Tavily + Claude Haiku)
 # ─────────────────────────────────────────────────────────────────────────────
+def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: str = "",
+                 tavily_search: Optional[Callable] = None) -> list:
+    """News articles from around one date. Uses Tavily's news search limited to
+    2 days before to 2 days after the move; falls back to a general search."""
+    import requests
+    d = dt.date.fromisoformat(day)
+    human = f"{d.strftime('%B')} {d.day}, {d.year}"
+    query = f"{name} {ticker} stock {'jumps' if move > 0 else 'falls'} {human}"
+    if tavily_api_key:
+        bodies = [
+            {"topic": "news", "start_date": (d - dt.timedelta(days=2)).isoformat(),
+             "end_date": (d + dt.timedelta(days=2)).isoformat()},
+            {"topic": "general"},
+        ]
+        for extra in bodies:
+            try:
+                r = requests.post("https://api.tavily.com/search", timeout=15, json={
+                    "api_key": tavily_api_key, "query": query, "max_results": 5,
+                    "search_depth": "basic", "include_answer": False, **extra})
+                if r.status_code == 200:
+                    res = r.json().get("results", []) or []
+                    if res:
+                        return res
+                else:
+                    print(f"[catalyst-atlas] tavily {r.status_code} for {ticker} {day}: {r.text[:160]}")
+            except Exception as e:
+                print(f"[catalyst-atlas] tavily error {ticker} {day}: {e}")
+        return []
+    if tavily_search:
+        try:
+            return tavily_search(query, max_results=5) or []
+        except Exception as e:
+            print(f"[catalyst-atlas] tavily_search error {ticker} {day}: {e}")
+    return []
+
+
 def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[Callable],
-                   anthropic_api_key: str) -> dict:
-    """days: [{"date": "YYYY-MM-DD", "move": -7.2}] -> {date: {"cat":..., "title":...}}"""
-    if not days or not tavily_search or not anthropic_api_key:
-        return {}
+                   anthropic_api_key: str, tavily_api_key: str = "") -> tuple:
+    """days: [{"date": "YYYY-MM-DD", "move": -7.2}]
+    Returns ({date: {"cat", "title", "src"}}, diagnostics)."""
+    diag = {"days": len(days), "with_results": 0, "labelled": 0, "error": None}
+    if not days:
+        return {}, diag
+    if not anthropic_api_key or not (tavily_api_key or tavily_search):
+        diag["error"] = "missing ANTHROPIC_API_KEY or Tavily key"
+        print(f"[catalyst-atlas] {ticker}: {diag['error']}")
+        return {}, diag
     blocks = []
     for d in days:
-        human = dt.date.fromisoformat(d["date"]).strftime("%d %B %Y")
-        verb = "rose" if d["move"] > 0 else "fell"
-        res = tavily_search(f"why {name} ({ticker}) stock {verb} on {human}", max_results=3) or []
+        res = _search_news(name, ticker, d["date"], d["move"], tavily_api_key, tavily_search)
+        if res:
+            diag["with_results"] += 1
         snippets = " | ".join(
-            f"{r.get('title','')}: {str(r.get('content',''))[:280]}" for r in res[:3]
-        ) or "no results"
+            f"[{str(r.get('published_date') or '')[:10]}] {r.get('title','')}: {str(r.get('content',''))[:300]}"
+            for r in res[:5]) or "no articles found"
         blocks.append(f"DATE {d['date']} (company-specific move {d['move']:+.1f}%): {snippets}")
 
-    prompt = (
-        f"You are labelling large daily share-price moves for {name} ({ticker}).\n"
-        "For each DATE, use ONLY the news snippets given to name the most likely cause.\n"
-        "If the snippets do not clearly explain that date, use category \"Unexplained\".\n"
-        f"Allowed categories: {', '.join(NEWS_CATEGORIES)}.\n"
-        "Reply with a JSON array only, one object per date: "
-        "{\"date\":\"YYYY-MM-DD\",\"category\":\"...\",\"title\":\"plain-English cause, max 12 words\"}.\n\n"
-        + "\n".join(blocks)
-    )
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=anthropic_api_key)
-        resp = client.messages.create(model=HAIKU_MODEL, max_tokens=1500, temperature=0,
-                                      messages=[{"role": "user", "content": prompt}])
-        text = resp.content[0].text
-        arr = json.loads(text[text.find("["): text.rfind("]") + 1])
-    except Exception:
-        return {}
     out = {}
-    for o in arr:
-        cat = o.get("category") if o.get("category") in NEWS_CATEGORIES else "Unexplained"
-        title = str(o.get("title") or "")[:90]
-        if o.get("date"):
-            out[o["date"]] = {"cat": cat, "title": title or "Large company-specific move"}
-    return out
+    import anthropic
+    client = anthropic.Anthropic(api_key=anthropic_api_key)
+    for k in range(0, len(blocks), 7):            # small batches: one failure can't wipe everything
+        chunk = blocks[k:k + 7]
+        prompt = (
+            f"You are labelling large daily share-price moves for {name} ({ticker}).\n"
+            "For each DATE, name the most likely cause of the move.\n"
+            "Use the news snippets first. Snippets can include later or unrelated stories: only use ones "
+            "about that date or the day before.\n"
+            "If the snippets don't explain it but the cause is a widely reported event you are highly "
+            "confident about, you may use it and set \"src\" to \"knowledge\".\n"
+            "Otherwise use category \"Unexplained\". Never guess.\n"
+            f"Allowed categories: {', '.join(NEWS_CATEGORIES)}.\n"
+            "Reply with a JSON array only, one object per date: "
+            "{\"date\":\"YYYY-MM-DD\",\"category\":\"...\",\"title\":\"plain-English cause, max 12 words\","
+            "\"src\":\"news\" or \"knowledge\"}.\n\n" + "\n".join(chunk)
+        )
+        try:
+            resp = client.messages.create(model=HAIKU_MODEL, max_tokens=2000, temperature=0,
+                                          messages=[{"role": "user", "content": prompt}])
+            text = "".join(getattr(b, "text", "") for b in resp.content)
+            arr = json.loads(text[text.find("["): text.rfind("]") + 1])
+        except Exception as e:
+            diag["error"] = f"{type(e).__name__}: {str(e)[:200]}"
+            print(f"[catalyst-atlas] {ticker} labelling batch failed: {diag['error']}")
+            continue
+        for o in arr:
+            if not isinstance(o, dict) or not o.get("date"):
+                continue
+            cat = o.get("category") if o.get("category") in NEWS_CATEGORIES else "Unexplained"
+            title = str(o.get("title") or "")[:90] or "Large company-specific move"
+            out[str(o["date"])[:10]] = {"cat": cat, "title": title, "src": o.get("src") or "news"}
+            if cat != "Unexplained":
+                diag["labelled"] += 1
+    print(f"[catalyst-atlas] {ticker} labels: {diag}")
+    return out, diag
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -334,11 +388,24 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
     cand = [i for i in range(1, n) if abs(A[i]) > 2.2 * sd_a and i not in used]
     cand = sorted(cand, key=lambda i: -abs(A[i]))[:14]
     big = [{"date": D[i], "move": round(_pct(A[i]), 1), "i": i} for i in sorted(cand)]
-    labels = labeler(big) if (labeler and big) else {}
+    sd_m = float(np.std(rm[1:]))
+    mkt_label = "the FTSE 100" if data["market"] == "^FTSE" else "the S&P 500"
+    auto = {}
+    for b in big:
+        i = b["i"]
+        if abs(rm[i]) > 2.5 * sd_m:   # a huge whole-market day: the "own move" is mostly beta noise
+            more = abs(r[i]) > abs(M[i])
+            auto[b["date"]] = {"cat": "Market-wide news", "src": "market",
+                               "title": (f"Whole market moved {_pct(rm[i]):+.1f}% ({mkt_label}); shares moved "
+                                         f"{'more' if more else 'less'} than usual")}
+    to_search = [b for b in big if b["date"] not in auto]
+    labels = dict(auto)
+    if labeler and to_search:
+        labels.update(labeler(to_search) or {})
     for b in big:
         lab = labels.get(b["date"], {"cat": "Unexplained", "title": "Large company-specific move (no clear news found)"})
         events.append({"i": b["i"], "kind": lab["cat"], "cat": lab["cat"], "s": 1 if A[b["i"]] > 0 else -1,
-                       "title": lab["title"]})
+                       "title": lab["title"], "src": lab.get("src", "news")})
     events.sort(key=lambda e: e["i"])
 
     def car(i, a, b):
@@ -487,7 +554,7 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
         "beta_now": _r(b_now, 2), "beta_avg": _r(float(np.nanmean(beta[1:])), 2),
         "summary": summary, "ranges": ranges, "sigma": _r(100 * sigma), "sigma_src": sigma_src,
         "upcoming": upcoming,
-        "events": [{k: e[k] for k in ("date", "kind", "cat", "s", "title", "ret", "pre", "d0", "d5", "d20", "d60", "path")} for e in events],
+        "events": [{k: e[k] for k in ("date", "kind", "cat", "s", "title", "src", "ret", "pre", "d0", "d5", "d20", "d60", "path") if k in e} for e in events],
         "groups": groups, "phases": phases, "quiet": quiet,
         "series": {"dates": D, "close": [round(float(x), 2) for x in c], "own": enc(A), "mkt": enc(M), "sec": enc(S)},
         "generated": dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
@@ -499,7 +566,7 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
 # Entry point used by the API route
 # ─────────────────────────────────────────────────────────────────────────────
 def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
-                anthropic_api_key: str = "", fetch=fetch_market_data) -> dict:
+                anthropic_api_key: str = "", tavily_api_key: str = "", fetch=fetch_market_data) -> dict:
     ticker = (ticker or "").upper().strip()
     if not TICKER_RE.match(ticker):
         raise ValueError("Please enter a valid ticker, for example TSLA or SHEL.L")
@@ -507,7 +574,8 @@ def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
     key = f"catalyst_atlas:{VERSION}:{ticker}"
     if kv_get:
         cached, saved_at = kv_get(key)
-        if cached and time.time() - saved_at < CACHE_TTL:
+        ttl = cached.get("_ttl", CACHE_TTL) if isinstance(cached, dict) else CACHE_TTL
+        if cached and time.time() - saved_at < ttl:
             return cached
 
     data = fetch(ticker)
@@ -519,16 +587,25 @@ def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
     if kv_get:
         got, _ = kv_get(label_key)
         old_labels = got or {}
+    diag_box = {"diag": {"days": 0, "with_results": 0, "labelled": 0, "error": None, "from_cache": 0}}
 
     def labeler(big_days):
         need = [d for d in big_days if d["date"] not in old_labels]
-        new = label_big_days(data["name"], ticker, need, tavily_search, anthropic_api_key) if need else {}
+        diag_box["diag"]["from_cache"] = len(big_days) - len(need)
+        new, diag = (label_big_days(data["name"], ticker, need, tavily_search, anthropic_api_key, tavily_api_key)
+                     if need else ({}, {"days": 0, "with_results": 0, "labelled": 0, "error": None}))
+        diag_box["diag"].update(diag)
         merged = {**old_labels, **new}
-        if kv_set and new:
+        healthy = not diag.get("error") and (not need or diag.get("with_results", 0) > 0)
+        if kv_set and new and healthy:          # never store a failed labelling run
             kv_set(label_key, merged, ttl_seconds=LABEL_TTL)
         return merged
 
     result = analyse(data, labeler=labeler)
+    d = diag_box["diag"]
+    result["label_diag"] = d
+    failed = bool(d.get("error")) or (d.get("days", 0) > 0 and d.get("with_results", 0) == 0)
+    result["_ttl"] = 3600 if failed else CACHE_TTL   # retry within an hour if news lookup failed
     if kv_set:
-        kv_set(key, result, ttl_seconds=CACHE_TTL)
+        kv_set(key, result, ttl_seconds=result["_ttl"])
     return result

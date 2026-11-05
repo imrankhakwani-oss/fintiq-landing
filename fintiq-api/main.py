@@ -1830,7 +1830,8 @@ def catalyst_atlas(ticker: str, request: Request):
     try:
         return _build_atlas(ticker, kv_get=_kv_get, kv_set=_kv_set,
                             tavily_search=_tavily_search,
-                            anthropic_api_key=ANTHROPIC_API_KEY)
+                            anthropic_api_key=ANTHROPIC_API_KEY,
+                            tavily_api_key=TAVILY_API_KEY)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
