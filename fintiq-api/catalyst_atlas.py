@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v5"
+VERSION = "v6"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -182,40 +182,58 @@ def _atm_implied_vol(tk, spot: float) -> Optional[float]:
 # ─────────────────────────────────────────────────────────────────────────────
 def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: str = "",
                  tavily_search: Optional[Callable] = None) -> list:
-    """News articles from around one date. Uses Tavily's news search limited to
-    2 days before to 2 days after the move; falls back to a general search."""
+    """News articles published around one date.
+    Several searches are combined, because headlines rarely say "X shares rise on <date>":
+      1. news search for the company name only, published day-1 .. day+1
+      2. news search for "<name> shares/stock", published day-3 .. day+1
+      3. general search with the month and year, if 1-2 found little
+    Articles dated inside day-3 .. day+1 are ranked first."""
     import requests
     d = dt.date.fromisoformat(day)
-    human = f"{d.strftime('%B')} {d.day}, {d.year}"
     base = ticker.split(".")[0]
     word = "shares" if ticker.endswith(".L") else "stock"
-    query = f"{name} ({base}) {word} {'rise' if move > 0 else 'fall'} {human}"
-    if tavily_api_key:
-        bodies = [
-            {"topic": "news", "start_date": (d - dt.timedelta(days=2)).isoformat(),
-             "end_date": (d + dt.timedelta(days=2)).isoformat()},
-            {"topic": "general"},
-        ]
-        for extra in bodies:
+    win = lambda lo, hi: {"start_date": (d + dt.timedelta(days=lo)).isoformat(),
+                          "end_date": (d + dt.timedelta(days=hi)).isoformat()}
+    searches = [
+        (name, {"topic": "news", **win(-1, 1)}),
+        (f"{name} {word} news", {"topic": "news", **win(-3, 1)}),
+        (f"{name} ({base}) {word} {'rises' if move > 0 else 'falls'} {d.strftime('%B %Y')}", {"topic": "general"}),
+    ]
+    found, seen = [], set()
+
+    def in_window(r):
+        p = str(r.get("published_date") or "")[:10]
+        try:
+            return -3 <= (dt.date.fromisoformat(p) - d).days <= 1
+        except Exception:
+            return None
+
+    for k, (query, extra) in enumerate(searches):
+        if k == 2 and sum(1 for r in found if in_window(r)) >= 2:
+            break
+        res = []
+        if tavily_api_key:
             try:
                 r = requests.post("https://api.tavily.com/search", timeout=15, json={
-                    "api_key": tavily_api_key, "query": query, "max_results": 5,
+                    "api_key": tavily_api_key, "query": query, "max_results": 6,
                     "search_depth": "basic", "include_answer": False, **extra})
                 if r.status_code == 200:
                     res = r.json().get("results", []) or []
-                    if res:
-                        return res
                 else:
                     print(f"[catalyst-atlas] tavily {r.status_code} for {ticker} {day}: {r.text[:160]}")
             except Exception as e:
                 print(f"[catalyst-atlas] tavily error {ticker} {day}: {e}")
-        return []
-    if tavily_search:
-        try:
-            return tavily_search(query, max_results=5) or []
-        except Exception as e:
-            print(f"[catalyst-atlas] tavily_search error {ticker} {day}: {e}")
-    return []
+        elif tavily_search and k == 2:
+            try:
+                res = tavily_search(query, max_results=6) or []
+            except Exception as e:
+                print(f"[catalyst-atlas] tavily_search error {ticker} {day}: {e}")
+        for x in res:
+            u = x.get("url") or x.get("title")
+            if u and u not in seen:
+                seen.add(u); found.append(x)
+    found.sort(key=lambda r: {True: 0, None: 1, False: 2}[in_window(r)])
+    return found[:8]
 
 
 def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[Callable],
@@ -234,9 +252,11 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
         res = _search_news(name, ticker, d["date"], d["move"], tavily_api_key, tavily_search)
         if res:
             diag["with_results"] += 1
+        diag.setdefault("samples", {})[d["date"]] = [
+            f"{str(r.get('published_date') or '?')[:10]} {str(r.get('title',''))[:90]}" for r in res[:4]]
         snippets = " | ".join(
-            f"[{str(r.get('published_date') or '')[:10]}] {r.get('title','')}: {str(r.get('content',''))[:300]}"
-            for r in res[:5]) or "no articles found"
+            f"[published {str(r.get('published_date') or 'date unknown')[:10]}] {r.get('title','')}: {str(r.get('content',''))[:400]}"
+            for r in res[:6]) or "no articles found"
         blocks.append(f"DATE {d['date']} (company-specific move {d['move']:+.1f}%): {snippets}")
 
     out = {}
@@ -247,8 +267,10 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
         prompt = (
             f"You are labelling large daily share-price moves for {name} ({ticker}).\n"
             "For each DATE, name the most likely cause of the move.\n"
-            "Use the news snippets first. Snippets can include later or unrelated stories: only use ones "
-            "about that date or the day before.\n"
+            "Use the news snippets first. Each shows its publication date. Use stories published on that date, "
+            "the day before, or the day after that are about this company, its industry or the price of what it "
+            "sells (e.g. oil for energy companies). Pick the most likely cause of a move of that size and "
+            "direction. Ignore stories that are clearly about other dates.\n"
             "If the snippets don't explain it but the cause is a widely reported event you are highly "
             "confident about, you may use it and set \"src\" to \"knowledge\".\n"
             "Otherwise use category \"Unexplained\". Never guess.\n"
