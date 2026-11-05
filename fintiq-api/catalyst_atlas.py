@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v2"
+VERSION = "v3"
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -228,7 +228,7 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
             "\"src\":\"news\" or \"knowledge\"}.\n\n" + "\n".join(chunk)
         )
         try:
-            resp = client.messages.create(model=HAIKU_MODEL, max_tokens=2000, temperature=0,
+            resp = client.messages.create(model=HAIKU_MODEL, max_tokens=2000,
                                           messages=[{"role": "user", "content": prompt}])
             text = "".join(getattr(b, "text", "") for b in resp.content)
             arr = json.loads(text[text.find("["): text.rfind("]") + 1])
