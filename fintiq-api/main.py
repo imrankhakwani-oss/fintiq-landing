@@ -1836,7 +1836,7 @@ def catalyst_atlas(ticker: str, request: Request):
         user = _get_session_user(request)
         if not user:
             raise HTTPException(status_code=401, detail={"code": "signin",
-                                "message": "Sign in with your email to search other companies. Your first search is free."})
+                                "message": "Sign in with your email to search other companies. Tesla is always free."})
         email = user["email"]
         charge = _atlas_charge_needed(email, tkr)
         if charge is None:
@@ -1858,6 +1858,41 @@ def catalyst_atlas(ticker: str, request: Request):
     except Exception as e:
         print(f"[catalyst-atlas] {ticker}: {e}")
         raise HTTPException(status_code=502, detail="We couldn't build this analysis right now. Please try again shortly.")
+
+# ── Keep the free Tesla example fresh automatically ──────────────────────────
+# Every 30 minutes, if the cached Tesla result is more than 10 hours old (the cache
+# lasts 12), rebuild it in the background so visitors never wait for a cold build.
+# Old news labels are reused (30-day cache), so a rebuild only pays for new news
+# days plus one Analyst's view: roughly 2-3 rebuilds a day, a few pence each.
+from catalyst_atlas import VERSION as _CA_VERSION
+_ATLAS_WARM_EVERY, _ATLAS_WARM_AGE = 1800, 10 * 3600
+
+def _atlas_warm_once(tkr: str = "TSLA") -> bool:
+    key = f"catalyst_atlas:{_CA_VERSION}:{tkr}"
+    cached, saved_at = _kv_get(key)
+    ttl = cached.get("_ttl", 12 * 3600) if isinstance(cached, dict) else 0
+    age = time.time() - saved_at if cached else 1e12
+    if cached and age < min(_ATLAS_WARM_AGE, ttl - 900):
+        return False
+    force_get = lambda k: (None, 0) if k == key else _kv_get(k)   # skip the stale result, keep labels
+    _build_atlas(tkr, kv_get=force_get, kv_set=_kv_set, tavily_search=_tavily_search,
+                 anthropic_api_key=ANTHROPIC_API_KEY, tavily_api_key=TAVILY_API_KEY)
+    print(f"[catalyst-atlas] warmed {tkr}")
+    return True
+
+def _atlas_warm_loop():
+    time.sleep(90)                       # let the app finish starting
+    while True:
+        for tkr in sorted(ATLAS_FREE_TICKERS):
+            try:
+                _atlas_warm_once(tkr)
+            except Exception as e:
+                print(f"[catalyst-atlas] warm {tkr} failed: {e}")
+        time.sleep(_ATLAS_WARM_EVERY)
+
+@app.on_event("startup")
+def _start_atlas_warmer():
+    threading.Thread(target=_atlas_warm_loop, daemon=True).start()
 
 @app.get("/prices/{ticker}")
 def get_prices(ticker: str, period: str = "1y"):
@@ -7751,6 +7786,7 @@ async def stripe_webhook(request: Request):
 # Packs are one-off Stripe payments (no subscription). Stored in /data/auth.db.
 # ══════════════════════════════════════════════════════════════════════════════
 ATLAS_FREE_TICKERS  = {"TSLA"}
+ATLAS_FREE_SEARCHES = int(os.environ.get("ATLAS_FREE_SEARCHES", "0"))  # free searches per new account (0 = none)
 ATLAS_PACK_CREDITS  = int(os.environ.get("ATLAS_PACK_CREDITS", "10"))
 ATLAS_PACK_PENCE    = int(os.environ.get("ATLAS_PACK_PENCE", "229"))    # £2.29
 ATLAS_PACK_CENTS    = int(os.environ.get("ATLAS_PACK_CENTS", "299"))    # $2.99
@@ -7778,7 +7814,7 @@ def _atlas_account(email: str) -> dict:
     row = conn.execute("SELECT credits, free_used FROM atlas_credits WHERE email=?", (email,)).fetchone()
     conn.close()
     credits = int(row["credits"]) if row else 0
-    free_available = not (row and row["free_used"])
+    free_available = ATLAS_FREE_SEARCHES > 0 and not (row and row["free_used"])
     return {"email": email, "credits": credits, "free_available": free_available,
             "pack": {"credits": ATLAS_PACK_CREDITS, "gbp": ATLAS_PACK_PENCE / 100, "usd": ATLAS_PACK_CENTS / 100}}
 
@@ -7792,9 +7828,9 @@ def _atlas_charge_needed(email: str, ticker: str):
     conn.close()
     if u and u["expires_at"] > now:
         return "unlocked"
-    if not row or not row["free_used"]:
+    if ATLAS_FREE_SEARCHES > 0 and (not row or not row["free_used"]):
         return "free"
-    if int(row["credits"] or 0) > 0:
+    if row and int(row["credits"] or 0) > 0:
         return "credit"
     return None
 
