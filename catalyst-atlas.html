@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Why Did This Stock Move? Free Catalyst &amp; Earnings Reaction Tool | Fintiq</title>
-<meta name="description" content="Free tool: type a ticker to see why a share price moved, how it reacted to past earnings and news from day 0 to 3 months, and its likely price range. US &amp; UK stocks.">
+<title>Why Did This Stock Move? Catalyst &amp; Earnings Reaction Tool (Try Free) | Fintiq</title>
+<meta name="description" content="Try it free: type a ticker to see why a share price moved, how it reacted to past earnings and news from day 0 to 3 months, and its likely price range. US &amp; UK stocks.">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <meta name="author" content="Fintiq">
 <meta name="theme-color" content="#0A1628">
@@ -14,13 +14,13 @@
 <meta property="og:site_name" content="Fintiq" />
 <meta property="og:url" content="https://www.fintiq.uk/catalyst-atlas.html" />
 <meta property="og:title" content="Catalyst Atlas: Why Did This Stock Move? | Fintiq" />
-<meta property="og:description" content="See why a share price moved, which news usually moves it, what happened after past earnings and news, and a likely price range. Free, plain English." />
+<meta property="og:description" content="See why a share price moved, which news usually moves it, what happened after past earnings and news, and a likely price range. Try it free, in plain English." />
 <meta property="og:image" content="https://www.fintiq.uk/og-image.png" />
 <meta property="og:image:alt" content="Fintiq Catalyst Atlas: why a share price moved and what usually happens next" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@fintiq" />
 <meta name="twitter:title" content="Catalyst Atlas: Why Did This Stock Move? | Fintiq" />
-<meta name="twitter:description" content="Type a ticker: why it moved, how it reacted to past earnings and news, and a likely price range. Free for US &amp; UK stocks." />
+<meta name="twitter:description" content="Type a ticker: why it moved, how it reacted to past earnings and news, and a likely price range. Try it free for US &amp; UK stocks." />
 <meta name="twitter:image" content="https://www.fintiq.uk/og-image.png" />
 <script type="application/ld+json">
 {
@@ -31,7 +31,7 @@
  "url": "https://www.fintiq.uk/catalyst-atlas.html",
  "applicationCategory": "FinanceApplication",
  "operatingSystem": "Any (web browser)",
- "description": "Free tool that explains why a share price moved, separating market, sector and interest-rate effects from company news, shows how the stock reacted after past earnings and news from day 0 to 3 months, and gives a likely price range for the next week, month and quarter.",
+ "description": "Tool that explains why a share price moved, separating market, sector and interest-rate effects from company news, shows how the stock reacted after past earnings and news from day 0 to 3 months, and gives a likely price range for the next week, month and quarter.",
  "offers": {
   "@type": "Offer",
   "price": "0",
@@ -45,7 +45,7 @@
   "Rallies and falls at weekly, monthly and yearly scales",
   "US and UK shares"
  ],
- "isAccessibleForFree": true,
+ "isAccessibleForFree": false,
  "inLanguage": "en-GB",
  "publisher": {
   "@type": "Organization",
@@ -131,10 +131,18 @@
   },
   {
    "@type": "Question",
+   "name": "How much does Catalyst Atlas cost?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Tesla is free to explore without an account. Sign in with your email and your first other company is free. After that, a pack of 10 searches costs £2.29 (US $2.99). It is a one-off payment, not a subscription, and searches do not expire. Opening the same company again within 24 hours does not use another search."
+   }
+  },
+  {
+   "@type": "Question",
    "name": "Is Catalyst Atlas financial advice?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "No. It is a free educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results."
+    "text": "No. It is an educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results."
    }
   }
  ]
@@ -318,6 +326,30 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
 .vq ul{display:grid;gap:6px;padding-left:20px;color:#E2E8F0}
 .glance table td,.glance table th{text-align:right}
 .glance table td:first-child,.glance table th:first-child{text-align:left}
+.view>summary{list-style:none;cursor:pointer;display:grid;gap:8px}
+.view>summary::-webkit-details-marker{display:none}
+.vstory{color:#E2E8F0;font-size:.98rem;line-height:1.6;max-width:110ch}
+.vmore{color:var(--amber);font-weight:700;font-size:.85rem}
+.view[open] .vmore{display:none}
+.view{gap:0}
+.view>*:not(summary){margin-top:14px}
+/* account bar and dialogs */
+.acct{max-width:720px;margin:4px auto 0;display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;align-items:center;font-size:.85rem;color:var(--muted)}
+.acct b{color:var(--ink)}
+.linkbtn{background:none;border:0;color:var(--amber);font:600 .85rem 'Inter',sans-serif;cursor:pointer;padding:0}
+.dlg{position:fixed;inset:0;background:rgba(5,12,22,.75);display:flex;align-items:center;justify-content:center;z-index:500;padding:16px}
+.dlg[hidden]{display:none!important}
+.dlg .box{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(245,158,11,.35);border-radius:14px;padding:24px;max-width:420px;width:100%;display:grid;gap:12px}
+.dlg h3{font-size:1.15rem;font-weight:800}
+.dlg p{color:var(--muted);font-size:.9rem}
+.dlg input{background:var(--bg2);border:1px solid rgba(245,158,11,.35);color:var(--ink);border-radius:8px;padding:11px 12px;font:600 1rem 'Inter',sans-serif;width:100%}
+.dlg .row{display:flex;gap:8px;flex-wrap:wrap}
+.dlg .ghost{background:none;border:1px solid var(--line);color:var(--muted)}
+.dlg .err{color:#FCA5A5;font-size:.85rem;min-height:1em}
+.packs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.packs button{display:grid;gap:2px;text-align:center}
+.packs small{font-weight:600;opacity:.8}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:#052e16;border:1px solid #22c55e;color:#86efac;padding:10px 18px;border-radius:10px;z-index:600;font-size:.9rem}
 </style>
 </head>
 <body>
@@ -348,7 +380,7 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
 
 <div class="wrap">
   <div class="hero">
-    <div class="hero-tag">FREE TOOL · CATALYST ATLAS</div>
+    <div class="hero-tag">TRY FREE · CATALYST ATLAS</div>
     <h1>Why did this share price move, and <span>what usually happens next?</span></h1>
     <p>Type a ticker. In plain English you'll see what has been driving the price, which kinds of news move it, how it reacted after past news, and a realistic price range for the next week, month and quarter.</p>
     <form class="search" id="searchForm" role="search">
@@ -357,10 +389,27 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
       <button class="btn" type="submit">Explain it</button>
     </form>
     <div class="chips" id="chips">Try:
-      <button class="chip" data-t="TSLA">Tesla</button><button class="chip" data-t="AAPL">Apple</button><button class="chip" data-t="NVDA">Nvidia</button><button class="chip" data-t="SHEL.L">Shell</button><button class="chip" data-t="BARC.L">Barclays</button>
+      <button class="chip" data-t="TSLA">Tesla (free)</button><button class="chip" data-t="AAPL">Apple</button><button class="chip" data-t="NVDA">Nvidia</button><button class="chip" data-t="SHEL.L">Shell</button><button class="chip" data-t="BARC.L">Barclays</button>
     </div>
+    <div class="acct" id="acct"><span>Tesla is free to explore.</span></div>
   </div>
   <div class="banner" id="banner" hidden></div>
+  <div class="dlg" id="dlgSignin" hidden role="dialog" aria-modal="true" aria-labelledby="siTitle"><div class="box">
+    <h3 id="siTitle">Sign in to search any company</h3>
+    <p id="siSub">Your first company search is free. We'll email you a 6-digit code. No password needed.</p>
+    <div id="siStep1" class="row"><input id="siEmail" type="email" placeholder="you@example.com" autocomplete="email"><button class="btn" id="siSend">Email me a code</button></div>
+    <div id="siStep2" class="row" hidden><input id="siCode" inputmode="numeric" maxlength="6" placeholder="6-digit code"><button class="btn" id="siVerify">Sign in</button></div>
+    <div class="err" id="siErr"></div>
+    <button class="btn ghost" id="siClose">Not now</button>
+  </div></div>
+  <div class="dlg" id="dlgBuy" hidden role="dialog" aria-modal="true" aria-labelledby="buyTitle"><div class="box">
+    <h3 id="buyTitle">Get more searches</h3>
+    <p id="buySub">Each new company costs 1 search. Looking at the same company again within 24 hours is free, and Tesla is always free.</p>
+    <div class="packs"><button class="btn" data-cur="gbp" id="buyGbp">£2.29<small>10 searches</small></button><button class="btn" data-cur="usd" id="buyUsd">$2.99<small>10 searches</small></button></div>
+    <p style="font-size:.8rem">One-off payment through Stripe. No subscription. Searches don't expire.</p>
+    <div class="err" id="buyErr"></div>
+    <button class="btn ghost" id="buyClose">Not now</button>
+  </div></div>
   <div class="status" id="status" hidden></div>
   <div id="out"></div>
   <noscript><p>Catalyst Atlas needs JavaScript to analyse a ticker. Please enable JavaScript in your browser.</p></noscript>
@@ -373,11 +422,12 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
       <details><summary>How are the news days found?</summary><p>The tool looks for days when the company's own move (after taking out the market) was unusually large, plus every results day. Results are labelled as a beat or a miss against analyst forecasts. Other big days are labelled from news reports; when the news does not clearly explain a move, it is shown as unexplained.</p></details>
       <details><summary>How is the likely price range worked out?</summary><p>The range uses how much the share price has been moving recently, or what the options market is pricing in where that is available. It shows a 7 in 10 range and a 9 in 10 range for one week, one month and three months ahead. It shows how far the price might move, not which way.</p></details>
       <details><summary>Does Catalyst Atlas work for UK shares?</summary><p>Yes. Enter UK tickers with .L at the end, for example SHEL.L for Shell or BARC.L for Barclays. For UK shares the market adjustment uses the FTSE 100.</p></details>
-      <details><summary>Is Catalyst Atlas financial advice?</summary><p>No. It is a free educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results.</p></details>
+      <details><summary>How much does Catalyst Atlas cost?</summary><p>Tesla is free to explore without an account. Sign in with your email and your first other company is free. After that, a pack of 10 searches costs £2.29 (US $2.99). It is a one-off payment, not a subscription, and searches do not expire. Opening the same company again within 24 hours does not use another search.</p></details>
+      <details><summary>Is Catalyst Atlas financial advice?</summary><p>No. It is an educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results.</p></details>
     </div>
   </section>
   <section>
-    <div class="related"><span class="label" style="margin:0">Related free tools</span>
+    <div class="related"><span class="label" style="margin:0">Related tools</span>
       <a href="/price-spectrum.html">PriceSpectrum: stock price probability ranges</a>
       <a href="/deep-dive.html">Stock Deep Dive: full analysis of any stock</a>
       <a href="/ai-stock-scanner.html">Fintiq Scout: AI stock scanner</a>
@@ -478,10 +528,18 @@ async function load(ticker) {
   showLoading(ticker);
   try {
     const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 90000);
-    const r = await fetch(`${API}/catalyst-atlas/${encodeURIComponent(ticker)}`, {signal: ctrl.signal});
+    const r = await fetch(`${API}/catalyst-atlas/${encodeURIComponent(ticker)}`, {signal: ctrl.signal, headers: authHeaders()});
     clearTimeout(to);
-    if (!r.ok) { let m = `We couldn't analyse ${ticker} right now.`; try { const j = await r.json(); if (j.detail) m = j.detail; } catch (e) {} throw new Error(m); }
+    if (r.status === 401 || r.status === 402) {
+      clearInterval(stepTimer); $('status').hidden = true; pendingTicker = ticker;
+      let j = {}; try { j = await r.json(); } catch (e) {}
+      if (r.status === 401) { localStorage.removeItem('fintiq_session'); openSignin(); } else openBuy(j.detail && j.detail.message);
+      if (!D) loadDemo();
+      return;
+    }
+    if (!r.ok) { let m = `We couldn't analyse ${ticker} right now.`; try { const j = await r.json(); if (j.detail) m = typeof j.detail === 'string' ? j.detail : (j.detail.message || m); } catch (e) {} throw new Error(m); }
     D = toPounds(await r.json());
+    if (D.account) { ACCOUNT = {signed_in: true, ...D.account}; renderAcct(); }
     clearInterval(stepTimer); $('status').hidden = true;
     if (typeof gtag === 'function') gtag('event', 'catalyst_atlas_view', {ticker});
     render();
@@ -547,20 +605,7 @@ function render() {
     <span class="px">${money(D.price)}</span><span class="meta">Closing price ${fmtDate(D.asof)}${D.sector ? ' · ' + esc(D.sector) : ''}</span></div>
 
   ${viewHtml()}
-  <details class="card key keyfold">
-    <summary><span class="label" style="margin:0">Reading the numbers</span>
-      <span class="keysum">What do ${TAG_ACT} and ${TAG_NET} mean? <span class="more">Tap to read ▾</span></span></summary>
-    <h2 style="margin-top:12px">Two kinds of % change on this page</h2>
-    <div class="keygrid">
-      <div><p>${TAG_ACT} <b>Actual change</b></p><p>The real change in the share price: what a shareholder actually gained or lost.</p></div>
-      <div><p>${TAG_NET} <b>Company's own move</b></p><p>The actual change after we take out things that move many shares at the same time:</p>
-        <ul>${removedList().map(x => `<li>${x}</li>`).join('')}</ul></div>
-    </div>
-    <p class="why"><b>Why take these out?</b> On a day when the whole market falls 3%, most shares fall, whatever their own news. Taking the market out shows what the company's own news did, so one news day can be fairly compared with another.</p>
-    ${exSplit ? `<div class="example"><div class="label" style="margin-bottom:4px">Example: ${esc(fmtDate(ex.date))}, ${esc(ex.title)}</div>${eqRow(exSplit)}
-      <p class="note" style="margin-top:6px">Most of this day's move ${Math.abs(exSplit.own) >= Math.abs(exSplit.act - exSplit.own) ? 'was the company\'s own news' : 'came from the wider market'}. Parts are rounded and may not add up exactly.</p></div>` : ''}
-  
-  </details>
+
 
   <div class="grid two">
     <div class="card"><div class="label">In a nutshell</div>
@@ -581,6 +626,20 @@ function render() {
       <p class="note">White line: today's price. Dark band: 7 in 10 chance. Light band: 9 in 10 chance.</p>
     </div>
   </div>
+  <section><details class="card key keyfold">
+    <summary><span class="label" style="margin:0">Reading the numbers</span>
+      <span class="keysum">What do ${TAG_ACT} and ${TAG_NET} mean? <span class="more">Tap to read ▾</span></span></summary>
+    <h2 style="margin-top:12px">Two kinds of % change on this page</h2>
+    <div class="keygrid">
+      <div><p>${TAG_ACT} <b>Actual change</b></p><p>The real change in the share price: what a shareholder actually gained or lost.</p></div>
+      <div><p>${TAG_NET} <b>Company's own move</b></p><p>The actual change after we take out things that move many shares at the same time:</p>
+        <ul>${removedList().map(x => `<li>${x}</li>`).join('')}</ul></div>
+    </div>
+    <p class="why"><b>Why take these out?</b> On a day when the whole market falls 3%, most shares fall, whatever their own news. Taking the market out shows what the company's own news did, so one news day can be fairly compared with another.</p>
+    ${exSplit ? `<div class="example"><div class="label" style="margin-bottom:4px">Example: ${esc(fmtDate(ex.date))}, ${esc(ex.title)}</div>${eqRow(exSplit)}
+      <p class="note" style="margin-top:6px">Most of this day's move ${Math.abs(exSplit.own) >= Math.abs(exSplit.act - exSplit.own) ? 'was the company\'s own news' : 'came from the wider market'}. Parts are rounded and may not add up exactly.</p></div>` : ''}
+  
+  </details></section>
   <section>${glanceHtml()}</section>
   <section><div class="card"><div class="label">Coming up</div><h2>Known events ahead</h2><div class="sub">Dates come from the company's published calendar.</div><div class="up" id="upcoming"></div></div></section>
   <section><div class="headrow"><div><div class="label">What moves ${esc(D.name)}</div><h2 style="font-size:1.3rem;font-weight:800">How the price reacted to each kind of news</h2>
@@ -649,12 +708,13 @@ function viewHtml() {
   const v = D.analyst_view;
   if (!v || !v.story) return '';
   const part = (h, t) => t ? `<div><h3>${h}</h3><p>${esc(t)}</p></div>` : '';
-  return `<section class="view" aria-label="Fintiq Analyst's view">
-    <div style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center"><h2>Fintiq Analyst's view</h2><span class="badge">PLAIN ENGLISH</span></div>
-    <div class="vgrid">${part('The story', v.story)}${part('What really moves it', v.drivers)}${part('How it reacts to news', v.news)}${part('How much it can swing', v.swing)}${part("What's coming up", v.coming_up)}</div>
+  return `<details class="view">
+    <summary><div style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center"><h2>Fintiq Analyst's view</h2><span class="badge">PLAIN ENGLISH</span></div>
+      <p class="vstory">${esc(v.story)}</p><span class="vmore">Read the full Analyst's view ▾</span></summary>
+    <div class="vgrid">${part('What really moves it', v.drivers)}${part('How it reacts to news', v.news)}${part('How much it can swing', v.swing)}${part("What's coming up", v.coming_up)}</div>
     ${(v.questions || []).length ? `<div class="vq"><h3 style="font-size:.78rem;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Questions to ask yourself</h3><ul>${v.questions.map(q => `<li>${esc(q)}</li>`).join('')}</ul></div>` : ''}
     <p class="note" style="margin:0">Written by AI from the figures on this page, using past patterns only. It is not advice to buy, sell or hold.</p>
-  </section>`;
+  </details>`;
 }
 function glanceHtml() {
   const c = S().close, n = c.length, rows = [];
@@ -779,12 +839,92 @@ function renderBig() {
     <div><div class="label">News inside this period</div>${evs.length ? `<div class="list"><div class="lhead"><span>Date and news</span><span class="num">Actual</span><span class="num">Own</span></div>${evs.map(e => `<div class="l4"><span>${esc(fmtDate(e.date))}</span><span class="num ${cls(e.ret)}">${pc(e.ret)}</span><span class="num ${cls(e.d0)}">${pc(e.d0)}</span><span class="t">${evTitle(e)}</span></div>`).join('')}<p class="note">Actual: real share price change that day. Own: the move vs market.</p></div>` : '<p class="note">No big news days. The market and steady buying or selling did the work.</p>'}</div>`;
 }
 
+// ---------- account: sign-in (same email code as the Deep Dive) and search packs ----------
+let ACCOUNT = null, pendingTicker = null, siEmail = '';
+const token = () => { try { return localStorage.getItem('fintiq_session') || ''; } catch (e) { return ''; } };
+const authHeaders = () => token() ? {'Authorization': `Bearer ${token()}`} : {};
+async function refreshAcct() {
+  try { ACCOUNT = await fetch(`${API}/atlas/account`, {headers: authHeaders()}).then(r => r.json()); } catch (e) { ACCOUNT = null; }
+  renderAcct(); return ACCOUNT;
+}
+function renderAcct() {
+  const el = $('acct'); if (!el) return;
+  if (!ACCOUNT || !ACCOUNT.signed_in) {
+    el.innerHTML = `<span>Tesla is free to explore. Your first other company is free with a free account.</span> <button class="linkbtn" id="acctSignin">Sign in</button>`;
+    $('acctSignin').onclick = () => openSignin();
+    return;
+  }
+  const left = ACCOUNT.free_available ? '<b>1 free search</b> available' : `<b>${ACCOUNT.credits}</b> search${ACCOUNT.credits === 1 ? '' : 'es'} left`;
+  el.innerHTML = `<span>Signed in as ${esc(ACCOUNT.email)} · ${left}</span> <button class="linkbtn" id="acctBuy">Buy 10 searches</button> <button class="linkbtn" id="acctOut" style="color:var(--dim)">Sign out</button>`;
+  $('acctBuy').onclick = () => openBuy();
+  $('acctOut').onclick = () => { try { localStorage.removeItem('fintiq_session'); } catch (e) {} ACCOUNT = null; renderAcct(); };
+}
+function openSignin() {
+  $('siErr').textContent = ''; $('siStep1').hidden = false; $('siStep2').hidden = true; $('dlgSignin').hidden = false;
+  setTimeout(() => $('siEmail').focus(), 50);
+}
+function openBuy(msg) {
+  if (!token()) { openSignin(); return; }
+  $('buyErr').textContent = ''; $('buySub').textContent = (msg ? msg + ' ' : '') + 'Each new company costs 1 search. Looking at the same company again within 24 hours is free, and Tesla is always free.';
+  $('dlgBuy').hidden = false;
+}
+function toast(msg) { const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 5000); }
+$('siClose').onclick = () => { $('dlgSignin').hidden = true; pendingTicker = null; };
+$('buyClose').onclick = () => { $('dlgBuy').hidden = true; pendingTicker = null; };
+$('siSend').onclick = async () => {
+  const email = ($('siEmail').value || '').trim().toLowerCase();
+  if (!email.includes('@')) { $('siErr').textContent = 'Please enter a valid email address.'; return; }
+  $('siSend').disabled = true; $('siErr').textContent = '';
+  try {
+    const r = await fetch(`${API}/auth/request-otp`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email})});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'Could not send the code. Please try again.');
+    siEmail = email; $('siStep1').hidden = true; $('siStep2').hidden = false;
+    $('siSub').textContent = `We've sent a 6-digit code to ${email}. Enter it below.`; setTimeout(() => $('siCode').focus(), 50);
+  } catch (e) { $('siErr').textContent = e.message; } finally { $('siSend').disabled = false; }
+};
+$('siVerify').onclick = async () => {
+  const code = ($('siCode').value || '').trim();
+  if (!/^\d{6}$/.test(code)) { $('siErr').textContent = 'Enter the 6-digit code from your email.'; return; }
+  $('siVerify').disabled = true; $('siErr').textContent = '';
+  try {
+    const r = await fetch(`${API}/auth/verify-otp`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({email: siEmail, code})});
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.detail || 'That code did not work. Please try again.');
+    try { localStorage.setItem('fintiq_session', d.session_token); } catch (e) {}
+    $('dlgSignin').hidden = true; await refreshAcct();
+    if (pendingTicker) { const t = pendingTicker; pendingTicker = null; load(t); }
+  } catch (e) { $('siErr').textContent = e.message; } finally { $('siVerify').disabled = false; }
+};
+document.querySelectorAll('.packs button').forEach(b => b.onclick = async () => {
+  $('buyErr').textContent = ''; b.disabled = true;
+  try {
+    const r = await fetch(`${API}/atlas/checkout`, {method: 'POST', headers: {'Content-Type': 'application/json', ...authHeaders()},
+      body: JSON.stringify({currency: b.dataset.cur, ticker: pendingTicker || (D && !D.demo ? D.ticker : '')})});
+    const d = await r.json();
+    if (r.status === 401) { $('dlgBuy').hidden = true; openSignin(); return; }
+    if (!r.ok || !d.checkout_url) throw new Error(d.detail || 'Could not start the payment.');
+    location.href = d.checkout_url;
+  } catch (e) { $('buyErr').textContent = e.message; } finally { b.disabled = false; }
+});
+
 // ---------- start ----------
 $('searchForm').addEventListener('submit', e => { e.preventDefault(); load($('tickerInput').value); });
 $('chips').querySelectorAll('.chip').forEach(c => c.onclick = () => load(c.dataset.t));
 window.addEventListener('resize', () => { if (D) { renderMini(); renderBig(); } });
-const qp = new URLSearchParams(location.search).get('ticker');
-if (qp) load(qp); else loadDemo();
+(async () => {
+  const params = new URLSearchParams(location.search);
+  const qp = params.get('ticker');
+  await refreshAcct();
+  if (params.get('paid') === '1') {
+    // Stripe sends the payment confirmation to our server separately; wait for the credits to land
+    const before = ACCOUNT && ACCOUNT.credits || 0;
+    for (let i = 0; i < 8 && !(ACCOUNT && ACCOUNT.credits > before - 0 && ACCOUNT.credits > 0); i++) { await new Promise(r => setTimeout(r, 1500)); await refreshAcct(); }
+    toast(ACCOUNT && ACCOUNT.credits > 0 ? `Payment received: you have ${ACCOUNT.credits} searches.` : 'Payment received. Your searches will appear in a moment.');
+    const u = new URL(location.href); u.searchParams.delete('paid'); history.replaceState(null, '', u);
+  }
+  if (qp) load(qp); else loadDemo();
+})();
 </script>
 <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
   <ul>
