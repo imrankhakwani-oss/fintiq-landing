@@ -134,7 +134,7 @@
    "name": "How much does Catalyst Atlas cost?",
    "acceptedAnswer": {
     "@type": "Answer",
-    "text": "Tesla is free to explore without an account. Sign in with your email and your first other company is free. After that, a pack of 10 searches costs £2.29 (US $2.99). It is a one-off payment, not a subscription, and searches do not expire. Opening the same company again within 24 hours does not use another search."
+    "text": "Tesla is free to explore without an account. To look at other companies, sign in with your email and buy a pack of 10 searches for £2.29 (US $2.99). It is a one-off payment, not a subscription, and searches do not expire. Opening the same company again within 24 hours does not use another search."
    }
   },
   {
@@ -396,7 +396,7 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
   <div class="banner" id="banner" hidden></div>
   <div class="dlg" id="dlgSignin" hidden role="dialog" aria-modal="true" aria-labelledby="siTitle"><div class="box">
     <h3 id="siTitle">Sign in to search any company</h3>
-    <p id="siSub">Your first company search is free. We'll email you a 6-digit code. No password needed.</p>
+    <p id="siSub">Sign in to search other companies. We'll email you a 6-digit code. No password needed.</p>
     <div id="siStep1" class="row"><input id="siEmail" type="email" placeholder="you@example.com" autocomplete="email"><button class="btn" id="siSend">Email me a code</button></div>
     <div id="siStep2" class="row" hidden><input id="siCode" inputmode="numeric" maxlength="6" placeholder="6-digit code"><button class="btn" id="siVerify">Sign in</button></div>
     <div class="err" id="siErr"></div>
@@ -422,7 +422,7 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
       <details><summary>How are the news days found?</summary><p>The tool looks for days when the company's own move (after taking out the market) was unusually large, plus every results day. Results are labelled as a beat or a miss against analyst forecasts. Other big days are labelled from news reports; when the news does not clearly explain a move, it is shown as unexplained.</p></details>
       <details><summary>How is the likely price range worked out?</summary><p>The range uses how much the share price has been moving recently, or what the options market is pricing in where that is available. It shows a 7 in 10 range and a 9 in 10 range for one week, one month and three months ahead. It shows how far the price might move, not which way.</p></details>
       <details><summary>Does Catalyst Atlas work for UK shares?</summary><p>Yes. Enter UK tickers with .L at the end, for example SHEL.L for Shell or BARC.L for Barclays. For UK shares the market adjustment uses the FTSE 100.</p></details>
-      <details><summary>How much does Catalyst Atlas cost?</summary><p>Tesla is free to explore without an account. Sign in with your email and your first other company is free. After that, a pack of 10 searches costs £2.29 (US $2.99). It is a one-off payment, not a subscription, and searches do not expire. Opening the same company again within 24 hours does not use another search.</p></details>
+      <details><summary>How much does Catalyst Atlas cost?</summary><p>Tesla is free to explore without an account. To look at other companies, sign in with your email and buy a pack of 10 searches for £2.29 (US $2.99). It is a one-off payment, not a subscription, and searches do not expire. Opening the same company again within 24 hours does not use another search.</p></details>
       <details><summary>Is Catalyst Atlas financial advice?</summary><p>No. It is an educational research tool. It shows what has happened in the past and does not recommend buying, selling or holding any investment. Past patterns do not guarantee future results.</p></details>
     </div>
   </section>
@@ -850,7 +850,7 @@ async function refreshAcct() {
 function renderAcct() {
   const el = $('acct'); if (!el) return;
   if (!ACCOUNT || !ACCOUNT.signed_in) {
-    el.innerHTML = `<span>Tesla is free to explore. Your first other company is free with a free account.</span> <button class="linkbtn" id="acctSignin">Sign in</button>`;
+    el.innerHTML = `<span>Tesla is free to explore. Other companies: 10 searches for £2.29.</span> <button class="linkbtn" id="acctSignin">Sign in</button>`;
     $('acctSignin').onclick = () => openSignin();
     return;
   }
