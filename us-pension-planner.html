@@ -126,14 +126,6 @@ input[type=range]{width:100%;accent-color:#F59E0B;height:4px}
 .leg-line{width:18px;height:2px;border-radius:1px}
 
 /* Paywall */
-.paywall-wrap{position:relative;margin-bottom:20px}
-.paywall-blur{filter:blur(5px);pointer-events:none;opacity:0.6}
-.paywall-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(6,15,26,0.7);border-radius:12px;border:1px solid rgba(245,158,11,0.2);z-index:10}
-.paywall-lock{font-size:2rem;margin-bottom:12px}
-.paywall-title{font-size:1rem;font-weight:800;color:#F1F5F9;margin-bottom:6px;text-align:center}
-.paywall-sub{font-size:0.8rem;color:#94A3B8;text-align:center;max-width:280px;margin-bottom:16px}
-.paywall-btn{background:linear-gradient(135deg,#F59E0B,#D97706);color:#0A1628;border:none;border-radius:8px;padding:12px 24px;font-size:0.88rem;font-weight:800;cursor:pointer;transition:all 0.2s}
-.paywall-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(245,158,11,0.3)}
 
 /* SS Timing analysis */
 .ss-timing{background:#060F1A;border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:20px;margin-bottom:16px}
@@ -308,9 +300,6 @@ footer{background:#060F1A;border-top:1px solid rgba(255,255,255,0.06);padding:40
 </head>
 <body>
 
-<div id="unlockBanner" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:999;background:#16a34a;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:0.95rem;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
-  ✅ Payment successful — re-run your simulation below to get your full report
-</div>
 
 <nav>
   <a href="https://fintiq.uk" class="logo">
@@ -549,9 +538,9 @@ footer{background:#060F1A;border-top:1px solid rgba(255,255,255,0.06);padding:40
         </div>
       </div>
 
-      <!-- Paywall wrap -->
-      <div class="paywall-wrap" id="paywallWrap">
-        <div class="paywall-blur" id="paywallBlur">
+      <!-- Full analysis (free) -->
+      <div id="paywallWrap">
+        <div id="paywallBlur">
 
           <!-- Social Security Timing Analysis -->
           <div class="ss-timing">
@@ -592,17 +581,11 @@ footer{background:#060F1A;border-top:1px solid rgba(255,255,255,0.06);padding:40
             <b>RMD Note:</b> The IRS requires Required Minimum Distributions from tax-deferred accounts (401k, traditional IRA) starting at age 73. RMDs are calculated as account balance ÷ IRS life expectancy factor. This model does not separately model RMDs, but they don't reduce total wealth — they only affect timing of withdrawals.
           </div>
 
-        </div><!-- /paywall-blur -->
-
-        <div class="paywall-overlay" id="paywallOverlay">
-          <div class="paywall-lock">🔒</div>
-          <div class="paywall-title">Unlock Full Analysis — $2.99</div>
-          <div class="paywall-sub">Social Security timing comparison, Medicare bridge breakdown, income breakdown, and sensitivity analysis across 8 scenarios.</div>
-          <button class="paywall-btn" onclick="unlockAnalysis()">Unlock Full Report — $2.99</button>
         </div>
-      </div><!-- /paywall-wrap -->
 
-      <button class="pdf-btn" onclick="generatePDF()">⬇ Download PDF Report — $2.99</button>
+      </div>
+
+      <button class="pdf-btn" onclick="generatePDF()">⬇ Download PDF Report</button>
     </div><!-- /successCard -->
   </div><!-- /results-panel -->
 </div><!-- /tool-wrap -->
@@ -1105,14 +1088,6 @@ function runSimulation(){
   lastSimResult = {inputs, successRate, potMedian, monthlySS, monthFromSavings, wRate, medicareBridgeYrs, medicareBridgeMonthly, hasMedicareBridge, sensResults, name};
   populatePrint(lastSimResult);
 
-  // Paywall check
-  const params = new URLSearchParams(window.location.search);
-  if(params.get('unlocked')==='true'){
-    document.getElementById('paywallBlur').style.filter='none';
-    document.getElementById('paywallBlur').style.pointerEvents='auto';
-    document.getElementById('paywallBlur').style.opacity='1';
-    document.getElementById('paywallOverlay').style.display='none';
-  }
 }
 
 // ─────────────────────────────────────────────
@@ -1267,40 +1242,12 @@ function populatePrint(d){
 }
 
 // ─────────────────────────────────────────────
-// UNLOCK PAYWALL
-// ─────────────────────────────────────────────
-let _unlockedUS = false;
-function isValidSessionUS(s){ return s && s.length > 20; }
-function doUnlockUS(){
-  _unlockedUS = true;
-  document.getElementById('paywallBlur').style.filter='none';
-  document.getElementById('paywallBlur').style.pointerEvents='auto';
-  document.getElementById('paywallBlur').style.opacity='1';
-  document.getElementById('paywallOverlay').style.display='none';
-  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:2.99,currency:'USD'});
-  const banner = document.getElementById('unlockBanner');
-  if(banner){ banner.style.display='block'; setTimeout(()=>banner.style.display='none',6000); }
-  document.querySelector('.inputs-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
-}
-function unlockAnalysis(){
-  const params = new URLSearchParams(window.location.search);
-  if(isValidSessionUS(params.get('session')) || _unlockedUS){
-    doUnlockUS(); return;
-  }
-  window.location.href = 'https://buy.stripe.com/dRm00jft096m9sc4QYaZi08';
-}
-// Auto-unlock if returning from Stripe with ?session=
-window.addEventListener('load', function(){
-  if(isValidSessionUS(new URLSearchParams(window.location.search).get('session'))) doUnlockUS();
-});
+// (paywall removed — full analysis always visible)
 
 // ─────────────────────────────────────────────
 // PDF GENERATION
 // ─────────────────────────────────────────────
 function generatePDF(){
-  if(!_unlockedUS && !isValidSessionUS(new URLSearchParams(window.location.search).get('session'))){
-    window.location.href='https://buy.stripe.com/dRm00jft096m9sc4QYaZi08'; return;
-  }
   if(!lastChartData){ window.print(); return; }
   if(printChartInst){ try{ printChartInst.destroy(); }catch(e){} printChartInst=null; }
 

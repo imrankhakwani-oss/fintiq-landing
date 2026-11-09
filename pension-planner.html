@@ -189,20 +189,6 @@ nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display
 .waitlist-success{display:none;color:#22C55E;font-size:0.85rem;margin-top:10px;font-weight:600}
 
 /* ── Paywall ── */
-.paywall-wrap{position:relative;margin-bottom:0}
-.paywall-blur{filter:blur(5px);pointer-events:none;user-select:none;opacity:0.6}
-.paywall-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:10}
-.paywall-card{background:linear-gradient(135deg,#0A1F35,#0F2845);border:2px solid rgba(245,158,11,0.5);border-radius:16px;padding:36px 40px;text-align:center;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6)}
-.paywall-lock{font-size:2.5rem;margin-bottom:12px}
-.paywall-card h3{font-size:1.3rem;font-weight:800;color:#F1F5F9;margin-bottom:8px}
-.paywall-card > p{color:#94A3B8;font-size:0.85rem;margin-bottom:18px;line-height:1.5}
-.paywall-includes{display:flex;flex-direction:column;gap:6px;margin-bottom:22px;text-align:left}
-.paywall-inc{display:flex;align-items:center;gap:8px;font-size:0.8rem;color:#CBD5E1}
-.paywall-inc::before{content:'✓';color:#22C55E;font-weight:700;flex-shrink:0}
-.paywall-unlock-btn{background:#F59E0B;color:#0A1628;border:none;width:100%;padding:14px;border-radius:9px;font-weight:800;font-size:1rem;cursor:pointer;font-family:'Inter',sans-serif;margin-bottom:8px;transition:opacity 0.2s}
-.paywall-unlock-btn:hover{opacity:0.9}
-.paywall-note{font-size:0.72rem;color:#475569}
-.paywall-divider{border:none;border-top:1px solid rgba(255,255,255,0.06);margin:10px 0}
 
 /* PDF button */
 .pdf-section{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:14px;padding:32px;text-align:center;margin-top:8px}
@@ -383,9 +369,6 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 </head>
 <body>
 
-<div id="unlockBanner" style="display:none;position:fixed;top:70px;left:50%;transform:translateX(-50%);z-index:999;background:#16a34a;color:#fff;padding:12px 28px;border-radius:10px;font-weight:700;font-size:0.95rem;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
-  ✅ Payment successful — re-run your simulation below to get your full report
-</div>
 
 <nav>
   <a href="https://fintiq.uk" class="logo">
@@ -606,9 +589,9 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
         <div style="position:relative;height:340px"><canvas id="fanChart"></canvas></div>
       </div>
 
-      <!-- ── PAYWALL WRAP ── -->
-      <div class="paywall-wrap" id="paywallWrap">
-        <div class="paywall-blur" id="paywallBlur">
+      <!-- Full analysis (free) -->
+      <div id="paywallWrap">
+        <div id="paywallBlur">
 
       <!-- Bridge Analysis -->
       <div class="bridge-box" id="bridgeBox">
@@ -668,29 +651,12 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
         </table>
       </div>
 
-        </div><!-- /paywall-blur -->
-
-        <!-- Lock overlay -->
-        <div class="paywall-overlay" id="paywallOverlay">
-          <div class="paywall-card">
-            <div class="paywall-lock">🔒</div>
-            <h3>Unlock Your Full Analysis</h3>
-            <p>Your success rate is calculated — now find out <em>why</em> and exactly what to do about it.</p>
-            <div class="paywall-includes">
-              <div class="paywall-inc">Bridge period cost — the hidden retirement risk</div>
-              <div class="paywall-inc">Monthly income breakdown &amp; withdrawal rate</div>
-              <div class="paywall-inc">Sensitivity table — what moves your odds most</div>
-              <div class="paywall-inc">Professional PDF report with cover page</div>
-            </div>
-            <button class="paywall-unlock-btn" onclick="unlockAnalysis()">Unlock Full Report — £1.99</button>
-            <div class="paywall-note">One-time payment · No subscription · Instant access</div>
-          </div>
         </div>
 
-      </div><!-- /paywall-wrap -->
+      </div>
 
       <!-- PDF Report -->
-      <div class="pdf-section" id="pdfSection" style="display:none">
+      <div class="pdf-section" id="pdfSection">
         <h3>📄 Get Your Full PDF Report</h3>
         <p>A professional A4 report with cover page, all charts, sensitivity analysis, and personalised recommendations — ready to share with your financial adviser.</p>
         <div class="pdf-features">
@@ -1312,9 +1278,6 @@ function buildFanChart(percs, cAge, lExp, rAge, spAge){
 
 // ── PDF generation ────────────────────────────────────
 function generatePDF(){
-  if(!_unlocked && !isValidSession(new URLSearchParams(window.location.search).get('session'))){
-    window.location.href='https://buy.stripe.com/6oU4gza8G1DU47S5V2aZi07'; return;
-  }
   if(!lastChartData){ window.print(); return; }
 
   // Destroy previous print chart if any
@@ -1505,33 +1468,7 @@ function joinWaitlist(){
 }
 
 // ── Paywall unlock ────────────────────────────────────
-let _unlocked = false;
-function isValidSession(s){ return s && s.length > 20; }
-function unlockAnalysis(){
-  const params = new URLSearchParams(window.location.search);
-  if(isValidSession(params.get('session')) || _unlocked){
-    doUnlock();
-  } else {
-    window.location.href = 'https://buy.stripe.com/6oU4gza8G1DU47S5V2aZi07';
-  }
-}
-function doUnlock(){
-  _unlocked = true;
-  document.getElementById('paywallOverlay').style.display='none';
-  document.getElementById('paywallBlur').style.filter='none';
-  document.getElementById('paywallBlur').style.opacity='1';
-  document.getElementById('paywallBlur').style.pointerEvents='auto';
-  document.getElementById('pdfSection').style.display='block';
-  if(typeof gtag!=='undefined') gtag('event','paywall_unlocked',{value:1.99,currency:'GBP'});
-  // Show success message and scroll to form
-  const banner = document.getElementById('unlockBanner');
-  if(banner){ banner.style.display='block'; setTimeout(()=>banner.style.display='none',6000); }
-  document.querySelector('.inputs-panel')?.scrollIntoView({behavior:'smooth',block:'start'});
-}
-// Auto-unlock if returning from Stripe with ?session=
-window.addEventListener('load',function(){
-  if(isValidSession(new URLSearchParams(window.location.search).get('session'))) doUnlock();
-});
+// (paywall removed — full analysis always visible)
 </script>
 
 
