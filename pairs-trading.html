@@ -241,7 +241,7 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
       <div id="scanStatus" class="scan-status"></div>
       <div class="ps-info-bar">
         <span>⏱ Signals &amp; prices refresh every 12 hours · Last close price shown</span>
-        <span>For information only — not financial advice</span>
+        <span>For research purposes only — not financial advice or a personal recommendation to trade</span>
       </div>
       <div class="pc-cat-filter">
         <button class="pc-cat-btn active" id="catAll"         onclick="filterCat('all')">All (50)</button>
@@ -1028,13 +1028,13 @@ async function analyse() {
       peTrade = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0 12px">
           <div style="background:rgba(34,197,94,0.09);border:1px solid rgba(34,197,94,0.22);border-radius:10px;padding:14px 16px">
-            <div style="font-size:0.65rem;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📈 BUY — underpriced</div>
+            <div style="font-size:0.65rem;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📈 Long Signal — spread below mean</div>
             <div style="font-size:1.2rem;font-weight:900;color:#F1F5F9">${buyTicker}</div>
             <div style="font-size:0.82rem;color:#94A3B8;margin-top:3px">Current price: <strong style="color:#F1F5F9">${fmtPrice(buyPrice)}</strong></div>
             <div style="font-size:0.82rem;color:#22c55e;margin-top:5px;font-weight:600">Reversion target: ${fmtPrice(buyTarget)} &nbsp;↑ +${buyGapPct}%</div>
           </div>
           <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.22);border-radius:10px;padding:14px 16px">
-            <div style="font-size:0.65rem;color:#ef4444;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📉 SELL — overpriced</div>
+            <div style="font-size:0.65rem;color:#ef4444;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📉 Short Signal — spread above mean</div>
             <div style="font-size:1.2rem;font-weight:900;color:#F1F5F9">${sellTicker}</div>
             <div style="font-size:0.82rem;color:#94A3B8;margin-top:3px">Current price: <strong style="color:#F1F5F9">${fmtPrice(sellPrice)}</strong></div>
             <div style="font-size:0.82rem;color:#ef4444;margin-top:5px;font-weight:600">Reversion target: ${fmtPrice(sellTarget)} &nbsp;↓ -${sellGapPct}%</div>

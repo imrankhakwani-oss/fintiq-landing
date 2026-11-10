@@ -1246,7 +1246,7 @@ a{color:var(--gold);text-decoration:none}
       <div class="section-icon">🎯</div>
       <div>
         <div class="section-title">Investment Committee</div>
-        <div class="section-desc">AI challenges your thesis — buy, short or hold — conviction score</div>
+        <div class="section-desc">AI examines the evidence for and against your thesis — conviction score</div>
       </div>
       <span class="section-status" id="status-decision" style="display:none"></span>
       <span class="section-chevron" id="chev-decision">▼</span>
@@ -2170,7 +2170,7 @@ function renderFundamentals(d) {
     const isProxy = !!ff.estimated;
     const alpha = ff.alpha;
     const rawSig = ff.signal || '';
-    const sigLabel = rawSig === 'green' ? '🟢 Strong Alpha' : rawSig === 'amber' ? '🟡 Marginal' : rawSig === 'red' ? '🔴 Avoid' : rawSig;
+    const sigLabel = rawSig === 'green' ? '🟢 Strong Alpha' : rawSig === 'amber' ? '🟡 Marginal' : rawSig === 'red' ? '🔴 No Alpha' : rawSig;
     const sigClass = rawSig === 'green' ? 'ff4-strong' : rawSig === 'amber' ? 'ff4-marginal' : rawSig === 'red' ? 'ff4-avoid' : 'ff4-na';
     const pval  = ff.pval;
     const pColor = pval != null && pval < 0.05 ? 'var(--green)' : pval != null && pval < 0.1 ? 'var(--gold)' : 'var(--red)';

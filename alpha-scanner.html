@@ -17,7 +17,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@fintiq" />
 <meta name="twitter:title" content="Alpha Scanner — Daily US Small-Cap Stock Signals | Fintiq" />
-<meta name="twitter:description" content="1,100+ US small-caps scanned daily. Piotroski, Altman Z, Beneish M, SEC filing drift. Free Buy & Watch signals, updated every morning." />
+<meta name="twitter:description" content="1,100+ US small-caps scanned daily. Piotroski, Altman Z, Beneish M, SEC filing drift. Opportunity & Watch signals for research purposes only, updated every morning." />
 <meta name="twitter:image" content="https://www.fintiq.uk/og-image.png" />
 <script type="application/ld+json">
 {
@@ -61,7 +61,7 @@
     "Beneish M-Score earnings manipulation detection",
     "SEC 10-K/10-Q filing language drift detection",
     "Daily scanning of 1,100+ US small-cap companies",
-    "Buy and Watch signal classification",
+    "Opportunity and Watch signal classification",
     "Conviction scoring 1-10"
   ]
 }
@@ -449,9 +449,9 @@
   <div class="disclaimer">
     <strong>Important:</strong> Alpha Scanner covers US-listed small and micro-cap companies
     (up to $1B market cap) only. These are small, often illiquid companies.
-    Signals are based on public data analysis and are <strong>not investment advice</strong>.
-    Small-cap investing carries significantly higher risk than mainstream markets.
-    Always do your own research before investing.
+    Signals are based on quantitative analysis of public data and are <strong>not investment advice or a personal recommendation</strong>.
+    Signal labels (Opportunity / Watch) are for research purposes only. Small-cap investing carries significantly higher risk than mainstream markets.
+    Past performance is not indicative of future results. Always conduct your own research and consider speaking to a qualified financial adviser before investing.
   </div>
 
   <!-- Seed note (shown when DB is empty / first run) -->
@@ -479,7 +479,7 @@
   <!-- Filters -->
   <div class="filter-bar">
     <button class="filter-btn active" data-filter="all"   onclick="setFilter('all',this)">All Signals</button>
-    <button class="filter-btn buy"   data-filter="buy"   onclick="setFilter('buy',this)">🟢 Buy</button>
+    <button class="filter-btn buy"   data-filter="buy"   onclick="setFilter('buy',this)">🟢 Opportunity</button>
     <button class="filter-btn watch" data-filter="watch" onclick="setFilter('watch',this)">🟡 Watch</button>
     <button class="filter-btn"       data-filter="new"   onclick="setFilter('new',this)">⚡ New only</button>
   </div>
@@ -615,7 +615,7 @@ function renderCard(s) {
           </div>
         </div>
         <div class="card-right">
-          <span class="direction-pill ${s.direction}">${s.direction === 'buy' ? '▲ Buy' : '◎ Watch'}</span>
+          <span class="direction-pill ${s.direction}">${s.direction === 'buy' ? '▲ Opportunity' : '◎ Watch'}</span>
           <div class="conviction-bar">
             <span class="conviction-label">Conviction</span>
             <div class="conviction-dots">${buildDots(s.conviction, s.direction)}</div>
