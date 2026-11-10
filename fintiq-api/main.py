@@ -7363,7 +7363,7 @@ def _auth_db():
             locked_until TEXT
         );
         CREATE TABLE IF NOT EXISTS sessions (
-            token_hash TEXT PRIMARY KEY,
+            token      TEXT PRIMARY KEY,
             email      TEXT NOT NULL,
             expires_at TEXT NOT NULL
         );
@@ -7406,7 +7406,6 @@ def _auth_db():
         "ALTER TABLE portfolio ADD COLUMN exit_date TEXT",
         "ALTER TABLE otps ADD COLUMN attempts INTEGER DEFAULT 0",
         "ALTER TABLE otps ADD COLUMN locked_until TEXT",
-        "ALTER TABLE sessions ADD COLUMN token_hash TEXT",
     ]:
         try:
             conn.execute(_col_sql)
@@ -7540,27 +7539,28 @@ def _auth_del_otp(email: str):
 
 
 def _auth_create_session(email: str, ttl_seconds: int = 2592000) -> str:
-    """Create session token (default 30 days). Stores SHA-256 hash. Returns raw token to caller."""
+    """Create session token (default 30 days).
+    Stores SHA-256 hash in the token column — raw token returned to client, hash in DB."""
     token = _secrets.token_urlsafe(32)
     token_hash = _hash_token(token)
     expires = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
     try:
         conn = _auth_db()
-        conn.execute("INSERT OR REPLACE INTO sessions (token_hash, email, expires_at) VALUES (?,?,?)",
+        conn.execute("INSERT OR REPLACE INTO sessions (token, email, expires_at) VALUES (?,?,?)",
                      (token_hash, email.lower().strip(), expires))
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"[Auth] _auth_create_session error: {e}")
-    return token  # raw token returned to client; hash stays in DB
+    return token  # raw token returned to client; only hash is stored in DB
 
 
 def _auth_get_session_user(token: str) -> dict | None:
-    """Validate session token (hashed lookup) and return user dict or None."""
+    """Validate session token (SHA-256 hash lookup) and return user dict or None."""
     try:
         token_hash = _hash_token(token)
         conn = _auth_db()
-        row = conn.execute("SELECT email, expires_at FROM sessions WHERE token_hash=?",
+        row = conn.execute("SELECT email, expires_at FROM sessions WHERE token=?",
                            (token_hash,)).fetchone()
         conn.close()
         if not row:
