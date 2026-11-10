@@ -23,9 +23,9 @@ except Exception as _obb_err:
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-FMP_KEY           = os.environ.get("FMP_KEY", "c3gRy6dPp8uETaNIYoFJj83J7hm998bB")
+FMP_KEY           = os.environ.get("FMP_KEY", "")
 FMP_BASE          = "https://financialmodelingprep.com/api"
-REFRESH_TOKEN     = os.environ.get("REFRESH_TOKEN", "fintiq-refresh-2026")
+REFRESH_TOKEN     = os.environ.get("REFRESH_TOKEN", "")
 TAVILY_API_KEY    = os.environ.get("TAVILY_API_KEY", "")
 FRED_API_KEY      = os.environ.get("FRED_API_KEY", "")
 FRED_BASE         = "https://api.stlouisfed.org/fred/series/observations"
@@ -58,6 +58,32 @@ def _kv_get(key: str):
         return blob, saved_at
     except Exception:
         return None, 0
+
+def _rate_limit_check(key: str, limit: int, window_seconds: int) -> bool:
+    """Increment a counter in Upstash Redis and return True if within limit.
+    Returns True (allow) if Redis is not configured (fail-open during outages).
+    key should be unique per action+identifier, e.g. 'rl:otp_email:user@x.com'."""
+    if not _UPSTASH_OK:
+        return True  # fail-open: Redis not configured
+    try:
+        # INCR atomically increments; returns new value
+        r = requests.post(
+            f"{_UPSTASH_URL}/incr/{key}",
+            headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
+            timeout=3,
+        )
+        count = r.json().get("result", 1) if r.status_code == 200 else 1
+        if count == 1:
+            # First request in window — set TTL
+            requests.post(
+                f"{_UPSTASH_URL}/expire/{key}/{window_seconds}",
+                headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}"},
+                timeout=3,
+            )
+        return count <= limit
+    except Exception:
+        return True  # fail-open on Redis errors
+
 
 def _kv_set(key: str, data: dict, ttl_seconds: int = 90000):
     """Store a JSON blob in Upstash Redis with a TTL (default 25 h).
@@ -4789,23 +4815,56 @@ DIALOGUE:
 # Keyed by session_id (until auth is re-enabled, then switch to user_id)
 # ══════════════════════════════════════════════════════
 
-_session_entitlements: dict = {}  # {session_id: {"red_team_remaining": int, "committee_remaining": int}}
-_SESSION_RED_TEAM_LIMIT  = 3   # Red Team uses per session
-_SESSION_COMMITTEE_LIMIT = 2   # Committee reports per session
+_SESSION_RED_TEAM_LIMIT  = 3   # Red Team uses per calendar month per user
+_SESSION_COMMITTEE_LIMIT = 2   # Committee reports per calendar month per user
 
 def _check_and_deduct_entitlement(session_id: str, key: str, limit: int):
-    """Raise 403 if entitlement exhausted, otherwise deduct 1."""
+    """Raise 403 if entitlement exhausted, otherwise deduct 1.
+    Keyed by authenticated email (from session_id = session token). Resets monthly.
+    Falls back to allow if session_id is absent (unauthenticated / pre-auth phase)."""
     if not session_id:
-        return  # no session_id = unauthenticated, allow for now (pre-auth phase)
-    ents = _session_entitlements.setdefault(session_id, {
-        "red_team_remaining":  _SESSION_RED_TEAM_LIMIT,
-        "committee_remaining": _SESSION_COMMITTEE_LIMIT,
-    })
-    remaining = ents.get(key, limit)
-    if remaining <= 0:
-        label = key.replace("_remaining", "").replace("_", " ").title()
-        raise HTTPException(status_code=403, detail=f"No {label} uses remaining this session.")
-    ents[key] = remaining - 1
+        return  # unauthenticated — allow for now
+    # Resolve email from session token
+    email = None
+    try:
+        from datetime import timezone as _tz
+        _u = _auth_get_session_user(session_id)
+        if _u:
+            email = _u.get("email")
+    except Exception:
+        pass
+    if not email:
+        return  # can't identify user — allow
+
+    this_month = datetime.now(timezone.utc).strftime("%Y-%m")
+    col = "red_team_used" if "red_team" in key else "committee_used"
+    label = "Red Team" if "red_team" in key else "Committee"
+    try:
+        conn = _auth_db()
+        row = conn.execute("SELECT red_team_used, committee_used, reset_month FROM entitlements WHERE email=?",
+                           (email,)).fetchone()
+        if not row or row["reset_month"] != this_month:
+            # First use this month — reset counters
+            conn.execute("""
+                INSERT INTO entitlements (email, red_team_used, committee_used, reset_month)
+                VALUES (?,0,0,?)
+                ON CONFLICT(email) DO UPDATE SET red_team_used=0, committee_used=0, reset_month=excluded.reset_month
+            """, (email, this_month))
+            conn.commit()
+            used = 0
+        else:
+            used = row[col] or 0
+        if used >= limit:
+            conn.close()
+            raise HTTPException(status_code=403, detail=f"No {label} uses remaining this month.")
+        conn.execute(f"UPDATE entitlements SET {col}={col}+1 WHERE email=?", (email,))
+        conn.commit()
+        conn.close()
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[Entitlements] error: {e}")
+        # Fail-open: allow if DB error
 
 
 # INVESTMENT COMMITTEE REPORT
@@ -7268,6 +7327,11 @@ import hashlib as _hashlib
 import secrets as _secrets
 import random as _random
 import sqlite3 as _sqlite3
+import hashlib as _hashlib_auth
+
+def _hash_token(token: str) -> str:
+    """SHA-256 hash of a session token for safe DB storage."""
+    return _hashlib_auth.sha256(token.encode("utf-8")).hexdigest()
 
 BREVO_API_KEY         = os.environ.get("BREVO_API_KEY", "")
 STRIPE_SECRET_KEY     = os.environ.get("STRIPE_SECRET_KEY", "")
@@ -7294,10 +7358,12 @@ def _auth_db():
         CREATE TABLE IF NOT EXISTS otps (
             email      TEXT PRIMARY KEY,
             code       TEXT NOT NULL,
-            expires_at TEXT NOT NULL
+            expires_at TEXT NOT NULL,
+            attempts   INTEGER DEFAULT 0,
+            locked_until TEXT
         );
         CREATE TABLE IF NOT EXISTS sessions (
-            token      TEXT PRIMARY KEY,
+            token_hash TEXT PRIMARY KEY,
             email      TEXT NOT NULL,
             expires_at TEXT NOT NULL
         );
@@ -7323,6 +7389,12 @@ def _auth_db():
             updated_at   TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_portfolio_email ON portfolio(email);
+        CREATE TABLE IF NOT EXISTS entitlements (
+            email               TEXT PRIMARY KEY,
+            red_team_used       INTEGER DEFAULT 0,
+            committee_used      INTEGER DEFAULT 0,
+            reset_month         TEXT NOT NULL
+        );
     """)
     conn.commit()
     # ── Schema migrations for existing deployments ──
@@ -7332,6 +7404,9 @@ def _auth_db():
         "ALTER TABLE portfolio ADD COLUMN entry_date TEXT",
         "ALTER TABLE portfolio ADD COLUMN exit_price REAL",
         "ALTER TABLE portfolio ADD COLUMN exit_date TEXT",
+        "ALTER TABLE otps ADD COLUMN attempts INTEGER DEFAULT 0",
+        "ALTER TABLE otps ADD COLUMN locked_until TEXT",
+        "ALTER TABLE sessions ADD COLUMN token_hash TEXT",
     ]:
         try:
             conn.execute(_col_sql)
@@ -7387,8 +7462,9 @@ def _auth_set_otp(email: str, code: str, ttl_seconds: int = 600) -> bool:
         expires = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
         conn = _auth_db()
         conn.execute("""
-            INSERT INTO otps (email, code, expires_at) VALUES (?,?,?)
-            ON CONFLICT(email) DO UPDATE SET code=excluded.code, expires_at=excluded.expires_at
+            INSERT INTO otps (email, code, expires_at, attempts, locked_until) VALUES (?,?,?,0,NULL)
+            ON CONFLICT(email) DO UPDATE SET code=excluded.code, expires_at=excluded.expires_at,
+                                             attempts=0, locked_until=NULL
         """, (email.lower().strip(), code, expires))
         conn.commit()
         conn.close()
@@ -7398,21 +7474,58 @@ def _auth_set_otp(email: str, code: str, ttl_seconds: int = 600) -> bool:
         return False
 
 
-def _auth_get_otp(email: str) -> str | None:
-    """Fetch OTP code if not expired. Returns code string or None."""
+def _auth_get_otp(email: str):
+    """Fetch OTP row if not expired and not locked. Returns (code, locked) tuple.
+    locked=True means account is in lockout period — no code returned."""
     try:
         conn = _auth_db()
-        row = conn.execute("SELECT code, expires_at FROM otps WHERE email=?",
+        row = conn.execute("SELECT code, expires_at, attempts, locked_until FROM otps WHERE email=?",
                            (email.lower().strip(),)).fetchone()
         conn.close()
         if not row:
-            return None
-        if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
-            return None  # expired
-        return row["code"]
+            return None, False
+        now = datetime.now(timezone.utc)
+        # Check lockout
+        if row["locked_until"]:
+            lock_until = datetime.fromisoformat(row["locked_until"])
+            if lock_until.tzinfo is None:
+                lock_until = lock_until.replace(tzinfo=timezone.utc)
+            if now < lock_until:
+                return None, True  # still locked
+        # Check expiry
+        exp = datetime.fromisoformat(row["expires_at"])
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if now > exp:
+            return None, False  # expired
+        return row["code"], False
     except Exception as e:
         print(f"[Auth] _auth_get_otp error: {e}")
-        return None
+        return None, False
+
+
+def _auth_increment_otp_attempts(email: str) -> int:
+    """Increment failed OTP attempt counter. Locks for 15 min after 5 failures. Returns new count."""
+    _MAX_ATTEMPTS = 5
+    _LOCK_SECONDS = 900  # 15 minutes
+    try:
+        conn = _auth_db()
+        row = conn.execute("SELECT attempts FROM otps WHERE email=?", (email.lower().strip(),)).fetchone()
+        if not row:
+            conn.close()
+            return 0
+        new_attempts = (row["attempts"] or 0) + 1
+        locked_until = None
+        if new_attempts >= _MAX_ATTEMPTS:
+            locked_until = (datetime.now(timezone.utc) + timedelta(seconds=_LOCK_SECONDS)).isoformat()
+        conn.execute("UPDATE otps SET attempts=?, locked_until=? WHERE email=?",
+                     (new_attempts, locked_until, email.lower().strip()))
+        conn.commit()
+        conn.close()
+        return new_attempts
+    except Exception as e:
+        print(f"[Auth] _auth_increment_otp_attempts error: {e}")
+        return 0
 
 
 def _auth_del_otp(email: str):
@@ -7427,30 +7540,35 @@ def _auth_del_otp(email: str):
 
 
 def _auth_create_session(email: str, ttl_seconds: int = 2592000) -> str:
-    """Create session token (default 30 days). Returns token string."""
+    """Create session token (default 30 days). Stores SHA-256 hash. Returns raw token to caller."""
     token = _secrets.token_urlsafe(32)
+    token_hash = _hash_token(token)
     expires = (datetime.now(timezone.utc) + timedelta(seconds=ttl_seconds)).isoformat()
     try:
         conn = _auth_db()
-        conn.execute("INSERT INTO sessions (token, email, expires_at) VALUES (?,?,?)",
-                     (token, email.lower().strip(), expires))
+        conn.execute("INSERT OR REPLACE INTO sessions (token_hash, email, expires_at) VALUES (?,?,?)",
+                     (token_hash, email.lower().strip(), expires))
         conn.commit()
         conn.close()
     except Exception as e:
         print(f"[Auth] _auth_create_session error: {e}")
-    return token
+    return token  # raw token returned to client; hash stays in DB
 
 
 def _auth_get_session_user(token: str) -> dict | None:
-    """Validate session token and return user dict or None."""
+    """Validate session token (hashed lookup) and return user dict or None."""
     try:
+        token_hash = _hash_token(token)
         conn = _auth_db()
-        row = conn.execute("SELECT email, expires_at FROM sessions WHERE token=?",
-                           (token,)).fetchone()
+        row = conn.execute("SELECT email, expires_at FROM sessions WHERE token_hash=?",
+                           (token_hash,)).fetchone()
         conn.close()
         if not row:
             return None
-        if datetime.fromisoformat(row["expires_at"]) < datetime.now(timezone.utc):
+        exp = datetime.fromisoformat(row["expires_at"])
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp < datetime.now(timezone.utc):
             return None  # expired
         return _auth_get_user(row["email"])
     except Exception as e:
@@ -7518,38 +7636,32 @@ def _get_session_user(request: Request) -> dict | None:
 # ── Auth endpoints ─────────────────────────────────────────────────────────────
 
 @app.post("/auth/request-otp")
-def auth_request_otp(payload: dict):
+def auth_request_otp(payload: dict, request: Request):
     """
     Step 1 — User submits email.
-    Generates 6-digit OTP, stores in SQLite (/data/auth.db, 10 min expiry), sends via Resend.
+    Generates 6-digit OTP, stores in SQLite (/data/auth.db, 10 min expiry), sends via Brevo.
+    Rate-limited: 5 OTPs per email per hour, 20 per IP per hour.
     """
     email = (payload.get("email") or "").strip().lower()
     if not email or "@" not in email or "." not in email.split("@")[-1]:
         raise HTTPException(status_code=400, detail="Please enter a valid email address.")
 
-    code = str(_random.randint(100000, 999999))
+    # Rate limiting — per email (5/hour) and per IP (20/hour)
+    client_ip = request.headers.get("x-forwarded-for", request.client.host or "unknown").split(",")[0].strip()
+    if not _rate_limit_check(f"rl:otp_email:{email}", limit=5, window_seconds=3600):
+        raise HTTPException(status_code=429, detail="Too many requests for this email. Please wait before trying again.")
+    if not _rate_limit_check(f"rl:otp_ip:{client_ip}", limit=20, window_seconds=3600):
+        raise HTTPException(status_code=429, detail="Too many requests from this IP. Please wait before trying again.")
+
+    code = str(_secrets.randbelow(900000) + 100000)
     if not _auth_set_otp(email, code, ttl_seconds=600):
         raise HTTPException(status_code=503, detail="Could not store code. Please retry.")
-
-    # Always log OTP for admin visibility during testing period
-    print(f"[Auth] OTP for {email}: {code}")
 
     if not _send_otp_email(email, code):
         raise HTTPException(status_code=503, detail="Could not send email. Please retry.")
 
     return {"status": "sent", "email": email}
 
-
-@app.get("/auth/admin/otp")
-def auth_admin_get_otp(email: str, token: str):
-    """Admin debug endpoint — retrieve current OTP for an email. Requires REFRESH_TOKEN."""
-    if token != REFRESH_TOKEN:
-        raise HTTPException(status_code=403, detail="Forbidden")
-    email = email.strip().lower()
-    code = _auth_get_otp(email)
-    if not code:
-        raise HTTPException(status_code=404, detail="No active OTP for this email (expired or not requested).")
-    return {"email": email, "otp": code}
 
 
 @app.post("/auth/verify-otp")
@@ -7565,11 +7677,17 @@ def auth_verify_otp(payload: dict):
     if not email or not code:
         raise HTTPException(status_code=400, detail="Email and code are required.")
 
-    stored_code = _auth_get_otp(email)
+    stored_code, locked = _auth_get_otp(email)
+    if locked:
+        raise HTTPException(status_code=429, detail="Too many incorrect attempts. Please request a new code in 15 minutes.")
     if not stored_code:
         raise HTTPException(status_code=400, detail="Code expired or not found. Request a new one.")
     if stored_code != code:
-        raise HTTPException(status_code=400, detail="Incorrect code. Please check and try again.")
+        attempts = _auth_increment_otp_attempts(email)
+        remaining = max(0, 5 - attempts)
+        if remaining == 0:
+            raise HTTPException(status_code=429, detail="Too many incorrect attempts. Please request a new code in 15 minutes.")
+        raise HTTPException(status_code=400, detail=f"Incorrect code. {remaining} attempt{'s' if remaining != 1 else ''} remaining.")
 
     # OTP valid — delete it (single use)
     _auth_del_otp(email)
@@ -7723,9 +7841,10 @@ async def stripe_webhook(request: Request):
     payload    = await request.body()
     sig_header = request.headers.get("stripe-signature", "")
 
-    if STRIPE_WEBHOOK_SECRET:
-        if not _stripe_verify_signature(payload, sig_header, STRIPE_WEBHOOK_SECRET):
-            raise HTTPException(status_code=400, detail="Invalid Stripe signature.")
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="Webhook secret not configured — contact support.")
+    if not _stripe_verify_signature(payload, sig_header, STRIPE_WEBHOOK_SECRET):
+        raise HTTPException(status_code=400, detail="Invalid Stripe signature.")
 
     event      = json.loads(payload)
     event_type = event.get("type", "")
