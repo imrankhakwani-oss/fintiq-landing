@@ -547,6 +547,25 @@ async function load(ticker) {
     showError(e.name === 'AbortError' ? 'This is taking too long. Please try again in a minute.' : (e.message || 'Something went wrong.'));
   }
 }
+// Landing page: show the built-in sample instantly, then swap in today's live Tesla
+// analysis (rebuilt once a day on the server and cached, so this is quick and free).
+// If the live fetch fails, the sample stays on screen.
+async function loadFreeExample() {
+  loadDemo();
+  const sample = D;
+  try {
+    const ctrl = new AbortController(); const to = setTimeout(() => ctrl.abort(), 90000);
+    const r = await fetch(`${API}/catalyst-atlas/TSLA`, {signal: ctrl.signal});
+    clearTimeout(to);
+    if (!r.ok) return;
+    const live = toPounds(await r.json());
+    if (D !== sample) return;            // the visitor has already opened something else
+    D = live;
+    $('banner').hidden = false;
+    $('banner').textContent = 'Free example: Tesla, refreshed every day after the US market closes. Type any ticker above to explore another company.';
+    render();
+  } catch (e) { /* keep the sample */ }
+}
 function loadDemo() {
   clearInterval(stepTimer); $('status').hidden = true;
   D = toPounds(JSON.parse($('demoData').textContent));
@@ -923,7 +942,7 @@ window.addEventListener('resize', () => { if (D) { renderMini(); renderBig(); } 
     toast(ACCOUNT && ACCOUNT.credits > 0 ? `Payment received: you have ${ACCOUNT.credits} searches.` : 'Payment received. Your searches will appear in a moment.');
     const u = new URL(location.href); u.searchParams.delete('paid'); history.replaceState(null, '', u);
   }
-  if (qp) load(qp); else loadDemo();
+  if (qp) load(qp); else loadFreeExample();
 })();
 </script>
 <nav class="mobile-bottom-nav" aria-label="Mobile navigation">
