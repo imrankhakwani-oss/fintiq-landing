@@ -500,17 +500,25 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
     cand = [i for i in range(1, n) if abs(A[i]) > 2.2 * sd_a and i not in used]
     cand = sorted(cand, key=lambda i: -abs(A[i]))[:14]
     big = [{"date": D[i], "move": round(_pct(A[i]), 1), "i": i} for i in sorted(cand)]
+    # ── recent news: up to 3 smaller own-moves in the last month (~21 trading days) ─
+    # These are labelled too (labels are cached for 30 days), but kept OUT of `events`
+    # so the 3-year "how the price reacted after each type of news" stats are unchanged.
+    big_i = {b["i"] for b in big}
+    rec = [i for i in range(max(1, n - 21), n)
+           if i not in used and i not in big_i and abs(A[i]) > 1.0 * sd_a]
+    rec = sorted(rec, key=lambda i: -abs(A[i]))[:3]
+    recent_days = [{"date": D[i], "move": round(_pct(A[i]), 1), "i": i} for i in sorted(rec)]
     sd_m = float(np.std(rm[1:]))
     mkt_label = "the FTSE 100" if data["market"] == "^FTSE" else "the S&P 500"
     auto = {}
-    for b in big:
+    for b in big + recent_days:
         i = b["i"]
         if abs(rm[i]) > 2.5 * sd_m:   # a huge whole-market day: the "own move" is mostly beta noise
             more = abs(r[i]) > abs(M[i])
             auto[b["date"]] = {"cat": "Market-wide news", "src": "market",
                                "title": (f"Whole market moved {_pct(rm[i]):+.1f}% ({mkt_label}); shares moved "
                                          f"{'more' if more else 'less'} than usual")}
-    to_search = [b for b in big if b["date"] not in auto]
+    to_search = [b for b in big + recent_days if b["date"] not in auto]
     labels = dict(auto)
     if labeler and to_search:
         labels.update(labeler(to_search) or {})
@@ -519,6 +527,18 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
         events.append({"i": b["i"], "kind": lab["cat"], "cat": lab["cat"], "s": 1 if A[b["i"]] > 0 else -1,
                        "title": lab["title"], "src": lab.get("src", "news")})
     events.sort(key=lambda e: e["i"])
+
+    # Recent news strip: the big/earnings events of the last month plus the smaller
+    # recent days above, newest first (max 4).
+    recent_news = [{"date": D[e["i"]], "cat": e["cat"], "title": e["title"], "src": e.get("src", "news"),
+                    "own": _r(_pct(A[e["i"]])), "ret": _r(_pct(r[e["i"]])), "big": True}
+                   for e in events if e["i"] >= n - 21]
+    for b in recent_days:
+        lab = labels.get(b["date"], {"cat": "Unexplained", "title": "No clear news found"})
+        recent_news.append({"date": b["date"], "cat": lab["cat"], "title": lab["title"],
+                            "src": lab.get("src", "news"), "own": _r(_pct(A[b["i"]])),
+                            "ret": _r(_pct(r[b["i"]])), "big": False})
+    recent_news = sorted(recent_news, key=lambda x: x["date"], reverse=True)[:4]
 
     def car(i, a, b):
         if i + a < 1 or i + b >= n:
@@ -686,6 +706,7 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
         "events": [{k: e[k] for k in ("date", "kind", "cat", "s", "title", "src", "ret", "pre", "d0", "d5", "d20", "d60", "path") if k in e} for e in events],
         "groups": groups, "phases": phases, "quiet": quiet,
         "series": {"dates": D, "close": [round(float(x), 2) for x in c], "own": enc(A), "mkt": enc(M), "sec": enc(S)},
+        "recent_news": recent_news,
         "generated": dt.datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "periods": periods, "driver_share": driver_share, "market_vol": _r(100 * float(np.std(rm[1:]) * math.sqrt(252))),
         "disclaimer": "Educational research only. Past patterns do not guarantee future results. Not financial advice.",
@@ -735,6 +756,7 @@ def _view_facts(res: dict) -> dict:
         "yearly_volatility_pct": res["vol"], "market_yearly_volatility_pct": res.get("market_vol"),
         "price_change_by_period": res.get("periods"),
         "phases": legs, "news_patterns": groups, "recent_news_days": recent,
+        "news_in_the_last_month": res.get("recent_news"),
         "likely_ranges_from_recent_swings": ranges,
         "next_results": (res["upcoming"][0] if res.get("upcoming") else None),
     }
