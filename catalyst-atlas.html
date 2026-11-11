@@ -602,7 +602,7 @@ function render() {
 
   $('out').innerHTML = `
   <div class="company"><h2>${esc(D.name)} <span style="color:var(--dim);font-weight:600;font-size:1rem">${esc(D.ticker)}</span></h2>
-    <span class="px">${money(D.price)}</span><span class="meta">Closing price ${fmtDate(D.asof)}${D.sector ? ' · ' + esc(D.sector) : ''}</span></div>
+    <span class="px">${money(D.price)}</span><span class="meta">Closing price ${fmtDate(D.asof)}${D.sector ? ' · ' + esc(D.sector) : ''}${D.built_at ? ' · Updated ' + new Date(D.built_at * 1000).toLocaleString('en-GB', {day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London'}) + ' UK time' : ''}</span></div>
 
   ${viewHtml()}
 
