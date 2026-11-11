@@ -799,7 +799,8 @@ def analyst_view(res: dict, anthropic_api_key: str) -> Optional[dict]:
 # Entry point used by the API route
 # ─────────────────────────────────────────────────────────────────────────────
 def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
-                anthropic_api_key: str = "", tavily_api_key: str = "", fetch=fetch_market_data) -> dict:
+                anthropic_api_key: str = "", tavily_api_key: str = "", fetch=fetch_market_data,
+                cache_ttl: int = CACHE_TTL) -> dict:
     ticker = (ticker or "").upper().strip()
     if not TICKER_RE.match(ticker):
         raise ValueError("Please enter a valid ticker, for example TSLA or SHEL.L")
@@ -839,7 +840,8 @@ def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
     result["label_diag"] = d
     result["analyst_view"] = analyst_view(result, anthropic_api_key)
     failed = bool(d.get("error")) or (d.get("days", 0) > 0 and d.get("with_results", 0) == 0)
-    result["_ttl"] = 3600 if failed else CACHE_TTL   # retry within an hour if news lookup failed
+    result["_ttl"] = 3600 if failed else cache_ttl   # retry within an hour if news lookup failed
+    result["built_at"] = int(time.time())            # shown on the page as "Updated ..."
     if kv_set:
         kv_set(key, result, ttl_seconds=result["_ttl"])
     return result

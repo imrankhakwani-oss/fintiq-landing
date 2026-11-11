@@ -54,6 +54,10 @@ def _kv_get(key: str):
         if raw is None:
             return None, 0
         blob = json.loads(raw)
+        # Entries written by the old _kv_set were wrapped as {"value": "<json>", "ex": n}.
+        # Unwrap them so they still count as cached (new writes use the correct format).
+        if isinstance(blob, dict) and set(blob) == {"value", "ex"} and isinstance(blob["value"], str):
+            blob = json.loads(blob["value"])
         saved_at = float(blob.pop("_kv_saved_at", 0))
         return blob, saved_at
     except Exception:
@@ -93,13 +97,18 @@ def _kv_set(key: str, data: dict, ttl_seconds: int = 90000):
     def _push():
         try:
             blob = json.dumps({**data, "_kv_saved_at": time.time()})
-            requests.post(
-                f"{_UPSTASH_URL}/set/{key}",
+            # Upstash REST: send the command as a JSON array, ["SET", key, value, "EX", seconds].
+            # (The old call posted {"value":..., "ex":...} to /set/{key}; Upstash stored that whole
+            # wrapper as the value with no expiry, so every cache read looked stale.)
+            r = requests.post(
+                _UPSTASH_URL,
                 headers={"Authorization": f"Bearer {_UPSTASH_TOKEN}",
                          "Content-Type": "application/json"},
-                json={"value": blob, "ex": ttl_seconds},
+                json=["SET", key, blob, "EX", int(ttl_seconds)],
                 timeout=8,
             )
+            if r.status_code != 200:
+                print(f"[KV] set {key} failed {r.status_code}: {r.text[:160]}", flush=True)
         except Exception:
             pass
     threading.Thread(target=_push, daemon=True).start()
@@ -1872,7 +1881,8 @@ def catalyst_atlas(ticker: str, request: Request):
         result = _build_atlas(tkr, kv_get=_kv_get, kv_set=_kv_set,
                               tavily_search=_tavily_search,
                               anthropic_api_key=ANTHROPIC_API_KEY,
-                              tavily_api_key=TAVILY_API_KEY)
+                              tavily_api_key=TAVILY_API_KEY,
+                              **({"cache_ttl": _ATLAS_FREE_TTL} if tkr in ATLAS_FREE_TICKERS else {}))
         if email:
             _atlas_apply_charge(email, tkr, charge)
             result = {**result, "account": _atlas_account(email)}
@@ -1886,23 +1896,40 @@ def catalyst_atlas(ticker: str, request: Request):
         raise HTTPException(status_code=502, detail="We couldn't build this analysis right now. Please try again shortly.")
 
 # ── Keep the free Tesla example fresh automatically ──────────────────────────
-# Every 30 minutes, if the cached Tesla result is more than 10 hours old (the cache
-# lasts 12), rebuild it in the background so visitors never wait for a cold build.
-# Old news labels are reused (30-day cache), so a rebuild only pays for new news
-# days plus one Analyst's view: roughly 2-3 rebuilds a day, a few pence each.
+# The free Tesla page is a demo of what the tool does, so it is rebuilt ONCE A DAY,
+# at 22:30 UTC (after the US market has closed, so the day's closing price is in).
+# The result is cached for 26 hours, so it never expires before the next rebuild,
+# and the page shows "Updated <date, time>". Old news labels are reused (30-day
+# cache), so each daily rebuild only searches news for new big-move days.
 from catalyst_atlas import VERSION as _CA_VERSION
-_ATLAS_WARM_EVERY, _ATLAS_WARM_AGE = 1800, 10 * 3600
+_ATLAS_WARM_EVERY = 1800                 # check every 30 minutes (checks are free)
+_ATLAS_DAILY_UTC = (22, 30)              # daily rebuild time, UTC
+_ATLAS_FREE_TTL = 26 * 3600              # cache life of the free result
+
+_ATLAS_LAST_WARM: dict = {}   # in-memory safety net: at most one warm build per ticker per day
+
+def _atlas_last_slot(now: float = None) -> float:
+    """Unix time of the most recent daily rebuild slot (22:30 UTC today, or yesterday)."""
+    n = datetime.utcfromtimestamp(now or time.time())
+    slot = n.replace(hour=_ATLAS_DAILY_UTC[0], minute=_ATLAS_DAILY_UTC[1], second=0, microsecond=0)
+    if slot > n:
+        slot -= timedelta(days=1)
+    return (slot - datetime(1970, 1, 1)).total_seconds()
 
 def _atlas_warm_once(tkr: str = "TSLA") -> bool:
+    slot = _atlas_last_slot()
+    if _ATLAS_LAST_WARM.get(tkr, 0) >= slot:        # already tried since the last slot
+        return False
     key = f"catalyst_atlas:{_CA_VERSION}:{tkr}"
     cached, saved_at = _kv_get(key)
-    ttl = cached.get("_ttl", 12 * 3600) if isinstance(cached, dict) else 0
-    age = time.time() - saved_at if cached else 1e12
-    if cached and age < min(_ATLAS_WARM_AGE, ttl - 900):
+    if cached and saved_at >= slot:                 # already built since the last slot
+        _ATLAS_LAST_WARM[tkr] = saved_at
         return False
-    force_get = lambda k: (None, 0) if k == key else _kv_get(k)   # skip the stale result, keep labels
+    force_get = lambda k: (None, 0) if k == key else _kv_get(k)   # skip the old result, keep labels
+    _ATLAS_LAST_WARM[tkr] = time.time()   # set before building, so a failed build is not retried every 30 min
     _build_atlas(tkr, kv_get=force_get, kv_set=_kv_set, tavily_search=_tavily_search,
-                 anthropic_api_key=ANTHROPIC_API_KEY, tavily_api_key=TAVILY_API_KEY)
+                 anthropic_api_key=ANTHROPIC_API_KEY, tavily_api_key=TAVILY_API_KEY,
+                 cache_ttl=_ATLAS_FREE_TTL)
     print(f"[catalyst-atlas] warmed {tkr}")
     return True
 
