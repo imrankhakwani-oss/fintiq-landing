@@ -2601,16 +2601,17 @@ async def startup_prewarm():
                 _bg_refresh_earnings(i)
             threading.Thread(target=_deferred_fresh, daemon=True).start()
 
-    # ── Bulletin cron: auto-regenerate 3× daily (agreed plan; 11 Nov 2026) ──────
+    # ── Bulletin cron: auto-regenerate 4× daily (agreed 11 Nov 2026) ─────────────
     # Times chosen as DST-safe UTC compromises:
     #   06:30 UTC → 07:30 BST (summer) / 06:30 GMT (winter) — before UK open (08:00)
     #   13:00 UTC → 14:00 BST (summer) / 13:00 GMT (winter) — lunchtime / pre-US open
+    #   17:00 UTC → 18:00 BST (summer) / 17:00 GMT (winter) — afternoon, US session under way
     #   21:00 UTC → 22:00 BST (summer) / 21:00 GMT (winter) — after US close (16:00 ET)
     # IMPORTANT: this in-process cron is a safety net. The primary trigger is the
     # external cron-job.org schedule that POSTs to /bulletin/refresh?token=<REFRESH_TOKEN>
-    # at 06:30, 13:00 and 21:00 UTC daily. That survives container restarts.
+    # at 06:30, 13:00, 17:00 and 21:00 UTC daily. That survives container restarts.
     def _bulletin_cron():
-        TARGET_BUCKETS = {6 * 60 + 30, 13 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
+        TARGET_BUCKETS = {6 * 60 + 30, 13 * 60 + 0, 17 * 60 + 0, 21 * 60 + 0}  # minutes since midnight UTC
         last_fired: set = set()
         while True:
             now_utc = datetime.utcnow()
