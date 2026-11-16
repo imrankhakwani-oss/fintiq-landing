@@ -3645,6 +3645,441 @@ def fundamentals_status(ticker: str):
     return job['data']  # Full data dict
 
 
+# ── DuPont ROIC Decomposition ────────────────────────────────────────────────
+@app.get("/dupont/{ticker}")
+def get_dupont(ticker: str):
+    """
+    DuPont ROIC decomposition — 5-year annual table + Claude AI analysis.
+
+    Returns:
+      rows: list of {year, revenue, nopat, nopat_margin, asset_turnover,
+                     capital_efficiency, roic, total_assets, invested_capital}
+      analysis: Claude narrative on which component drives ROIC
+    """
+    import pandas as pd
+    import anthropic as _ant
+
+    ticker = ticker.strip().upper()
+    if not ticker:
+        raise HTTPException(status_code=400, detail="ticker required")
+
+    try:
+        t = yf.Ticker(ticker)
+        fin = t.financials          # income statement — columns = dates
+        bs  = t.balance_sheet       # balance sheet
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not fetch data: {e}")
+
+    if fin is None or fin.empty:
+        raise HTTPException(status_code=404, detail=f"No annual financial data found for {ticker}")
+    if bs is None or bs.empty:
+        raise HTTPException(status_code=404, detail=f"No balance sheet data found for {ticker}")
+
+    def _fv(val):
+        try:
+            v = float(val)
+            return v if not (v != v) else None   # NaN check
+        except:
+            return None
+
+    def _row(df, *keys):
+        for k in keys:
+            if df is not None and k in df.index:
+                return df.loc[k]
+        return None
+
+    def _get(series, col):
+        try:
+            v = series[col]
+            return _fv(v)
+        except:
+            return None
+
+    # Align income statement and balance sheet on common annual dates
+    fin_cols = list(fin.columns)[:5]    # up to 5 years
+    bs_cols  = list(bs.columns)
+
+    # yfinance columns are Timestamps; match by year
+    def _year_of(col):
+        try: return int(str(col)[:4])
+        except: return None
+
+    bs_by_year = {}
+    for c in bs_cols:
+        yr = _year_of(c)
+        if yr and yr not in bs_by_year:
+            bs_by_year[yr] = c
+
+    # Income statement rows
+    rev_row   = _row(fin, 'Total Revenue', 'Revenue', 'Total Revenues')
+    ebit_row  = _row(fin, 'Operating Income', 'EBIT', 'Earnings Before Interest And Taxes')
+    ptax_row  = _row(fin, 'Pretax Income', 'Income Before Tax', 'Pre Tax Income')
+    tax_row   = _row(fin, 'Tax Provision', 'Income Tax Expense', 'Provision For Income Taxes', 'Income Tax')
+
+    # Balance sheet rows
+    assets_row  = _row(bs, 'Total Assets')
+    equity_row  = _row(bs, 'Stockholders Equity', 'Total Stockholders Equity', 'Common Stock Equity',
+                        'Total Equity Gross Minority Interest', 'Stockholders Equity including minority interest')
+    ltd_row     = _row(bs, 'Long Term Debt', 'LongTermDebt', 'Long Term Debt And Capital Lease Obligation')
+    std_row     = _row(bs, 'Current Debt', 'Short Term Debt', 'Short Long Term Debt',
+                       'Short Long Term Debt Total', 'Current Portion Of Long Term Debt')
+    cash_row    = _row(bs, 'Cash And Cash Equivalents', 'Cash', 'Cash Financial',
+                       'Cash And Short Term Investments')
+
+    rows = []
+    for fc in fin_cols:
+        yr = _year_of(fc)
+        if yr is None:
+            continue
+
+        revenue = _get(rev_row, fc) if rev_row is not None else None
+        ebit    = _get(ebit_row, fc) if ebit_row is not None else None
+        ptax    = _get(ptax_row, fc) if ptax_row is not None else None
+        tax     = _get(tax_row, fc) if tax_row is not None else None
+
+        # Tax rate: cap between 0 and 50%
+        tax_rate = None
+        if ptax and tax and ptax != 0:
+            tr = tax / ptax
+            if 0 <= tr <= 0.5:
+                tax_rate = tr
+            elif tr < 0:
+                tax_rate = 0.0
+            else:
+                tax_rate = 0.3   # fallback
+
+        if tax_rate is None:
+            tax_rate = 0.21     # US statutory fallback
+
+        nopat = (ebit * (1 - tax_rate)) if ebit is not None else None
+
+        # Balance sheet — match by year
+        bsc = bs_by_year.get(yr) or bs_by_year.get(yr - 1)   # try same year, then prior (BS can lag)
+
+        total_assets    = _get(assets_row,  bsc) if (assets_row is not None and bsc is not None) else None
+        equity          = _get(equity_row,  bsc) if (equity_row is not None and bsc is not None) else None
+        ltd             = _get(ltd_row,     bsc) if (ltd_row is not None and bsc is not None) else None
+        std             = _get(std_row,     bsc) if (std_row is not None and bsc is not None) else None
+        cash            = _get(cash_row,    bsc) if (cash_row is not None and bsc is not None) else None
+
+        total_debt = (ltd or 0) + (std or 0)
+        # Invested Capital = Total Equity + Total Debt − Excess Cash
+        # (conservative: use all cash to reduce IC, floor at 1 to avoid div/0)
+        ic = None
+        if equity is not None:
+            ic = max((equity or 0) + total_debt - (cash or 0), 1)
+
+        # DuPont components
+        nopat_margin       = (nopat / revenue) if (nopat is not None and revenue and revenue != 0) else None
+        asset_turnover     = (revenue / total_assets) if (revenue and total_assets and total_assets != 0) else None
+        capital_efficiency = (total_assets / ic) if (total_assets and ic and ic != 0) else None
+        roic               = (nopat_margin * asset_turnover * capital_efficiency) \
+                             if (nopat_margin is not None and asset_turnover is not None and capital_efficiency is not None) \
+                             else None
+        # Fallback: direct ROIC = NOPAT / IC
+        if roic is None and nopat is not None and ic:
+            roic = nopat / ic
+
+        def _pct(v):
+            return round(v * 100, 2) if v is not None else None
+        def _x(v):
+            return round(v, 3) if v is not None else None
+        def _m(v):
+            return round(v / 1e6, 1) if v is not None else None
+
+        rows.append({
+            "year": yr,
+            "revenue_m":          _m(revenue),
+            "nopat_m":            _m(nopat),
+            "ebit_m":             _m(ebit),
+            "tax_rate_pct":       _pct(tax_rate),
+            "nopat_margin_pct":   _pct(nopat_margin),
+            "asset_turnover_x":   _x(asset_turnover),
+            "capital_efficiency_x": _x(capital_efficiency),
+            "roic_pct":           _pct(roic),
+            "total_assets_m":     _m(total_assets),
+            "invested_capital_m": _m(ic),
+        })
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="Could not compute DuPont — insufficient data.")
+
+    rows.sort(key=lambda r: r["year"])
+
+    # ── Claude AI analysis ────────────────────────────────────────────────────
+    analysis = ""
+    try:
+        ant_key = os.environ.get("ANTHROPIC_API_KEY", "")
+        if ant_key:
+            client = _ant.Anthropic(api_key=ant_key)
+            table_txt = "\n".join(
+                f"{r['year']}: ROIC={r['roic_pct']}% | NM={r['nopat_margin_pct']}% | AT={r['asset_turnover_x']}x | CE={r['capital_efficiency_x']}x"
+                for r in rows if r['roic_pct'] is not None
+            )
+            prompt = f"""You are a financial analyst reviewing the DuPont ROIC decomposition for {ticker}.
+
+DuPont formula: ROIC = NOPAT Margin × Asset Turnover × Capital Efficiency
+- NOPAT Margin (NM): how much net operating profit after tax the business earns per £/$ of revenue — measures operational efficiency
+- Asset Turnover (AT): how much revenue the business generates per £/$ of assets — measures asset productivity
+- Capital Efficiency (CE): how capital-efficient the asset base is vs invested capital — measures balance-sheet efficiency
+
+Annual data ({ticker}):
+{table_txt}
+
+Write a focused 3-4 sentence analysis:
+1. What is the trend in ROIC — improving, declining, or stable?
+2. Which of the three drivers (NOPAT Margin, Asset Turnover, Capital Efficiency) has changed the most and is the primary driver of the trend?
+3. What does this tell us about the business's competitive position or operational trajectory?
+
+Be specific with numbers. Do not write "Overall" to start. Keep it under 100 words."""
+
+            msg = client.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=350,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            analysis = msg.content[0].text.strip()
+    except Exception as e:
+        analysis = f"AI analysis unavailable: {e}"
+
+    return {"rows": rows, "analysis": analysis, "ticker": ticker}
+
+
+# ── EDGAR Copilot integration ──────────────────────────────────────────────────
+_EDGAR_UA = os.environ.get("EDGAR_USER_AGENT", "fintiq-research bot@fintiq.uk")
+
+# Maps question keywords → most relevant SEC form types
+_EDGAR_FORM_PRIORITY = {
+    "10-K":    ["annual report", "full year", "fiscal year", "10-k", "annual", "10k",
+                "revenue", "earnings", "profit", "loss", "cash flow", "balance sheet",
+                "income statement", "financial statements", "risk factors", "mda",
+                "management discussion", "operations", "business overview", "competition",
+                "strategy", "guidance", "outlook", "forward looking"],
+    "10-Q":    ["quarterly", "10-q", "10q", "q1", "q2", "q3", "quarter", "recent quarter",
+                "latest quarter", "most recent", "current period", "this quarter"],
+    "8-K":     ["8-k", "8k", "current report", "press release", "announcement",
+                "material event", "acquisition", "merger", "ceo", "leadership change",
+                "dividend", "earnings release", "guidance update"],
+    "DEF 14A": ["proxy", "def 14a", "shareholder meeting", "board of directors",
+                "executive compensation", "ceo pay", "salary", "stock options",
+                "say on pay", "governance", "director", "committee", "vote"],
+    "SC 13G":  ["ownership", "institutional", "who owns", "largest shareholders",
+                "13f", "13g", "institutional holders"],
+    "4":       ["insider", "form 4", "insider buying", "insider selling", "insider trade",
+                "officer purchase", "director buy"],
+}
+
+
+def _edgar_pick_form(question: str) -> list:
+    """Score form types against the user question. Returns ordered list of best form types."""
+    q = question.lower()
+    scores = {}
+    for form, keywords in _EDGAR_FORM_PRIORITY.items():
+        scores[form] = sum(1 for kw in keywords if kw in q)
+    ordered = sorted(scores.items(), key=lambda x: -x[1])
+    picks = [f for f, s in ordered if s > 0]
+    return (picks[:2]) if picks else ["10-K"]
+
+
+def _edgar_fetch_section(cik: str, accession: str, question: str, char_limit: int = 6000) -> str:
+    """
+    Fetch the most relevant section from an EDGAR filing based on the user question.
+    Returns up to char_limit chars of relevant text, or doc start as fallback.
+    For segment/breakdown questions, also searches financial statement notes.
+    """
+    try:
+        acc_clean = accession.replace("-", "")
+        index_url = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc_clean}/{accession}-index.htm"
+        r = requests.get(index_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
+        if not r.ok:
+            return ""
+
+        doc_match = re.search(r'href="(/Archives/edgar/data/\d+/\d+/[^"]+\.htm)"', r.text, re.IGNORECASE)
+        if not doc_match:
+            return ""
+
+        doc_url = "https://www.sec.gov" + doc_match.group(1)
+        doc_r = requests.get(doc_url, timeout=20, headers={"User-Agent": _EDGAR_UA})
+        if not doc_r.ok:
+            return ""
+
+        text = re.sub(r'<[^>]+>', ' ', doc_r.text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        q = question.lower()
+
+        # Try specific sections in order of match to the question
+        section_patterns = [
+            # Segment revenue — financial statement notes (highest priority for breakdown questions)
+            (["segment", "division", "breakdown", "business unit", "product line",
+              "data center", "gaming", "cloud", "enterprise", "consumer"],
+             [r"SEGMENT INFORMATION", r"SEGMENT REVENUE", r"REPORTABLE SEGMENT",
+              r"OPERATING SEGMENT", r"NOTE\s+\d+[.\s]+SEGMENT", r"BUSINESS SEGMENTS"]),
+            (["risk", "risk factor"],
+             [r"ITEM\s+1A[.\s]+RISK FACTORS", r"RISK FACTORS"]),
+            (["mda", "management", "discussion", "analysis", "result", "operation",
+              "revenue", "profit", "margin", "growth", "performance"],
+             [r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION", r"MANAGEMENT.S DISCUSSION AND ANALYSIS"]),
+            (["liquidity", "cash flow", "capital"],
+             [r"LIQUIDITY AND CAPITAL RESOURCES", r"LIQUIDITY"]),
+            (["compensation", "pay", "salary", "executive"],
+             [r"EXECUTIVE COMPENSATION", r"COMPENSATION DISCUSSION"]),
+            (["business", "overview", "strategy", "competition"],
+             [r"ITEM\s+1[.\s]+BUSINESS", r"OUR BUSINESS"]),
+            (["outlook", "guidance", "forward", "future"],
+             [r"FORWARD.LOOKING", r"OUTLOOK", r"GUIDANCE"]),
+        ]
+
+        for triggers, patterns in section_patterns:
+            if any(t in q for t in triggers):
+                for pat in patterns:
+                    m = re.search(pat, text.upper())
+                    if m:
+                        start = m.start()
+                        rest = text[start + 50:]
+                        end_m = re.search(r'ITEM\s+\d+[A-Z]?[.\s]', rest.upper())
+                        end = start + 50 + end_m.start() if end_m else start + 10000
+                        return text[start:end][:char_limit]
+
+        return text[:min(5000, char_limit)]  # fallback: document start
+
+    except Exception:
+        return ""
+
+
+# Keywords that signal the user wants multi-period / trend analysis
+_MULTIPERIOD_KEYWORDS = [
+    "last three years", "last 3 years", "past three years", "past 3 years",
+    "over three years", "over 3 years", "three year", "3 year",
+    "last two years", "last 2 years", "past two years", "over two years",
+    "year over year", "yoy", "annual trend", "growth trend", "historical",
+    "compare years", "year by year", "each year", "per year", "yearly",
+    "2022", "2023", "2024", "fy2022", "fy2023", "fy2024",
+    "trend", "progression", "evolution", "over time", "how has",
+    "segment", "breakdown", "which segment", "product mix",
+]
+
+def _is_multiperiod(question: str) -> bool:
+    q = question.lower()
+    return any(kw in q for kw in _MULTIPERIOD_KEYWORDS)
+
+
+def _edgar_copilot_fetch(ticker: str, question: str) -> str:
+    """
+    Fetch the most relevant EDGAR filings for a US ticker given a user question.
+    Returns a formatted text block to inject into the copilot's system prompt.
+    Silently returns "" on any failure or non-US ticker.
+    """
+    try:
+        if '.' in ticker:  # non-US (e.g. .L for London) — skip EDGAR
+            return ""
+
+        cik = _fetch_edgar_cik(ticker)
+        if not cik:
+            return ""
+
+        sub_url = f"https://data.sec.gov/submissions/CIK{cik}.json"
+        sub_r = requests.get(sub_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
+        if not sub_r.ok:
+            return ""
+        sub_data = sub_r.json()
+        company_name = sub_data.get("name", ticker)
+
+        filings_data = sub_data.get("filings", {}).get("recent", {})
+        forms        = filings_data.get("form", [])
+        dates        = filings_data.get("filingDate", [])
+        accessions   = filings_data.get("accessionNumber", [])
+
+        # Build index by form type (keep up to 3 most recent per type)
+        form_index: dict = {}
+        for i, form in enumerate(forms):
+            if form not in form_index:
+                form_index[form] = []
+            if len(form_index[form]) < 3:
+                form_index[form].append({
+                    "accession": accessions[i],
+                    "date": dates[i],
+                })
+
+        # Available filings summary
+        summary_lines = []
+        for form in ["10-K", "10-Q", "8-K", "DEF 14A", "4", "SC 13G"]:
+            if form in form_index:
+                latest = form_index[form][0]
+                summary_lines.append(f"  • {form}: latest filed {latest['date']}")
+        available_summary = "\n".join(summary_lines) if summary_lines else "  (no recent filings found)"
+
+        # Determine if the question needs multi-period comparison
+        multiperiod = _is_multiperiod(question)
+        target_forms = _edgar_pick_form(question)
+        # For multi-period questions prefer 10-K (annual) unless explicitly quarterly
+        if multiperiod and "10-K" not in target_forms:
+            target_forms = ["10-K"] + target_forms
+
+        parts = [
+            f"\n\nSEC EDGAR — {company_name} ({ticker}) [CIK: {cik}]",
+            f"Available SEC filings:\n{available_summary}",
+        ]
+
+        if multiperiod:
+            # Fetch up to 3 annual filings and stitch them by year
+            # Each excerpt limited to 3,000 chars so total stays manageable
+            best_form = next((f for f in target_forms if f in form_index and form_index[f]), None)
+            period_excerpts = []
+            if best_form:
+                for filing in form_index[best_form][:3]:
+                    excerpt = _edgar_fetch_section(
+                        cik, filing["accession"], question, char_limit=3000
+                    )
+                    if excerpt and len(excerpt) > 150:
+                        fiscal_year = filing["date"][:4]
+                        period_excerpts.append(
+                            f"=== {best_form} filed {filing['date']} (FY{fiscal_year}) ===\n{excerpt}"
+                        )
+
+            if period_excerpts:
+                parts.append(
+                    f"\nMULTI-PERIOD EDGAR DATA ({best_form}, {len(period_excerpts)} annual filings, most recent first):\n"
+                    f"Use these to construct the year-by-year trend the user is asking about.\n\n"
+                    + "\n\n".join(period_excerpts)
+                )
+            else:
+                parts.append(
+                    "\nMulti-period filing text unavailable — reference the filing index above and "
+                    "direct the user to SEC EDGAR for primary source documents."
+                )
+        else:
+            # Single-period: fetch text from the single most relevant filing
+            filing_text = ""
+            source_form = ""
+            source_date = ""
+            for form in target_forms:
+                if form in form_index and form_index[form]:
+                    filing = form_index[form][0]
+                    text = _edgar_fetch_section(cik, filing["accession"], question, char_limit=5500)
+                    if text and len(text) > 200:
+                        filing_text = text
+                        source_form = form
+                        source_date = filing["date"]
+                        break
+
+            if filing_text:
+                parts.append(
+                    f"\nMost relevant filing: {source_form} filed {source_date}\n"
+                    f"--- EDGAR FILING EXCERPT ---\n{filing_text}\n--- END EXCERPT ---"
+                )
+            else:
+                parts.append(
+                    "\nFiling text unavailable — reference the filing index above. "
+                    "Direct user to SEC EDGAR for primary source filings."
+                )
+
+        return "\n".join(parts)
+
+    except Exception as e:
+        print(f"[EDGAR Copilot] {ticker}: {e}", flush=True)
+        return ""
+
+
 @app.post("/fundamentals/chat")
 def fundamentals_chat(payload: dict):
     """Fintiq AI Copilot — section-specialist analyst with live data context."""
@@ -3762,11 +4197,17 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
 {pushback_mandate}
 {behaviour_rules}"""
 
-    # Web search via Tavily — always fires to supplement live data with current context
+    # Supplements: Tavily web search + EDGAR filings (US tickers), run in parallel
+    last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
     web_supplement = ""
-    try:
-        if TAVILY_API_KEY:
-            last_user_msg = next((m['content'] for m in reversed(messages) if m['role'] == 'user'), "")
+    edgar_supplement = ""
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
+
+    def _fetch_tavily():
+        try:
+            if not TAVILY_API_KEY:
+                return ""
             tv = requests.post('https://api.tavily.com/search', json={
                 'api_key': TAVILY_API_KEY,
                 'query': tavily_query or f'{ticker} {last_user_msg[:150]}',
@@ -3782,9 +4223,19 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
                 for r in tvj.get('results', [])[:3]:
                     snippets.append(f"- {r.get('title','')}: {r.get('content','')[:250]}")
                 if snippets:
-                    web_supplement = "\n\nWEB SEARCH RESULTS (use to supplement live data gaps — cite source where relevant):\n" + "\n".join(snippets)
-    except Exception:
-        web_supplement = ""
+                    return "\n\nWEB SEARCH RESULTS (use to supplement live data gaps — cite source where relevant):\n" + "\n".join(snippets)
+        except Exception:
+            pass
+        return ""
+
+    def _fetch_edgar():
+        return _edgar_copilot_fetch(ticker, last_user_msg)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        f_tavily = pool.submit(_fetch_tavily)
+        f_edgar  = pool.submit(_fetch_edgar)
+        web_supplement   = f_tavily.result()
+        edgar_supplement = f_edgar.result()
 
     # Fix 5: Haiku for routine Copilot exchanges (spec + margin model)
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
@@ -3795,7 +4246,7 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=1500,
-        system=system + web_supplement,
+        system=system + web_supplement + edgar_supplement,
         messages=history,
     )
     # Fix 9: run real-time contradiction checks and return flags with reply
