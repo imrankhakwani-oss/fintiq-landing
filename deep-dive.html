@@ -198,6 +198,22 @@ a{color:var(--gold);text-decoration:none}
 .growth-table td:first-child{text-align:left;color:var(--dim);font-weight:400}
 .growth-table tr:last-child td{border-bottom:none}
 
+/* ── DuPont ROIC ── */
+.dupont-wrap{margin:4px 0 16px}
+.dupont-formula-note{font-size:0.7rem;color:var(--dim);margin-bottom:10px;padding:6px 10px;background:rgba(245,158,11,0.05);border-left:2px solid var(--gold);border-radius:0 4px 4px 0}
+.dupont-table{width:100%;border-collapse:collapse;font-size:0.78rem;white-space:nowrap}
+.dupont-table th{padding:6px 10px;color:var(--muted);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);text-align:right}
+.dupont-table th:first-child{text-align:left}
+.dupont-table td{padding:7px 10px;border-bottom:1px solid rgba(30,58,95,0.4);text-align:right;font-weight:600}
+.dupont-table td:first-child{text-align:left;color:var(--dim);font-weight:400}
+.dupont-table tr:last-child td{border-bottom:none}
+.dupont-table .roic-col{color:var(--gold)}
+.dupont-table td.roic-high{color:var(--green)}
+.dupont-table td.roic-mid{color:var(--gold)}
+.dupont-table td.roic-low{color:var(--red)}
+.dupont-analysis{margin-top:12px;padding:12px 14px;background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.15);border-radius:8px;font-size:0.82rem;line-height:1.65;color:var(--text)}
+.dupont-analysis::before{content:'🔍 AI Analysis · ';font-size:0.68rem;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:6px}
+
 /* ── Segment revenue table ── */
 .seg-table{width:100%;border-collapse:collapse;font-size:0.78rem}
 .seg-table th{padding:6px 10px;color:var(--muted);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.06em;border-bottom:1px solid var(--border);text-align:left}
@@ -1071,6 +1087,7 @@ a{color:var(--gold);text-decoration:none}
     <a href="/deep-dive.html" class="active">Stock Deep Dive</a>
     <a href="/tools.html">Tools</a>
     <a href="/learn.html">Learn</a>
+    <a href="/pricing.html">Pricing</a>
   </div>
 </nav>
 
@@ -2093,6 +2110,26 @@ function renderFundamentals(d) {
     </div>`;
   }
 
+  // ── DuPont ROIC Decomposition placeholder (filled async) ──
+  html += `<div id="dupont-section" class="dupont-wrap" style="display:none">
+    <div class="sub-label">DuPont ROIC Decomposition</div>
+    <div class="dupont-formula-note">ROIC = NOPAT Margin × Asset Turnover × Capital Efficiency</div>
+    <div class="tbl-wrap">
+    <table class="dupont-table" id="dupont-table">
+      <tr>
+        <th style="text-align:left">Year</th>
+        <th>Revenue (m)</th>
+        <th>NOPAT (m)</th>
+        <th>NOPAT Margin</th>
+        <th>Asset Turnover</th>
+        <th>Capital Efficiency</th>
+        <th class="roic-col">ROIC</th>
+      </tr>
+    </table>
+    </div>
+    <div class="dupont-analysis" id="dupont-analysis" style="display:none"></div>
+  </div>`;
+
   // ── Valuation Multiples ──
   const mu = d.multiples || {};
   html += `<div class="sub-label">Valuation Multiples</div>
@@ -2207,6 +2244,57 @@ function renderFundamentals(d) {
   document.getElementById('fund-content').style.display = 'block';
   setStatus('fundamentals', 'done');
 
+  // Load DuPont decomposition asynchronously after fundamentals render
+  _loadDuPont(d.ticker || _session.ticker);
+}
+
+// ── DuPont ROIC loader ──
+async function _loadDuPont(ticker) {
+  if (!ticker) return;
+  try {
+    const r = await fetch(`${API}/dupont/${encodeURIComponent(ticker)}`);
+    if (!r.ok) return;   // Silently skip if unavailable (e.g. ETF, no annual data)
+    const data = await r.json();
+    const rows = data.rows || [];
+    if (!rows.length) return;
+
+    const section = document.getElementById('dupont-section');
+    const tbl = document.getElementById('dupont-table');
+    if (!section || !tbl) return;
+
+    // Build table rows
+    const bodyRows = rows.map(row => {
+      const roic = row.roic_pct;
+      const roicClass = roic == null ? '' : roic >= 15 ? 'roic-high' : roic >= 8 ? 'roic-mid' : 'roic-low';
+      const fmt = v => v != null ? v.toLocaleString() : '—';
+      const pct = v => v != null ? v + '%' : '—';
+      const x   = v => v != null ? v + 'x' : '—';
+      return `<tr>
+        <td>${row.year}</td>
+        <td>${fmt(row.revenue_m)}</td>
+        <td>${fmt(row.nopat_m)}</td>
+        <td>${pct(row.nopat_margin_pct)}</td>
+        <td>${x(row.asset_turnover_x)}</td>
+        <td>${x(row.capital_efficiency_x)}</td>
+        <td class="${roicClass} roic-col">${pct(roic)}</td>
+      </tr>`;
+    }).join('');
+
+    // Append body rows to table (header already exists in template)
+    tbl.innerHTML += bodyRows;
+    section.style.display = '';
+
+    // Show AI analysis if available
+    if (data.analysis) {
+      const analysisEl = document.getElementById('dupont-analysis');
+      if (analysisEl) {
+        analysisEl.textContent = data.analysis;
+        analysisEl.style.display = '';
+      }
+    }
+  } catch(e) {
+    // Silent fail — DuPont is supplementary
+  }
 }
 
 // ── TSR renderer ──
