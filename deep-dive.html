@@ -2554,6 +2554,30 @@ function _techSummaryForCopilot(d) {
   return summary; // keeps: ticker, trend, momentum, volume, key_levels, options
 }
 
+function _buildTavilyQuery(ticker, section, userText) {
+  // Build a targeted search query rather than dumping the raw user message.
+  const t = ticker.toUpperCase();
+  const q = userText.toLowerCase();
+  // Price movement / revaluation questions → search for catalyst events
+  if (/\$\d|\bprice\b|\bdrop\b|\bfall\b|\bsell.?off\b|\bcrash\b|\bdecline\b|\bdraw.?down\b|\bral[ly]+\b|\bgain\b|\brevaluat|\brepric/.test(q)) {
+    return `${t} stock price movement earnings revenue guidance analyst 2026`;
+  }
+  // Competitor / supply chain / industry questions
+  if (/\btsmc\b|\bchip\b|\bsemiconductor\b|\bsupplier\b|\bcompetitor\b|\bamd\b|\bintel\b/.test(q)) {
+    return `${t} chip supplier competitor market share 2026`;
+  }
+  // AI strategy questions
+  if (/\bai\b|\bartificial intelligence\b|\bstrategy\b|\broadmap\b/.test(q)) {
+    return `${t} AI strategy product roadmap 2026`;
+  }
+  // Earnings / guidance questions
+  if (/\bearning\b|\bguidance\b|\bq[1-4]\b|\bquarter\b|\brevenue\b|\bmargin\b/.test(q)) {
+    return `${t} earnings revenue margin guidance 2026`;
+  }
+  // Default: ticker + first 80 chars stripped of price/date noise
+  return `${t} ${userText.replace(/\$[\d.,]+|\d{4}-\d{2}-\d{2}|\d+th \w+ \d{4}/g,'').slice(0,80)}`;
+}
+
 async function sendChat(section) {
   const input = document.getElementById('chat-in-'+section);
   const btn   = document.getElementById('chat-btn-'+section);
@@ -2591,6 +2615,7 @@ async function sendChat(section) {
         ticker: _session.ticker,
         section,
         session_id: window._fintiqSession?.session_id || null,
+        tavily_query: _buildTavilyQuery(_session.ticker, section, text),
         section_data: section === 'valuation'
           ? {
               // Compact: only valuation-relevant fields — avoids 6000-char truncation cutting off valuation_state
