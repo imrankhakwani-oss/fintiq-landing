@@ -281,9 +281,68 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
 .mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.62rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px}
 .mobile-bottom-nav li a:hover,.mobile-bottom-nav li a.active{color:#F59E0B}
 @media(max-width:768px){.mobile-bottom-nav{display:block}body{padding-bottom:68px}}
+/* ── AUTH ── */
+.nav-signin-btn{background:transparent;border:1.5px solid #F59E0B;color:#F59E0B;border-radius:7px;padding:6px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.2s,color 0.2s;display:inline-flex;align-items:center;}
+.nav-signin-btn:hover{background:#F59E0B;color:#081220;}
+.nav-account-wrap{position:relative;}
+.nav-account-btn{background:rgba(245,158,11,0.12);border:1.5px solid rgba(245,158,11,0.4);color:#F59E0B;border-radius:7px;padding:6px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background 0.2s;}
+.nav-account-btn:hover{background:rgba(245,158,11,0.2);}
+.nav-account-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#0d1f35;border:1px solid rgba(245,158,11,0.25);border-radius:10px;min-width:200px;padding:8px 0;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9999;}
+.nav-account-wrap:hover .nav-account-dropdown,.nav-account-wrap.open .nav-account-dropdown{display:block;}
+.nav-account-dropdown .dd-email{padding:10px 16px;color:#94A3B8;font-size:0.78rem;border-bottom:1px solid rgba(255,255,255,0.06);}
+.nav-account-dropdown a,.nav-account-dropdown button.dd-item{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 16px;color:#F1F5F9;font-size:0.84rem;text-decoration:none;cursor:pointer;font-family:inherit;transition:color 0.15s,background 0.15s;}
+.nav-account-dropdown a:hover,.nav-account-dropdown button.dd-item:hover{background:rgba(245,158,11,0.08);color:#F59E0B;}
+.dd-signout{color:#ef4444!important;}
+.auth-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;}
+.auth-modal-overlay.active{display:flex;}
+.auth-modal-box{background:#0d1f35;border:1px solid rgba(245,158,11,0.25);border-radius:16px;padding:36px 32px;max-width:400px;width:90%;position:relative;}
+.auth-modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:#94A3B8;font-size:1.3rem;cursor:pointer;padding:4px 8px;line-height:1;}
+.auth-modal-close:hover{color:#F1F5F9;}
+.auth-modal-logo{font-size:1.1rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.auth-modal-title{font-size:1.3rem;font-weight:800;margin-bottom:8px;color:#F1F5F9;}
+.auth-modal-sub{color:#94A3B8;font-size:0.88rem;margin-bottom:20px;line-height:1.6;}
+.auth-modal-input{width:100%;background:#081220;border:1.5px solid rgba(245,158,11,0.25);border-radius:9px;padding:12px 14px;color:#F1F5F9;font-size:0.95rem;font-family:inherit;margin-bottom:8px;outline:none;transition:border-color 0.2s;}
+.auth-modal-input:focus{border-color:#F59E0B;}
+.auth-modal-err{color:#ef4444;font-size:0.82rem;min-height:20px;margin-bottom:4px;}
+.auth-modal-btn{width:100%;padding:13px;border-radius:9px;border:none;background:#F59E0B;color:#081220;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;margin-top:8px;transition:opacity 0.2s;}
+.auth-modal-btn:hover{opacity:0.88;}
+.auth-modal-btn:disabled{opacity:0.55;cursor:not-allowed;}
+.auth-modal-btn-ghost{width:100%;padding:11px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.1);background:transparent;color:#94A3B8;font-size:0.88rem;cursor:pointer;font-family:inherit;margin-top:8px;transition:border-color 0.2s,color 0.2s;}
+.auth-modal-btn-ghost:hover{border-color:#94A3B8;color:#F1F5F9;}
+.auth-modal-note{font-size:0.75rem;color:#475569;margin-top:14px;text-align:center;line-height:1.6;}
+.auth-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#052e16;border:1px solid #22c55e;color:#86efac;padding:12px 24px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s;}
+.auth-toast.show{opacity:1;}
 </style>
 </head>
 <body>
+
+<!-- AUTH MODALS -->
+<div class="auth-modal-overlay" id="authEmailModal">
+  <div class="auth-modal-box">
+    <button class="auth-modal-close" onclick="authCloseModal('authEmailModal')">✕</button>
+    <div class="auth-modal-logo"><svg width="20" height="20" viewBox="0 0 28 28" fill="none"><line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/><line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/><line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/></svg>Fintiq</div>
+    <h2 class="auth-modal-title">Sign in to Fintiq</h2>
+    <p class="auth-modal-sub">Enter your email and we'll send a 6-digit access code — no password needed.</p>
+    <input class="auth-modal-input" id="authEmailInput" type="email" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')authSubmitEmail()">
+    <div class="auth-modal-err" id="authEmailErr"></div>
+    <button class="auth-modal-btn" id="authEmailBtn" onclick="authSubmitEmail()">Send access code →</button>
+    <p class="auth-modal-note">We'll send a 6-digit code to verify your email. No spam, ever.</p>
+  </div>
+</div>
+<div class="auth-modal-overlay" id="authOtpModal">
+  <div class="auth-modal-box">
+    <button class="auth-modal-close" onclick="authCloseModal('authOtpModal');authOpenModal('authEmailModal')">✕</button>
+    <div class="auth-modal-logo"><svg width="20" height="20" viewBox="0 0 28 28" fill="none"><line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/><line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/><line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/><rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/></svg>Fintiq</div>
+    <h2 class="auth-modal-title">Check your email</h2>
+    <p class="auth-modal-sub" id="authOtpSub">We've sent a 6-digit code to your email.</p>
+    <input class="auth-modal-input" id="authOtpInput" type="text" placeholder="000000" maxlength="6" inputmode="numeric" onkeydown="if(event.key==='Enter')authSubmitOtp()">
+    <div class="auth-modal-err" id="authOtpErr"></div>
+    <button class="auth-modal-btn" id="authOtpBtn" onclick="authSubmitOtp()">Verify code →</button>
+    <button class="auth-modal-btn-ghost" onclick="authCloseModal('authOtpModal');authOpenModal('authEmailModal')">← Change email</button>
+    <p class="auth-modal-note">Didn't receive it? Check spam, or go back and re-enter your email.</p>
+  </div>
+</div>
+<div class="auth-toast" id="authToast"></div>
 
 <nav>
   <a href="https://fintiq.uk" class="logo" style="display:flex;align-items:center;gap:8px">
@@ -314,6 +373,20 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
     <a href="/tools.html" class="active">Tools</a>
     <a href="/learn.html">Learn</a>
     <a href="/pricing.html">Pricing</a>
+    <button class="nav-signin-btn" id="navSignInBtn" onclick="authOpenModal('authEmailModal')" style="display:none">Sign In</button>
+    <div class="nav-account-wrap" id="navAccountWrap" style="display:none">
+      <button class="nav-account-btn" onclick="document.getElementById('navAccountWrap').classList.toggle('open')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="navAccountEmail">Account</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="nav-account-dropdown">
+        <div class="dd-email" id="ddEmailDisplay"></div>
+        <a href="/deep-dive.html">Stock Deep Dive</a>
+        <a href="/catalyst-atlas.html">Catalyst Atlas</a>
+        <button class="dd-item dd-signout" onclick="authSignOut()">Sign Out</button>
+      </div>
+    </div>
   </div>
 </nav>
 <script>
@@ -613,5 +686,67 @@ footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:32px
   </ul>
 </div>
 
+<script>
+var API='https://api.fintiq.uk';
+var _authEmail='';
+function authOpenModal(id){document.getElementById(id).classList.add('active');}
+function authCloseModal(id){document.getElementById(id).classList.remove('active');}
+function _authShowToast(msg,isErr){var t=document.getElementById('authToast');t.textContent=msg;t.style.background=isErr?'#1a0a0a':'#052e16';t.style.borderColor=isErr?'#ef4444':'#22c55e';t.style.color=isErr?'#fca5a5':'#86efac';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4000);}
+async function authLoadState(){
+  var token=localStorage.getItem('fintiq_session');
+  var sib=document.getElementById('navSignInBtn'),aw=document.getElementById('navAccountWrap');
+  if(!token){sib.style.display='';aw.style.display='none';return;}
+  try{
+    var r=await fetch(API+'/auth/session',{headers:{'Authorization':'Bearer '+token}});
+    if(!r.ok)throw 0;
+    var d=await r.json();
+    var email=(d.user&&d.user.email)||'';
+    document.getElementById('navAccountEmail').textContent=email.length>20?email.split('@')[0]:email;
+    document.getElementById('ddEmailDisplay').textContent=email;
+    sib.style.display='none';aw.style.display='';
+  }catch(e){localStorage.removeItem('fintiq_session');sib.style.display='';aw.style.display='none';}
+}
+function authSignOut(){
+  localStorage.removeItem('fintiq_session');
+  document.getElementById('navSignInBtn').style.display='';
+  document.getElementById('navAccountWrap').style.display='none';
+  document.getElementById('navAccountWrap').classList.remove('open');
+  _authShowToast('Signed out successfully.');
+}
+async function authSubmitEmail(){
+  var email=(document.getElementById('authEmailInput').value||'').trim().toLowerCase();
+  document.getElementById('authEmailErr').textContent='';
+  if(!email||!email.includes('@')){document.getElementById('authEmailErr').textContent='Please enter a valid email.';return;}
+  var btn=document.getElementById('authEmailBtn');btn.disabled=true;btn.textContent='Please wait…';
+  try{
+    var r=await fetch(API+'/auth/request-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+    var d=await r.json();
+    if(!r.ok){document.getElementById('authEmailErr').textContent=d.detail||'Could not send code.';return;}
+    _authEmail=email;
+    document.getElementById('authOtpSub').textContent='We\'ve sent a 6-digit code to '+email+'. Enter it below.';
+    document.getElementById('authOtpInput').value='';
+    authCloseModal('authEmailModal');authOpenModal('authOtpModal');
+    setTimeout(function(){document.getElementById('authOtpInput').focus();},100);
+  }catch(e){document.getElementById('authEmailErr').textContent='Network error.';}
+  finally{btn.disabled=false;btn.textContent='Send access code →';}
+}
+async function authSubmitOtp(){
+  var code=(document.getElementById('authOtpInput').value||'').trim();
+  document.getElementById('authOtpErr').textContent='';
+  if(code.length!==6||!/^\d{6}$/.test(code)){document.getElementById('authOtpErr').textContent='Enter the 6-digit code from your email.';return;}
+  var btn=document.getElementById('authOtpBtn');btn.disabled=true;btn.textContent='Please wait…';
+  try{
+    var r=await fetch(API+'/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:_authEmail,code:code})});
+    var d=await r.json();
+    if(!r.ok){document.getElementById('authOtpErr').textContent=d.detail||'Incorrect code.';return;}
+    localStorage.setItem('fintiq_session',d.session_token);
+    authCloseModal('authOtpModal');
+    await authLoadState();
+    _authShowToast('Signed in successfully!');
+  }catch(e){document.getElementById('authOtpErr').textContent='Network error.';}
+  finally{btn.disabled=false;btn.textContent='Verify code →';}
+}
+authLoadState();
+</script>
 </body>
 </html>

@@ -77,11 +77,97 @@
   </script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
   <style>
+    /* ── AUTH ── */
+    .nav-signin-btn{background:transparent;border:1.5px solid #F59E0B;color:#F59E0B;border-radius:7px;padding:6px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:inherit;transition:background 0.2s,color 0.2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+    .nav-signin-btn:hover{background:#F59E0B;color:#0A1628;}
+    .nav-account-wrap{position:relative;}
+    .nav-account-btn{background:rgba(245,158,11,0.12);border:1.5px solid rgba(245,158,11,0.4);color:#F59E0B;border-radius:7px;padding:6px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;transition:background 0.2s;}
+    .nav-account-btn:hover{background:rgba(245,158,11,0.2);}
+    .nav-account-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#0d1f35;border:1px solid rgba(245,158,11,0.25);border-radius:10px;min-width:200px;padding:8px 0;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9999;}
+    .nav-account-wrap:hover .nav-account-dropdown,.nav-account-wrap.open .nav-account-dropdown{display:block;}
+    .nav-account-dropdown .dd-email{padding:10px 16px;color:#94A3B8;font-size:0.78rem;border-bottom:1px solid rgba(255,255,255,0.06);}
+    .nav-account-dropdown a,.nav-account-dropdown button.dd-item{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 16px;color:#F1F5F9;font-size:0.84rem;text-decoration:none;cursor:pointer;font-family:inherit;transition:color 0.15s,background 0.15s;}
+    .nav-account-dropdown a:hover,.nav-account-dropdown button.dd-item:hover{background:rgba(245,158,11,0.08);color:#F59E0B;}
+    .dd-signout{color:#ef4444!important;}
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;}
+    .modal-overlay.active{display:flex;}
+    .modal-box{background:#0d1f35;border:1px solid rgba(245,158,11,0.25);border-radius:16px;padding:36px 32px;max-width:400px;width:90%;position:relative;}
+    .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:#94A3B8;font-size:1.3rem;cursor:pointer;padding:4px 8px;line-height:1;}
+    .modal-close:hover{color:#F1F5F9;}
+    .modal-logo{font-size:1.1rem;font-weight:900;color:#F59E0B;display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+    .modal-title{font-size:1.3rem;font-weight:800;margin-bottom:8px;color:#F1F5F9;}
+    .modal-sub{color:#94A3B8;font-size:0.88rem;margin-bottom:20px;line-height:1.6;}
+    .modal-input{width:100%;background:#081220;border:1.5px solid rgba(245,158,11,0.25);border-radius:9px;padding:12px 14px;color:#F1F5F9;font-size:0.95rem;font-family:inherit;margin-bottom:8px;outline:none;transition:border-color 0.2s;}
+    .modal-input:focus{border-color:#F59E0B;}
+    .modal-err{color:#ef4444;font-size:0.82rem;min-height:20px;margin-bottom:4px;}
+    .modal-btn{width:100%;padding:13px;border-radius:9px;border:none;background:#F59E0B;color:#081220;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;margin-top:8px;transition:opacity 0.2s;}
+    .modal-btn:hover{opacity:0.88;}
+    .modal-btn:disabled{opacity:0.55;cursor:not-allowed;}
+    .modal-btn-ghost{width:100%;padding:11px;border-radius:9px;border:1.5px solid rgba(255,255,255,0.1);background:transparent;color:#94A3B8;font-size:0.88rem;cursor:pointer;font-family:inherit;margin-top:8px;transition:border-color 0.2s,color 0.2s;}
+    .modal-btn-ghost:hover{border-color:#94A3B8;color:#F1F5F9;}
+    .modal-note{font-size:0.75rem;color:#475569;margin-top:14px;text-align:center;line-height:1.6;}
+    .toast-msg{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#052e16;border:1px solid #22c55e;color:#86efac;padding:12px 24px;border-radius:10px;font-size:0.88rem;font-weight:600;z-index:9999;pointer-events:none;opacity:0;transition:opacity 0.3s;}
+    .toast-msg.show{opacity:1;}
+  </style>
+  <style>
     *{margin:0;padding:0;box-sizing:border-box}body{background:#0D1B2A;color:#F1F5F9;font-family:'Inter',sans-serif;line-height:1.7}a{color:#F59E0B;text-decoration:none}nav{background:#0A1628;border-bottom:2px solid #F59E0B;padding:12px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}.logo{font-size:1.6rem;font-weight:900;color:#F59E0B;letter-spacing:-1px}.nav-links{display:flex;gap:16px;align-items:center}.nav-links a{color:#94A3B8;font-size:0.9rem}.btn-cta{background:#F59E0B !important;color:#0A1628 !important;padding:8px 20px;border-radius:6px;font-weight:700;font-size:0.9rem}.container{max-width:820px;margin:0 auto;padding:0 24px 80px}.breadcrumb{padding:16px 0;color:#64748B;font-size:0.85rem}.breadcrumb a{color:#94A3B8}h1{font-size:2.2rem;font-weight:900;color:#F1F5F9;line-height:1.2;margin-bottom:16px}h2{font-size:1.35rem;font-weight:700;color:#F59E0B;margin:44px 0 16px}h3{font-size:1.05rem;font-weight:600;color:#F1F5F9;margin:28px 0 12px}p{color:#CBD5E1;margin-bottom:16px;font-size:1rem}ul,ol{color:#CBD5E1;padding-left:24px;margin-bottom:20px}li{margin-bottom:8px}strong{color:#F1F5F9}.meta{color:#64748B;font-size:0.85rem;margin-bottom:40px}.highlight{background:rgba(245,158,11,0.07);border-left:4px solid #F59E0B;padding:20px 24px;margin:28px 0;border-radius:0 8px 8px 0}.cta-box{background:linear-gradient(135deg,#0D2137,#1A3355);border:1px solid rgba(245,158,11,0.3);border-radius:12px;padding:40px;text-align:center;margin:60px 0}.cta-box h3{color:#F59E0B;font-size:1.4rem;margin-bottom:12px}.cta-box p{color:#94A3B8;margin-bottom:24px}.cta-btn{background:#F59E0B;color:#0A1628 !important;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:1rem;display:inline-block}footer{background:#0A1628;border-top:1px solid rgba(245,158,11,0.2);padding:40px 32px;text-align:center}.f-logo{font-size:1.4rem;font-weight:900;color:#F59E0B;margin-bottom:8px}.f-sub{color:#64748B;font-size:0.85rem;margin-bottom:20px}.f-links{display:flex;gap:24px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}.f-links a{color:#94A3B8;font-size:0.85rem}.f-copy{color:#334155;font-size:0.75rem}.nav-hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;color:#F1F5F9;line-height:1}.nav-app-mobile{display:none}.mobile-bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:300;background:rgba(8,18,32,0.97);border-top:1px solid rgba(245,158,11,0.2);backdrop-filter:blur(16px);padding:8px 0 max(8px,env(safe-area-inset-bottom))}.mobile-bottom-nav ul{display:flex;list-style:none;justify-content:space-around;margin:0;padding:0}.mobile-bottom-nav li a{display:flex;flex-direction:column;align-items:center;gap:3px;color:#64748B;text-decoration:none;font-size:0.62rem;font-weight:600;padding:4px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:0.3px}.mobile-bottom-nav li a:hover,.mobile-bottom-nav li a.active{color:#F59E0B}@media(max-width:768px){.nav-hamburger{display:block}.nav-app-mobile{display:inline-block;background:#F59E0B;color:#0A1628!important;padding:6px 14px;border-radius:6px;font-weight:700;font-size:0.82rem;white-space:nowrap}.mobile-bottom-nav{display:block}body{padding-bottom:68px}.nav-links{display:none;position:absolute;top:54px;left:0;right:0;z-index:200;flex-direction:column;gap:0;background:#08121f;border-bottom:1px solid rgba(245,158,11,0.2)}.nav-links.mobile-open{display:flex}.nav-links a{padding:13px 24px;font-size:0.95rem;border-bottom:1px solid rgba(255,255,255,0.05);color:#94A3B8}.nav-links a:hover{background:rgba(245,158,11,0.06);color:#F59E0B}.btn-cta{margin:10px 24px 14px!important;border-radius:8px!important;text-align:center;display:block;padding:11px 24px!important}nav{padding:10px 16px}.logo{font-size:1.3rem}.hero h1{font-size:1.8rem}.hero{padding:48px 16px 36px}.grid{grid-template-columns:1fr}.section{padding:16px 16px 48px}.container{padding:0 16px 60px}h1{font-size:1.9rem}}@media(max-width:480px){h1{font-size:1.6rem}.hero h1{font-size:1.5rem}}
     .section{padding:20px 32px 60px;max-width:1100px;margin:0 auto}.section-title{font-size:1.2rem;font-weight:700;color:#F1F5F9;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.07);margin-bottom:8px}.section-sub{color:#64748B;font-size:0.82rem;margin-bottom:24px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}.card{background:linear-gradient(135deg,#0F2337,#162032);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:24px;transition:border-color 0.2s,transform 0.2s;display:block;color:inherit}.card:hover{border-color:rgba(245,158,11,0.4);transform:translateY(-2px)}.card-tag{display:inline-block;padding:3px 10px;border-radius:20px;font-size:0.7rem;font-weight:600;margin-bottom:10px;background:rgba(245,158,11,0.1);color:#F59E0B;border:1px solid rgba(245,158,11,0.25)}.card h3{font-size:0.98rem;font-weight:700;color:#F1F5F9;margin-bottom:8px;line-height:1.35}.card p{font-size:0.83rem;color:#64748B;margin-bottom:10px}.card-meta{font-size:0.73rem;color:#475569}.hero{text-align:center;padding:70px 24px 50px;max-width:700px;margin:0 auto}.hero h1{font-size:2.6rem;font-weight:900;line-height:1.15;margin-bottom:18px}.hero p{font-size:1.05rem;color:#94A3B8}.gold{color:#F59E0B}
   </style>
 </head>
 <body>
+
+<!-- AUTH MODALS -->
+<div class="modal-overlay" id="modal-email">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-email')">✕</button>
+    <div class="modal-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+        <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+        <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      </svg>
+      Fintiq
+    </div>
+    <h2 class="modal-title">Sign in to Fintiq</h2>
+    <p class="modal-sub">Enter your email and we'll send a 6-digit access code — no password needed.</p>
+    <input class="modal-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email"
+      onkeydown="if(event.key==='Enter')submitEmail()">
+    <div class="modal-err" id="email-err"></div>
+    <button class="modal-btn" id="email-btn" onclick="submitEmail()">Send access code →</button>
+    <p class="modal-note">We'll send a 6-digit code to verify your email. No spam, ever.</p>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-otp">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal('modal-otp');openModal('modal-email')">✕</button>
+    <div class="modal-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none">
+        <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="3" y="21" width="4" height="4" rx="0.8" fill="#22c55e"/>
+        <line x1="14" y1="9" x2="14" y2="13" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="12" y="13" width="4" height="6" rx="0.8" fill="#22c55e"/>
+        <line x1="23" y1="3" x2="23" y2="7" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
+        <rect x="21" y="7" width="4" height="9" rx="0.8" fill="#22c55e"/>
+      </svg>
+      Fintiq
+    </div>
+    <h2 class="modal-title">Check your email</h2>
+    <p class="modal-sub" id="otp-sub">We've sent a 6-digit code to your email. Enter it below.</p>
+    <input class="modal-input" id="auth-otp" type="text" placeholder="000000" maxlength="6" inputmode="numeric"
+      onkeydown="if(event.key==='Enter')submitOTP()">
+    <div class="modal-err" id="otp-err"></div>
+    <button class="modal-btn" id="otp-btn" onclick="submitOTP()">Verify code →</button>
+    <button class="modal-btn-ghost" onclick="closeModal('modal-otp');openModal('modal-email')">← Change email</button>
+    <p class="modal-note">Didn't receive it? Check spam, or go back and re-enter your email.</p>
+  </div>
+</div>
+
+<div class="toast-msg" id="toastMsg"></div>
+
 <nav><a href="https://www.fintiq.uk/" class="logo" style="display:flex;align-items:center;gap:8px">
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
       <line x1="5" y1="17" x2="5" y2="21" stroke="#22c55e" stroke-width="2" stroke-linecap="round"/>
@@ -93,7 +179,22 @@
       <polyline points="5,20 14,14 23,8" stroke="#22c55e" stroke-width="1.5" fill="none" opacity="0.5"/>
     </svg>
     Fintiq
-  </a><div style="display:flex;align-items:center;gap:10px"><button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false"><svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none"><rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/></svg></button></div><div class="nav-links" id="navLinks"><a href="https://www.fintiq.uk/">Home</a><a href="https://www.fintiq.uk/bulletin.html">Market Bulletin</a><a href="https://www.fintiq.uk/deep-dive.html">Stock Deep Dive</a><a href="https://www.fintiq.uk/tools.html">Tools</a><a href="https://www.fintiq.uk/learn.html" style="color:#F59E0B">Learn</a></div></nav>
+  </a><div style="display:flex;align-items:center;gap:10px"><button class="nav-hamburger" id="navHamburger" aria-label="Open menu" aria-expanded="false"><svg id="hamburgerIcon" width="22" height="22" viewBox="0 0 22 22" fill="none"><rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/></svg></button></div><div class="nav-links" id="navLinks"><a href="https://www.fintiq.uk/">Home</a><a href="https://www.fintiq.uk/bulletin.html">Market Bulletin</a><a href="https://www.fintiq.uk/deep-dive.html">Stock Deep Dive</a><a href="https://www.fintiq.uk/tools.html">Tools</a><a href="https://www.fintiq.uk/learn.html" style="color:#F59E0B">Learn</a><a href="/pricing.html">Pricing</a>
+    <button class="nav-signin-btn" id="navSignInBtn" onclick="openModal('modal-email')" style="display:none">Sign In</button>
+    <div class="nav-account-wrap" id="navAccountWrap" style="display:none">
+      <button class="nav-account-btn" onclick="document.getElementById('navAccountWrap').classList.toggle('open')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <span id="navAccountEmail">Account</span>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="nav-account-dropdown">
+        <div class="dd-email" id="ddEmailDisplay"></div>
+        <a href="/deep-dive.html">Stock Deep Dive</a>
+        <a href="/catalyst-atlas.html">Catalyst Atlas</a>
+        <button class="dd-item dd-signout" onclick="signOut()">Sign Out</button>
+      </div>
+    </div>
+  </div></nav>
 <script>(function(){var h=document.getElementById('navHamburger'),n=document.getElementById('navLinks'),i=document.getElementById('hamburgerIcon');if(!h)return;h.addEventListener('click',function(){var o=n.classList.toggle('mobile-open');h.setAttribute('aria-expanded',o);i.innerHTML=o?'<line x1="3" y1="3" x2="19" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="19" y1="3" x2="3" y2="19" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>':'<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});n.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){n.classList.remove('mobile-open');h.setAttribute('aria-expanded','false');i.innerHTML='<rect y="4" width="22" height="2" rx="1" fill="currentColor"/><rect y="10" width="22" height="2" rx="1" fill="currentColor"/><rect y="16" width="22" height="2" rx="1" fill="currentColor"/>';});});})();</script>
 
 <div class="hero">
@@ -310,5 +411,82 @@
   </ul>
 </div>
 
+<script>
+  const API = 'https://api.fintiq.uk';
+  let _authEmail = '';
+
+  function openModal(id){document.getElementById(id).classList.add('active');}
+  function closeModal(id){document.getElementById(id).classList.remove('active');}
+  function _setErr(id,msg){document.getElementById(id).textContent=msg||'';}
+  function _setBusy(btnId,busy,label){var b=document.getElementById(btnId);b.disabled=busy;b.textContent=busy?'Please wait…':label;}
+  function showToast(msg,isError){var t=document.getElementById('toastMsg');t.textContent=msg;t.style.background=isError?'#1a0a0a':'#052e16';t.style.borderColor=isError?'#ef4444':'#22c55e';t.style.color=isError?'#fca5a5':'#86efac';t.classList.add('show');setTimeout(function(){t.classList.remove('show');},4000);}
+
+  async function loadAuthState(){
+    var token=localStorage.getItem('fintiq_session');
+    var signInBtn=document.getElementById('navSignInBtn');
+    var accountWrap=document.getElementById('navAccountWrap');
+    if(!token){signInBtn.style.display='';accountWrap.style.display='none';return;}
+    try{
+      var r=await fetch(API+'/auth/session',{headers:{'Authorization':'Bearer '+token}});
+      if(!r.ok)throw new Error('Invalid');
+      var d=await r.json();
+      var email=d.user&&d.user.email?d.user.email:'';
+      var shortEmail=email.length>20?email.split('@')[0]:email;
+      document.getElementById('navAccountEmail').textContent=shortEmail;
+      document.getElementById('ddEmailDisplay').textContent=email;
+      signInBtn.style.display='none';
+      accountWrap.style.display='';
+    }catch(e){
+      localStorage.removeItem('fintiq_session');
+      signInBtn.style.display='';
+      accountWrap.style.display='none';
+    }
+  }
+
+  function signOut(){
+    localStorage.removeItem('fintiq_session');
+    document.getElementById('navSignInBtn').style.display='';
+    document.getElementById('navAccountWrap').style.display='none';
+    document.getElementById('navAccountWrap').classList.remove('open');
+    showToast('Signed out successfully.');
+  }
+
+  async function submitEmail(){
+    var email=(document.getElementById('auth-email').value||'').trim().toLowerCase();
+    _setErr('email-err','');
+    if(!email||!email.includes('@')){_setErr('email-err','Please enter a valid email.');return;}
+    _setBusy('email-btn',true,'Send access code →');
+    try{
+      var r=await fetch(API+'/auth/request-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email})});
+      var d=await r.json();
+      if(!r.ok){_setErr('email-err',d.detail||'Could not send code. Please retry.');return;}
+      _authEmail=email;
+      document.getElementById('otp-sub').textContent='We\'ve sent a 6-digit code to '+email+'. Enter it below.';
+      document.getElementById('auth-otp').value='';
+      closeModal('modal-email');openModal('modal-otp');
+      setTimeout(function(){document.getElementById('auth-otp').focus();},100);
+    }catch(e){_setErr('email-err','Network error. Please check your connection.');}
+    finally{_setBusy('email-btn',false,'Send access code →');}
+  }
+
+  async function submitOTP(){
+    var code=(document.getElementById('auth-otp').value||'').trim();
+    _setErr('otp-err','');
+    if(code.length!==6||!/^\d{6}$/.test(code)){_setErr('otp-err','Enter the 6-digit code from your email.');return;}
+    _setBusy('otp-btn',true,'Verify code →');
+    try{
+      var r=await fetch(API+'/auth/verify-otp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:_authEmail,code:code})});
+      var d=await r.json();
+      if(!r.ok){_setErr('otp-err',d.detail||'Incorrect code. Please try again.');return;}
+      localStorage.setItem('fintiq_session',d.session_token);
+      closeModal('modal-otp');
+      await loadAuthState();
+      showToast('Signed in successfully!');
+    }catch(e){_setErr('otp-err','Network error. Please check your connection.');}
+    finally{_setBusy('otp-btn',false,'Verify code →');}
+  }
+
+  loadAuthState();
+</script>
 </body>
 </html>
