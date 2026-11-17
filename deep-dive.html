@@ -64,6 +64,17 @@ a{color:var(--gold);text-decoration:none}
 .nav-links{display:flex;gap:2rem;align-items:center}
 .nav-links a{color:var(--muted);font-size:0.9rem;text-decoration:none;transition:color .2s}
 .nav-links a:hover,.nav-links a.active{color:var(--gold)}
+.nav-signin-btn{background:transparent;border:1.5px solid var(--gold);color:var(--gold);border-radius:7px;padding:6px 16px;font-size:0.85rem;font-weight:700;cursor:pointer;font-family:var(--font);transition:background .2s,color .2s;display:inline-flex;align-items:center;}
+.nav-signin-btn:hover{background:var(--gold);color:var(--navy);}
+.nav-account-wrap{position:relative;}
+.nav-account-btn{background:rgba(245,158,11,0.12);border:1.5px solid rgba(245,158,11,0.4);color:var(--gold);border-radius:7px;padding:6px 14px;font-size:0.82rem;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;transition:background .2s;}
+.nav-account-btn:hover{background:rgba(245,158,11,0.2);}
+.nav-account-dropdown{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#0d1f35;border:1px solid rgba(245,158,11,0.25);border-radius:10px;min-width:200px;padding:8px 0;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:9999;}
+.nav-account-wrap:hover .nav-account-dropdown,.nav-account-wrap.open .nav-account-dropdown{display:block;}
+.nav-account-dropdown .dd-email{padding:10px 16px;color:var(--muted);font-size:0.78rem;border-bottom:1px solid rgba(255,255,255,0.06);}
+.nav-account-dropdown a,.nav-account-dropdown button.dd-item{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 16px;color:var(--text);font-size:0.84rem;text-decoration:none;cursor:pointer;font-family:var(--font);transition:color .15s,background .15s;}
+.nav-account-dropdown a:hover,.nav-account-dropdown button.dd-item:hover{background:rgba(245,158,11,0.08);color:var(--gold);}
+.dd-signout{color:var(--red)!important;}
 
 /* ── Hero / Search ── */
 .hero{padding:40px 24px 0;max-width:860px;margin:0 auto}
@@ -1088,6 +1099,21 @@ a{color:var(--gold);text-decoration:none}
     <a href="/tools.html">Tools</a>
     <a href="/learn.html">Learn</a>
     <a href="/pricing.html">Pricing</a>
+    <button class="nav-signin-btn" id="navSignInBtn" onclick="openModal('modal-email')" style="display:none">Sign In</button>
+    <div class="nav-account-wrap" id="navAccountWrap" style="display:none">
+      <button class="nav-account-btn" onclick="document.getElementById('navAccountWrap').classList.toggle('open')">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="12" cy="8" r="4" stroke-width="2"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke-width="2" stroke-linecap="round"/></svg>
+        <span id="navAccountEmail">Account</span>
+        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M6 9l6 6 6-6" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div class="nav-account-dropdown">
+        <div class="dd-email" id="ddEmailDisplay"></div>
+        <a href="/bulletin.html">Market Bulletin</a>
+        <a href="/tools.html">Tools</a>
+        <a href="/catalyst-atlas.html">Catalyst Atlas</a>
+        <button class="dd-item dd-signout" onclick="navSignOut()">Sign Out</button>
+      </div>
+    </div>
   </div>
 </nav>
 
@@ -1479,10 +1505,45 @@ function _tryRestoreSession(ticker) {
   } catch(_) { return false; }
 }
 
+// ── Nav auth state ──────────────────────────────────────────────────────────
+async function loadNavAuthState() {
+  const token = localStorage.getItem('fintiq_session');
+  const signInBtn = document.getElementById('navSignInBtn');
+  const accountWrap = document.getElementById('navAccountWrap');
+  const emailSpan = document.getElementById('navAccountEmail');
+  const ddEmail = document.getElementById('ddEmailDisplay');
+  if (!token) {
+    if (signInBtn) signInBtn.style.display = '';
+    if (accountWrap) accountWrap.style.display = 'none';
+    return;
+  }
+  try {
+    const r = await fetch(API + '/auth/session', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (!r.ok) throw new Error('invalid');
+    const d = await r.json();
+    const email = d.user?.email || 'Account';
+    if (emailSpan) emailSpan.textContent = email.split('@')[0];
+    if (ddEmail) ddEmail.textContent = email;
+    if (signInBtn) signInBtn.style.display = 'none';
+    if (accountWrap) accountWrap.style.display = '';
+  } catch {
+    localStorage.removeItem('fintiq_session');
+    if (signInBtn) signInBtn.style.display = '';
+    if (accountWrap) accountWrap.style.display = 'none';
+  }
+}
+function navSignOut() {
+  localStorage.removeItem('fintiq_session');
+  document.getElementById('navSignInBtn').style.display = '';
+  document.getElementById('navAccountWrap').style.display = 'none';
+  document.getElementById('navAccountWrap').classList.remove('open');
+}
+
 // Disable browser scroll-restoration so page always starts at top on refresh
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
 
 window.addEventListener('DOMContentLoaded', () => {
+  loadNavAuthState();
   window.scrollTo(0, 0);
   const params = new URLSearchParams(window.location.search);
   const t = (params.get('ticker') || 'AAPL').toUpperCase();
