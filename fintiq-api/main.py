@@ -3847,6 +3847,7 @@ Be specific with numbers. Do not write "Overall" to start. Keep it under 100 wor
 
 # ── EDGAR Copilot integration ──────────────────────────────────────────────────
 _EDGAR_UA = os.environ.get("EDGAR_USER_AGENT", "fintiq-research bot@fintiq.uk")
+_CIK_CACHE: dict = {}   # ticker → zero-padded CIK string; persists for process lifetime
 
 # Maps question keywords → most relevant SEC form types
 _EDGAR_FORM_PRIORITY = {
@@ -3881,25 +3882,49 @@ def _edgar_pick_form(question: str) -> list:
     return (picks[:2]) if picks else ["10-K"]
 
 
-def _edgar_fetch_section(cik: str, accession: str, question: str, char_limit: int = 6000) -> str:
+def _edgar_fetch_section(cik: str, accession: str, question: str,
+                         char_limit: int = 6000, primary_doc: str = "") -> str:
     """
     Fetch the most relevant section from an EDGAR filing based on the user question.
     Returns up to char_limit chars of relevant text, or doc start as fallback.
-    For segment/breakdown questions, also searches financial statement notes.
+    Uses primary_doc filename when provided; otherwise parses the filing index page.
     """
     try:
         acc_clean = accession.replace("-", "")
-        index_url = f"https://www.sec.gov/Archives/edgar/data/{int(cik)}/{acc_clean}/{accession}-index.htm"
-        r = requests.get(index_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
-        if not r.ok:
-            return ""
+        cik_int   = int(cik)
 
-        doc_match = re.search(r'href="(/Archives/edgar/data/\d+/\d+/[^"]+\.htm)"', r.text, re.IGNORECASE)
-        if not doc_match:
-            return ""
+        # Resolve the main document URL
+        if primary_doc:
+            # Prefer the known primary document filename (most reliable)
+            doc_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_clean}/{primary_doc}"
+        else:
+            # Fall back to parsing the index page and picking the first .htm that
+            # looks like a filing body (not an exhibit or R-file)
+            index_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_clean}/{accession}-index.htm"
+            r = requests.get(index_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
+            if not r.ok:
+                return ""
+            # Prefer the primary document description in the index table
+            # Look for hrefs that are NOT exhibit-only files (R\d+.htm, exhibit*.htm)
+            candidates = re.findall(
+                r'href="(/Archives/edgar/data/\d+/\d+/[^"]+\.htm)"',
+                r.text, re.IGNORECASE
+            )
+            doc_path = ""
+            for c in candidates:
+                # Skip iXBRL viewer, exhibits, and R-numbered XBRL files
+                name = c.split("/")[-1].lower()
+                if re.match(r'^r\d+\.htm$', name):
+                    continue
+                if any(x in name for x in ["exhibit", "ex-", "ex_", "xbrl"]):
+                    continue
+                doc_path = c
+                break
+            if not doc_path:
+                return ""
+            doc_url = "https://www.sec.gov" + doc_path
 
-        doc_url = "https://www.sec.gov" + doc_match.group(1)
-        doc_r = requests.get(doc_url, timeout=20, headers={"User-Agent": _EDGAR_UA})
+        doc_r = requests.get(doc_url, timeout=25, headers={"User-Agent": _EDGAR_UA})
         if not doc_r.ok:
             return ""
 
@@ -3914,8 +3939,18 @@ def _edgar_fetch_section(cik: str, accession: str, question: str, char_limit: in
               "data center", "gaming", "cloud", "enterprise", "consumer"],
              [r"SEGMENT INFORMATION", r"SEGMENT REVENUE", r"REPORTABLE SEGMENT",
               r"OPERATING SEGMENT", r"NOTE\s+\d+[.\s]+SEGMENT", r"BUSINESS SEGMENTS"]),
+            # Supply chain and supplier concentration (risk factors is the right home)
+            (["supplier", "supply chain", "chip", "semiconductor", "tsmc", "foundry",
+              "manufacturing", "outsource", "vendor", "source", "dependency", "dependence",
+              "single source", "concentration", "procurement"],
+             [r"ITEM\s+1A[.\s]+RISK FACTORS", r"RISK FACTORS", r"DEPENDENCE ON KEY",
+              r"SOLE SOURCE", r"SINGLE SOURCE", r"MANUFACTURING"]),
             (["risk", "risk factor"],
              [r"ITEM\s+1A[.\s]+RISK FACTORS", r"RISK FACTORS"]),
+            (["ai", "artificial intelligence", "machine learning", "strategy", "roadmap",
+              "technology", "product", "innovation", "development", "invest"],
+             [r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION", r"MANAGEMENT.S DISCUSSION AND ANALYSIS",
+              r"ITEM\s+1[.\s]+BUSINESS"]),
             (["mda", "management", "discussion", "analysis", "result", "operation",
               "revenue", "profit", "margin", "growth", "performance"],
              [r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION", r"MANAGEMENT.S DISCUSSION AND ANALYSIS"]),
@@ -3923,7 +3958,7 @@ def _edgar_fetch_section(cik: str, accession: str, question: str, char_limit: in
              [r"LIQUIDITY AND CAPITAL RESOURCES", r"LIQUIDITY"]),
             (["compensation", "pay", "salary", "executive"],
              [r"EXECUTIVE COMPENSATION", r"COMPENSATION DISCUSSION"]),
-            (["business", "overview", "strategy", "competition"],
+            (["business", "overview", "competition", "market", "industry"],
              [r"ITEM\s+1[.\s]+BUSINESS", r"OUR BUSINESS"]),
             (["outlook", "guidance", "forward", "future"],
              [r"FORWARD.LOOKING", r"OUTLOOK", r"GUIDANCE"]),
@@ -3935,14 +3970,15 @@ def _edgar_fetch_section(cik: str, accession: str, question: str, char_limit: in
                     m = re.search(pat, text.upper())
                     if m:
                         start = m.start()
-                        rest = text[start + 50:]
+                        rest  = text[start + 50:]
                         end_m = re.search(r'ITEM\s+\d+[A-Z]?[.\s]', rest.upper())
-                        end = start + 50 + end_m.start() if end_m else start + 10000
+                        end   = start + 50 + end_m.start() if end_m else start + 10000
                         return text[start:end][:char_limit]
 
         return text[:min(5000, char_limit)]  # fallback: document start
 
-    except Exception:
+    except Exception as e:
+        print(f"[EDGAR fetch_section] {accession}: {e}", flush=True)
         return ""
 
 
@@ -3984,10 +4020,11 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
         sub_data = sub_r.json()
         company_name = sub_data.get("name", ticker)
 
-        filings_data = sub_data.get("filings", {}).get("recent", {})
-        forms        = filings_data.get("form", [])
-        dates        = filings_data.get("filingDate", [])
-        accessions   = filings_data.get("accessionNumber", [])
+        filings_data  = sub_data.get("filings", {}).get("recent", {})
+        forms         = filings_data.get("form", [])
+        dates         = filings_data.get("filingDate", [])
+        accessions    = filings_data.get("accessionNumber", [])
+        primary_docs  = filings_data.get("primaryDocument", [""] * len(forms))
 
         # Build index by form type (keep up to 3 most recent per type)
         form_index: dict = {}
@@ -3996,8 +4033,9 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
                 form_index[form] = []
             if len(form_index[form]) < 3:
                 form_index[form].append({
-                    "accession": accessions[i],
-                    "date": dates[i],
+                    "accession":   accessions[i],
+                    "date":        dates[i],
+                    "primary_doc": primary_docs[i] if i < len(primary_docs) else "",
                 })
 
         # Available filings summary
@@ -4028,7 +4066,8 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
             if best_form:
                 for filing in form_index[best_form][:3]:
                     excerpt = _edgar_fetch_section(
-                        cik, filing["accession"], question, char_limit=3000
+                        cik, filing["accession"], question, char_limit=3000,
+                        primary_doc=filing.get("primary_doc", "")
                     )
                     if excerpt and len(excerpt) > 150:
                         fiscal_year = filing["date"][:4]
@@ -4044,8 +4083,9 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
                 )
             else:
                 parts.append(
-                    "\nMulti-period filing text unavailable — reference the filing index above and "
-                    "direct the user to SEC EDGAR for primary source documents."
+                    "\nMulti-period filing text could not be retrieved this request. "
+                    "Use the web search results and your own knowledge to answer; "
+                    "do NOT tell the user to go check SEC EDGAR themselves."
                 )
         else:
             # Single-period: fetch text from the single most relevant filing
@@ -4055,7 +4095,10 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
             for form in target_forms:
                 if form in form_index and form_index[form]:
                     filing = form_index[form][0]
-                    text = _edgar_fetch_section(cik, filing["accession"], question, char_limit=5500)
+                    text = _edgar_fetch_section(
+                        cik, filing["accession"], question, char_limit=5500,
+                        primary_doc=filing.get("primary_doc", "")
+                    )
                     if text and len(text) > 200:
                         filing_text = text
                         source_form = form
@@ -4069,8 +4112,9 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
                 )
             else:
                 parts.append(
-                    "\nFiling text unavailable — reference the filing index above. "
-                    "Direct user to SEC EDGAR for primary source filings."
+                    "\nFiling text could not be retrieved this request. "
+                    "Answer using the web search results and your own knowledge; "
+                    "do NOT tell the user to go look it up on SEC EDGAR themselves."
                 )
 
         return "\n".join(parts)
@@ -6404,18 +6448,23 @@ def _run_universe_screener():
 
 # ── EDGAR filing detector + Claude language drift ──────────────────────────────
 def _fetch_edgar_cik(ticker: str) -> str | None:
-    """Resolve ticker → CIK from SEC EDGAR company search."""
+    """Resolve ticker → CIK from SEC EDGAR company search. Results are cached in-process."""
+    t = ticker.upper()
+    if t in _CIK_CACHE:
+        return _CIK_CACHE[t]
     try:
-        url = f"https://efts.sec.gov/LATEST/search-index?q=%22{ticker}%22&dateRange=custom&startdt=2020-01-01&forms=10-K"
-        r = requests.get(url, timeout=10, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
-        # Try the tickers.json mapping instead (more reliable)
         tickers_url = "https://www.sec.gov/files/company_tickers.json"
-        tr = requests.get(tickers_url, timeout=15, headers={"User-Agent": "fintiq imran.khakwany@gmail.com"})
+        tr = requests.get(tickers_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
         if tr.ok:
             mapping = tr.json()
+            # Populate the full cache while we have the response (amortise the 20 MB download)
             for entry in mapping.values():
-                if entry.get("ticker", "").upper() == ticker.upper():
-                    return str(entry["cik_str"]).zfill(10)
+                tk = entry.get("ticker", "").upper()
+                cik = str(entry["cik_str"]).zfill(10)
+                if tk:
+                    _CIK_CACHE[tk] = cik
+            if t in _CIK_CACHE:
+                return _CIK_CACHE[t]
     except Exception:
         pass
     return None
