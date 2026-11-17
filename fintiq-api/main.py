@@ -4165,6 +4165,8 @@ DATA COMPLETENESS & IMPARTIALITY — NON-NEGOTIABLE:
     behaviour_rules = f"""
 WHAT YOU DO:
 - Reference live data by name and value when answering
+- Use WEB SEARCH RESULTS (appended below) to explain real-world events, news, earnings, analyst revisions, and market drivers — cite specific headlines or sources by title when you do
+- Use EDGAR FILING EXCERPTS (appended below) to cite verbatim revenue, margin, and risk-factor data from actual SEC filings — say "per the [form] filed [date]" when quoting
 - State when evidence is thin or ambiguous
 - Challenge conclusions that contradict the data
 - Proactively flag gaps in the user's analysis
@@ -4178,6 +4180,7 @@ WHAT YOU DO NOT DO:
 - Explain generic finance concepts unless directly asked
 - Repeat what is already visible on the screen
 - Make up data that is not in the live context above
+- Tell the user to "go check the 10-K/10-Q themselves" — if EDGAR text is in context, USE it; if not, answer from web and your knowledge
 
 FORMAT: Max 4 short paragraphs. Always cite specific numbers. Not financial advice.
 """
@@ -4201,8 +4204,15 @@ You do not discuss valuation multiples or chart patterns — direct those to the
         scope_note = "If the user asks about DCF or valuation, say: 'That's covered in the Valuation section — open it below.'"
 
     elif section in ("valuation", "dcf"):
-        specialist = f"You are the Valuation Specialist for {ticker}. Your domain: DCF assumptions, implied growth rates, Monte Carlo outputs, WACC inputs, scenario selection (bear/base/bull), and what the user's current slider choices imply about the stock's fair value. The valuation_state field in the data shows the user's live DCF inputs — always reference these specifically."
-        scope_note = "If the user asks about technicals or chart patterns, say: 'That's covered in the Technical section.'"
+        specialist = f"""You are the Valuation Specialist for {ticker}. Your full domain covers:
+1. DCF MODEL: The user's live slider inputs (valuation_state) — reference g1/g2/g3 growth rates, WACC, terminal multiple, and DCF-derived fair value explicitly.
+2. MARKET EVENTS: When the user asks WHY the stock re-rated or how the price changed over a date range, you MUST use the WEB SEARCH RESULTS (appended in context) to identify the specific catalyst — earnings miss, guidance cut, analyst downgrade, macro shock, sector rotation, or competitive threat. Name the event, the date, and the magnitude of the change. Never say "the data doesn't tell us why" — the web search results are there to tell you exactly that.
+3. SEC FILINGS: When relevant, use the EDGAR FILING EXCERPT (appended in context) to cite actual reported revenue, gross margin, operating margin, and guidance language from the most recent 10-K or 10-Q. Quote the filing directly and name the form and date.
+4. IMPLIED MULTIPLE ANALYSIS: Reverse-engineer what growth, margin, or multiple the market was pricing at the old price vs the new price. Show the arithmetic.
+5. SCENARIO FRAMING: Translate what the market's implied assumptions mean for bull/base/bear scenarios and whether they are reasonable given the fundamental data.
+
+The valuation_state field shows the user's current live DCF inputs — reference these specifically. For historical price movement questions, the web search context is your primary evidence source — use it, cite it, do not speculate in its absence."""
+        scope_note = "If the user asks about chart patterns or RSI/MACD, say: 'That's covered in the Technical section.'"
 
     elif section == "technical":
         specialist = f"You are the Technical Analysis Specialist for {ticker}. Your domain: price structure, trend, RSI, MACD, Bollinger Bands, support/resistance levels, options flow (put/call ratio, max pain, put wall, call wall), and trade setups. Always give both long AND short perspectives. Translate indicator readings into decision-relevant language — not generic descriptions."
@@ -4254,20 +4264,23 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
                 return ""
             tv = requests.post('https://api.tavily.com/search', json={
                 'api_key': TAVILY_API_KEY,
-                'query': tavily_query or f'{ticker} {last_user_msg[:150]}',
-                'search_depth': 'basic',
-                'max_results': 3,
+                'query': tavily_query or f'{ticker} {last_user_msg[:120]}',
+                'search_depth': 'advanced',
+                'max_results': 5,
                 'include_answer': True,
-            }, timeout=8)
+            }, timeout=12)
             if tv.ok:
                 tvj = tv.json()
                 snippets = []
                 if tvj.get('answer'):
                     snippets.append(f"Web summary: {tvj['answer']}")
-                for r in tvj.get('results', [])[:3]:
-                    snippets.append(f"- {r.get('title','')}: {r.get('content','')[:250]}")
+                for r in tvj.get('results', [])[:5]:
+                    snippets.append(f"- {r.get('title','')} ({r.get('url','').split('/')[2]}): {r.get('content','')[:350]}")
                 if snippets:
-                    return "\n\nWEB SEARCH RESULTS (use to supplement live data gaps — cite source where relevant):\n" + "\n".join(snippets)
+                    return (
+                        "\n\nWEB SEARCH RESULTS — USE THESE to explain market events, catalysts, earnings, and analyst moves. "
+                        "Cite by source title when you reference them:\n" + "\n".join(snippets)
+                    )
         except Exception:
             pass
         return ""
