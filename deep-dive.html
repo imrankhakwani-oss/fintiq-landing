@@ -1173,10 +1173,10 @@ a{color:var(--gold);text-decoration:none}
     <div class="session-label">Session</div>
     <div class="session-badges" id="session-badges">
       <span class="session-badge s-pending" id="sb-fundamentals">Fundamentals</span>
-      <span class="session-badge s-pending" id="sb-valuation">Valuation</span>
-      <span class="session-badge s-pending" id="sb-technical">Technical</span>
-      <span class="session-badge s-pending" id="sb-risk">Risk</span>
       <span class="session-badge s-pending" id="sb-catalyst">Catalyst</span>
+      <span class="session-badge s-pending" id="sb-technical">Technical</span>
+      <span class="session-badge s-pending" id="sb-valuation">Valuation</span>
+      <span class="session-badge s-pending" id="sb-risk">Risk</span>
       <span class="session-badge s-pending" id="sb-decision">Decision</span>
     </div>
     <button onclick="resetSession()" style="margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 10px;font-size:0.68rem;cursor:pointer">New</button>
@@ -1206,22 +1206,23 @@ a{color:var(--gold);text-decoration:none}
     </div>
   </div>
 
-  <!-- 2. Valuation -->
-  <div class="section-accordion" id="acc-valuation">
-    <div class="section-header" onclick="toggleSection('valuation')">
-      <div class="section-icon">💰</div>
+  <!-- 2. Catalyst -->
+  <div class="section-accordion" id="acc-catalyst">
+    <div class="section-header" onclick="toggleSection('catalyst')">
+      <div class="section-icon">⚡</div>
       <div>
-        <div class="section-title">Valuation</div>
-        <div class="section-desc">DCF, Monte Carlo, sensitivity grid, Graham number, sector multiples</div>
+        <div class="section-title">Catalyst Tracker</div>
+        <div class="section-desc">Upcoming earnings, economic events, recent news, options activity</div>
       </div>
-      <span class="section-status" id="status-valuation" style="display:none"></span>
-      <span class="section-chevron" id="chev-valuation">▼</span>
+      <span class="section-status" id="status-catalyst" style="display:none"></span>
+      <span class="section-chevron" id="chev-catalyst">▼</span>
     </div>
-    <div class="section-body" id="body-valuation">
-      <div class="placeholder-section">
-        <div class="ph-icon">🚧</div>
-        <p>Valuation section — DCF with reverse-engineered assumptions, Monte Carlo and heat grid — coming next.</p>
+    <div class="section-body" id="body-catalyst">
+      <div id="catalyst-loading" style="display:none;text-align:center;padding:40px 20px">
+        <div class="loading-spinner"></div>
+        <div id="catalyst-loading-label" style="color:var(--muted);font-size:0.8rem;margin-top:10px">Loading catalyst data…</div>
       </div>
+      <div id="catalyst-content" style="display:none"></div>
     </div>
   </div>
 
@@ -1247,7 +1248,26 @@ a{color:var(--gold);text-decoration:none}
     </div>
   </div>
 
-  <!-- 4. Risk & Position Sizing -->
+  <!-- 4. Valuation -->
+  <div class="section-accordion" id="acc-valuation">
+    <div class="section-header" onclick="toggleSection('valuation')">
+      <div class="section-icon">💰</div>
+      <div>
+        <div class="section-title">Valuation</div>
+        <div class="section-desc">DCF, Monte Carlo, sensitivity grid, Graham number, sector multiples</div>
+      </div>
+      <span class="section-status" id="status-valuation" style="display:none"></span>
+      <span class="section-chevron" id="chev-valuation">▼</span>
+    </div>
+    <div class="section-body" id="body-valuation">
+      <div class="placeholder-section">
+        <div class="ph-icon">🚧</div>
+        <p>Valuation section — DCF with reverse-engineered assumptions, Monte Carlo and heat grid — coming next.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Risk & Position Sizing -->
   <div class="section-accordion" id="acc-risk">
     <div class="section-header" onclick="toggleSection('risk')">
       <div class="section-icon">⚖️</div>
@@ -1264,26 +1284,6 @@ a{color:var(--gold);text-decoration:none}
         <div style="color:var(--muted);font-size:0.8rem;margin-top:10px">Running simulations…</div>
       </div>
       <div id="risk-content" style="display:none"></div>
-    </div>
-  </div>
-
-  <!-- 5. Catalyst -->
-  <div class="section-accordion" id="acc-catalyst">
-    <div class="section-header" onclick="toggleSection('catalyst')">
-      <div class="section-icon">⚡</div>
-      <div>
-        <div class="section-title">Catalyst Tracker</div>
-        <div class="section-desc">Upcoming earnings, economic events, recent news, options activity</div>
-      </div>
-      <span class="section-status" id="status-catalyst" style="display:none"></span>
-      <span class="section-chevron" id="chev-catalyst">▼</span>
-    </div>
-    <div class="section-body" id="body-catalyst">
-      <div id="catalyst-loading" style="display:none;text-align:center;padding:40px 20px">
-        <div class="loading-spinner"></div>
-        <div id="catalyst-loading-label" style="color:var(--muted);font-size:0.8rem;margin-top:10px">Loading catalyst data…</div>
-      </div>
-      <div id="catalyst-content" style="display:none"></div>
     </div>
   </div>
 
@@ -1323,6 +1323,21 @@ a{color:var(--gold);text-decoration:none}
   </div>
 
 </div><!-- /main -->
+
+<!-- ── Floating Live DCF Bar ──────────────────────────────────────────────── -->
+<div id="dcf-live-bar" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:900;
+  background:rgba(13,17,27,0.96);border-top:1px solid rgba(245,166,35,0.35);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  padding:9px 20px;box-shadow:0 -4px 20px rgba(0,0,0,0.5)">
+  <div style="max-width:960px;margin:0 auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <span style="font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap">DCF Intrinsic Value</span>
+    <span id="dcf-bar-value" style="font-size:1.05rem;font-weight:700;color:var(--gold);font-family:var(--mono);white-space:nowrap">—</span>
+    <span id="dcf-bar-upside" style="font-size:0.78rem;font-weight:600;white-space:nowrap">—</span>
+    <span style="font-size:0.62rem;color:var(--dim);margin-left:4px;white-space:nowrap">· live as you adjust sliders</span>
+    <span onclick="document.getElementById('dcf-live-bar').style.display='none'"
+      style="margin-left:auto;cursor:pointer;color:var(--muted);font-size:0.78rem;padding:2px 6px;border:1px solid var(--border);border-radius:4px;white-space:nowrap">✕</span>
+  </div>
+</div>
 
 <!-- ── Add to Watch List Modal ────────────────────────────────────────── -->
 <div class="atp-modal" id="atp-modal">
@@ -1822,6 +1837,11 @@ function toggleSection(name) {
   if (isOpen) {
     body.classList.remove('open');
     chev.classList.remove('open');
+    // Hide floating DCF bar when valuation collapses
+    if (name === 'valuation') {
+      const bar = document.getElementById('dcf-live-bar');
+      if (bar) bar.style.display = 'none';
+    }
   } else {
     openSection(name);
   }
@@ -3312,6 +3332,25 @@ function _refreshValuation() {
       }
     }
   }
+
+  // ── Update floating live DCF bar ──
+  const dcfBar = document.getElementById('dcf-live-bar');
+  const valBarEl = document.getElementById('dcf-bar-value');
+  const upBarEl  = document.getElementById('dcf-bar-upside');
+  if (dcfBar && valBarEl && dcf.equity_ps) {
+    valBarEl.textContent = `${cs}${dcf.equity_ps.toFixed(2)}`;
+    if (upBarEl && vs.price) {
+      const upsidePct = (dcf.equity_ps - vs.price) / vs.price * 100;
+      const isUp = upsidePct > 0;
+      upBarEl.textContent = `${isUp ? '▲' : '▼'} ${Math.abs(upsidePct).toFixed(1)}% ${isUp ? 'Upside' : 'Downside'}`;
+      upBarEl.style.color = isUp ? 'var(--green)' : 'var(--red)';
+    }
+    // Show bar only if valuation section is open
+    const valBody = document.getElementById('body-valuation');
+    if (valBody && valBody.classList.contains('open')) {
+      dcfBar.style.display = 'block';
+    }
+  }
 }
 
 // ── McKinsey 3-phase DCF ──
@@ -3482,8 +3521,8 @@ function _buildSensBrief(vs) {
 }
 
 // ── Sensitivity Table ──
-// Uses simple perpetuity TV = lastYrFCF*(1+tg)/(wacc-tg) so higher TG always
-// increases value (intuitive). pvFcf from the 10-year projection is held fixed.
+// Uses McKinsey CV formula: TV = NOPAT_11 * (1 - tg/RONIC) / (wacc - tg)
+// Matches _computeDCF exactly so the highlighted cell == the main DCF output.
 function _buildSensTable(vs) {
   const waccs = [6,7,8,9,10,11,12,13,14,15];
   const tgs   = [0,1,2,3,4,5];
@@ -3534,8 +3573,12 @@ function _buildSensTable(vs) {
       const tD = t / 100;
       const spread = wD - tD;
       if (spread <= 0.005) { h += `<td style="color:var(--muted)">—</td>`; return; }
-      // Simple Gordon Growth TV: last FCF * (1+tg) / (wacc - tg), discounted 10 yrs
-      const tvUndiscounted = lastFcf * (1 + tD) / spread;
+      // McKinsey CV: NOPAT_11 * (1 - tg/RONIC) / (wacc - tg) — matches _computeDCF
+      const ronicD  = vs.ronic / 100;
+      const nopat11 = nopat_last * (1 + tD);
+      const termIR  = ronicD > 0 ? Math.min(tD / ronicD, 0.95) : 0;
+      const termFcf = nopat11 * (1 - termIR);
+      const tvUndiscounted = termFcf / spread;
       const pvTV = tvUndiscounted / Math.pow(1 + wD, 10);
       const evTotal = pvFcfRow + pvTV;
       const eqVal   = evTotal - Math.max(vs.netDebt, 0);
