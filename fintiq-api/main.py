@@ -3845,11 +3845,13 @@ Be specific with numbers. Do not write "Overall" to start. Keep it under 100 wor
     return {"rows": rows, "analysis": analysis, "ticker": ticker}
 
 
-# ── EDGAR Copilot integration ──────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# EDGAR INTELLIGENCE LAYER v2
+# ══════════════════════════════════════════════════════════════════════════════
 _EDGAR_UA = os.environ.get("EDGAR_USER_AGENT", "fintiq-research bot@fintiq.uk")
 _CIK_CACHE: dict = {}   # ticker → zero-padded CIK string; persists for process lifetime
 
-# Maps question keywords → most relevant SEC form types
+# ── Form-type keyword scoring ─────────────────────────────────────────────────
 _EDGAR_FORM_PRIORITY = {
     "10-K":    ["annual report", "full year", "fiscal year", "10-k", "annual", "10k",
                 "revenue", "earnings", "profit", "loss", "cash flow", "balance sheet",
@@ -3860,7 +3862,9 @@ _EDGAR_FORM_PRIORITY = {
                 "latest quarter", "most recent", "current period", "this quarter"],
     "8-K":     ["8-k", "8k", "current report", "press release", "announcement",
                 "material event", "acquisition", "merger", "ceo", "leadership change",
-                "dividend", "earnings release", "guidance update"],
+                "dividend", "earnings release", "guidance update", "re-rate", "crash",
+                "collapse", "rally", "spike", "dropped", "surged", "why did", "what caused",
+                "catalyst", "moved", "fell", "rose"],
     "DEF 14A": ["proxy", "def 14a", "shareholder meeting", "board of directors",
                 "executive compensation", "ceo pay", "salary", "stock options",
                 "say on pay", "governance", "director", "committee", "vote"],
@@ -3870,79 +3874,217 @@ _EDGAR_FORM_PRIORITY = {
                 "officer purchase", "director buy"],
 }
 
-
 def _edgar_pick_form(question: str) -> list:
-    """Score form types against the user question. Returns ordered list of best form types."""
+    """Score form types against the user question. Returns ordered list (best first)."""
     q = question.lower()
     scores = {}
     for form, keywords in _EDGAR_FORM_PRIORITY.items():
         scores[form] = sum(1 for kw in keywords if kw in q)
     ordered = sorted(scores.items(), key=lambda x: -x[1])
     picks = [f for f, s in ordered if s > 0]
-    return (picks[:2]) if picks else ["10-K"]
+    return picks[:2] if picks else ["10-K"]
 
+# ── Keywords that signal multi-period / trend analysis ────────────────────────
+_MULTIPERIOD_KEYWORDS = [
+    "last three years", "last 3 years", "past three years", "past 3 years",
+    "over three years", "over 3 years", "three year", "3 year",
+    "last two years", "last 2 years", "past two years", "over two years",
+    "year over year", "yoy", "annual trend", "growth trend", "historical",
+    "compare years", "year by year", "each year", "per year", "yearly",
+    "2022", "2023", "2024", "fy2022", "fy2023", "fy2024",
+    "trend", "progression", "evolution", "over time", "how has",
+    "segment", "breakdown", "which segment", "product mix",
+]
 
+def _is_multiperiod(question: str) -> bool:
+    q = question.lower()
+    return any(kw in q for kw in _MULTIPERIOD_KEYWORDS)
+
+# ── SQLite cache ──────────────────────────────────────────────────────────────
+def _edgar_db():
+    """Return a SQLite connection for the EDGAR summary cache."""
+    db_path = "/data/edgar_cache.db" if os.path.exists("/data") else "/tmp/edgar_cache.db"
+    conn = sqlite3.connect(db_path, check_same_thread=False, timeout=10)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS edgar_summaries (
+            ticker       TEXT NOT NULL,
+            accession    TEXT NOT NULL,
+            section      TEXT NOT NULL,
+            form_type    TEXT NOT NULL,
+            filed_date   TEXT NOT NULL,
+            summary      TEXT NOT NULL,
+            raw_chars    INTEGER DEFAULT 0,
+            processed_at TEXT NOT NULL,
+            PRIMARY KEY (ticker, accession, section)
+        )
+    """)
+    conn.commit()
+    return conn
+
+def _edgar_cache_get(ticker: str, accession: str, section: str) -> str:
+    """Return cached AI summary or '' if not found / DB error."""
+    try:
+        conn = _edgar_db()
+        row = conn.execute(
+            "SELECT summary FROM edgar_summaries WHERE ticker=? AND accession=? AND section=?",
+            (ticker.upper(), accession, section)
+        ).fetchone()
+        conn.close()
+        return row[0] if row else ""
+    except Exception:
+        return ""
+
+def _edgar_cache_set(ticker: str, accession: str, section: str,
+                     form_type: str, filed_date: str, summary: str, raw_chars: int = 0):
+    """Persist an AI summary to cache. Fire-and-forget; never raises."""
+    try:
+        conn = _edgar_db()
+        conn.execute("""
+            INSERT OR REPLACE INTO edgar_summaries
+            (ticker, accession, section, form_type, filed_date, summary, raw_chars, processed_at)
+            VALUES (?,?,?,?,?,?,?,?)
+        """, (ticker.upper(), accession, section, form_type, filed_date,
+              summary, raw_chars, datetime.now(timezone.utc).isoformat()))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[EDGAR cache_set] {e}", flush=True)
+
+# ── Low-level HTTP helpers ────────────────────────────────────────────────────
+def _edgar_fetch_url(url: str, char_limit: int = 10000) -> str:
+    """Fetch a URL, strip HTML/XML tags, collapse whitespace, return cleaned text."""
+    try:
+        r = requests.get(url, timeout=25, headers={"User-Agent": _EDGAR_UA})
+        if not r.ok:
+            return ""
+        text = re.sub(r'<[^>]+>', ' ', r.text)
+        text = re.sub(r'&[a-zA-Z]+;', ' ', text)   # HTML entities
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text[:char_limit]
+    except Exception:
+        return ""
+
+def _edgar_get_filing_index(cik: str, accession: str) -> list:
+    """
+    Fetch the SEC filing index page and return all documents as a list of dicts:
+      [{path, doc_type, description}]
+    Path is always absolute (starts with /Archives/...).
+    """
+    try:
+        cik_int   = int(cik)
+        acc_clean = accession.replace("-", "")
+        index_url = (f"https://www.sec.gov/Archives/edgar/data/"
+                     f"{cik_int}/{acc_clean}/{accession}-index.htm")
+        r = requests.get(index_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
+        if not r.ok:
+            return []
+        docs = []
+        rows = re.findall(r'<tr[^>]*>(.*?)</tr>', r.text, re.DOTALL | re.IGNORECASE)
+        for row in rows:
+            cells = re.findall(r'<td[^>]*>(.*?)</td>', row, re.DOTALL | re.IGNORECASE)
+            if len(cells) < 3:
+                continue
+            link_m = re.search(r'href=["\']([^"\']+)["\']', cells[2], re.IGNORECASE)
+            if not link_m:
+                continue
+            raw_path = link_m.group(1)
+            # Normalise to absolute path
+            if raw_path.startswith('/'):
+                abs_path = raw_path
+            elif raw_path.startswith('http'):
+                abs_path = raw_path  # already full URL
+            else:
+                abs_path = f"/Archives/edgar/data/{cik_int}/{acc_clean}/{raw_path}"
+            doc_type    = re.sub(r'<[^>]+>', '', cells[3] if len(cells) > 3 else '').strip()
+            description = re.sub(r'<[^>]+>', '', cells[1] if len(cells) > 1 else '').strip()
+            docs.append({'path': abs_path, 'doc_type': doc_type, 'description': description})
+        return docs
+    except Exception as e:
+        print(f"[EDGAR get_index] {accession}: {e}", flush=True)
+        return []
+
+# ── 8-K exhibit fetcher ───────────────────────────────────────────────────────
+def _edgar_fetch_8k_content(cik: str, accession: str) -> str:
+    """
+    For 8-K filings: fetch EX-99.1 (earnings press release) first.
+    EX-99.1 contains the actual revenue/EPS/guidance numbers from an earnings event.
+    Falls back to the main 8-K body if no EX-99.1 found.
+    """
+    try:
+        docs = _edgar_get_filing_index(cik, accession)
+        # Priority 1: EX-99.1 / EX-99.2 (earnings release, supplemental data)
+        for priority_type in ["EX-99.1", "EX-99.2", "EX-99"]:
+            for doc in docs:
+                dt = doc.get('doc_type', '').upper()
+                if priority_type in dt:
+                    url = ("https://www.sec.gov" + doc['path']
+                           if doc['path'].startswith('/') else doc['path'])
+                    content = _edgar_fetch_url(url, char_limit=12000)
+                    if content and len(content) > 300:
+                        print(f"[EDGAR 8K] {accession}: fetched {priority_type}", flush=True)
+                        return content
+        # Priority 2: main 8-K body (may reference the exhibit but still has item text)
+        cik_int   = int(cik)
+        acc_clean = accession.replace("-", "")
+        for doc in docs:
+            dt   = doc.get('doc_type', '').upper()
+            path = doc.get('path', '')
+            name = path.split('/')[-1].lower()
+            if dt == '8-K' or (name.endswith('.htm') and not re.match(r'^r\d+\.htm$', name)
+                                and 'ex' not in name):
+                url = ("https://www.sec.gov" + path if path.startswith('/') else path)
+                content = _edgar_fetch_url(url, char_limit=10000)
+                if content and len(content) > 200:
+                    return content
+        return ""
+    except Exception as e:
+        print(f"[EDGAR 8K] {accession}: {e}", flush=True)
+        return ""
+
+# ── Section extractor for 10-K / 10-Q ────────────────────────────────────────
 def _edgar_fetch_section(cik: str, accession: str, question: str,
                          char_limit: int = 6000, primary_doc: str = "") -> str:
     """
-    Fetch the most relevant section from an EDGAR filing based on the user question.
-    Returns up to char_limit chars of relevant text, or doc start as fallback.
-    Uses primary_doc filename when provided; otherwise parses the filing index page.
+    Extract the most relevant section from a 10-K or 10-Q.
+    Uses primary_doc filename when provided; otherwise parses the index page.
     """
     try:
         acc_clean = accession.replace("-", "")
         cik_int   = int(cik)
 
-        # Resolve the main document URL
         if primary_doc:
-            # Prefer the known primary document filename (most reliable)
-            doc_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_clean}/{primary_doc}"
+            doc_url = (f"https://www.sec.gov/Archives/edgar/data/"
+                       f"{cik_int}/{acc_clean}/{primary_doc}")
         else:
-            # Fall back to parsing the index page and picking the first .htm that
-            # looks like a filing body (not an exhibit or R-file)
-            index_url = f"https://www.sec.gov/Archives/edgar/data/{cik_int}/{acc_clean}/{accession}-index.htm"
-            r = requests.get(index_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
-            if not r.ok:
-                return ""
-            # Prefer the primary document description in the index table
-            # Look for hrefs that are NOT exhibit-only files (R\d+.htm, exhibit*.htm)
-            candidates = re.findall(
-                r'href="(/Archives/edgar/data/\d+/\d+/[^"]+\.htm)"',
-                r.text, re.IGNORECASE
-            )
+            docs = _edgar_get_filing_index(cik, accession)
             doc_path = ""
-            for c in candidates:
-                # Skip iXBRL viewer, exhibits, and R-numbered XBRL files
-                name = c.split("/")[-1].lower()
+            for doc in docs:
+                name = doc['path'].split('/')[-1].lower()
+                dt   = doc.get('doc_type', '').upper()
                 if re.match(r'^r\d+\.htm$', name):
                     continue
                 if any(x in name for x in ["exhibit", "ex-", "ex_", "xbrl"]):
                     continue
-                doc_path = c
-                break
+                if dt in ('10-K', '10-Q', '10-K405', '10-KSB', '10-QSB') or name.endswith('.htm'):
+                    doc_path = doc['path']
+                    break
             if not doc_path:
                 return ""
-            doc_url = "https://www.sec.gov" + doc_path
+            doc_url = ("https://www.sec.gov" + doc_path
+                       if doc_path.startswith('/') else doc_path)
 
-        doc_r = requests.get(doc_url, timeout=25, headers={"User-Agent": _EDGAR_UA})
-        if not doc_r.ok:
+        text = _edgar_fetch_url(doc_url, char_limit=120000)  # get full doc for section search
+        if not text:
             return ""
-
-        text = re.sub(r'<[^>]+>', ' ', doc_r.text)
-        text = re.sub(r'\s+', ' ', text).strip()
         q = question.lower()
 
-        # Try specific sections in order of match to the question
         section_patterns = [
-            # Segment revenue — financial statement notes (highest priority for breakdown questions)
             (["segment", "division", "breakdown", "business unit", "product line",
               "data center", "gaming", "cloud", "enterprise", "consumer"],
              [r"SEGMENT INFORMATION", r"SEGMENT REVENUE", r"REPORTABLE SEGMENT",
               r"OPERATING SEGMENT", r"NOTE\s+\d+[.\s]+SEGMENT", r"BUSINESS SEGMENTS"]),
-            # Supply chain and supplier concentration (risk factors is the right home)
             (["supplier", "supply chain", "chip", "semiconductor", "tsmc", "foundry",
-              "manufacturing", "outsource", "vendor", "source", "dependency", "dependence",
-              "single source", "concentration", "procurement"],
+              "manufacturing", "outsource", "vendor", "dependency", "concentration"],
              [r"ITEM\s+1A[.\s]+RISK FACTORS", r"RISK FACTORS", r"DEPENDENCE ON KEY",
               r"SOLE SOURCE", r"SINGLE SOURCE", r"MANUFACTURING"]),
             (["risk", "risk factor"],
@@ -3952,8 +4094,10 @@ def _edgar_fetch_section(cik: str, accession: str, question: str,
              [r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION", r"MANAGEMENT.S DISCUSSION AND ANALYSIS",
               r"ITEM\s+1[.\s]+BUSINESS"]),
             (["mda", "management", "discussion", "analysis", "result", "operation",
-              "revenue", "profit", "margin", "growth", "performance"],
-             [r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION", r"MANAGEMENT.S DISCUSSION AND ANALYSIS"]),
+              "revenue", "profit", "margin", "growth", "performance",
+              "re-rate", "why", "catalyst", "moved", "fell", "rose", "dropped", "surged"],
+             [r"ITEM\s+7[.\s]+MANAGEMENT.S DISCUSSION", r"MANAGEMENT.S DISCUSSION AND ANALYSIS",
+              r"ITEM\s+2[.\s]+MANAGEMENT.S DISCUSSION"]),
             (["liquidity", "cash flow", "capital"],
              [r"LIQUIDITY AND CAPITAL RESOURCES", r"LIQUIDITY"]),
             (["compensation", "pay", "salary", "executive"],
@@ -3972,41 +4116,150 @@ def _edgar_fetch_section(cik: str, accession: str, question: str,
                         start = m.start()
                         rest  = text[start + 50:]
                         end_m = re.search(r'ITEM\s+\d+[A-Z]?[.\s]', rest.upper())
-                        end   = start + 50 + end_m.start() if end_m else start + 10000
+                        end   = start + 50 + end_m.start() if end_m else start + 12000
                         return text[start:end][:char_limit]
 
-        return text[:min(5000, char_limit)]  # fallback: document start
+        return text[:min(5000, char_limit)]
 
     except Exception as e:
         print(f"[EDGAR fetch_section] {accession}: {e}", flush=True)
         return ""
 
+# ── Haiku AI pre-processor ────────────────────────────────────────────────────
+def _edgar_ai_summarize(ticker: str, form_type: str, filed_date: str,
+                        section_name: str, raw_text: str) -> str:
+    """
+    Use Claude Haiku to convert raw EDGAR filing text into a dense analytical summary.
+    Section-aware instructions extract the data that matters most per section type.
+    Returns 400-700 chars of analyst-quality content suitable for direct citation.
+    Falls back to raw truncation if Haiku call fails.
+    """
+    if not raw_text or len(raw_text) < 100:
+        return ""
 
-# Keywords that signal the user wants multi-period / trend analysis
-_MULTIPERIOD_KEYWORDS = [
-    "last three years", "last 3 years", "past three years", "past 3 years",
-    "over three years", "over 3 years", "three year", "3 year",
-    "last two years", "last 2 years", "past two years", "over two years",
-    "year over year", "yoy", "annual trend", "growth trend", "historical",
-    "compare years", "year by year", "each year", "per year", "yearly",
-    "2022", "2023", "2024", "fy2022", "fy2023", "fy2024",
-    "trend", "progression", "evolution", "over time", "how has",
-    "segment", "breakdown", "which segment", "product mix",
-]
+    section_instructions = {
+        "earnings_release": (
+            "Extract: (1) Revenue with exact figure, YoY%, and vs analyst consensus if mentioned, "
+            "(2) EPS (GAAP and non-GAAP) with YoY% and vs consensus, "
+            "(3) Gross margin and operating margin, "
+            "(4) EXACT next-quarter and/or full-year guidance — quote the specific numbers verbatim, "
+            "(5) Any CEO/CFO commentary that explains the results or outlook. "
+            "If guidance was cut or raised, say so explicitly."
+        ),
+        "mda": (
+            "Extract: (1) Revenue growth drivers and headwinds named by management with specific figures, "
+            "(2) Margin trends with explanation, "
+            "(3) Any forward-looking guidance or outlook language — quote numbers verbatim, "
+            "(4) Operating performance vs prior period. "
+            "Name specific product lines, geographies, or customers where cited."
+        ),
+        "segments": (
+            "Extract all segment revenue figures: name each segment, its revenue, YoY% growth, "
+            "and operating income if shown. Identify which segments grew vs declined and by how much. "
+            "Quote any management commentary on segment mix shifts or new segment contributions."
+        ),
+        "risk_factors": (
+            "Extract the 3-5 most material, company-specific risks. "
+            "Be specific — name actual customers, geographies, technologies, regulations, competitors. "
+            "Skip generic boilerplate. Focus on concentration risk, regulatory risk, competitive threats."
+        ),
+        "guidance": (
+            "Extract all forward-looking statements with specific figures: "
+            "revenue guidance range, EPS guidance range, capex plans, margin targets, "
+            "headcount or investment plans, any qualitative strategic milestones with dates."
+        ),
+    }
 
-def _is_multiperiod(question: str) -> bool:
+    instruction = section_instructions.get(
+        section_name,
+        "Extract the most financially material information: specific revenue, margin, EPS, "
+        "and guidance figures. Quote key management language. Lead with the most important number."
+    )
+
+    try:
+        c = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+        r = c.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=750,
+            system=(
+                f"You are extracting key financial data from an SEC filing.\n"
+                f"Company: {ticker} | Form: {form_type} | Filed: {filed_date}\n"
+                f"Task: {instruction}\n"
+                "Format: Dense analytical paragraph(s), 400-700 chars. "
+                "Lead with the single most important number or conclusion. "
+                "Use exact figures. No preamble like 'The filing states' — just the data."
+            ),
+            messages=[{"role": "user", "content": raw_text[:5000]}],
+        )
+        return r.content[0].text.strip()
+    except Exception as e:
+        print(f"[EDGAR ai_summarize] {e}", flush=True)
+        return raw_text[:700]   # graceful fallback
+
+# ── Orchestrator: cache-check → fetch → summarize → cache ────────────────────
+def _edgar_get_or_process(ticker: str, form_type: str, filed_date: str,
+                           accession: str, primary_doc: str,
+                           question: str, cik: str) -> str:
+    """
+    For a single filing: check SQLite cache → fetch raw content → AI summarize → cache.
+    Returns the best available summary string for injection into the copilot context.
+    """
+    # Determine section type from question
     q = question.lower()
-    return any(kw in q for kw in _MULTIPERIOD_KEYWORDS)
+    if form_type == "8-K":
+        section_name = "earnings_release"
+    elif any(t in q for t in ["segment", "breakdown", "division", "product line",
+                               "data center", "gaming", "cloud", "automotive"]):
+        section_name = "segments"
+    elif any(t in q for t in ["risk", "supplier", "supply chain", "competition",
+                               "regulatory", "concentration"]):
+        section_name = "risk_factors"
+    elif any(t in q for t in ["guidance", "outlook", "forecast", "next quarter",
+                               "next year", "forward"]):
+        section_name = "guidance"
+    else:
+        section_name = "mda"   # default: MD&A is most broadly useful
 
+    # 1. Check cache (instant if hit)
+    cached = _edgar_cache_get(ticker, accession, section_name)
+    if cached:
+        print(f"[EDGAR cache HIT] {ticker} {form_type} {section_name}", flush=True)
+        return cached
 
+    # 2. Fetch raw content
+    if form_type == "8-K":
+        raw = _edgar_fetch_8k_content(cik, accession)
+    else:
+        raw = _edgar_fetch_section(
+            cik, accession, question, char_limit=8000, primary_doc=primary_doc
+        )
+
+    if not raw or len(raw) < 100:
+        return ""
+
+    # 3. AI summarize
+    summary = _edgar_ai_summarize(ticker, form_type, filed_date, section_name, raw)
+
+    # 4. Cache the result
+    if summary:
+        _edgar_cache_set(ticker, accession, section_name, form_type,
+                         filed_date, summary, len(raw))
+
+    return summary or raw[:700]
+
+# ── Main entry point ──────────────────────────────────────────────────────────
 def _edgar_copilot_fetch(ticker: str, question: str) -> str:
     """
-    Fetch the most relevant EDGAR filings for a US ticker given a user question.
-    Returns a formatted text block to inject into the copilot's system prompt.
-    Silently returns "" on any failure or non-US ticker.
+    EDGAR Intelligence Layer v2.
+    - 8-K: fetches EX-99.1 exhibit (actual earnings press release)
+    - 10-K/10-Q: extracts the relevant section (MD&A, segments, risk factors)
+    - All results AI-processed by Haiku into dense analytical summaries
+    - Cached in SQLite — repeat questions are instant (no SEC round-trip)
+    - Always includes the latest 8-K alongside the question-matched form type
+      so earnings/guidance data is always present for valuation questions
     """
     try:
-        if '.' in ticker:  # non-US (e.g. .L for London) — skip EDGAR
+        if '.' in ticker:   # non-US (e.g. TSCO.L) — skip EDGAR
             return ""
 
         cik = _fetch_edgar_cik(ticker)
@@ -4014,19 +4267,19 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
             return ""
 
         sub_url = f"https://data.sec.gov/submissions/CIK{cik}.json"
-        sub_r = requests.get(sub_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
+        sub_r   = requests.get(sub_url, timeout=15, headers={"User-Agent": _EDGAR_UA})
         if not sub_r.ok:
             return ""
-        sub_data = sub_r.json()
+        sub_data     = sub_r.json()
         company_name = sub_data.get("name", ticker)
 
-        filings_data  = sub_data.get("filings", {}).get("recent", {})
-        forms         = filings_data.get("form", [])
-        dates         = filings_data.get("filingDate", [])
-        accessions    = filings_data.get("accessionNumber", [])
-        primary_docs  = filings_data.get("primaryDocument", [""] * len(forms))
+        filings_data = sub_data.get("filings", {}).get("recent", {})
+        forms        = filings_data.get("form", [])
+        dates        = filings_data.get("filingDate", [])
+        accessions   = filings_data.get("accessionNumber", [])
+        primary_docs = filings_data.get("primaryDocument", [""] * len(forms))
 
-        # Build index by form type (keep up to 3 most recent per type)
+        # Build form index (up to 3 most recent per type)
         form_index: dict = {}
         for i, form in enumerate(forms):
             if form not in form_index:
@@ -4038,89 +4291,92 @@ def _edgar_copilot_fetch(ticker: str, question: str) -> str:
                     "primary_doc": primary_docs[i] if i < len(primary_docs) else "",
                 })
 
-        # Available filings summary
+        # Available filings summary (for the AI to know what exists)
         summary_lines = []
-        for form in ["10-K", "10-Q", "8-K", "DEF 14A", "4", "SC 13G"]:
+        for form in ["10-K", "10-Q", "8-K", "DEF 14A", "4"]:
             if form in form_index:
                 latest = form_index[form][0]
                 summary_lines.append(f"  • {form}: latest filed {latest['date']}")
-        available_summary = "\n".join(summary_lines) if summary_lines else "  (no recent filings found)"
-
-        # Determine if the question needs multi-period comparison
-        multiperiod = _is_multiperiod(question)
-        target_forms = _edgar_pick_form(question)
-        # For multi-period questions prefer 10-K (annual) unless explicitly quarterly
-        if multiperiod and "10-K" not in target_forms:
-            target_forms = ["10-K"] + target_forms
+        available_summary = "\n".join(summary_lines) or "  (no recent filings found)"
 
         parts = [
             f"\n\nSEC EDGAR — {company_name} ({ticker}) [CIK: {cik}]",
             f"Available SEC filings:\n{available_summary}",
         ]
 
+        multiperiod  = _is_multiperiod(question)
+        target_forms = _edgar_pick_form(question)
+        if multiperiod and "10-K" not in target_forms:
+            target_forms = ["10-K"] + target_forms
+
+        # Always append the latest 8-K so earnings/guidance data is present
+        # for any valuation or market-event question — it costs nothing if cached
+        if "8-K" not in target_forms and "8-K" in form_index:
+            target_forms = target_forms + ["8-K"]
+
         if multiperiod:
-            # Fetch up to 3 annual filings and stitch them by year
-            # Each excerpt limited to 3,000 chars so total stays manageable
-            best_form = next((f for f in target_forms if f in form_index and form_index[f]), None)
-            period_excerpts = []
+            best_form = next(
+                (f for f in target_forms if f in form_index and form_index[f]), None
+            )
+            period_parts = []
             if best_form:
                 for filing in form_index[best_form][:3]:
-                    excerpt = _edgar_fetch_section(
-                        cik, filing["accession"], question, char_limit=3000,
-                        primary_doc=filing.get("primary_doc", "")
+                    summary = _edgar_get_or_process(
+                        ticker, best_form, filing["date"],
+                        filing["accession"], filing.get("primary_doc", ""),
+                        question, cik
                     )
-                    if excerpt and len(excerpt) > 150:
-                        fiscal_year = filing["date"][:4]
-                        period_excerpts.append(
-                            f"=== {best_form} filed {filing['date']} (FY{fiscal_year}) ===\n{excerpt}"
+                    if summary and len(summary) > 80:
+                        fy = filing["date"][:4]
+                        period_parts.append(
+                            f"=== {best_form} filed {filing['date']} (FY{fy}) ===\n{summary}"
                         )
-
-            if period_excerpts:
+            if period_parts:
                 parts.append(
-                    f"\nMULTI-PERIOD EDGAR DATA ({best_form}, {len(period_excerpts)} annual filings, most recent first):\n"
-                    f"Use these to construct the year-by-year trend the user is asking about.\n\n"
-                    + "\n\n".join(period_excerpts)
+                    f"\nMULTI-PERIOD EDGAR SUMMARIES "
+                    f"({best_form}, {len(period_parts)} periods, most recent first):\n"
+                    + "\n\n".join(period_parts)
                 )
             else:
                 parts.append(
-                    "\nMulti-period filing text could not be retrieved this request. "
-                    "Use the web search results and your own knowledge to answer; "
-                    "do NOT tell the user to go check SEC EDGAR themselves."
+                    "\nFiling data unavailable for this request. "
+                    "Use web search and your own knowledge — do NOT tell the user to look it up."
                 )
         else:
-            # Single-period: fetch text from the single most relevant filing
-            filing_text = ""
-            source_form = ""
-            source_date = ""
+            filing_parts = []
+            seen = set()
             for form in target_forms:
-                if form in form_index and form_index[form]:
-                    filing = form_index[form][0]
-                    text = _edgar_fetch_section(
-                        cik, filing["accession"], question, char_limit=5500,
-                        primary_doc=filing.get("primary_doc", "")
+                if form not in form_index or form in seen:
+                    continue
+                filing  = form_index[form][0]
+                summary = _edgar_get_or_process(
+                    ticker, form, filing["date"],
+                    filing["accession"], filing.get("primary_doc", ""),
+                    question, cik
+                )
+                if summary and len(summary) > 80:
+                    filing_parts.append(
+                        f"[{form} — filed {filing['date']}]\n{summary}"
                     )
-                    if text and len(text) > 200:
-                        filing_text = text
-                        source_form = form
-                        source_date = filing["date"]
-                        break
+                    seen.add(form)
+                if len(filing_parts) >= 2:   # cap at 2 filings to keep context tight
+                    break
 
-            if filing_text:
+            if filing_parts:
                 parts.append(
-                    f"\nMost relevant filing: {source_form} filed {source_date}\n"
-                    f"--- EDGAR FILING EXCERPT ---\n{filing_text}\n--- END EXCERPT ---"
+                    "\nEDGAR FILING SUMMARIES (AI-processed from SEC filings — cite form type and date):\n"
+                    + "\n\n".join(filing_parts)
                 )
             else:
                 parts.append(
-                    "\nFiling text could not be retrieved this request. "
-                    "Answer using the web search results and your own knowledge; "
-                    "do NOT tell the user to go look it up on SEC EDGAR themselves."
+                    "\nFiling data unavailable for this request. "
+                    "Use web search and your own knowledge — do NOT tell the user to look it up."
                 )
 
         return "\n".join(parts)
 
     except Exception as e:
-        print(f"[EDGAR Copilot] {ticker}: {e}", flush=True)
+        print(f"[EDGAR v2] {ticker}: {e}", flush=True)
         return ""
 
 
