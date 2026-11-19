@@ -4,7 +4,7 @@ Serves: /bulletin, /market-data, /earnings, /health
 Deployed to: api.fintiq.uk (Railway)
 """
 import os, json, time, threading, requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor
 import yfinance as yf
@@ -4182,7 +4182,10 @@ WHAT YOU DO NOT DO:
 - Make up data that is not in the live context above
 - Tell the user to "go check the 10-K/10-Q themselves" — if EDGAR text is in context, USE it; if not, answer from web and your knowledge
 
-FORMAT: Max 4 short paragraphs. Always cite specific numbers. Not financial advice.
+FORMAT RULES — NON-NEGOTIABLE:
+- Write in flowing paragraphs, like a sharp analyst speaking directly to an investor. NO markdown headers (never use # or ## symbols). NO bullet-point lists unless the data is genuinely tabular. Use **bold** to highlight key numbers and conclusions within sentences.
+- Maximum 4 paragraphs per response. Lead with the direct answer in the first sentence — never with preamble.
+- Always cite specific numbers. Not financial advice.
 """
 
     # ── SECTION-SPECIALIST SYSTEM PROMPTS ──
@@ -4234,7 +4237,11 @@ The valuation_state field shows the user's current live DCF inputs — reference
         specialist = f"You are a Senior Equity Analyst specialising in {section} analysis for {ticker}."
         scope_note = ""
 
+    today_str = datetime.now(timezone.utc).strftime("%B %d, %Y")
+
     system = f"""{specialist}
+
+TODAY'S DATE: {today_str} (UTC) — use this to reason about whether events are recent (last 60 days), historical, or still upcoming. SEC filings lag by weeks/months; for events in the last 60 days rely on WEB SEARCH RESULTS, not EDGAR.
 
 ANALYSIS SESSION: {session_id}
 STOCK: {ticker}
@@ -4258,13 +4265,37 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
 
     from concurrent.futures import ThreadPoolExecutor, as_completed as _as_completed
 
+    def _ai_search_query():
+        """Use Haiku to generate an optimal Tavily search query from the user's question."""
+        if tavily_query:
+            return tavily_query   # caller-supplied override wins
+        try:
+            c = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+            r = c.messages.create(
+                model="claude-haiku-4-5-20251001",
+                max_tokens=25,
+                system=(
+                    "You generate web search queries for investment research. "
+                    "Given a stock ticker, section, and investor question, output ONLY a concise "
+                    "10-15 word search query that will find the most relevant news, events, filings, "
+                    "and analyst commentary. Output the query string only — no quotes, no explanation."
+                ),
+                messages=[{"role": "user", "content":
+                    f"Stock: {ticker}\nSection: {section}\nToday: {today_str}\n"
+                    f"Question: {last_user_msg[:400]}"
+                }],
+            )
+            return r.content[0].text.strip().strip('"\'')
+        except Exception:
+            return f"{ticker} {last_user_msg[:80]}"
+
     def _fetch_tavily():
         try:
             if not TAVILY_API_KEY:
                 return ""
             tv = requests.post('https://api.tavily.com/search', json={
                 'api_key': TAVILY_API_KEY,
-                'query': tavily_query or f'{ticker} {last_user_msg[:120]}',
+                'query': _ai_search_query(),
                 'search_depth': 'advanced',
                 'max_results': 5,
                 'include_answer': True,
@@ -4301,8 +4332,8 @@ USER CONCLUSIONS FROM PRIOR SECTIONS:
     latest_turn    = history[-1] if history else {"role": "user", "content": ""}
 
     resp = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1500,
+        model="claude-sonnet-4-6",
+        max_tokens=2000,
         system=system + web_supplement + edgar_supplement,
         messages=history,
     )

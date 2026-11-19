@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fintiq — Technical Information Memorandum | November 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+  :root {
+    --navy: #0A1628; --amber: #F59E0B; --teal: #0F766E; --slate: #475569;
+    --light: #F8FAFC; --border: #CBD5E1; --red: #DC2626; --green: #16A34A;
+    --text: #1E293B;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: var(--text); font-size: 14px; line-height: 1.65; }
+
+  /* ── Print layout ── */
+  @page { size: A4; margin: 20mm 20mm 18mm 20mm; }
+  @media print {
+    .no-print { display: none; }
+    .page-break { page-break-after: always; }
+    .cover { page-break-after: always; }
+    section { page-break-inside: avoid; }
+    h2 { page-break-after: avoid; }
+  }
+
+  /* ── Screen wrapper ── */
+  .wrapper { max-width: 900px; margin: 0 auto; padding: 40px 48px; }
+
+  /* ── Print button ── */
+  .no-print {
+    position: fixed; top: 20px; right: 20px; z-index: 100;
+    background: var(--amber); color: #000; border: none;
+    padding: 10px 20px; border-radius: 6px; font-weight: 700;
+    font-size: 14px; cursor: pointer; font-family: inherit;
+  }
+  .no-print:hover { background: #D97706; }
+
+  /* ── Cover ── */
+  .cover {
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: flex-start;
+    padding: 80px 0 60px;
+  }
+  .cover-brand { font-size: 64px; font-weight: 800; color: var(--amber); letter-spacing: -2px; }
+  .cover-sub { font-size: 22px; color: var(--slate); margin-top: 4px; font-weight: 500; }
+  .cover-divider { border: none; border-top: 3px solid var(--amber); margin: 32px 0; width: 100%; }
+  .cover-title { font-size: 28px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .cover-desc { font-size: 16px; color: var(--slate); font-style: italic; }
+  .cover-meta { margin-top: 60px; display: flex; flex-direction: column; gap: 6px; }
+  .cover-conf { display: inline-block; color: var(--red); font-weight: 700; font-size: 13px; letter-spacing: 1px; margin-bottom: 10px; }
+  .cover-date { color: var(--slate); font-size: 14px; }
+  .cover-contact { color: var(--slate); font-size: 14px; }
+  .cover-legal { margin-top: 48px; font-size: 11px; color: #94A3B8; font-style: italic; max-width: 600px; }
+
+  /* ── TOC ── */
+  .toc { background: var(--light); border-left: 4px solid var(--amber); padding: 24px 28px; margin: 0 0 48px; border-radius: 0 8px 8px 0; }
+  .toc h3 { font-size: 13px; font-weight: 700; color: var(--slate); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 14px; }
+  .toc ol { padding-left: 20px; }
+  .toc li { margin: 6px 0; }
+  .toc a { color: var(--navy); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .toc a:hover { color: var(--amber); }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 22px; font-weight: 700; color: var(--navy);
+    border-bottom: 2px solid var(--amber); padding-bottom: 8px;
+    margin: 48px 0 20px;
+  }
+  h3 { font-size: 15px; font-weight: 700; color: var(--teal); margin: 28px 0 10px; }
+
+  /* ── Body text ── */
+  p { margin: 0 0 12px; }
+  ul { padding-left: 20px; margin: 0 0 12px; }
+  li { margin: 5px 0; }
+
+  /* ── Info table (2-col key-value) ── */
+  .info-table { width: 100%; border-collapse: collapse; margin: 16px 0 20px; font-size: 13px; }
+  .info-table td { padding: 9px 12px; border: 1px solid var(--border); vertical-align: top; }
+  .info-table td:first-child { width: 32%; background: var(--light); font-weight: 600; color: var(--slate); white-space: nowrap; }
+  .info-table td:last-child { color: var(--text); }
+
+  /* ── Data table ── */
+  .data-table { width: 100%; border-collapse: collapse; margin: 16px 0 20px; font-size: 12.5px; }
+  .data-table th { background: var(--navy); color: #fff; padding: 9px 10px; text-align: left; font-weight: 600; }
+  .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .data-table tr:nth-child(even) td { background: var(--light); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  /* ── Badge ── */
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+  .badge-amber { background: #FEF3C7; color: #92400E; }
+  .badge-teal  { background: #CCFBF1; color: #0F766E; }
+  .badge-red   { background: #FEE2E2; color: #991B1B; }
+
+  /* ── Callout box ── */
+  .callout { background: var(--light); border-left: 4px solid var(--teal); padding: 16px 20px; margin: 20px 0; border-radius: 0 8px 8px 0; }
+  .callout p { margin: 0; font-size: 13px; }
+
+  /* ── Footer ── */
+  .doc-footer { margin-top: 60px; padding-top: 24px; border-top: 2px solid var(--amber); text-align: center; }
+  .doc-footer p { font-size: 12px; color: var(--slate); margin: 4px 0; }
+  .doc-footer strong { color: var(--amber); }
+
+  /* ── Section numbers ── */
+  section { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<button class="no-print" onclick="window.print()">⬇ Save / Print PDF</button>
+
+<div class="wrapper">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-brand">Fintiq</div>
+    <div class="cover-sub">Financial Intelligence Platform</div>
+    <hr class="cover-divider">
+    <div class="cover-title">TECHNICAL INFORMATION MEMORANDUM</div>
+    <div class="cover-desc">Prepared for Prospective Acquirers &amp; White-Label Partners</div>
+    <div class="cover-meta">
+      <span class="cover-conf">⬛ CONFIDENTIAL</span>
+      <span class="cover-date">November 2026</span>
+      <span class="cover-contact">fintiq.uk &nbsp;·&nbsp; contactfintiq@gmail.com</span>
+    </div>
+    <p class="cover-legal">This document is confidential and intended solely for the named recipient. No part may be reproduced or disclosed to any third party without the prior written consent of Fintiq Ltd. This document does not constitute an offer to sell or a solicitation of an offer to buy.</p>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc">
+    <h3>Contents</h3>
+    <ol>
+      <li><a href="#s1">Executive Summary</a></li>
+      <li><a href="#s2">Product Overview</a></li>
+      <li><a href="#s3">Technical Architecture</a></li>
+      <li><a href="#s4">Backend API — Key Endpoints</a></li>
+      <li><a href="#s5">Data Sources &amp; Coverage</a></li>
+      <li><a href="#s6">Operating Cost Model</a></li>
+      <li><a href="#s7">Regulatory Compliance</a></li>
+      <li><a href="#s8">Security</a></li>
+      <li><a href="#s9">White-Label Offering</a></li>
+      <li><a href="#s10">Assets Included</a></li>
+      <li><a href="#s11">Near-Term Product Roadmap</a></li>
+      <li><a href="#s12">Transaction Structure</a></li>
+    </ol>
+  </div>
+
+  <!-- 1. EXECUTIVE SUMMARY -->
+  <section id="s1">
+    <h2>1. Executive Summary</h2>
+    <p>Fintiq is a live, revenue-generating fintech platform that provides institutional-grade investment research tools to retail investors. It is accessible at <strong>fintiq.uk</strong> and operates a freemium subscription model at <strong>£3.50 / $5.00 per month</strong>.</p>
+    <p>The platform was built and is operated entirely by a solo founder, with no external engineering team. All tools are live, FCA-compliant, and security-hardened. The codebase is clean, documented, and deployable by any technical operator within days.</p>
+
+    <table class="info-table">
+      <tr><td>Live URL</td><td>https://www.fintiq.uk</td></tr>
+      <tr><td>API URL</td><td>https://api.fintiq.uk</td></tr>
+      <tr><td>Tools live</td><td>10 standalone tools + AI Deep Dive + Market Bulletin + Alpha Scanner + Fintiq Scout + Catalyst Atlas</td></tr>
+      <tr><td>Subscription</td><td>£3.50/month (GBP) · $5.00/month (USD) · Stripe Checkout live</td></tr>
+      <tr><td>Credit pack</td><td>Catalyst Atlas: 10 searches for £2.29 (GBP) / $2.99 (USD) · one-off, searches never expire · Stripe Checkout live</td></tr>
+      <tr><td>Free tier</td><td>All standalone tools, Alpha Scanner, Bulletin, Scout, Learn section — unlimited; Tesla ticker free on Catalyst Atlas</td></tr>
+      <tr><td>Paid gates</td><td>Deep Dive — 1 free per email, then monthly subscription; Catalyst Atlas — 1 free ticker (Tesla), then credit pack</td></tr>
+      <tr><td>Hosting cost</td><td>~£25–35/month total (Railway + Vercel free tier + Upstash free tier)</td></tr>
+      <tr><td>AI API cost</td><td>~$0.20–0.30/day fixed + ~$0.11–0.15 per Deep Dive session</td></tr>
+      <tr><td>Regulatory</td><td>FCA financial promotions (s.21 FSMA 2000) — compliant as at November 2026</td></tr>
+      <tr><td>Jurisdiction</td><td>UK (Fintiq Ltd); US-facing tools included</td></tr>
+    </table>
+
+    <p>Fintiq operates <strong>two independent revenue streams</strong>: a monthly subscription (Deep Dive) and a one-off credit pack (Catalyst Atlas). Both are live on Stripe, share the same OTP authentication infrastructure, and require no manual fulfilment.</p>
+    <p>The platform is offered for <strong>outright acquisition</strong> or <strong>white-label licensing</strong>. The white-label route allows a broker, wealth manager, or financial services firm to rebrand and deploy the platform under their own domain within 1–2 weeks.</p>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 2. PRODUCT OVERVIEW -->
+  <section id="s2">
+    <h2>2. Product Overview</h2>
+    <p>Fintiq is built around two paid products — <strong>Stock Deep Dive</strong> (subscription) and <strong>Catalyst Atlas</strong> (credit pack) — supported by an ecosystem of free tools that drive discovery and repeat visits. The design philosophy is <em>"Your Personal Stock Analyst"</em>: a retail investor should be able to do in 10 minutes what a sell-side analyst charges thousands for.</p>
+
+    <h3>2.1 Core Product — Stock Deep Dive</h3>
+    <p>Deep Dive is a seven-section AI-powered stock analysis tool. For any US or UK ticker the user enters, it generates:</p>
+    <ul>
+      <li><strong>Business Analysis</strong> — business model, revenue breakdown by segment/geography, moat assessment, risk summary</li>
+      <li><strong>Valuation</strong> — DCF model (5-year, 3-scenario: bear/base/bull), intrinsic value range, Monte Carlo sensitivity on assumptions</li>
+      <li><strong>Technical Analysis</strong> — RSI, MACD, 50/200-day moving averages, trend verdict, support/resistance levels</li>
+      <li><strong>Risk &amp; Position Sizing</strong> — Kelly criterion, volatility-adjusted position size, beta, max drawdown</li>
+      <li><strong>Catalyst Tracker</strong> — summarises recent price catalysts and links directly to the Catalyst Atlas tool (see §2.3) for a full attribution breakdown</li>
+      <li><strong>Investment Committee</strong> — 4-analyst AI panel (Value, Growth, Technical, Risk) debates the thesis; conviction score 0–100; Red Team plays devil's advocate</li>
+      <li><strong>Trading Journal</strong> — save stocks to Watch/Open/Closed portfolio; R:R bidirectional calculator; connects to Portfolio tools</li>
+    </ul>
+    <p>Each section is generated on demand using Claude AI (Anthropic), with Haiku for lightweight sections and Sonnet for the Committee and Red Team. Data is sourced from Yahoo Finance (yfinance), Financial Modeling Prep (FMP), and FRED.</p>
+
+    <h3>2.2 Supporting Ecosystem</h3>
+    <p>The following tools are free and act as top-of-funnel traffic drivers to Deep Dive:</p>
+
+    <table class="data-table">
+      <thead><tr><th>Tool</th><th>Description</th><th>Coverage</th><th>AI Cost</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Market Bulletin</strong></td><td>Daily AI market brief: S&P, macro, sector heat map, Momentum Spotlight, EPS Tracker, trade ideas. Auto-regenerates 3×/day at 06:30, 13:00, 21:00 UTC.</td><td>US + UK</td><td>~$0.07/day</td></tr>
+        <tr><td><strong>Alpha Scanner</strong></td><td>Reads SEC filings (10-K/10-Q) for 1,100+ micro/small-cap US stocks daily. Piotroski F-Score, Altman Z-Score, Beneish M-Score flag turnarounds before fund managers notice.</td><td>US micro/small-cap</td><td>~$0.05/day</td></tr>
+        <tr><td><strong>Fintiq Scout</strong></td><td>Natural language stock screener. Type "profitable AI companies under $50bn with strong revenue growth" — Claude translates to filter params, screens 900+ stocks, returns ranked results with explanations.</td><td>S&P500 + Nasdaq + FTSE + EuroStoxx</td><td>~$0.002/query</td></tr>
+        <tr><td><strong>Factor Screener</strong></td><td>Fama-French 4-factor model on US, UK, EU stocks. Shows alpha beyond market/size/value/momentum. Full table + per-stock factor breakdown.</td><td>US + UK + EU</td><td>None</td></tr>
+        <tr><td><strong>Portfolio Optimiser</strong></td><td>Mean-variance optimisation (Markowitz). Efficient frontier, Sharpe/Sortino/Treynor/Jensen's Alpha. 3 Fintiq model portfolios pre-built.</td><td>Any ticker</td><td>None</td></tr>
+        <tr><td><strong>Portfolio Monte Carlo</strong></td><td>Correlated multi-asset simulation. 5,000 paths, Cholesky decomposition, monthly contributions. Up to 20-year horizon. Fan chart with percentile bands.</td><td>Any ticker</td><td>None</td></tr>
+        <tr><td><strong>PriceSpectrum</strong></td><td>GARCH(1,1) + Student-t + jump-diffusion Monte Carlo for single stock price probability distribution. 6 horizons (1d to 1y).</td><td>Any ticker</td><td>None</td></tr>
+        <tr><td><strong>Pairs Trading</strong></td><td>50 preset cointegrated pairs + custom. Z-score, correlation, OLS hedge ratio, mean-reversion signals. Plain-English trade instructions with entry/exit prices.</td><td>US + UK + ETFs + Commodities + FX</td><td>None</td></tr>
+        <tr><td><strong>Pension Planner</strong></td><td>UK SIPP and State Pension planner with Monte Carlo survival probability. Drawdown strategy with estimated probability of never running out of money.</td><td>UK</td><td>None</td></tr>
+        <tr><td><strong>US Pension Planner</strong></td><td>401(k) / IRA planner with Monte Carlo. Social Security integration. Estimated probability of portfolio survival.</td><td>US</td><td>None</td></tr>
+      </tbody>
+    </table>
+
+    <h3>2.3 Second Paid Product — Catalyst Atlas</h3>
+    <p>Catalyst Atlas (<code>fintiq.uk/catalyst-atlas.html</code>) is Fintiq's second monetised product and operates on a separate credit-pack revenue model. It answers one question no other tool on the platform addresses: <em>"Why did this stock move, and how does it normally respond to each type of news?"</em></p>
+    <p>The engine (<code>catalyst_atlas.py v8</code>) runs a rolling 250-day OLS regression that decomposes every daily price return into three systematic factors — market (SPY for US, ^FTSE for UK), sector (equal-weight sector ETFs, or Brent crude for energy companies), and interest rates (^TNX 10Y Treasury yield) — leaving an idiosyncratic residual that is attributable to company-specific events. It then:</p>
+    <ul>
+      <li>Identifies every significant company-specific day over the past 3 years</li>
+      <li>Retrieves contemporaneous news via Tavily and uses Claude Haiku to label each event into 12 categories: Earnings &amp; guidance, Sales &amp; delivery data, Product &amp; technology, Analyst rating, Deals &amp; partnerships, Legal &amp; regulation, Management &amp; leadership, Politics &amp; policy, Competition, Customer &amp; industry demand, Market-wide news, Unexplained</li>
+      <li>Measures each catalyst's "footprint" — price behaviour from 5 days before to 60 days after — and scores how reliably each category moved the price and whether the move was sustained</li>
+      <li>Computes likely price ranges for 1 week, 1 month, and 3 months</li>
+      <li>Writes a plain-English <em>Fintiq Analyst's View</em> using Claude Sonnet — educational in tone, FCA-compliant (no buy/sell/hold language)</li>
+    </ul>
+    <p>Results are cached 12 hours; news event labels are cached 30 days (Upstash Redis). UK shares are displayed in pounds. The tool is integrated directly into Deep Dive via an "Open Catalyst Atlas" button in the Catalyst Tracker section — users of the core product are funnelled into the credit-pack model automatically.</p>
+
+    <table class="info-table">
+      <tr><td>URL</td><td>https://www.fintiq.uk/catalyst-atlas.html</td></tr>
+      <tr><td>API endpoint</td><td>GET /catalyst-atlas/{ticker} (served by catalyst_atlas.py v8)</td></tr>
+      <tr><td>Coverage</td><td>Any US or UK ticker; UK shares shown in pounds</td></tr>
+      <tr><td>Free access</td><td>Tesla (TSLA) only — auto-refreshes every ~10h at Fintiq's cost</td></tr>
+      <tr><td>Pricing</td><td>10 searches for £2.29 (GBP) / $2.99 (USD) — one-off credit pack</td></tr>
+      <tr><td>Credit behaviour</td><td>Credits never expire; re-opening the same company within 24h does not consume a credit</td></tr>
+      <tr><td>Payment</td><td>Stripe Checkout (same webhook as subscription); no recurring billing</td></tr>
+      <tr><td>Auth</td><td>Same OTP email authentication as Deep Dive</td></tr>
+      <tr><td>AI cost per search</td><td>~$0.03–0.05 (Haiku news labelling + Sonnet Analyst's View + Tavily news fetch)</td></tr>
+      <tr><td>Gross margin per pack</td><td>~85–90% at typical usage patterns</td></tr>
+    </table>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 3. TECHNICAL ARCHITECTURE -->
+  <section id="s3">
+    <h2>3. Technical Architecture</h2>
+
+    <h3>3.1 Frontend</h3>
+    <table class="info-table">
+      <tr><td>Technology</td><td>Vanilla HTML5 / CSS3 / JavaScript — zero framework dependencies (no React, no Vue, no build step)</td></tr>
+      <tr><td>Hosting</td><td>Vercel (free tier; auto-deploys on git push to main branch from GitHub)</td></tr>
+      <tr><td>Pages</td><td>24 HTML pages + 28 learn articles + sitemap.xml + robots.txt</td></tr>
+      <tr><td>Design system</td><td>Dark theme (#050F1C navy, #F59E0B amber accent); responsive mobile-first; unified nav + footer; SVG candlestick logo across all pages</td></tr>
+      <tr><td>Analytics</td><td>Google Analytics 4 (G-SFD342RVKK) on all pages</td></tr>
+      <tr><td>SEO</td><td>JSON-LD on all pages (WebPage, BreadcrumbList, SoftwareApplication); canonical www.fintiq.uk; sitemap submitted to Google Search Console</td></tr>
+      <tr><td>Mobile</td><td>Fully responsive; 5-tab mobile bottom nav on all pages; tested on 320px–1440px viewport</td></tr>
+    </table>
+
+    <h3>3.2 Backend</h3>
+    <table class="info-table">
+      <tr><td>Technology</td><td>Python 3.11 · FastAPI · Uvicorn</td></tr>
+      <tr><td>Hosting</td><td>Railway (single service; Docker; persistent /data volume at /data)</td></tr>
+      <tr><td>Domain</td><td>api.fintiq.uk (custom domain on Railway; SSL auto-managed)</td></tr>
+      <tr><td>API surface</td><td>REST + JSON; ~60 endpoints; single main.py (~8,000 lines) + catalyst_atlas.py helper module</td></tr>
+      <tr><td>CORS</td><td>Restricted to fintiq.uk, www.fintiq.uk, app.fintiq.uk, localhost — no wildcard</td></tr>
+      <tr><td>Robot protection</td><td>X-Robots-Tag: noindex on all API responses</td></tr>
+    </table>
+
+    <h3>3.3 Data Storage</h3>
+    <table class="info-table">
+      <tr><td>SQLite — Alpha Scanner</td><td>/data/alpha_scanner.db · Tables: universe, signals, scout_universe, scout_fundamentals, scout_profiles, scout_news · persistent Railway volume</td></tr>
+      <tr><td>SQLite — Auth</td><td>/data/auth.db · Tables: users, otps, sessions, portfolio, entitlements · persistent Railway volume</td></tr>
+      <tr><td>Upstash Redis</td><td>Free tier · persistent KV store for bulletin cache, pair signals cache, portfolio cache, Catalyst Atlas results &amp; news label caches · survives Railway cold starts · TTLs: bulletin 25h, pairs 12h, portfolios 24h, Atlas results 12h, Atlas news labels 30d</td></tr>
+    </table>
+
+    <h3>3.4 Key Dependencies</h3>
+    <table class="data-table">
+      <thead><tr><th>Library / Service</th><th>Purpose</th><th>Monthly Cost</th><th>Risk if Removed</th></tr></thead>
+      <tbody>
+        <tr><td>Anthropic (Claude API)</td><td>Deep Dive, Bulletin, Scout, Alpha Scanner language drift, Catalyst Atlas (Haiku + Sonnet)</td><td>Variable — see §6</td><td>Core product disabled</td></tr>
+        <tr><td>Tavily Search API</td><td>News retrieval for Catalyst Atlas event labelling and Market Bulletin Today's Drivers section</td><td>Variable (~$0.001/call)</td><td>Catalyst Atlas news labels unavailable; bulletin news section degrades</td></tr>
+        <tr><td>yfinance</td><td>Price data, fundamentals, earnings for most tools</td><td>Free</td><td>Medium — Yahoo scraping policy risk</td></tr>
+        <tr><td>Financial Modeling Prep</td><td>Revenue segment breakdown, economic indicators</td><td>Free tier / $29–$139/mo</td><td>Minor — partial fallback available</td></tr>
+        <tr><td>FRED API</td><td>CPI, NFP, yield curve, economic calendar</td><td>Free</td><td>Low — public data</td></tr>
+        <tr><td>Upstash Redis</td><td>Persistent cache</td><td>Free tier</td><td>Low — /tmp fallback works</td></tr>
+        <tr><td>Brevo</td><td>OTP email delivery</td><td>Free tier</td><td>Auth email delivery fails</td></tr>
+        <tr><td>Stripe</td><td>Subscription payments</td><td>2.9% + 30p/transaction</td><td>Revenue collection disabled</td></tr>
+        <tr><td>Railway</td><td>Backend hosting + persistent volume</td><td>~£15–20/month</td><td>Backend goes offline</td></tr>
+        <tr><td>Vercel</td><td>Frontend hosting</td><td>Free tier</td><td>Frontend goes offline</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 4. API ENDPOINTS -->
+  <section id="s4">
+    <h2>4. Backend API — Key Endpoints</h2>
+    <p>All endpoints return JSON. The API is fully documented in-code (docstrings on every route). Below is a summary of the most commercially significant endpoints.</p>
+
+    <table class="data-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>GET /bulletin</code></td><td>GET</td><td>Full structured Market Bulletin JSON — The Call, market tiles, sectors, Mag7, EPS tracker, trade ideas, economic calendar, risk radar, news. Cached 25h.</td></tr>
+        <tr><td><code>POST /bulletin/refresh</code></td><td>POST</td><td>Triggers bulletin regeneration. Protected by REFRESH_TOKEN. Called by external cron 3×/day.</td></tr>
+        <tr><td><code>GET /market-data</code></td><td>GET</td><td>Live snapshot: S&P500, Nasdaq, VIX, 10Y/2Y yields, gold, oil, sector ETFs, Mag7 prices.</td></tr>
+        <tr><td><code>GET /prices/{ticker}</code></td><td>GET</td><td>Historical daily closes. Periods: 5d/1mo/3mo/6mo/1y/2y/3y/5y. Used by all chart tools.</td></tr>
+        <tr><td><code>GET /quotes</code></td><td>GET</td><td>Batch live price + % change for up to 20 tickers.</td></tr>
+        <tr><td><code>GET /fundamentals/{ticker}</code></td><td>GET</td><td>Full fundamental data: revenue, margins, P/E, EV/EBITDA, beta, DCF inputs, segment breakdown, earnings history.</td></tr>
+        <tr><td><code>POST /deep-dive/section</code></td><td>POST</td><td>Generates one of 6 Deep Dive analysis sections via Claude AI. Section specified in payload.</td></tr>
+        <tr><td><code>POST /committee/report</code></td><td>POST</td><td>Full 4-analyst Investment Committee report. 2 uses/month per subscriber.</td></tr>
+        <tr><td><code>POST /red-team</code></td><td>POST</td><td>AI devil's advocate critique of the investment thesis. 3 uses/month per subscriber.</td></tr>
+        <tr><td><code>POST /copilot/chat</code></td><td>POST</td><td>Conversational AI analyst — answers questions in context of current Deep Dive session.</td></tr>
+        <tr><td><code>GET /catalyst-atlas/{ticker}</code></td><td>GET</td><td>Full Catalyst Atlas analysis: 250-day return attribution (market/sector/rates/idiosyncratic), news-labelled catalyst events, per-category footprint scores, 1w/1m/3m price ranges, Fintiq Analyst's View. Results cached 12h in Upstash Redis. Requires valid Atlas credit (or Tesla ticker for free).</td></tr>
+        <tr><td><code>GET /alpha-scanner/signals</code></td><td>GET</td><td>Returns all active Alpha Scanner signals from SQLite. Updated daily.</td></tr>
+        <tr><td><code>GET /alpha-scanner/run</code></td><td>GET</td><td>Triggers full Alpha Scanner run: SEC filing analysis for 1,100+ stocks. Protected. ~20min.</td></tr>
+        <tr><td><code>GET /pair-signals</code></td><td>GET</td><td>Pre-computed Z-scores, correlations, prices for all 50 preset pairs. Cached 12h.</td></tr>
+        <tr><td><code>POST /optimise</code></td><td>POST</td><td>Portfolio optimisation: efficient frontier, max Sharpe, min vol, Sortino, Treynor, Jensen's Alpha.</td></tr>
+        <tr><td><code>GET /fintiq-portfolios</code></td><td>GET</td><td>3 pre-computed Fintiq model portfolios. Cached 24h.</td></tr>
+        <tr><td><code>GET /portfolio-monte-carlo</code></td><td>GET</td><td>Correlated multi-asset Monte Carlo. 5,000 paths. Fan chart + horizon percentiles.</td></tr>
+        <tr><td><code>GET /price-spectrum</code></td><td>GET</td><td>GARCH(1,1) + jump-diffusion MC for single stock. Fan chart + 6 horizons.</td></tr>
+        <tr><td><code>GET /factor-screener</code></td><td>GET</td><td>Fama-French 4-factor alpha signals for US/UK/EU universe.</td></tr>
+        <tr><td><code>POST /scout/scan</code></td><td>POST</td><td>Natural language stock screener: thesis → filter params → SQLite screen → AI-ranked results.</td></tr>
+        <tr><td><code>POST /auth/request-otp</code></td><td>POST</td><td>Sends 6-digit OTP to email. Rate-limited: 5/email/hour, 20/IP/hour.</td></tr>
+        <tr><td><code>POST /auth/verify-otp</code></td><td>POST</td><td>Verifies OTP, creates 30-day session token. Returns session_token + user record.</td></tr>
+        <tr><td><code>GET /auth/session</code></td><td>GET</td><td>Validates Bearer session token. Returns authenticated status + user (email, subscribed, free_used).</td></tr>
+        <tr><td><code>POST /auth/use-session</code></td><td>POST</td><td>Gates Deep Dive: marks free session consumed; returns 402 if free already used and not subscribed.</td></tr>
+        <tr><td><code>POST /create-checkout-session</code></td><td>POST</td><td>Creates Stripe Checkout session. Returns checkout_url. Supports GBP + USD.</td></tr>
+        <tr><td><code>POST /stripe/webhook</code></td><td>POST</td><td>Receives Stripe events. Mandatory HMAC-SHA256 signature verification. Flips subscribed flag.</td></tr>
+        <tr><td><code>GET/POST /portfolio/*</code></td><td>CRUD</td><td>Full portfolio management: Watch/Open/Closed lifecycle, R:R calculation, 6 endpoints.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 5. DATA SOURCES -->
+  <section id="s5">
+    <h2>5. Data Sources &amp; Coverage</h2>
+
+    <h3>5.1 Market Coverage</h3>
+    <table class="info-table">
+      <tr><td>US equities</td><td>S&P 500, Nasdaq 100, Dow Jones 30, plus 1,100+ micro/small-cap SEC filers for Alpha Scanner</td></tr>
+      <tr><td>UK equities</td><td>FTSE 100 (83 tickers via yfinance .L suffix)</td></tr>
+      <tr><td>European equities</td><td>Euro Stoxx 50 (50 tickers)</td></tr>
+      <tr><td>Global ADRs</td><td>~30 major ADRs (BABA, TSM, NVO, SHOP, etc.)</td></tr>
+      <tr><td>Total Scout universe</td><td>~900+ stocks screened; 1,100+ for Alpha Scanner; any ticker for Deep Dive + charting tools</td></tr>
+      <tr><td>Pairs</td><td>50 preset cointegrated pairs across equities, ETFs, commodities (GC=F/SI=F, CL=F/NG=F) and FX (EUR/USD, GBP/USD)</td></tr>
+      <tr><td>Economic data</td><td>FRED series: CPI, NFP, PCE, GDP, Retail Sales, Jobless Claims, PPI, UMich Sentiment, yield curve (T10Y2Y)</td></tr>
+      <tr><td>Earnings</td><td>EPS estimates + actuals for S&P500 + Nasdaq100 + FTSE100 — tabbed multi-index EPS tracker</td></tr>
+    </table>
+
+    <h3>5.2 Primary Data APIs</h3>
+    <p><strong>Yahoo Finance (yfinance):</strong> Free Python library. Provides price history, fundamentals (P/E, margins, revenue), earnings data, and company info for the vast majority of tools. No API key required. <em>Terms of service note: commercial use of Yahoo Finance data is technically restricted by Yahoo's ToS; a production deployment at scale should negotiate a data licence or switch to a commercial provider such as Polygon.io, Financial Modeling Prep, or Bloomberg B-Pipe.</em></p>
+    <p><strong>Financial Modeling Prep (FMP):</strong> Used for revenue product and geographic segment breakdown, treasury data, economic indicators, and EPS. Currently on the free tier (250 calls/day). Enterprise commercial licence application pending (submitted November 2026).</p>
+    <p><strong>FRED (Federal Reserve Economic Data):</strong> Free, unlimited API from the St. Louis Fed. No ToS issues for commercial use.</p>
+    <p><strong>SEC EDGAR:</strong> Direct access, free, unlimited, explicitly permissible for commercial use. Used by Alpha Scanner to fetch 10-K/10-Q filing texts for 1,100+ stocks.</p>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 6. COST MODEL -->
+  <section id="s6">
+    <h2>6. Operating Cost Model</h2>
+
+    <h3>6.1 Fixed Costs (regardless of user count)</h3>
+    <table class="data-table">
+      <thead><tr><th>Item</th><th>Service</th><th>Monthly Cost</th></tr></thead>
+      <tbody>
+        <tr><td>Railway backend hosting</td><td>Railway Hobby plan</td><td>~£15–20/month</td></tr>
+        <tr><td>Upstash Redis</td><td>Free tier</td><td>£0</td></tr>
+        <tr><td>Vercel frontend hosting</td><td>Free tier</td><td>£0</td></tr>
+        <tr><td>Brevo email (OTP auth)</td><td>Free tier (300/day)</td><td>£0</td></tr>
+        <tr><td>cron-job.org (5 cron jobs)</td><td>Free service</td><td>£0</td></tr>
+        <tr><td>Market Bulletin AI regeneration</td><td>Claude Sonnet (3×/day, max_tokens=6,000)</td><td>~$2–3/month</td></tr>
+        <tr><td>Alpha Scanner (SEC filings)</td><td>Claude Haiku (~30 tickers/day, 2 calls each)</td><td>~$0.50/month</td></tr>
+        <tr><td>Scout daily news refresh</td><td>yfinance scraping only</td><td>£0</td></tr>
+        <tr><td><strong>TOTAL FIXED</strong></td><td></td><td><strong>~£25–35/month</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.2 Variable Costs (per Deep Dive session)</h3>
+    <p>All tools <em>except</em> Deep Dive and Catalyst Atlas have zero variable AI cost — they run on pure computation (SciPy, NumPy, SQLite).</p>
+    <table class="data-table">
+      <thead><tr><th>Deep Dive Component</th><th>Model</th><th>Cost per Call</th></tr></thead>
+      <tbody>
+        <tr><td>Business Analysis</td><td>Claude Haiku</td><td>~$0.001–0.002</td></tr>
+        <tr><td>Valuation (DCF)</td><td>Claude Haiku</td><td>~$0.001–0.002</td></tr>
+        <tr><td>Technical Analysis</td><td>Claude Haiku</td><td>~$0.001–0.002</td></tr>
+        <tr><td>Risk &amp; Position Sizing</td><td>Claude Haiku</td><td>~$0.001</td></tr>
+        <tr><td>Catalyst Atlas</td><td>Claude Haiku</td><td>~$0.001</td></tr>
+        <tr><td>AI Copilot (per message)</td><td>Claude Haiku</td><td>~$0.001–0.003</td></tr>
+        <tr><td>Session summariser</td><td>Claude Haiku</td><td>~$0.001</td></tr>
+        <tr><td>AI Challenge</td><td>Claude Sonnet</td><td>~$0.015–0.025</td></tr>
+        <tr><td>Investment Committee</td><td>Claude Sonnet</td><td>~$0.06–0.10</td></tr>
+        <tr><td>Red Team</td><td>Claude Sonnet</td><td>~$0.03–0.05</td></tr>
+        <tr><td><strong>Full session total</strong></td><td></td><td><strong>~$0.11–0.15</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.3 Catalyst Atlas Variable Cost (per search)</h3>
+    <table class="data-table">
+      <thead><tr><th>Catalyst Atlas Component</th><th>Model / Service</th><th>Cost per Call</th></tr></thead>
+      <tbody>
+        <tr><td>News retrieval (per catalyst day)</td><td>Tavily Search API</td><td>~$0.001–0.002</td></tr>
+        <tr><td>News event labelling (12-category)</td><td>Claude Haiku</td><td>~$0.002–0.005</td></tr>
+        <tr><td>Fintiq Analyst's View</td><td>Claude Sonnet</td><td>~$0.025–0.040</td></tr>
+        <tr><td><strong>Full search total</strong></td><td></td><td><strong>~$0.030–0.050</strong></td></tr>
+      </tbody>
+    </table>
+
+    <h3>6.4 Unit Economics</h3>
+    <table class="info-table">
+      <tr><td>Deep Dive subscription</td><td>£3.50/month (GBP) · $5.00/month (USD)</td></tr>
+      <tr><td>Variable cost / Deep Dive session</td><td>~$0.11–0.15</td></tr>
+      <tr><td>Gross margin per subscriber</td><td>~95%+ (most usage is free tools with zero AI cost)</td></tr>
+      <tr><td>Catalyst Atlas pack price</td><td>£2.29 (GBP) / $2.99 (USD) for 10 searches</td></tr>
+      <tr><td>Variable cost / Atlas search</td><td>~$0.03–0.05</td></tr>
+      <tr><td>Gross margin per Atlas pack</td><td>~85–90% (£2.29 revenue vs ~£0.25–0.40 AI cost per 10 searches)</td></tr>
+      <tr><td>Breakeven users (subscription)</td><td>~8–10 subscribers covers all fixed costs (~£30/month)</td></tr>
+      <tr><td>Two-product revenue example</td><td>50 subscribers + 20 Atlas packs/month = ~£175/month recurring + £46/month credit revenue = ~£221/month total</td></tr>
+      <tr><td>Scaling note</td><td>Committee Report is 60–70% of Deep Dive per-session cost. Per-report credits can be added as a third revenue layer. Atlas credit packs scale linearly — no additional infrastructure cost.</td></tr>
+    </table>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 7. REGULATORY COMPLIANCE -->
+  <section id="s7">
+    <h2>7. Regulatory Compliance</h2>
+
+    <h3>7.1 FCA Financial Promotions (s.21 FSMA 2000)</h3>
+    <p>A full FCA compliance audit was conducted in November 2026. The platform was reviewed against the financial promotions rules under s.21 of the Financial Services and Markets Act 2000 (FSMA). The key distinction applied throughout: data, analysis, and tools that inform research are permitted; personal recommendations ("you should buy X") are regulated activity requiring FCA authorisation.</p>
+    <p>All changes have been deployed as of November 2026:</p>
+    <ul>
+      <li><strong>Alpha Scanner:</strong> "Buy" signals renamed "Opportunity" throughout. Disclaimer updated to include "Signal labels are for research purposes only. Past performance is not indicative of future results."</li>
+      <li><strong>Deep Dive:</strong> AI Challenge conviction language softened. Factor labels updated ("Avoid" → "No Alpha").</li>
+      <li><strong>Pairs Trading:</strong> "BUY — underpriced" → "Long Signal — spread below mean"; "SELL — overpriced" → "Short Signal — spread above mean". Info bar updated to "not financial advice or a personal recommendation to trade."</li>
+      <li><strong>Factor Screener:</strong> "These are the stocks worth researching further" → "These may warrant further independent research." Historical performance caveat added to all alpha figures.</li>
+      <li><strong>Pension Planner:</strong> "real probability of never running out of money" → "estimated probability."</li>
+      <li><strong>All tools:</strong> Footer disclaimer standardised to "For research purposes only. Not financial advice or a personal recommendation. Always conduct your own research and consider speaking to a qualified financial adviser before investing."</li>
+    </ul>
+
+    <div class="callout"><p><strong>Acquirer / Licensee note:</strong> The platform is built for FCA compliance but the operating entity must hold FCA authorisation or appointed representative status for UK-facing deployment where any regulated activity is performed. The founder can provide a full compliance review document on request.</p></div>
+
+    <h3>7.2 GDPR / Data Protection</h3>
+    <p>User data stored: email address and subscription status only. No financial data, no trading history, no personal identifiers beyond email. Session tokens stored as SHA-256 hashes. OTP codes are single-use and expire after 10 minutes. Railway persistent volume stores auth.db in an EU-region data centre.</p>
+  </section>
+
+  <!-- 8. SECURITY -->
+  <section id="s8">
+    <h2>8. Security</h2>
+    <p>A full security audit and hardening exercise was completed in November 2026. The following controls are in place:</p>
+
+    <h3>8.1 Authentication &amp; Sessions</h3>
+    <ul>
+      <li>Passwordless email OTP: 6-digit codes, cryptographically generated (Python <code>secrets</code> module), 10-minute TTL, single-use (deleted on successful verify)</li>
+      <li>Session tokens: 32-byte cryptographically random (<code>secrets.token_urlsafe</code>), stored as SHA-256 hashes in SQLite — raw token never persisted server-side</li>
+      <li>30-day session TTL with server-side expiry check on every request</li>
+      <li>OTP brute-force protection: 5 failed attempts triggers 15-minute email lockout</li>
+    </ul>
+
+    <h3>8.2 Rate Limiting</h3>
+    <ul>
+      <li>OTP request endpoint: 5 requests per email per hour, 20 per IP per hour (Upstash Redis INCR/EXPIRE)</li>
+      <li>Fail-open: if Redis is unavailable, rate limiting degrades gracefully without blocking legitimate users</li>
+    </ul>
+
+    <h3>8.3 Payments</h3>
+    <ul>
+      <li>Stripe Checkout: server-generated checkout sessions only; no card data touches the Fintiq backend</li>
+      <li>Webhook signature: mandatory HMAC-SHA256 verification on all Stripe events; request rejected if STRIPE_WEBHOOK_SECRET is not configured</li>
+    </ul>
+
+    <h3>8.4 API Security</h3>
+    <ul>
+      <li>CORS: restricted to fintiq.uk, www.fintiq.uk, app.fintiq.uk, localhost — no wildcard</li>
+      <li>All API credentials (Anthropic, FMP, Stripe, Brevo, FRED) in Railway environment variables — no hardcoded credentials in source code</li>
+      <li>SQL: all queries use parameterised statements (? placeholders) — no SQL injection risk</li>
+      <li>Admin endpoints: protected by REFRESH_TOKEN; debug endpoints removed from production code</li>
+    </ul>
+
+    <h3>8.5 Infrastructure</h3>
+    <ul>
+      <li>X-Robots-Tag: noindex on all API responses — prevents search engine indexation of api.fintiq.uk</li>
+      <li>Railway persistent volume: SQLite databases stored on /data — not in /tmp (which is wiped on cold starts)</li>
+    </ul>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 9. WHITE-LABEL -->
+  <section id="s9">
+    <h2>9. White-Label Offering</h2>
+    <p>Fintiq is designed to be rebrandable with minimal engineering effort. The frontend is vanilla HTML/CSS/JS with no framework dependencies — rebranding is primarily a find-and-replace exercise on colours, logo, and copy.</p>
+
+    <h3>9.1 What Can Be Customised</h3>
+    <table class="data-table">
+      <thead><tr><th>Element</th><th>Effort</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>Brand name &amp; logo</td><td>1–2 hours</td><td>Replace "Fintiq" text and SVG candlestick logo across all 24 pages + 28 articles. Find-and-replace in HTML.</td></tr>
+        <tr><td>Colour palette</td><td>2–4 hours</td><td>CSS variables in a single &lt;style&gt; block per page. Three brand colours: navy (#0A1628), amber (#F59E0B), teal (#0F766E). Swap globally.</td></tr>
+        <tr><td>Domain</td><td>1–2 hours</td><td>Update CORS config in main.py, canonical URLs in HTML, Vercel + Railway domain settings. Railway custom domain takes ~30 minutes.</td></tr>
+        <tr><td>Pricing</td><td>30 minutes</td><td>Update Stripe product/price IDs in Railway env vars + main.py constants. Update paywall modal copy in deep-dive.html.</td></tr>
+        <tr><td>Tool selection</td><td>2–4 hours</td><td>Remove unwanted tools from tools.html, sitemap.xml, and nav links. Each tool is a self-contained HTML page.</td></tr>
+        <tr><td>Market universe</td><td>2–8 hours</td><td>Restrict to specific markets (UK-only, US-only, etc.). Hardcoded universe lists in main.py — edit as needed.</td></tr>
+        <tr><td>AI prompts</td><td>4–8 hours</td><td>Claude prompt strings in main.py are labelled by section. Rewrite to match the licensee's house style or risk framework.</td></tr>
+        <tr><td>Regulatory copy</td><td>2–4 hours</td><td>All disclaimers are in a single footer block per page plus JSON-LD metadata. Can be tailored to any FCA-authorised firm's specific permissions and tone.</td></tr>
+        <tr><td>Language / locale</td><td>1–2 days</td><td>Currency symbols, date formats, and copy are in English. Full localisation requires editing HTML copy + pension planner assumptions.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>9.2 What the Licensee Needs to Provide</h3>
+    <ul>
+      <li>Cloud hosting accounts: Railway + Vercel or equivalent (Docker-ready backend)</li>
+      <li>API keys: Anthropic (Claude) — primary variable cost; Brevo or equivalent transactional email; Stripe for payments; FRED (free); FMP if UK/EU fundamentals required</li>
+      <li>Domain name + SSL certificate (Vercel and Railway handle SSL automatically)</li>
+      <li>FCA authorisation or appointed representative status for UK-facing deployment</li>
+    </ul>
+
+    <h3>9.3 Deployment Timeline</h3>
+    <table class="info-table">
+      <tr><td>Day 1</td><td>Clone repos, set Railway + Vercel environment variables, deploy to test domain</td></tr>
+      <tr><td>Day 2–3</td><td>Rebrand: colours, logo, name, domain, pricing</td></tr>
+      <tr><td>Day 4–5</td><td>Legal/regulatory copy review, compliance sign-off on AI-generated content disclaimers</td></tr>
+      <tr><td>Day 6–7</td><td>QA testing (all tools, auth flow, Stripe checkout, bulletin cron), UAT</td></tr>
+      <tr><td>Day 8–10</td><td>Soft launch; monitor Railway logs + cache hit rates</td></tr>
+    </table>
+  </section>
+
+  <div class="page-break"></div>
+
+  <!-- 10. ASSETS INCLUDED -->
+  <section id="s10">
+    <h2>10. Assets Included</h2>
+    <p>The following assets are included in both acquisition and white-label arrangements (subject to negotiation):</p>
+
+    <h3>10.1 Intellectual Property</h3>
+    <ul>
+      <li>Full source code: frontend repo (~24 HTML files, 28 learn articles, CSS, JS) and backend repo (main.py ~8,000 lines, catalyst_atlas.py)</li>
+      <li>All AI prompt engineering: Deep Dive section prompts, Bulletin generation prompt, Alpha Scanner language drift prompts, Scout 3-stage pipeline prompts</li>
+      <li>Learn section: 28 original research articles on investing topics (equity valuation, factor investing, pairs trading, retirement planning, etc.)</li>
+      <li>Design system: dark-theme CSS, SVG candlestick logo, all UI components</li>
+    </ul>
+
+    <h3>10.2 Live Data &amp; Infrastructure</h3>
+    <ul>
+      <li>Alpha Scanner database: live signals for 1,100+ US micro/small-cap stocks. Rebuilt daily by automated cron.</li>
+      <li>Scout database: 806 stocks profiled, 762 AI-tagged with theme scores (AI, defence, healthcare, fintech, EV, cybersecurity)</li>
+      <li>Upstash Redis instance with current bulletin and pair signal caches</li>
+      <li>5 live cron-job.org jobs (bulletin 3×/day, Scout news daily, Scout weekly fundamentals, Alpha Scanner daily)</li>
+    </ul>
+
+    <h3>10.3 Third-Party Accounts (transfer of credentials)</h3>
+    <ul>
+      <li>Railway project: captivating-integrity (service: fintiq-api, persistent volume: fintiq-api-volume)</li>
+      <li>Vercel project: Fintiq frontend (auto-deploy from GitHub main branch)</li>
+      <li>Stripe account: Fintiq Ltd (product: Fintiq Pro Monthly, prices: GBP £3.50 + USD $5.00, active webhook)</li>
+      <li>Brevo account: hello@fintiq.uk domain (DKIM + DMARC authenticated, inbox delivery verified)</li>
+      <li>Google Analytics 4 property: G-SFD342RVKK</li>
+      <li>Google Search Console property: www.fintiq.uk (sitemap submitted)</li>
+    </ul>
+
+    <h3>10.4 Domain (acquisition only)</h3>
+    <ul>
+      <li>fintiq.uk — available for transfer or redirect in acquisition scenario; white-label licensees operate on their own domain</li>
+    </ul>
+  </section>
+
+  <!-- 11. ROADMAP -->
+  <section id="s11">
+    <h2>11. Near-Term Product Roadmap</h2>
+    <p>The following features are in active development or immediate backlog. An acquirer or licensee would inherit this pipeline:</p>
+
+    <h3>11.1 Autopilot — Agentic AI Layer (£15/month tier)</h3>
+    <p>The planned third pricing tier introduces a goal-directed AI agent that runs autonomously on the user's behalf using Claude's tool-use API, chaining existing endpoints:</p>
+    <ul>
+      <li><strong>Portfolio Monitor Agent:</strong> watches saved portfolio for earnings dates, analyst upgrades/downgrades, insider trades, news catalysts — sends email alerts</li>
+      <li><strong>Research Agent:</strong> given a thesis, autonomously runs Scout + Deep Dive + Factor Screener + Alpha Scanner and returns a ranked shortlist with rationale</li>
+      <li><strong>Alert Agent:</strong> price/Z-score/RSI threshold alerts on any saved ticker or pair</li>
+    </ul>
+    <p>Architecture: single /agent FastAPI endpoint; Claude calls existing Fintiq tools as function calls; results streamed to frontend via SSE.</p>
+
+    <h3>11.2 FMP Enterprise Integration</h3>
+    <p>FMP enterprise licence pending (application submitted November 2026). On approval, replaces yfinance fundamentals with FMP's structured data: annual/quarterly income statements, balance sheets, cash flow, segment data, earnings transcripts. Improves data reliability for autonomous agent decisions.</p>
+
+    <h3>11.3 Options Overlay Tool</h3>
+    <p>Options data layer on top of Pairs Trading: implied volatility comparison between both legs, vol pairs trading (IV spread), put/call skew, term structure.</p>
+
+    <h3>11.4 Alpha Scanner Phase 2</h3>
+    <p>FINRA short interest data, S-3 registration statement dilution detector, going concern language scanner, supply chain contagion monitor (tracks supplier/customer 10-K cross-references).</p>
+  </section>
+
+  <!-- 12. TRANSACTION STRUCTURE -->
+  <section id="s12">
+    <h2>12. Transaction Structure</h2>
+
+    <h3>12.1 Acquisition</h3>
+    <p>Full acquisition includes all source code, IP, live infrastructure, subscriber base, domain, and third-party accounts listed in §10. The founder is available for a 30–90 day transition period to ensure knowledge transfer, codebase walkthrough, and operational handover.</p>
+
+    <h3>12.2 White-Label Licence</h3>
+    <p>The white-label licence grants the licensee the right to deploy, modify, and operate the Fintiq codebase under their own brand. Licence terms are negotiable and may include:</p>
+    <ul>
+      <li>One-time licence fee + monthly royalty (e.g. 10–15% of subscription revenue)</li>
+      <li>One-time licence fee + fixed monthly support retainer</li>
+      <li>Revenue share only (no upfront cost)</li>
+    </ul>
+    <p>The founder is available for ongoing technical support, feature development, and AI prompt optimisation under a separate services agreement.</p>
+
+    <h3>12.3 Data Licence Note</h3>
+    <p>The white-label licensee is responsible for securing their own data licences for commercial deployment. The key items are: (a) FMP enterprise licence for fundamentals data, and (b) a commercial data agreement with a price data provider if yfinance scraping is not acceptable for the licensee's compliance framework. The founder can provide introductions to relevant data providers.</p>
+  </section>
+
+  <!-- FOOTER -->
+  <div class="doc-footer">
+    <p><strong>CONFIDENTIAL — FOR DISCUSSION PURPOSES ONLY</strong></p>
+    <p><em>This document does not constitute an offer to sell. All figures are indicative and subject to due diligence.</em></p>
+    <br>
+    <p>To request further information or arrange a live walkthrough:</p>
+    <p><strong>contactfintiq@gmail.com &nbsp;·&nbsp; fintiq.uk</strong></p>
+  </div>
+
+</div>
+
+</body>
+</html>

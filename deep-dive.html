@@ -1453,6 +1453,14 @@ let _session = {
 // ── Auth user state (populated on session check) ──
 let _authUser = null;
 
+// ── Copilot credit state ──────────────────────────────────────────────────────
+// Free users: 3 questions tracked in localStorage (soft limit).
+// Subscribers: unlimited (_copilotSubscribed = true).
+const COPILOT_FREE_LIMIT = 3;
+let _copilotSubscribed = false;
+let _copilotFreeUsed = parseInt(localStorage.getItem('fintiq_copilot_used') || '0', 10);
+let _copilotDismissed = localStorage.getItem('fintiq_copilot_dismissed') === '1';
+
 // ── Portfolio state ──
 let _atpTrade = 'long'; // current trade direction in add modal
 
@@ -1526,10 +1534,14 @@ async function loadNavAuthState() {
     if (ddEmail) ddEmail.textContent = email;
     if (signInBtn) signInBtn.style.display = 'none';
     if (accountWrap) accountWrap.style.display = '';
+    // Set copilot subscription state
+    _authUser = d.user;
+    _copilotSubscribed = !!d.user?.subscribed;
   } catch {
     localStorage.removeItem('fintiq_session');
     if (signInBtn) signInBtn.style.display = '';
     if (accountWrap) accountWrap.style.display = 'none';
+    _copilotSubscribed = false;
   }
 }
 function navSignOut() {
@@ -2512,23 +2524,50 @@ function renderCopilot(section) {
 
   const betaBadge = !_paywallActive ? `<span style="font-size:0.6rem;background:rgba(245,166,35,0.15);color:var(--gold);border:1px solid rgba(245,166,35,0.3);border-radius:20px;padding:2px 8px;margin-left:8px;font-weight:700;letter-spacing:.05em">BETA</span>` : '';
 
+  // Credit state for this render
+  const _copilotLimitReached = !_copilotSubscribed && _copilotFreeUsed >= COPILOT_FREE_LIMIT;
+  const _copilotHardLocked   = _copilotLimitReached && _copilotDismissed;
+  const _inputDisabled       = _paywallActive || _copilotHardLocked;
+
+  // Credit counter badge (shown to free users who haven't hit limit yet)
+  const _remaining = COPILOT_FREE_LIMIT - _copilotFreeUsed;
+  const creditBadge = (!_copilotSubscribed && !_copilotLimitReached)
+    ? `<span id="copilot-credits-${section}" style="font-size:0.6rem;background:rgba(148,163,184,0.12);color:var(--muted);border:1px solid rgba(148,163,184,0.2);border-radius:20px;padding:2px 8px;margin-left:8px;font-weight:600">${_remaining} free question${_remaining !== 1 ? 's' : ''} left</span>`
+    : '';
+
+  // Upgrade CTA (shown when limit reached but not yet dismissed)
+  const upgradeCTA = _copilotLimitReached && !_copilotDismissed ? `
+    <div id="copilot-upgrade-${section}" style="margin:12px 0;padding:14px 16px;background:rgba(245,166,35,0.07);border:1px solid rgba(245,166,35,0.25);border-radius:10px;text-align:center">
+      <div style="font-size:0.8rem;color:var(--text);margin-bottom:8px">You've used your 3 free AI Copilot questions.</div>
+      <a href="/pricing.html" style="display:inline-block;background:var(--gold);color:#000;font-weight:700;font-size:0.78rem;padding:7px 20px;border-radius:6px;text-decoration:none;margin-right:8px">Subscribe — £3.50/month</a>
+      <button onclick="_dismissCopilotCTA('${section}')" style="background:none;border:none;color:var(--muted);font-size:0.72rem;cursor:pointer;text-decoration:underline;padding:0">Continue without AI Copilot</button>
+    </div>` : '';
+
+  // Hard-locked message (after dismiss)
+  const hardLockedMsg = _copilotHardLocked ? `
+    <div style="padding:12px 16px;background:rgba(148,163,184,0.06);border-radius:8px;text-align:center;font-size:0.76rem;color:var(--muted)">
+      AI Copilot locked. <a href="/pricing.html" style="color:var(--gold);text-decoration:none;font-weight:600">Subscribe to unlock unlimited access →</a>
+    </div>` : '';
+
   return `<div class="copilot-wrap${_paywallActive ? ' copilot-locked' : ''}" id="copilot-${section}">
     ${lockedOverlay}
     <div class="copilot-header">
       <div class="copilot-icon">✦</div>
       <div>
-        <div class="copilot-title">Fintiq AI Copilot${betaBadge}</div>
+        <div class="copilot-title">Fintiq AI Copilot${betaBadge}${creditBadge}</div>
         <div class="copilot-sub">Ask anything about this section — data-grounded, context-aware</div>
       </div>
     </div>
+    ${upgradeCTA}
+    ${hardLockedMsg}
     <div class="chat-starters" id="chat-starters-${section}">
       ${chips.map((m,i)=>`<span class="chat-chip" onclick="useStarter('${section}',${i},'${m.replace(/'/g,"\\'")}',this)">${m}</span>`).join('')}
     </div>
     <div class="chat-messages" id="chat-msgs-${section}"></div>
     <div class="chat-input-row">
-      <textarea class="chat-input" id="chat-in-${section}" rows="2" placeholder="Ask a question…  (Enter to send, Shift+Enter for new line)"
-        onkeydown="chatKey(event,'${section}')" ${_paywallActive ? 'disabled' : ''}></textarea>
-      <button class="chat-send copilot-send" id="chat-btn-${section}" onclick="sendChat('${section}')" ${_paywallActive ? 'disabled' : ''}>Send</button>
+      <textarea class="chat-input" id="chat-in-${section}" rows="2" placeholder="${_copilotHardLocked ? 'Subscribe to continue using AI Copilot' : 'Ask a question…  (Enter to send, Shift+Enter for new line)'}"
+        onkeydown="chatKey(event,'${section}')" ${_inputDisabled ? 'disabled' : ''}></textarea>
+      <button class="chat-send copilot-send" id="chat-btn-${section}" onclick="sendChat('${section}')" ${_inputDisabled ? 'disabled' : ''}>Send</button>
     </div>
   </div>`;
 }
@@ -2543,6 +2582,37 @@ function useStarter(section, idx, text, chipEl) {
 
 function chatKey(e, section) {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(section); }
+}
+
+// Dismiss upgrade CTA — locks the copilot input for this session
+function _dismissCopilotCTA(section) {
+  _copilotDismissed = true;
+  localStorage.setItem('fintiq_copilot_dismissed', '1');
+  // Re-render this copilot to reflect locked state
+  const wrap = document.getElementById('copilot-' + section);
+  if (wrap) wrap.outerHTML = renderCopilot(section);
+}
+
+// Increment free-use counter and update credit badge
+function _copilotIncrementCredit(section) {
+  if (_copilotSubscribed) return;
+  _copilotFreeUsed++;
+  localStorage.setItem('fintiq_copilot_used', String(_copilotFreeUsed));
+  const remaining = COPILOT_FREE_LIMIT - _copilotFreeUsed;
+  // Update badge if still within limit
+  const badge = document.getElementById('copilot-credits-' + section);
+  if (badge) {
+    if (remaining > 0) {
+      badge.textContent = `${remaining} free question${remaining !== 1 ? 's' : ''} left`;
+    } else {
+      badge.remove();
+    }
+  }
+  // If limit now hit: re-render copilot to show upgrade CTA
+  if (_copilotFreeUsed >= COPILOT_FREE_LIMIT) {
+    const wrap = document.getElementById('copilot-' + section);
+    if (wrap) wrap.outerHTML = renderCopilot(section);
+  }
 }
 
 // Strip raw OHLCV arrays from technical data before sending to Copilot.
@@ -2585,6 +2655,15 @@ async function sendChat(section) {
   const text  = input.value.trim();
   if (!text || !_session.ticker) return;
 
+  // Credit gate: block if limit reached and dismissed
+  if (!_copilotSubscribed && _copilotDismissed && _copilotFreeUsed >= COPILOT_FREE_LIMIT) return;
+  // If limit reached but not dismissed, re-render to show CTA (don't proceed)
+  if (!_copilotSubscribed && !_copilotDismissed && _copilotFreeUsed >= COPILOT_FREE_LIMIT) {
+    const wrap = document.getElementById('copilot-' + section);
+    if (wrap) wrap.outerHTML = renderCopilot(section);
+    return;
+  }
+
   input.value = '';
   btn.disabled = true;
 
@@ -2615,7 +2694,6 @@ async function sendChat(section) {
         ticker: _session.ticker,
         section,
         session_id: window._fintiqSession?.session_id || null,
-        tavily_query: _buildTavilyQuery(_session.ticker, section, text),
         section_data: section === 'valuation'
           ? {
               // Compact: only valuation-relevant fields — avoids 6000-char truncation cutting off valuation_state
@@ -2667,6 +2745,8 @@ async function sendChat(section) {
     _chatHistory[section].push({ role: 'assistant', content: reply });
     msgEl.innerHTML += `<div class="chat-msg ai">${markdownToHtml(reply)}</div>`;
     msgEl.scrollTop = msgEl.scrollHeight;
+    // Track free-tier credit usage
+    _copilotIncrementCredit(section);
 
     // Write structured Conclusion object + dialogue_summary to SectionState
     const _secIdx = _getSectionIndex(section);
