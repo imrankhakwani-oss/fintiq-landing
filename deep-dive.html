@@ -430,11 +430,15 @@ a{color:var(--gold);text-decoration:none}
 .cat-changes-table th{color:var(--muted);text-align:left;padding:4px 8px;font-size:0.62rem;text-transform:uppercase;letter-spacing:.05em}
 .cat-changes-table td{padding:5px 8px;border-top:1px solid rgba(255,255,255,0.04);color:var(--dim)}
 .cat-squeeze-banner{border-radius:8px;padding:12px 14px;margin-bottom:14px;border:1px solid}
-.cat-news-item{padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-.cat-news-item:last-child{border-bottom:none}
-.cat-news-title{font-size:0.78rem;color:var(--text);margin-bottom:4px;line-height:1.4}
-.cat-news-meta{font-size:0.65rem;color:var(--muted)}
-.cat-news-snippet{font-size:0.72rem;color:var(--dim);margin-top:4px;line-height:1.5}
+.cat-news-item{padding:12px 0;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;gap:5px}
+.cat-news-item:last-child{border-bottom:none;padding-bottom:4px}
+.cat-news-meta-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cat-news-source{font-size:0.62rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.04em;background:rgba(245,166,35,0.1);border-radius:4px;padding:1px 6px}
+.cat-news-date{font-size:0.62rem;color:var(--muted)}
+.cat-news-title{font-size:0.8rem;font-weight:600;color:var(--text);line-height:1.4}
+.cat-news-title a{color:inherit;text-decoration:none;transition:color .15s}
+.cat-news-title a:hover{color:var(--gold)}
+.cat-news-snippet{font-size:0.71rem;color:var(--dim);line-height:1.55;margin-top:1px}
 .cat-ai-block{background:rgba(245,166,35,0.04);border:1px solid rgba(245,166,35,0.15);border-radius:10px;padding:16px;font-size:0.81rem;color:var(--dim);line-height:1.8;margin-bottom:14px;white-space:pre-wrap}
 /* AI Expander */
 .ai-expander{border:1px solid rgba(245,166,35,0.2);border-radius:10px;margin-bottom:14px;overflow:hidden}
@@ -4883,13 +4887,45 @@ function renderCatalyst(d) {
 
   // ── News Feed ──
   if (news.length) {
+    // Helper: extract readable domain from URL
+    function _newsDomain(url) {
+      try {
+        const h = new URL(url).hostname.replace(/^www\./, '');
+        // Map common domains to clean brand names
+        const brands = {
+          'reuters.com':'Reuters','bloomberg.com':'Bloomberg','ft.com':'FT',
+          'wsj.com':'WSJ','cnbc.com':'CNBC','kiplinger.com':'Kiplinger',
+          'fool.com':'Motley Fool','seekingalpha.com':'Seeking Alpha',
+          'barrons.com':'Barron\'s','marketwatch.com':'MarketWatch',
+          'thestreet.com':'TheStreet','businessinsider.com':'Business Insider',
+          'forbes.com':'Forbes','fortune.com':'Fortune','cnn.com':'CNN',
+          'bbc.com':'BBC','apnews.com':'AP','sec.gov':'SEC.gov',
+          'finance.yahoo.com':'Yahoo Finance','yahoo.com':'Yahoo Finance',
+          'investing.com':'Investing.com','stockanalysis.com':'Stock Analysis',
+        };
+        return brands[h] || h.split('.').slice(-2,-1)[0].replace(/-/g,' ');
+      } catch(e) { return ''; }
+    }
+    // Helper: format date as "Nov 17, 2026"
+    function _fmtNewsDate(d) {
+      if (!d) return '';
+      try {
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString('en-GB', {day:'numeric',month:'short',year:'numeric'});
+      } catch(e) { return d; }
+    }
     html += `<div class="cat-section-title">Recent News &amp; Market Narrative</div>
-    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:8px">What is the market currently focused on? Understanding the narrative tells you what's already priced in.</div>
-    <div style="background:var(--card2);border-radius:10px;padding:12px 16px;margin-bottom:14px">`;
+    <div style="font-size:0.7rem;color:var(--muted);margin-bottom:10px">What is the market currently focused on? Understanding the narrative tells you what's already priced in.</div>
+    <div style="background:var(--card2);border-radius:10px;padding:4px 16px 8px;margin-bottom:14px">`;
     news.forEach(n => {
+      const src  = _newsDomain(n.url);
+      const date = _fmtNewsDate(n.published);
       html += `<div class="cat-news-item">
-        <div class="cat-news-title"><a href="${n.url}" target="_blank" rel="noopener" style="color:var(--text);text-decoration:none;hover:color:var(--gold)">${n.title}</a></div>
-        ${n.published ? `<div class="cat-news-meta">${n.published}</div>` : ''}
+        <div class="cat-news-meta-row">
+          ${src  ? `<span class="cat-news-source">${src}</span>` : ''}
+          ${date ? `<span class="cat-news-date">${date}</span>` : ''}
+        </div>
+        <div class="cat-news-title"><a href="${n.url}" target="_blank" rel="noopener">${n.title}</a></div>
         ${n.snippet ? `<div class="cat-news-snippet">${n.snippet}</div>` : ''}
       </div>`;
     });

@@ -5289,6 +5289,43 @@ def _run_catalyst(ticker: str):
                     }, timeout=8)
                     return r.json().get('results', []) if r.ok else []
 
+                # Domains that return raw social metadata / video descriptions — skip them
+                _BAD_DOMAINS = {
+                    'youtube.com', 'youtu.be', 'facebook.com', 'instagram.com',
+                    'tiktok.com', 'twitter.com', 'x.com', 'linkedin.com',
+                }
+                def _is_news_url(url: str) -> bool:
+                    try:
+                        from urllib.parse import urlparse as _up
+                        d = _up(url).netloc.lower().lstrip('www.')
+                        return not any(bd in d for bd in _BAD_DOMAINS)
+                    except Exception:
+                        return True
+
+                def _clean_snippet(text: str) -> str:
+                    """Strip markdown headers, social metadata, and noise from scraped text."""
+                    import re as _re2
+                    # Remove markdown heading markers (###, ##, #)
+                    text = _re2.sub(r'#+\s*', '', text)
+                    # Remove lines that look like social metadata / UI chrome
+                    lines = [l.strip() for l in text.replace('\r', '\n').split('\n') if l.strip()]
+                    clean_lines = []
+                    for ln in lines:
+                        # Skip lines that are mostly metadata / social noise
+                        if _re2.match(r'^(Log In|Like|Share|Comment|Subscribe|Watch|View|Follow|Sign|Channel:|Posted:|Description:)', ln, _re2.I):
+                            continue
+                        if ln.startswith('https://') or ln.startswith('http://'):
+                            continue
+                        if _re2.match(r'^\d[\d,\.]+\s*(views?|likes?|reactions?|subscribers?)', ln, _re2.I):
+                            continue
+                        clean_lines.append(ln)
+                        if len(' '.join(clean_lines)) > 220:
+                            break
+                    result = ' '.join(clean_lines)
+                    # Collapse multiple spaces
+                    result = _re2.sub(r'\s{2,}', ' ', result).strip()
+                    return result[:220]
+
                 seen_urls = set()
                 with _TVEx(max_workers=2) as _pool:
                     futures = {_pool.submit(_tv_fetch, q): q for q in _tv_queries}
@@ -5296,14 +5333,18 @@ def _run_catalyst(ticker: str):
                         try:
                             for r in fut.result():
                                 url = r.get('url', '')
-                                if url in seen_urls:
+                                if url in seen_urls or not _is_news_url(url):
+                                    continue
+                                raw_snippet = (r.get('content') or '')
+                                snippet = _clean_snippet(raw_snippet)
+                                if not snippet:   # skip results with no usable snippet
                                     continue
                                 seen_urls.add(url)
                                 news_items.append({
                                     'title':     r.get('title', ''),
                                     'url':       url,
                                     'published': (r.get('published_date') or '')[:10],
-                                    'snippet':   (r.get('content') or '')[:250]
+                                    'snippet':   snippet,
                                 })
                         except Exception:
                             pass
