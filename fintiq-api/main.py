@@ -5262,25 +5262,54 @@ def _run_catalyst(ticker: str):
                 squeeze_signal = f'{short_pct}% of the float is sold short — low squeeze risk'
 
         # ── 4. News via Tavily ──
+        # Use days_back=30 to restrict to genuinely recent headlines.
+        # Two queries run in parallel: (a) recent news/events, (b) regulatory/leadership changes.
+        # This ensures breaking stories (leadership changes, export controls, SEC actions)
+        # surface alongside earnings and analyst news.
         news_items = []
         if TAVILY_API_KEY and time.time() < _deadline:
             try:
+                from concurrent.futures import ThreadPoolExecutor as _TVEx, as_completed as _as_completed
                 company_name = info.get('longName') or ticker
-                resp_tv = _req.post('https://api.tavily.com/search', json={
-                    'api_key': TAVILY_API_KEY,
-                    'query': f'{company_name} {ticker} stock news earnings analyst 2026',
-                    'search_depth': 'basic',
-                    'max_results': 7,
-                    'include_answer': False
-                }, timeout=8)
-                if resp_tv.ok:
-                    for r in resp_tv.json().get('results', []):
-                        news_items.append({
-                            'title':     r.get('title', ''),
-                            'url':       r.get('url', ''),
-                            'published': (r.get('published_date') or '')[:10],
-                            'snippet':   (r.get('content') or '')[:250]
-                        })
+                _today = datetime.datetime.now().strftime('%Y-%m-%d')
+                _tv_queries = [
+                    # Query A: recent headlines — earnings, analyst moves, macro impact
+                    f'{ticker} {company_name} stock news November 2026',
+                    # Query B: regulatory and leadership — catches SEC, export controls, CEO changes
+                    f'{ticker} {company_name} CEO leadership export controls regulatory SEC 2026',
+                ]
+                def _tv_fetch(q):
+                    r = _req.post('https://api.tavily.com/search', json={
+                        'api_key': TAVILY_API_KEY,
+                        'query': q,
+                        'search_depth': 'basic',
+                        'max_results': 5,
+                        'include_answer': False,
+                        'days': 45,          # restrict to last 45 days
+                    }, timeout=8)
+                    return r.json().get('results', []) if r.ok else []
+
+                seen_urls = set()
+                with _TVEx(max_workers=2) as _pool:
+                    futures = {_pool.submit(_tv_fetch, q): q for q in _tv_queries}
+                    for fut in _as_completed(futures, timeout=10):
+                        try:
+                            for r in fut.result():
+                                url = r.get('url', '')
+                                if url in seen_urls:
+                                    continue
+                                seen_urls.add(url)
+                                news_items.append({
+                                    'title':     r.get('title', ''),
+                                    'url':       url,
+                                    'published': (r.get('published_date') or '')[:10],
+                                    'snippet':   (r.get('content') or '')[:250]
+                                })
+                        except Exception:
+                            pass
+                # Sort by published date descending so newest appears first
+                news_items.sort(key=lambda x: x.get('published', ''), reverse=True)
+                news_items = news_items[:8]   # cap at 8 items
             except Exception:
                 pass
 
