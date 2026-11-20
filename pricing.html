@@ -666,7 +666,12 @@
 
     <details class="faq-item">
       <summary>Do you store my card details?</summary>
-      <p>No. Payments are processed by Stripe. Fintiq never sees or stores your card number — Stripe handles all payment data to PCI-DSS Level 1 standards. We only receive a confirmation that payment was made.</p>
+      <p>No. Payments are processed entirely by Stripe — Fintiq never sees or stores your card number, CVV, or any payment data. Stripe operates to PCI-DSS Level 1 standards. We only receive a confirmation that your subscription is active.</p>
+    </details>
+
+    <details class="faq-item">
+      <summary>Why did the checkout show a phone number I didn't enter?</summary>
+      <p>That's Stripe Link — Stripe's optional one-click checkout service. If you've ever used Link on any other website, Stripe recognises your email and offers to authenticate you with your previously saved phone number. Fintiq never collected or stored that number. To skip it, tap <strong>Pay without Link</strong> or <strong>Send code to email instead</strong> on the checkout screen.</p>
     </details>
 
     <details class="faq-item">
