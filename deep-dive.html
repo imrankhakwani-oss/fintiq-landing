@@ -139,6 +139,7 @@ a{color:var(--gold);text-decoration:none}
 .section-icon{font-size:1.1rem;width:28px;text-align:center}
 .section-title{font-weight:700;font-size:0.95rem}
 .section-desc{font-size:0.75rem;color:var(--muted);margin-top:1px}
+.section-data-src{font-size:0.6rem;color:var(--dim);margin-top:3px;letter-spacing:.01em}
 .section-status{font-size:0.65rem;padding:2px 8px;border-radius:10px;font-weight:600;white-space:nowrap}
 .ss-pending{background:rgba(100,116,139,0.12);color:var(--muted)}
 .ss-active{background:rgba(245,166,35,0.12);color:var(--gold)}
@@ -1010,7 +1011,7 @@ a{color:var(--gold);text-decoration:none}
       Fintiq
     </div>
     <h2 class="modal-title">Start your analysis</h2>
-    <p class="modal-sub">Enter your email to access Stock Deep Dive. Your first analysis is on us — no card needed.</p>
+    <p class="modal-sub">Enter your email to access Stock Deep Dive. First analysis free plus 3 AI Copilot questions — no card needed.</p>
     <input class="modal-input" id="auth-email" type="email" placeholder="you@example.com" autocomplete="email"
       onkeydown="if(event.key==='Enter')submitEmail()">
     <div class="modal-err" id="email-err"></div>
@@ -1193,6 +1194,7 @@ a{color:var(--gold);text-decoration:none}
       <div>
         <div class="section-title">Business Analysis</div>
         <div class="section-desc">Business quality, growth, valuation multiples, competitors, TSR</div>
+        <div class="section-data-src">Data: Yahoo Finance · SEC EDGAR · Claude AI</div>
       </div>
       <span class="section-status" id="status-fundamentals" style="display:none"></span>
       <span class="section-chevron" id="chev-fundamentals">▼</span>
@@ -1213,6 +1215,7 @@ a{color:var(--gold);text-decoration:none}
       <div>
         <div class="section-title">Catalyst Tracker</div>
         <div class="section-desc">Upcoming earnings, economic events, recent news, options activity</div>
+        <div class="section-data-src">Data: Yahoo Finance · Tavily News · Claude AI</div>
       </div>
       <span class="section-status" id="status-catalyst" style="display:none"></span>
       <span class="section-chevron" id="chev-catalyst">▼</span>
@@ -1233,6 +1236,7 @@ a{color:var(--gold);text-decoration:none}
       <div>
         <div class="section-title">Technical Analysis</div>
         <div class="section-desc">Price chart, MA, RSI, MACD, support/resistance, trend classification</div>
+        <div class="section-data-src">Data: Yahoo Finance · Claude AI</div>
       </div>
       <span class="section-status" id="status-technical" style="display:none"></span>
       <span class="section-chevron" id="chev-technical">▼</span>
@@ -1255,14 +1259,15 @@ a{color:var(--gold);text-decoration:none}
       <div>
         <div class="section-title">Valuation</div>
         <div class="section-desc">DCF, Monte Carlo, sensitivity grid, Graham number, sector multiples</div>
+        <div class="section-data-src">Data: Yahoo Finance · Claude AI · Your inputs</div>
       </div>
       <span class="section-status" id="status-valuation" style="display:none"></span>
       <span class="section-chevron" id="chev-valuation">▼</span>
     </div>
     <div class="section-body" id="body-valuation">
-      <div class="placeholder-section">
-        <div class="ph-icon">🚧</div>
-        <p>Valuation section — DCF with reverse-engineered assumptions, Monte Carlo and heat grid — coming next.</p>
+      <div id="val-waiting" class="sec-pad" style="text-align:center;padding:36px 20px;color:var(--muted)">
+        <div class="dot-pulse" style="justify-content:center;margin-bottom:12px"><span></span><span></span><span></span></div>
+        <div style="font-size:0.82rem">Search for a stock above to load the DCF model</div>
       </div>
     </div>
   </div>
@@ -1274,6 +1279,7 @@ a{color:var(--gold);text-decoration:none}
       <div>
         <div class="section-title">Risk &amp; Position Sizing</div>
         <div class="section-desc">Monte Carlo price paths, stop loss probability, position size calculator, volatility</div>
+        <div class="section-data-src">Data: Yahoo Finance · Your inputs</div>
       </div>
       <span class="section-status" id="status-risk" style="display:none"></span>
       <span class="section-chevron" id="chev-risk">▼</span>
@@ -2898,7 +2904,21 @@ function renderValuation(d) {
   const body = document.getElementById('body-valuation');
   if (!body) { console.error('[renderValuation] body-valuation element NOT FOUND in DOM'); return; }
   if (!d) {
-    body.innerHTML = `<div class="sec-pad"><div class="error-block">⚠️ Load Fundamentals first (Section 1) before running Valuation.</div></div>`;
+    const ticker = _session.ticker;
+    if (ticker) {
+      // Fundamentals in-flight — show spinner and let the fundamentals callback re-render us
+      body.innerHTML = `<div class="sec-pad" style="text-align:center;padding:36px 20px;color:var(--muted)">
+        <div class="dot-pulse" style="justify-content:center;margin-bottom:12px"><span></span><span></span><span></span></div>
+        <div style="font-size:0.82rem">Loading <strong style="color:var(--gold)">${ticker}</strong> fundamentals first…</div>
+      </div>`;
+      // Ensure fundamentals is loading (safe to call even if already in-flight)
+      if (!_sectionOpened.fundamentals) _triggerSectionLoad('fundamentals');
+    } else {
+      body.innerHTML = `<div id="val-waiting" class="sec-pad" style="text-align:center;padding:36px 20px;color:var(--muted)">
+        <div class="dot-pulse" style="justify-content:center;margin-bottom:12px"><span></span><span></span><span></span></div>
+        <div style="font-size:0.82rem">Search for a stock above to load the DCF model</div>
+      </div>`;
+    }
     return;
   }
 
@@ -5168,6 +5188,11 @@ function renderDecision() {
     </div>
   </div>`;
 
+  // ── Methodology note ──
+  html += `<div style="font-size:0.65rem;color:var(--dim);background:rgba(255,255,255,0.03);border-radius:6px;padding:8px 12px;margin-bottom:16px;line-height:1.5">
+    ℹ️ The conviction score is a structured reasoning framework based on the evidence in your analysis — it is not a back-tested signal or verified prediction of future returns. Use it as a disciplined prompt to examine your own reasoning, not as a trade instruction.
+  </div>`;
+
   // ── Direction toggle (kept — feeds session + conviction calibrator) ──
   html += `<div class="dec-section-title">📋 Your Position Direction</div>
   <div class="dec-direction-toggle">
@@ -5220,7 +5245,7 @@ function renderDecision() {
         <p style="margin:0 0 6px"><strong style="color:var(--text)">Reading the output</strong><br>
         A typical result might say: <em>67% conviction → 4.2% of portfolio → £4,200 on a £100k portfolio.</em> This turns "I think AAPL is going up" into a precise, defensible position — one that a hedge fund risk committee could evaluate. If the Kelly output is negative, the math is telling you there's no edge at those numbers — skip the trade or revisit your upside/downside assumptions.</p>
 
-        <p style="margin:0;font-size:0.68rem;color:var(--muted);font-style:italic">⚠️ This is an educational framework, not financial advice. Always cap single positions at 5–10% regardless of Kelly output, and never risk capital you cannot afford to lose.</p>
+        <p style="margin:0;font-size:0.68rem;color:var(--muted);font-style:italic">⚠️ This is an educational framework, not financial advice. The probability estimate is derived from current signals and your own assessment — it is not a historically back-tested win rate. Actual trade outcomes will differ. Always cap single positions at 5–10% regardless of Kelly output, and never risk capital you cannot afford to lose.</p>
       </div>
     </div>
   </div>`;
