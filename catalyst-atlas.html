@@ -168,8 +168,16 @@ nav{background:var(--bg2);border-bottom:2px solid var(--amber);padding:12px 32px
 .hero h1{font-size:2.1rem;font-weight:900;line-height:1.15;margin-bottom:8px;text-wrap:balance}
 .hero h1 span{color:var(--amber)}
 .hero p{color:var(--muted);font-size:0.95rem}
-.search{display:flex;gap:10px;max-width:560px;margin:18px auto 10px}
-.search input{flex:1;min-width:0;background:var(--bg2);border:1px solid rgba(245,158,11,0.35);color:var(--ink);border-radius:10px;padding:13px 16px;font:600 1rem 'Inter',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.search{display:flex;gap:10px;max-width:560px;margin:18px auto 10px;position:relative}
+.sugg{position:absolute;left:0;right:110px;top:100%;margin-top:4px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;z-index:30;list-style:none;padding:4px 0;text-align:left;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.sugg li{display:flex;justify-content:space-between;gap:10px;padding:9px 14px;cursor:pointer;font-size:.95rem}
+.sugg li.on,.sugg li:hover{background:rgba(245,158,11,.12)}
+.sugg .sy{color:var(--amber);font-weight:700;white-space:nowrap}.sugg .ex{color:var(--dim);font-size:.8rem;white-space:nowrap}
+a.src{display:block;margin-top:4px;font-size:.82rem;color:#93C5FD;text-decoration:none;line-height:1.35}
+a.src:hover{text-decoration:underline}a.src b{color:var(--dim);font-weight:600}
+.reading{list-style:none;margin:12px 0 0;padding:0}.reading li{padding:10px 0;border-top:1px solid var(--line)}.reading li:first-child{border-top:0}
+.reading a{color:var(--ink);text-decoration:none;font-weight:600}.reading a:hover{text-decoration:underline}.reading .meta{color:var(--dim);font-size:.82rem;margin-top:2px}
+.search input{flex:1;min-width:0;background:var(--bg2);border:1px solid rgba(245,158,11,0.35);color:var(--ink);border-radius:10px;padding:13px 16px;font:600 1rem 'Inter',sans-serif;letter-spacing:.3px}
 .search input::placeholder{text-transform:none;color:#64748B;font-weight:500}
 .search input:focus{outline:2px solid var(--amber);outline-offset:1px}
 .btn{background:var(--amber);color:var(--bg2);border:0;border-radius:10px;padding:12px 22px;font:700 0.95rem 'Inter',sans-serif;cursor:pointer;white-space:nowrap}
@@ -464,10 +472,11 @@ noscript p{color:var(--muted);text-align:center;padding:12px}
   <div class="hero">
     <div class="hero-tag">TRY FREE · CATALYST ATLAS</div>
     <h1>Why did this share price move, and <span>what usually happens next?</span></h1>
-    <p>Type a ticker. In plain English you'll see what has been driving the price, which kinds of news move it, how it reacted after past news, and a realistic price range for the next week, month and quarter.</p>
+    <p>Type a company name or ticker. In plain English you'll see what has been driving the price, which kinds of news move it, how it reacted after past news, and a realistic price range for the next week, month and quarter.</p>
     <form class="search" id="searchForm" role="search">
-      <label for="tickerInput" class="sr" style="position:absolute;left:-9999px">Ticker</label>
-      <input id="tickerInput" name="ticker" placeholder="e.g. TSLA, AAPL, SHEL.L" autocomplete="off" maxlength="15">
+      <label for="tickerInput" class="sr" style="position:absolute;left:-9999px">Company name or ticker</label>
+      <input id="tickerInput" name="ticker" placeholder="Company name or ticker, e.g. Nvidia, Shell, TSLA" autocomplete="off" maxlength="60" role="combobox" aria-autocomplete="list" aria-controls="sugg" aria-expanded="false">
+      <ul class="sugg" id="sugg" role="listbox" hidden></ul>
       <button class="btn" type="submit">Explain it</button>
     </form>
     <div class="chips" id="chips">Try:
@@ -602,9 +611,68 @@ function showError(msg) {
   $('status').innerHTML = `<p class="err">${esc(msg)}</p><p class="note">Check the ticker (UK shares end in .L, for example SHEL.L) or <button class="chip" id="demoBtn">see the Tesla example</button></p>`;
   $('demoBtn').onclick = () => loadDemo();
 }
+// Company-name search. Free: it only finds the ticker, it doesn't use a search credit.
+async function lookup(q) {
+  try {
+    const r = await fetch(`${API}/atlas/lookup?q=${encodeURIComponent(q)}`);
+    if (!r.ok) return [];
+    return (await r.json()).results || [];
+  } catch (e) { return []; }
+}
+// Turns "nvidia", "Shell plc" or "tsla" into a ticker. An exact ticker match wins,
+// otherwise the best name match. Returns null if nothing matches.
+async function resolveTicker(q) {
+  q = (q || '').trim();
+  if (!q) return null;
+  const up = q.toUpperCase();
+  const res = await lookup(q);
+  const exact = res.find(x => x.symbol === up);
+  if (exact) return exact.symbol;
+  if (res.length) return res[0].symbol;
+  return /^[A-Z0-9.\-^=]{1,15}$/.test(up) && !/\s/.test(q) ? up : null;
+}
+async function search(q) {
+  hideSugg();
+  q = (q || '').trim();
+  if (!q) return;
+  showLoading(q);
+  const t = await resolveTicker(q);
+  if (!t) { showError(`We couldn't find a US or UK listed company called "${q}". Try another spelling or the ticker, such as TSLA or SHEL.L.`); return; }
+  load(t);
+}
+let suggTimer = null, suggItems = [], suggOn = -1;
+function hideSugg() { clearTimeout(suggTimer); const u = $('sugg'); if (u) { u.hidden = true; u.innerHTML = ''; } suggItems = []; suggOn = -1; $('tickerInput').setAttribute('aria-expanded', 'false'); }
+function drawSugg() {
+  const u = $('sugg');
+  if (!suggItems.length) { hideSugg(); return; }
+  u.innerHTML = suggItems.map((x, k) => `<li role="option" data-k="${k}" class="${k === suggOn ? 'on' : ''}"><span><span class="sy">${esc(x.symbol)}</span> ${esc(x.name)}</span><span class="ex">${esc(x.exchange)}</span></li>`).join('');
+  u.hidden = false; $('tickerInput').setAttribute('aria-expanded', 'true');
+  u.querySelectorAll('li').forEach(li => li.onmousedown = ev => { ev.preventDefault(); const x = suggItems[+li.dataset.k]; $('tickerInput').value = x.symbol; hideSugg(); load(x.symbol); });
+}
+function initSuggest() {
+  const inp = $('tickerInput');
+  inp.addEventListener('input', () => {
+    clearTimeout(suggTimer);
+    const q = inp.value.trim();
+    if (q.length < 2) { hideSugg(); return; }
+    suggTimer = setTimeout(async () => {
+      const res = await lookup(q);
+      if (inp.value.trim() !== q) return;          // the visitor kept typing
+      suggItems = res.slice(0, 6); suggOn = -1; drawSugg();
+    }, 250);
+  });
+  inp.addEventListener('keydown', e => {
+    if (!suggItems.length) return;
+    if (e.key === 'ArrowDown') { suggOn = (suggOn + 1) % suggItems.length; drawSugg(); e.preventDefault(); }
+    else if (e.key === 'ArrowUp') { suggOn = (suggOn - 1 + suggItems.length) % suggItems.length; drawSugg(); e.preventDefault(); }
+    else if (e.key === 'Enter' && suggOn >= 0) { e.preventDefault(); const x = suggItems[suggOn]; inp.value = x.symbol; hideSugg(); load(x.symbol); }
+    else if (e.key === 'Escape') hideSugg();
+  });
+  inp.addEventListener('blur', () => setTimeout(hideSugg, 150));
+}
 async function load(ticker) {
   ticker = (ticker || '').trim().toUpperCase();
-  if (!/^[A-Z0-9.\-^=]{1,15}$/.test(ticker)) { showError('Please enter a ticker such as TSLA, AAPL or SHEL.L.'); return; }
+  if (!/^[A-Z0-9.\-^=]{1,15}$/.test(ticker)) { search(ticker); return; }
   $('tickerInput').value = ticker;
   const url = new URL(location.href); url.searchParams.set('ticker', ticker); history.replaceState(null, '', url);
   showLoading(ticker);
@@ -728,6 +796,7 @@ function render() {
     </div>
   </div>
   ${recentNewsHtml()}
+  ${readingHtml()}
   <section><details class="card key keyfold">
     <summary><span class="label" style="margin:0">Reading the numbers</span>
       <span class="keysum">What do ${TAG_ACT} and ${TAG_NET} mean? <span class="more">Tap to read ▾</span></span></summary>
@@ -805,7 +874,12 @@ function renderRanges() {
     <div class="note" style="margin-top:0">7 in 10 chance the price is between ${money(r.lo70)} and ${money(r.hi70)} ${when[r.label] || ''}, an actual change of ${chg(r.lo70)} to ${chg(r.hi70)} from today.</div></div>`).join('');
 }
 
-function evTitle(e) { return esc(e.title) + (e.src === 'knowledge' ? ' <span class="muted" title="No matching news article was found for this date, so the cause comes from the AI\'s general knowledge of widely reported events.">(general knowledge)</span>' : ''); }
+// Link to the news story behind a move: headline + publisher, opens the publisher's site.
+function srcLink(e) {
+  if (!e || !e.url || !/^https?:\/\//.test(e.url)) return '';
+  return `<a class="src" href="${esc(e.url)}" target="_blank" rel="noopener nofollow" title="Opens ${esc(e.source || 'the news site')} in a new tab. Some sites need a subscription.">📰 ${esc(e.headline || 'Read the story')} <b>· ${esc(e.source || '')} ↗</b></a>`;
+}
+function evTitle(e) { return esc(e.title) + srcLink(e) + (e.src === 'knowledge' ? ' <span class="muted" title="No matching news article was found for this date, so the cause comes from the AI\'s general knowledge of widely reported events.">(general knowledge)</span>' : ''); }
 // "Recent news": the biggest company-specific moves of the last month, including smaller
 // ones that are not in the 3-year diary. Older saved results have no recent_news: show nothing.
 function recentNewsHtml() {
@@ -813,11 +887,22 @@ function recentNewsHtml() {
   if (!rn || !rn.length) return '';
   const rows = rn.map(x => `<li class="rn-item">
       <span class="rn-date">${esc(fmtDate(x.date))}</span>
-      <span class="rn-title">${esc(x.title)}${x.cat && x.cat !== 'Unexplained' ? ` <span class="rn-cat">${esc(x.cat)}</span>` : ''}</span>
+      <span class="rn-title">${esc(x.title)}${x.cat && x.cat !== 'Unexplained' ? ` <span class="rn-cat">${esc(x.cat)}</span>` : ''}${srcLink(x)}</span>
       <span class="rn-move">${pc(x.ret)} ${TAG_ACT} · ${pc(x.own)} ${TAG_NET}</span></li>`).join('');
   return `<section><div class="card"><div class="label">Recent news</div><h2>What moved ${esc(D.name)} in the last month</h2>
     <div class="sub">The days in the last month when the company's own news moved the shares most. Smaller days here are not in the 3-year diary below, so they don't change its averages.</div>
     <ul class="rn-list">${rows}</ul></div></section>`;
+}
+// Recent headlines about the company from the financial press (FT, WSJ, The Economist,
+// Reuters, Bloomberg, Barron's). Headline and link only; some need a subscription.
+function readingHtml() {
+  const rd = (D.reading || []).filter(x => x.url && /^https?:\/\//.test(x.url));
+  if (!rd.length) return '';
+  const items = rd.map(x => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener nofollow">${esc(x.headline)} ↗</a>
+      <div class="meta">${esc(x.source)}${x.pub ? ' · ' + esc(fmtDate(x.pub)) : ''}</div></li>`).join('');
+  return `<section><div class="card"><div class="label">Further reading</div><h2>${esc(D.name)} in the financial press</h2>
+    <div class="sub">Recent headlines from the Financial Times, Wall Street Journal, The Economist, Reuters, Bloomberg and Barron's. Links open the publisher's site; some articles need a subscription to read in full.</div>
+    <ul class="reading">${items}</ul></div></section>`;
 }
 function viewHtml() {
   const v = D.analyst_view;
@@ -1024,7 +1109,8 @@ document.querySelectorAll('.packs button').forEach(b => b.onclick = async () => 
 });
 
 // ---------- start ----------
-$('searchForm').addEventListener('submit', e => { e.preventDefault(); load($('tickerInput').value); });
+$('searchForm').addEventListener('submit', e => { e.preventDefault(); search($('tickerInput').value); });
+initSuggest();
 $('chips').querySelectorAll('.chip').forEach(c => c.onclick = () => load(c.dataset.t));
 window.addEventListener('resize', () => { if (D) { renderMini(); renderBig(); } });
 (async () => {
