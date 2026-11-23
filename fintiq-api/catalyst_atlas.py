@@ -599,8 +599,11 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
     # Every day is searched so it gets a real news headline: big market days are told the
     # market move, results days are searched for the article that reports the results.
     to_search = [{**b, "market": round(_pct(rm[b["i"]]), 1)} if b["date"] in auto else b for b in big + recent_days]
+    # Results days: news headlines for the last 4 only (the past year). Older results keep
+    # their EPS line and all price-reaction numbers, just without a news link.
+    res_days = sorted([e for e in events if e["cat"] == "Earnings"], key=lambda e: e["i"])[-4:]
     to_search += [{"date": D[e["i"]], "move": round(_pct(A[e["i"]]), 1), "i": e["i"], "earnings": True}
-                  for e in events if e["cat"] == "Earnings"]
+                  for e in res_days]
     labels = dict(auto)
     if labeler and to_search:
         for day, lab in (labeler(to_search) or {}).items():
