@@ -8725,6 +8725,10 @@ async def create_checkout_session(request: Request):
             "cancel_url": "https://fintiq.uk/deep-dive.html",
             "metadata[fintiq_email]": email,
             "allow_promotion_codes": "true",
+            # Explicit payment methods: disables Stripe Link (no cross-merchant phone prompt)
+            # Card covers Apple Pay / Google Pay automatically on supported devices.
+            "payment_method_types[0]": "card",
+            "payment_method_types[1]": "paypal",
         },
         timeout=10,
     )
@@ -8926,6 +8930,10 @@ async def atlas_checkout(request: Request):
         "metadata[credits]": str(ATLAS_PACK_CREDITS),
         "success_url": back + ("&" if tkr else "?") + "paid=1",
         "cancel_url": back,
+        # Explicit payment methods: disables Stripe Link, adds PayPal
+        # Card covers Apple Pay / Google Pay automatically on supported devices.
+        "payment_method_types[0]": "card",
+        "payment_method_types[1]": "paypal",
     })
     if r.status_code not in (200, 201):
         print(f"[Stripe] Atlas checkout error {r.status_code}: {r.text[:300]}")
