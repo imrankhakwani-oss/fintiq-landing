@@ -40,7 +40,7 @@ from typing import Callable, Optional
 import numpy as np
 import pandas as pd
 
-VERSION = "v8"
+VERSION = "v9"   # v9: real headlines + links, results-day news, further reading
 CACHE_TTL = 12 * 3600          # full result
 LABEL_TTL = 30 * 24 * 3600     # news labels for past days rarely change
 HAIKU_MODEL = "claude-haiku-4-5-20251001"
@@ -207,6 +207,64 @@ def _is_junk(r: dict, name: str) -> bool:
     return (not title) or bool(_JUNK.search(title)) or title.lower() == name.lower()
 
 
+# Well-known business news sites. Their articles are preferred as the linked source,
+# and the "Further reading" list uses only the premium ones. We show the headline and a
+# link only, never the article text, so readers go to the publisher's site to read it.
+SOURCE_NAMES = {
+    "ft.com": "Financial Times", "wsj.com": "Wall Street Journal", "economist.com": "The Economist",
+    "reuters.com": "Reuters", "bloomberg.com": "Bloomberg", "barrons.com": "Barron's",
+    "cnbc.com": "CNBC", "marketwatch.com": "MarketWatch", "apnews.com": "AP News",
+    "bbc.co.uk": "BBC", "bbc.com": "BBC", "theguardian.com": "The Guardian", "nytimes.com": "New York Times",
+    "investors.com": "Investor's Business Daily", "finance.yahoo.com": "Yahoo Finance",
+    "fool.com": "Motley Fool", "fool.co.uk": "Motley Fool UK", "proactiveinvestors.co.uk": "Proactive Investors",
+    "thisismoney.co.uk": "This is Money", "telegraph.co.uk": "The Telegraph", "thetimes.com": "The Times",
+    "thetimes.co.uk": "The Times", "sharecast.com": "Sharecast", "techcrunch.com": "TechCrunch",
+    "theverge.com": "The Verge", "electrek.co": "Electrek", "seekingalpha.com": "Seeking Alpha",
+    "investopedia.com": "Investopedia", "businessinsider.com": "Business Insider", "forbes.com": "Forbes",
+    "fortune.com": "Fortune", "axios.com": "Axios", "cnn.com": "CNN", "foxbusiness.com": "Fox Business",
+    "morningstar.com": "Morningstar", "morningstar.co.uk": "Morningstar", "benzinga.com": "Benzinga",
+}
+PREMIUM_DOMAINS = ["ft.com", "wsj.com", "economist.com", "reuters.com", "bloomberg.com", "barrons.com"]
+_TOP = {"ft.com": 3, "wsj.com": 3, "economist.com": 3, "reuters.com": 3, "bloomberg.com": 3, "barrons.com": 2,
+        "cnbc.com": 2, "marketwatch.com": 2, "apnews.com": 2, "bbc.co.uk": 2, "bbc.com": 2, "theguardian.com": 2,
+        "nytimes.com": 2, "thetimes.com": 2, "telegraph.co.uk": 2, "investors.com": 1, "finance.yahoo.com": 1}
+
+
+def _domain(url: str) -> str:
+    try:
+        from urllib.parse import urlparse
+        h = (urlparse(url).hostname or "").lower()
+    except Exception:
+        return ""
+    for pre in ("www.", "uk.", "us.", "amp.", "m.", "edition."):
+        if h.startswith(pre):
+            h = h[len(pre):]
+    return h
+
+
+def source_name(url: str) -> str:
+    d = _domain(url)
+    for k, v in SOURCE_NAMES.items():
+        if d == k or d.endswith("." + k):
+            return v
+    return d
+
+
+def _quality(url: str) -> int:
+    d = _domain(url)
+    return max([v for k, v in _TOP.items() if d == k or d.endswith("." + k)] or [0])
+
+
+def _link(r: dict) -> Optional[dict]:
+    """Headline + link for one search result, or None if it isn't a usable web link."""
+    url, title = str(r.get("url") or ""), str(r.get("title") or "").strip()
+    if not url.startswith("http") or not title:
+        return None
+    p = _pub_date(r)
+    return {"headline": re.sub(r"\s+", " ", title)[:160], "url": url, "source": source_name(url),
+            "pub": p.isoformat() if p else None}
+
+
 def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: str = "",
                  tavily_search: Optional[Callable] = None) -> list:
     """News articles published around one date.
@@ -225,6 +283,7 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
         (name, {"topic": "news", **win(-1, 1)}),
         (f"{name} {word} news", {"topic": "news", **win(-3, 1)}),
         (f"{name} ({base}) {word} {'rises' if move > 0 else 'falls'} {d.strftime('%B %Y')}", {"topic": "general"}),
+        (f"why did {name} {word} {'rise' if move > 0 else 'fall'} on {d.day} {d.strftime('%B %Y')}", {"topic": "general"}),
     ]
     found, seen = [], set()
 
@@ -233,7 +292,7 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
         return None if p is None else -3 <= (p - d).days <= 1
 
     for k, (query, extra) in enumerate(searches):
-        if k == 2 and sum(1 for r in found if in_window(r)) >= 2:
+        if k >= 2 and sum(1 for r in found if in_window(r)) >= 2:
             break
         res = []
         if tavily_api_key:
@@ -256,6 +315,7 @@ def _search_news(name: str, ticker: str, day: str, move: float, tavily_api_key: 
             u = x.get("url") or x.get("title")
             if u and u not in seen and not _is_junk(x, name):
                 seen.add(u); found.append(x)
+    found.sort(key=lambda r: -_quality(r.get("url") or ""))   # well-known publishers first (stable sort)
     dated = [r for r in found if in_window(r)]
     if dated:                       # articles from those days exist: use only them
         return dated[:6]
@@ -294,17 +354,23 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
         diag["error"] = "missing ANTHROPIC_API_KEY or Tavily key"
         print(f"[catalyst-atlas] {ticker}: {diag['error']}")
         return {}, diag
-    blocks = []
+    blocks, found = [], {}
     for d in days:
-        res = _search_news(name, ticker, d["date"], d["move"], tavily_api_key, tavily_search)
+        res = _search_news(name, ticker, d["date"], d["move"], tavily_api_key, tavily_search)[:6]
+        found[d["date"]] = res
         if res:
             diag["with_results"] += 1
         diag.setdefault("samples", {})[d["date"]] = [
             f"{_pub_date(r) or '?'} {str(r.get('title',''))[:90]}" for r in res[:4]]
         snippets = " | ".join(
-            f"[published {_pub_date(r) or 'DATE UNKNOWN'}] {r.get('title','')}: {str(r.get('content',''))[:400]}"
-            for r in res[:6]) or "no articles found"
-        blocks.append(f"DATE {d['date']} (company-specific move {d['move']:+.1f}%): {snippets}")
+            f"[#{j + 1}, published {_pub_date(r) or 'DATE UNKNOWN'}] {r.get('title','')}: {str(r.get('content',''))[:400]}"
+            for j, r in enumerate(res)) or "no articles found"
+        note = ""
+        if d.get("earnings"):
+            note = "; RESULTS DAY: the company reported results, so pick the article that reports them"
+        elif d.get("market") is not None:
+            note = f"; the whole stock market also moved {d['market']:+.1f}% that day"
+        blocks.append(f"DATE {d['date']} (company-specific move {d['move']:+.1f}%{note}): {snippets}")
 
     out = {}
     import anthropic
@@ -329,9 +395,12 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
             "changes or customers building their own alternative; 'Market-wide news' = only when the whole "
             "stock market or a whole sector moved on general news; oil-price news belongs in 'Customer & industry demand' "
             "unless it is about the company itself.\n"
+            "On a RESULTS DAY use category 'Earnings & guidance'. When the whole market also moved, say what "
+            "drove the market and, if the snippets show it, why this company moved more or less than the market.\n"
+            "\"article\" is the number (#) of the one snippet that best reports the cause, or 0 if none does.\n"
             "Reply with a JSON array only, one object per date: "
             "{\"date\":\"YYYY-MM-DD\",\"category\":\"...\",\"title\":\"plain-English cause, max 12 words\","
-            "\"src\":\"news\" or \"knowledge\"}.\n\n" + "\n".join(chunk)
+            "\"src\":\"news\" or \"knowledge\",\"article\":N}.\n\n" + "\n".join(chunk)
         )
         try:
             resp = client.messages.create(model=HAIKU_MODEL, max_tokens=2000,
@@ -354,6 +423,15 @@ def label_big_days(name: str, ticker: str, days: list, tavily_search: Optional[C
             except Exception:
                 pass
             out[day] = {"cat": cat, "title": title, "src": o.get("src") or "news"}
+            try:
+                k = int(o.get("article") or 0)
+            except Exception:
+                k = 0
+            res = found.get(day) or []
+            if cat != "Unexplained" and 1 <= k <= len(res):
+                lk = _link(res[k - 1])
+                if lk:
+                    out[day].update(lk)
             if cat != "Unexplained":
                 diag["labelled"] += 1
     print(f"[catalyst-atlas] {ticker} labels: {diag}")
@@ -518,26 +596,40 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
             auto[b["date"]] = {"cat": "Market-wide news", "src": "market",
                                "title": (f"Whole market moved {_pct(rm[i]):+.1f}% ({mkt_label}); shares moved "
                                          f"{'more' if more else 'less'} than usual")}
-    to_search = [b for b in big + recent_days if b["date"] not in auto]
+    # Every day is searched so it gets a real news headline: big market days are told the
+    # market move, results days are searched for the article that reports the results.
+    to_search = [{**b, "market": round(_pct(rm[b["i"]]), 1)} if b["date"] in auto else b for b in big + recent_days]
+    to_search += [{"date": D[e["i"]], "move": round(_pct(A[e["i"]]), 1), "i": e["i"], "earnings": True}
+                  for e in events if e["cat"] == "Earnings"]
     labels = dict(auto)
     if labeler and to_search:
-        labels.update(labeler(to_search) or {})
+        for day, lab in (labeler(to_search) or {}).items():
+            if day in auto and lab.get("cat") == "Unexplained":
+                continue                      # keep "whole market moved" rather than "no clear news"
+            labels[day] = lab
+    LINK = ("headline", "url", "source", "pub")
+    for e in events:                          # results days: keep the EPS line, add the news link
+        lab = labels.get(D[e["i"]]) or {}
+        e.update({k: lab[k] for k in LINK if lab.get(k)})
     for b in big:
         lab = labels.get(b["date"], {"cat": "Unexplained", "title": "Large company-specific move (no clear news found)"})
         events.append({"i": b["i"], "kind": lab["cat"], "cat": lab["cat"], "s": 1 if A[b["i"]] > 0 else -1,
-                       "title": lab["title"], "src": lab.get("src", "news")})
+                       "title": lab["title"], "src": lab.get("src", "news"),
+                       **{k: lab[k] for k in LINK if lab.get(k)}})
     events.sort(key=lambda e: e["i"])
 
     # Recent news strip: the big/earnings events of the last month plus the smaller
     # recent days above, newest first (max 4).
     recent_news = [{"date": D[e["i"]], "cat": e["cat"], "title": e["title"], "src": e.get("src", "news"),
-                    "own": _r(_pct(A[e["i"]])), "ret": _r(_pct(r[e["i"]])), "big": True}
+                    "own": _r(_pct(A[e["i"]])), "ret": _r(_pct(r[e["i"]])), "big": True,
+                    **{k: e[k] for k in LINK if e.get(k)}}
                    for e in events if e["i"] >= n - 21]
     for b in recent_days:
         lab = labels.get(b["date"], {"cat": "Unexplained", "title": "No clear news found"})
         recent_news.append({"date": b["date"], "cat": lab["cat"], "title": lab["title"],
                             "src": lab.get("src", "news"), "own": _r(_pct(A[b["i"]])),
-                            "ret": _r(_pct(r[b["i"]])), "big": False})
+                            "ret": _r(_pct(r[b["i"]])), "big": False,
+                            **{k: lab[k] for k in LINK if lab.get(k)}})
     recent_news = sorted(recent_news, key=lambda x: x["date"], reverse=True)[:4]
 
     def car(i, a, b):
@@ -703,7 +795,7 @@ def analyse(data: dict, labeler: Optional[Callable] = None, now: Optional[dt.dat
         "beta_now": _r(b_now, 2), "beta_avg": _r(float(np.nanmean(beta[1:])), 2),
         "summary": summary, "ranges": ranges, "sigma": _r(100 * sigma), "sigma_src": sigma_src,
         "upcoming": upcoming,
-        "events": [{k: e[k] for k in ("date", "kind", "cat", "s", "title", "src", "ret", "pre", "d0", "d5", "d20", "d60", "path") if k in e} for e in events],
+        "events": [{k: e[k] for k in ("date", "kind", "cat", "s", "title", "src", "ret", "pre", "d0", "d5", "d20", "d60", "path", "headline", "url", "source", "pub") if k in e} for e in events],
         "groups": groups, "phases": phases, "quiet": quiet,
         "series": {"dates": D, "close": [round(float(x), 2) for x in c], "own": enc(A), "mkt": enc(M), "sec": enc(S)},
         "recent_news": recent_news,
@@ -820,6 +912,39 @@ def analyst_view(res: dict, anthropic_api_key: str) -> Optional[dict]:
 # ─────────────────────────────────────────────────────────────────────────────
 # Entry point used by the API route
 # ─────────────────────────────────────────────────────────────────────────────
+def further_reading(name: str, ticker: str, tavily_api_key: str, days: int = 90) -> list:
+    """Recent headlines about the company from the Financial Times, WSJ, The Economist,
+    Reuters, Bloomberg and Barron's: headline, source, date and link only (no article text).
+    Many are behind the publisher's paywall; readers follow the link to read them."""
+    if not tavily_api_key:
+        return []
+    import requests
+    word = re.split(r"[\s,.]+", name.strip())[0].lower() if name else ""
+    base = ticker.split(".")[0].lower()
+    out, seen = [], set()
+    for q in (f"{name}", f"{name} shares analysis"):
+        try:
+            r = requests.post("https://api.tavily.com/search", timeout=15, json={
+                "api_key": tavily_api_key, "query": q, "topic": "news", "days": days, "max_results": 10,
+                "search_depth": "basic", "include_answer": False, "include_domains": PREMIUM_DOMAINS})
+            res = r.json().get("results", []) if r.status_code == 200 else []
+        except Exception as e:
+            print(f"[catalyst-atlas] further reading {ticker}: {e}")
+            res = []
+        for x in res:
+            lk = _link(x)
+            if not lk or lk["url"] in seen or _is_junk(x, name):
+                continue
+            t = lk["headline"].lower()
+            if word and word not in t and base not in re.findall(r"[a-z0-9]+", t):
+                continue                    # keep only headlines that name the company
+            seen.add(lk["url"]); out.append(lk)
+        if len(out) >= 6:
+            break
+    out.sort(key=lambda x: x.get("pub") or "", reverse=True)
+    return out[:6]
+
+
 def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
                 anthropic_api_key: str = "", tavily_api_key: str = "", fetch=fetch_market_data,
                 cache_ttl: int = CACHE_TTL) -> dict:
@@ -861,6 +986,11 @@ def build_atlas(ticker: str, kv_get=None, kv_set=None, tavily_search=None,
     d = diag_box["diag"]
     result["label_diag"] = d
     result["analyst_view"] = analyst_view(result, anthropic_api_key)
+    try:
+        result["reading"] = further_reading(data["name"], ticker, tavily_api_key)
+    except Exception as e:
+        print(f"[catalyst-atlas] further reading failed {ticker}: {e}")
+        result["reading"] = []
     failed = bool(d.get("error")) or (d.get("days", 0) > 0 and d.get("with_results", 0) == 0)
     result["_ttl"] = 3600 if failed else cache_ttl   # retry within an hour if news lookup failed
     result["built_at"] = int(time.time())            # shown on the page as "Updated ..."

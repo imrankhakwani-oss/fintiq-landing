@@ -1846,6 +1846,74 @@ _CA_ORIGINS = {"https://fintiq.uk", "https://www.fintiq.uk", "https://app.fintiq
 _CA_HITS: dict = _ca_dd(_ca_dq)
 _CA_LIMIT, _CA_WINDOW = 30, 600   # 30 lookups per 10 minutes per IP
 
+# ── Catalyst Atlas: find a company by name ("nvidia", "shell") ─────────────────
+# Free (no credit used): turns what the visitor typed into US / UK tickers.
+_CA_LOOKUP_CACHE: dict = {}
+_CA_LOOKUP_HITS: dict = _ca_dd(_ca_dq)
+_CA_US_EXCH = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS", "NYS", "NAS", "NIM"}
+
+
+def _ca_lookup_raw(q: str) -> list:
+    quotes = []
+    try:
+        r = requests.get("https://query2.finance.yahoo.com/v1/finance/search", timeout=6,
+                         params={"q": q, "quotesCount": 12, "newsCount": 0, "listsCount": 0,
+                                 "enableFuzzyQuery": "true"},
+                         headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"})
+        if r.status_code == 200:
+            quotes = r.json().get("quotes", []) or []
+    except Exception as e:
+        print(f"[catalyst-atlas] lookup {q!r}: {e}")
+    if not quotes:
+        try:
+            quotes = yf.Search(q, max_results=12, news_count=0).quotes or []
+        except Exception as e:
+            print(f"[catalyst-atlas] yf.Search {q!r}: {e}")
+    out, seen = [], set()
+    for x in quotes:
+        sym = str(x.get("symbol") or "").upper()
+        if x.get("quoteType") != "EQUITY" or not sym or sym in seen:
+            continue
+        uk = sym.endswith(".L")
+        if not uk and (x.get("exchange") not in _CA_US_EXCH or "." in sym):
+            continue                       # Catalyst Atlas covers US and London listings only
+        seen.add(sym)
+        out.append({"symbol": sym, "name": x.get("longname") or x.get("shortname") or sym,
+                    "exchange": x.get("exchDisp") or ("London" if uk else "US"), "country": "UK" if uk else "US"})
+    return out[:8]
+
+
+@app.get("/atlas/lookup")
+def atlas_lookup(q: str, request: Request):
+    """Company name or ticker -> up to 8 matching US / UK shares. Free; no credit used."""
+    origin = request.headers.get("origin")
+    if not origin and request.headers.get("referer"):
+        p = _ca_urlparse(request.headers["referer"]); origin = f"{p.scheme}://{p.netloc}"
+    if origin not in _CA_ORIGINS:
+        raise HTTPException(status_code=403, detail="Forbidden")
+    fwd = request.headers.get("x-forwarded-for", "")
+    ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "?")
+    hits, now = _CA_LOOKUP_HITS[ip], time.time()
+    while hits and now - hits[0] > 600:
+        hits.popleft()
+    if len(hits) >= 200:
+        raise HTTPException(status_code=429, detail="Too many lookups. Please try again in a few minutes.")
+    hits.append(now)
+    q = " ".join((q or "").split())[:60]
+    if not q:
+        return {"results": []}
+    key = q.lower()
+    got = _CA_LOOKUP_CACHE.get(key)
+    if got and now - got[0] < 86400:
+        return {"results": got[1]}
+    res = _ca_lookup_raw(q)
+    if res:
+        if len(_CA_LOOKUP_CACHE) > 5000:
+            _CA_LOOKUP_CACHE.clear()
+        _CA_LOOKUP_CACHE[key] = (now, res)
+    return {"results": res}
+
+
 @app.get("/catalyst-atlas/{ticker}")
 def catalyst_atlas(ticker: str, request: Request):
     """Catalyst Atlas: why a stock moved, news footprints, price ranges.
