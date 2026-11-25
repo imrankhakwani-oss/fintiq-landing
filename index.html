@@ -1097,27 +1097,38 @@
     const dateEl  = document.getElementById('hp-scanner-date');
     const itemsEl = document.getElementById('hp-scanner-items');
     const countEl = document.getElementById('hp-signal-count');
+    const fmt = n => !n ? '' : n >= 1e9 ? '$' + (n/1e9).toFixed(1) + 'B' : n >= 1e6 ? '$' + (n/1e6).toFixed(0) + 'M' : '$' + n.toFixed(0);
+    const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     try {
-      const res = await fetch('https://api.fintiq.uk/alpha-scanner/signals', { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) throw new Error('API error');
-      const data = await res.json();
-      const signals = data.signals || [];
+      // v2: rules-based signals with reason codes (falls back to v1 until v2 has signals)
+      let signals = [], v2 = false;
+      try {
+        const r2 = await fetch('https://api.fintiq.uk/alpha-scanner/v2/signals?limit=50', { signal: AbortSignal.timeout(8000) });
+        if (r2.ok) { signals = (await r2.json()).signals || []; v2 = signals.length > 0; }
+      } catch (_) {}
+      if (!v2) {
+        const res = await fetch('https://api.fintiq.uk/alpha-scanner/signals', { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) throw new Error('API error');
+        signals = (await res.json()).signals || [];
+      }
       if (countEl) countEl.textContent = signals.length;
       dateEl.textContent = 'Alpha Scanner · ' + signals.length + ' active signal' + (signals.length !== 1 ? 's' : '');
       const top = signals.slice(0, 4);
       if (top.length === 0) throw new Error('No signals');
-      const dirColor = d => d === 'buy' ? '#4ade80' : '#fbbf24';
-      const dirLabel = d => d === 'buy' ? '▲ Buy' : '◎ Watch';
-      const fmt = n => n >= 1e9 ? '$' + (n/1e9).toFixed(1) + 'B' : n >= 1e6 ? '$' + (n/1e6).toFixed(0) + 'M' : '$' + n.toFixed(0);
-      itemsEl.innerHTML = top.map(s => `
+      itemsEl.innerHTML = top.map(s => {
+        const line = v2 ? (s.reasons || []).map(r => r.code).join(' · ') + (s.scores?.piotroski != null ? ` · Piotroski ${s.scores.piotroski}/9` : '')
+                        : s.title;
+        const right = v2 ? `${Math.round((s.price_vs_3y_high || 0) * 100)}% of 3-yr high`
+                         : (s.direction === 'buy' ? 'Opportunity' : 'Watch');
+        return `
         <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(99,102,241,0.12)">
-          <div style="min-width:52px;font-weight:800;font-size:0.85rem;color:#e2e8f0">${s.ticker}</div>
+          <div style="min-width:52px;font-weight:800;font-size:0.85rem;color:#e2e8f0">${esc(s.ticker)}</div>
           <div style="flex:1;min-width:0">
-            <div style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.title}</div>
-            <div style="font-size:0.7rem;color:#64748b;margin-top:2px">${s.sector || ''} · ${fmt(s.market_cap)}</div>
+            <div style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(line)}</div>
+            <div style="font-size:0.7rem;color:#64748b;margin-top:2px">${esc(v2 ? s.name : (s.sector || ''))} · ${fmt(s.market_cap)}</div>
           </div>
-          <div style="font-size:0.72rem;font-weight:700;color:${dirColor(s.direction)};white-space:nowrap">${dirLabel(s.direction)}</div>
-        </div>`).join('');
+          <div style="font-size:0.72rem;font-weight:600;color:#94a3b8;white-space:nowrap">${esc(right)}</div>
+        </div>`; }).join('');
     } catch(e) {
       if (countEl) countEl.textContent = '10+';
       dateEl.textContent = 'Alpha Scanner · Daily Signals';
