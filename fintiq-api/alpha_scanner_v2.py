@@ -21,8 +21,10 @@ Rules (backtested on 2018-2023 SEC data, see /alpha-scanner/v2/method):
   Gate 3  Setup    : price <= 50% of its 3-year high, AND
                      S1 (operating cash flow > 0 while net income < 0) OR
                      S3 (revenue down, gross profit up).
-  Gate 4  Quality  : configurable (AS2_MIN_PIOTROSKI, AS2_MIN_ALTMAN,
-                     AS2_MAX_BENEISH) — set from the backtest.
+  Gate 4  Not in distress: Altman Z >= 1.81 (manufacturers) / Z'' >= 1.10 (others),
+                     when computable (AS2_EXCLUDE_DISTRESS, default on).
+  Label   "Lower risk": Fintiq quality score >= 7, or 5-6 and rising; cash flow
+                     positive; Beneish M < -1.78. Shown, not required.
   Boosters (shown, counted, not required): S2 margin up on flat revenue,
   S4 operating margin +3 pts, S5 debt cut 15%+, S6 deposits / order book +50%.
 
@@ -50,8 +52,14 @@ MIN_MCAP        = _envf("AS2_MIN_MCAP", 50e6)
 MAX_MCAP        = _envf("AS2_MAX_MCAP", 2e9)
 MIN_REVENUE     = _envf("AS2_MIN_REVENUE", 50e6)
 MAX_PRICE_VS_HI = _envf("AS2_MAX_PRICE_VS_HIGH", 0.50)
+# Backtest 2018-2023 (Finding Alpha, 25 Nov 2026), 3-year returns, $50m-$2bn:
+#   rule alone                    426 cases  median +15%  doubled 29%  halved 23%
+#   rule, Altman distress removed 258 cases  median +41%  doubled 33%  halved 19%
+#   standard Piotroski >= 7 inside the rule: 19 cases, median -20% -> not used as a gate
+#   quality check (below) inside the no-distress set: median +21%, halved 16%
+#     vs +52% / 20% for the rest -> shown as a lower-risk label, not a filter
+EXCLUDE_DISTRESS = os.environ.get("AS2_EXCLUDE_DISTRESS", "1") != "0"
 MIN_PIOTROSKI   = _envf("AS2_MIN_PIOTROSKI", 0)      # 0 = gate off
-MIN_ALTMAN      = _envf("AS2_MIN_ALTMAN", -1e9)      # -1e9 = gate off
 MAX_BENEISH     = _envf("AS2_MAX_BENEISH", 1e9)      # 1e9 = gate off
 AI_DAILY_CAP    = int(_envf("AS2_AI_DAILY_CAP", 30))
 TRACK_MONTHS    = (3, 6, 12, 24)
@@ -252,6 +260,34 @@ def piotroski(v: dict, p: dict) -> int | None:
     ]
     return sum(bool(t) for t in tests)
 
+def quality_score(v: dict, p: dict) -> int | None:
+    """Fintiq quality score (v1 Alpha Scanner's 9-point check): like Piotroski but tests
+    liquidity level (current ratio >= 1), debt not rising and dilution <= 2%."""
+    if v.get("ta") is None or v.get("ni") is None or not p:
+        return None
+    roa, roa_p = _d(v.get("ni"), v.get("ta")), _d(p.get("ni"), p.get("ta"))
+    cr = _d(v.get("ca"), v.get("cl"))
+    gm, gm_p = _d(v.get("gp"), v.get("rev")), _d(p.get("gp"), p.get("rev"))
+    at, at_p = _d(v.get("rev"), v.get("ta")), _d(p.get("rev"), p.get("ta"))
+    tests = [
+        roa is not None and roa > 0,
+        (v.get("ocf") or 0) > 0,
+        roa is not None and roa_p is not None and roa > roa_p,
+        v.get("ocf") is not None and v["ocf"] > v["ni"],
+        v.get("debt") is not None and p.get("debt") is not None and v["debt"] <= p["debt"],
+        cr is not None and cr >= 1,
+        v.get("sh") is not None and p.get("sh") is not None and v["sh"] <= p["sh"] * 1.02,
+        gm is not None and gm_p is not None and gm > gm_p,
+        at is not None and at_p is not None and at > at_p,
+    ]
+    return sum(bool(t) for t in tests)
+
+def altman_distress(z: float | None, sic: int | None) -> bool:
+    """Distress zone: Z < 1.81 (manufacturers, original Z) or Z'' < 1.10 (others)."""
+    if z is None:
+        return False
+    return z < (1.81 if sic and 2000 <= sic <= 3999 else 1.10)
+
 def altman_z(v: dict, market_cap: float | None, sic: int | None) -> float | None:
     """Original Z (market value) for manufacturers (SIC 2000-3999), Z'' otherwise."""
     ta, tl = v.get("ta"), v.get("tl")
@@ -353,12 +389,16 @@ def score_company(conn, cik: int) -> dict | None:
     f = piotroski(v, p)
     z = altman_z(v, mcap, sic)
     m = beneish_m(v, p)
-    if MIN_PIOTROSKI and (f is None or f < MIN_PIOTROSKI):
+    if EXCLUDE_DISTRESS and altman_distress(z, sic):
         return None
-    if MIN_ALTMAN > -1e8 and z is not None and z < MIN_ALTMAN:
+    if MIN_PIOTROSKI and (f is None or f < MIN_PIOTROSKI):
         return None
     if MAX_BENEISH < 1e8 and m is not None and m > MAX_BENEISH:
         return None
+    fq, fq_prev = quality_score(v, p), quality_score(p, q)
+    quality_pass = bool((v.get("ocf") or 0) > 0 and fq is not None
+                        and (fq >= 7 or (fq in (5, 6) and fq_prev is not None and fq > fq_prev))
+                        and (m is None or m < -1.78))
     reasons = [k for k, ok in sig.items() if ok]
     return {
         "id": f"{tk}:{v['end']}", "ticker": tk, "cik": str(cik), "name": prof.get("name") or tk,
@@ -366,7 +406,8 @@ def score_company(conn, cik: int) -> dict | None:
         "price": px["price"], "market_cap": mcap, "price_vs_3y_high": px["vs_high"],
         "reasons": reasons,
         "scores": {"piotroski": f, "altman_z": None if z is None else round(z, 2),
-                   "beneish_m": None if m is None else round(m, 2)},
+                   "beneish_m": None if m is None else round(m, 2),
+                   "quality_score": fq, "quality_score_prev": fq_prev, "lower_risk": quality_pass},
         "metrics": {"revenue": v.get("rev"), "revenue_prev": p.get("rev"),
                     "gross_margin": _d(v.get("gp"), v["rev"]), "gross_margin_prev": _d(p.get("gp"), p.get("rev")),
                     "operating_margin": om, "net_income": v.get("ni"), "operating_cash_flow": v.get("ocf"),

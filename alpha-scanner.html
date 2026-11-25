@@ -478,14 +478,17 @@
 
   <!-- How it works + track record (v2) -->
   <div class="disclaimer" id="v2-method" style="display:none">
-    <strong>How a company gets here.</strong> All four must hold, using its latest annual filing:
+    <strong>How a company gets here.</strong> All five must hold, using its latest annual filing:
     (1) non-financial US company, revenue of $50m or more, at least 3 years of history, market value $50m–$2bn;
     (2) still struggling: a loss this year or last, or an operating margin under 3%;
     (3) shares at or below half of their 3-year high;
     (4) <strong>S1</strong> cash beats earnings (operating cash flow positive despite a loss) or
-    <strong>S3</strong> shrink to grow (revenue down, gross profit up).
-    Extra signals S2, S4, S5 and S6 are shown when present. In a test on 2018–2023 filings, companies passing these rules had a
-    median 3-year return of +15%; 28% doubled and 22% halved. Past results do not predict future returns.
+    <strong>S3</strong> shrink to grow (revenue down, gross profit up);
+    (5) not in the Altman Z bankruptcy-risk zone.
+    Extra signals S2, S4, S5 and S6 are shown when present, and a <strong>Lower risk</strong> label marks companies that also pass the quality check
+    (strong quality score, positive cash flow, no sign of earnings manipulation).
+    In a test on 2018–2023 filings (258 cases), companies passing these rules had a median 3-year return of +41%;
+    33% doubled and 19% halved. Results varied a lot by year, and past results do not predict future returns.
   </div>
   <div class="stats-row" id="v2-scorecard" style="display:none"></div>
 
@@ -766,6 +769,7 @@ function renderCardV2(s) {
   const items = [
     ['Price vs 3-yr high', pct(s.price_vs_3y_high)],
     ['Piotroski F-score', sc.piotroski != null ? sc.piotroski + '/9' : '—'],
+    ['Quality score', sc.quality_score != null ? sc.quality_score + '/9' + (sc.quality_score_prev != null ? ` (prior year ${sc.quality_score_prev})` : '') : '—'],
     ['Altman Z', sc.altman_z ?? '—'],
     ['Beneish M', sc.beneish_m ?? '—'],
     ['Revenue', usdM(m.revenue)],
@@ -785,6 +789,7 @@ function renderCardV2(s) {
             <span class="ticker-badge">${esc(s.ticker)}</span>
             <span class="company-name">${esc(s.name)}</span>
             ${isNew ? '<span class="badge-new">NEW</span>' : ''}
+            ${sc.lower_risk ? '<span class="badge-updated" title="Passes the quality check: strong quality score, positive cash flow, clean Beneish M">LOWER RISK</span>' : ''}
           </div>
           <div class="card-meta">${chips}</div>
           <div class="card-meta">
