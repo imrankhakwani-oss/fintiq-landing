@@ -531,18 +531,51 @@ def _price_on(ticker: str, when: date) -> float | None:
         return None
 
 # ── Scoring one company ──────────────────────────────────────────────────────
+# Why a company stopped qualifying (shown on its card when it leaves the list).
+CLOSE_LABELS = {
+    "turned_worse": "Figures got worse",
+    "distress": "Now in the Altman distress zone",
+    "price_recovered": "Price recovered above half its 3-year high",
+    "now_profitable": "Back to profit (no longer struggling)",
+    "out_of_range": "Outside the size or revenue range",
+    "out_of_scope": "No longer covered",
+    "24_months": "24 months since signal",
+}
+_last_fail = {"reason": None}
+
+def _fail(reason: str):
+    """Record why the company failed; 'data' means we could not tell, so nothing is closed."""
+    _last_fail["reason"] = reason
+    return None
+
+def close_if_failed(conn, cik: int, reason: str | None) -> bool:
+    """Move an active signal off the list when newer figures (or the price) no longer qualify.
+    Missing data never closes a signal. Its track record keeps being measured for 24 months."""
+    if not reason or reason == "data":
+        return False
+    row = conn.execute("SELECT id FROM as2_signals WHERE cik=? AND status='active'", (str(cik),)).fetchone()
+    if not row:
+        return False
+    conn.execute("UPDATE as2_signals SET status='closed', closed_at=?, close_reason=? WHERE id=?",
+                 (datetime.now(timezone.utc).isoformat(), reason, row["id"]))
+    return True
+
 def score_company(conn, cik: int) -> dict | None:
-    """Apply gates 1-4. Returns a signal dict if the company passes, else None."""
+    """Apply gates 1-4. Returns a signal dict if the company passes, else None
+    (the reason is left in _last_fail)."""
+    _last_fail["reason"] = None
     prof = company_profile(conn, cik)
     tk, sic = prof.get("ticker"), prof.get("sic")
     if not tk:
-        return None
+        return _fail("data")
     if sic and 6000 <= sic <= 6799:
-        return None                                   # financials excluded
+        return _fail("out_of_scope")
     facts = _sec_get(f"https://data.sec.gov/api/xbrl/companyfacts/CIK{int(cik):010d}.json")
+    if not facts:
+        return _fail("data")
     yrs = annual_figures(facts)
     if len(yrs) < 3:
-        return None                                   # need 3 years of history
+        return _fail("out_of_scope")
     v, p, q = yrs[0], yrs[1], yrs[2]
     period_label = "12 months to " + date.fromisoformat(v["end"]).strftime("%-d %b %Y") + " (annual report)"
     # Prefer the latest 12 months from quarterly filings when they are newer than the last annual report
@@ -554,18 +587,20 @@ def score_company(conn, cik: int) -> dict | None:
         (v2, p2, q2), lbl = pf
         accn = v.get("accn")
         v, p, q, period_label = dict(v2, accn=accn), p2, q2, lbl
-    if not v.get("rev") or v["rev"] < MIN_REVENUE or not q.get("rev"):
-        return None
+    if not v.get("rev") or not q.get("rev"):
+        return _fail("data")
+    if v["rev"] < MIN_REVENUE:
+        return _fail("out_of_range")
     om = _d(v.get("oi"), v["rev"])
     struggling = (v.get("ni") or 0) < 0 or (p.get("ni") or 0) < 0 or (om is not None and om < 0.03)
     if not struggling:
-        return None
+        return _fail("now_profitable")
     sig = turnaround_signals(v, p, q)
     if not (sig["S1"] or sig["S3"]):
-        return None
+        return _fail("turned_worse")
     px = price_context(tk)
     if not px or px["vs_high"] is None or px["vs_high"] > MAX_PRICE_VS_HI:
-        return None
+        return _fail("data" if not px or px["vs_high"] is None else "price_recovered")
     # Shares: latest cover-page count from the filing, adjusted for any split since
     # (fixes market values inflated by reverse splits, e.g. GEE Group).
     cover = latest_shares(facts)
@@ -577,16 +612,16 @@ def score_company(conn, cik: int) -> dict | None:
         shares = None
     mcap = px["price"] * shares if shares else None
     if not mcap or mcap < MIN_MCAP or mcap > MAX_MCAP:
-        return None
+        return _fail("data" if not mcap else "out_of_range")
     f = piotroski(v, p)
     z = altman_z(v, mcap, sic)
     m = beneish_m(v, p)
     if EXCLUDE_DISTRESS and altman_distress(z, sic):
-        return None
+        return _fail("distress")
     if MIN_PIOTROSKI and (f is None or f < MIN_PIOTROSKI):
-        return None
+        return _fail("turned_worse")
     if MAX_BENEISH < 1e8 and m is not None and m > MAX_BENEISH:
-        return None
+        return _fail("turned_worse")
     fq, fq_prev = quality_score(v, p), quality_score(p, q)
     quality_pass = bool((v.get("ocf") or 0) > 0 and fq is not None
                         and (fq >= 7 or (fq in (5, 6) and fq_prev is not None and fq > fq_prev))
@@ -627,6 +662,9 @@ def save_signal(conn, s: dict, iwm_price: float | None):
                       json.dumps(s["scores"]), json.dumps(s["metrics"]), s["sector"], s["industry"],
                       s["period_label"], s["fiscal_year_end"], s["filing_accn"], row["id"]))
         return "updated"
+    if conn.execute("SELECT 1 FROM as2_signals WHERE id=?", (s["id"],)).fetchone():
+        # re-entering after leaving the list on the same figures: a fresh signal with its own track record
+        s = dict(s, id=f'{s["id"]}:{date.today():%Y%m%d}')
     conn.execute("""INSERT INTO as2_signals(id,ticker,cik,name,sic,sector,industry,period_label,fiscal_year_end,
                     filing_accn,status,first_seen,last_scored,price_at_signal,iwm_at_signal,market_cap,
                     price_vs_3y_high,reasons,scores,metrics)
@@ -723,13 +761,15 @@ def run(mode: str = "daily", anthropic_key: str = "", ciks: list[int] | None = N
             ciks = [c for c, _, _ in new_filers(since, date.today())]
     iwm = price_context("IWM")
     iwm_price = iwm["price"] if iwm else None
-    scored = new = 0
+    scored = new = closed = 0
     for cik in ciks:
         try:
             s = score_company(conn, cik)
             scored += 1
             if s and save_signal(conn, s, iwm_price) == "new":
                 new += 1
+            elif not s and close_if_failed(conn, cik, _last_fail["reason"]):
+                closed += 1
             if scored % 25 == 0:
                 conn.commit()
         except Exception as e:
@@ -738,11 +778,11 @@ def run(mode: str = "daily", anthropic_key: str = "", ciks: list[int] | None = N
     explained = explain_queue(conn, anthropic_key)
     tracked = update_track_record(conn)
     _meta_set(conn, "last_daily_run", date.today().isoformat())
-    _meta_set(conn, "last_run_summary", json.dumps({"mode": mode, "scored": scored, "new": new,
+    _meta_set(conn, "last_run_summary", json.dumps({"mode": mode, "scored": scored, "new": new, "closed": closed,
                                                      "explained": explained, "tracked": tracked,
                                                      "started": started.isoformat()}))
     conn.commit(); conn.close()
-    return {"mode": mode, "companies_scored": scored, "new_signals": new,
+    return {"mode": mode, "companies_scored": scored, "new_signals": new, "signals_closed": closed,
             "explanations_written": explained, "track_record_points": tracked}
 
 # ── Read models for the API ──────────────────────────────────────────────────
@@ -765,6 +805,8 @@ def list_signals(status: str = "active", limit: int = 200) -> dict:
             "signal_count": len(reasons),
             "scores": json.loads(r["scores"] or "{}"), "metrics": json.loads(r["metrics"] or "{}"),
             "explanation": r["explanation"], "performance": perf, "status": r["status"],
+            "closed_at": r["closed_at"], "close_reason": r["close_reason"],
+            "close_label": CLOSE_LABELS.get(r["close_reason"] or "", r["close_reason"]),
         })
     out.sort(key=lambda s: (-s["signal_count"], s["price_vs_3y_high"] or 1))
     summary = json.loads(_meta_get(conn, "last_run_summary", "{}") or "{}")

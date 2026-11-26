@@ -124,6 +124,8 @@
   .scorecard-row .stat-chip .lbl { font-size: 12px; }
   @media (max-width: 600px) { .scorecard-row { gap: 6px; } .scorecard-row .stat-chip { padding: 8px; } .scorecard-row .stat-chip .val { font-size: 16px; } .scorecard-row .stat-chip .lbl { font-size: 10.5px; } }
   .sector-tag { font-size: 12px; color: var(--muted); }
+  .closed-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
+  .closed-note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
   .page-title h1 span { color: var(--gold); }
   .status-bar {
     display: flex; gap: 20px; align-items: center;
@@ -506,6 +508,8 @@
     (5) not in the Altman Z bankruptcy-risk zone.
     Extra signals S2, S4, S5 and S6 are shown when present, and a <strong>Lower risk</strong> label marks companies that also pass the quality check
     (strong quality score, positive cash flow, no sign of earnings manipulation).
+    Every new filing is checked again. If the latest figures no longer pass, the company moves to <strong>No longer qualifies</strong> with the reason
+    (figures got worse, price recovered, back to profit, and so on). Its returns are still counted in the track record.
     In a test on 2018–2023 filings (258 cases), companies passing these rules had a median 3-year return of +41%;
     33% doubled and 19% halved. That test used annual filings; using the latest quarters lets a turnaround show up sooner but has not been tested separately.
     Results varied a lot by year, and past results do not predict future returns.
@@ -524,6 +528,7 @@
     <button class="filter-btn active" onclick="setFilterV2('all',this)">All signals</button>
     <button class="filter-btn"        onclick="setFilterV2('multi',this)">2+ signals</button>
     <button class="filter-btn"        onclick="setFilterV2('new',this)">⚡ New this week</button>
+    <button class="filter-btn"        onclick="setFilterV2('closed',this)">No longer qualifies</button>
   </div>
 
   <!-- Feed -->
@@ -783,7 +788,8 @@ const usdM = x => x == null ? '—' : (Math.abs(x) >= 1e9 ? '$' + (x / 1e9).toFi
 
 function renderCardV2(s) {
   const id = s.id.replace(/[^A-Za-z0-9_-]/g, '_');
-  const isNew = (Date.now() - new Date(s.first_seen)) / 864e5 <= 7;
+  const closed = s.status === 'closed';
+  const isNew = !closed && (Date.now() - new Date(s.first_seen)) / 864e5 <= 7;
   const chips = (s.reasons || []).map(r =>
     `<span class="signal-type-tag" title="${esc(r.label)}">${esc(r.code)} · ${esc(r.label.split(':')[0])}</span>`).join(' ');
   const sc = s.scores || {}, m = s.metrics || {};
@@ -811,6 +817,7 @@ function renderCardV2(s) {
             <span class="ticker-badge">${esc(s.ticker)}</span>
             <span class="company-name">${esc(s.name)}</span>
             ${isNew ? '<span class="badge-new">NEW</span>' : ''}
+            ${closed ? `<span class="closed-tag">${esc(s.close_label || 'Closed')} · ${fmtDate(s.closed_at)}</span>` : ''}
             ${sc.lower_risk ? '<span class="badge-updated" title="Passes the quality check: strong quality score, positive cash flow, clean Beneish M">LOWER RISK</span>' : ''}
           </div>
           ${(s.sector || s.industry) ? `<div class="card-meta"><span class="sector-tag">${esc([s.sector, s.industry].filter(Boolean).join(' · '))}</span></div>` : ''}
@@ -830,7 +837,7 @@ function renderCardV2(s) {
         <div class="raw-signals">${items}${perf}</div>
         <div class="card-actions">
           <a class="btn-deep-dive" href="deep-dive.html?ticker=${encodeURIComponent(s.ticker)}">Open Deep Dive →</a>
-          <span class="signal-date">Signal first listed ${fmtDate(s.first_seen)}</span>
+          <span class="signal-date">Signal first listed ${fmtDate(s.first_seen)}${closed ? ' · left the list ' + fmtDate(s.closed_at) + ' (returns still tracked for 24 months)' : ''}</span>
         </div>
       </div>
     </div>`;
@@ -843,7 +850,24 @@ function setFilterV2(f, btn) {
   renderFeedV2();
 }
 
-function renderFeedV2() {
+let _v2Closed = null;
+async function loadClosedV2() {
+  if (_v2Closed) return;
+  try {
+    const r = await fetch(`${API}/alpha-scanner/v2/signals?status=closed&limit=500`, { signal: AbortSignal.timeout(12000) });
+    const d = r.ok ? await r.json() : {};
+    _v2Closed = (d.signals || []).sort((a, b) => String(b.closed_at).localeCompare(String(a.closed_at)));
+  } catch (e) { _v2Closed = []; }
+}
+
+async function renderFeedV2() {
+  if (_v2Filter === 'closed') {
+    await loadClosedV2();
+    document.getElementById('feed').innerHTML = _v2Closed.length
+      ? '<p class="closed-note">Companies that were on the list but no longer pass the rules, newest first. They stay in the track record so it counts the misses as well as the hits.</p>' + _v2Closed.map(renderCardV2).join('')
+      : '<div class="empty-state"><div class="empty-state-icon">🗂️</div><h3>No company has left the list yet</h3></div>';
+    return;
+  }
   let s = _v2Signals;
   if (_v2Filter === 'multi') s = s.filter(x => x.signal_count >= 2);
   if (_v2Filter === 'new') s = s.filter(x => (Date.now() - new Date(x.first_seen)) / 864e5 <= 7);
