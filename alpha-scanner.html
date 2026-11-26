@@ -447,10 +447,10 @@
 
   <!-- Disclaimer -->
   <div class="disclaimer">
-    <strong>Important:</strong> Alpha Scanner covers US-listed small and micro-cap companies
-    (up to $1B market cap) only. These are small, often illiquid companies.
-    Signals are based on quantitative analysis of public data and are <strong>not investment advice or a personal recommendation</strong>.
-    Signal labels (Opportunity / Watch) are for research purposes only. Small-cap investing carries significantly higher risk than mainstream markets.
+    <strong>Important:</strong> Alpha Scanner is a research screen of US-listed small companies
+    (about $50m to $2bn market value), excluding banks, insurers and other financials. These are small, often illiquid companies.
+    Each signal lists the rules a company passed, taken from its latest annual SEC filing; it is <strong>not investment advice or a personal recommendation</strong>.
+    Every signal is kept and its later return is published in the track record below. Small-cap investing carries significantly higher risk than mainstream markets.
     Past performance is not indicative of future results. Always conduct your own research and consider speaking to a qualified financial adviser before investing.
   </div>
 
@@ -476,12 +476,33 @@
     </div>
   </div>
 
+  <!-- How it works + track record (v2) -->
+  <div class="disclaimer" id="v2-method" style="display:none">
+    <strong>How a company gets here.</strong> All five must hold, using its latest annual filing:
+    (1) non-financial US company, revenue of $50m or more, at least 3 years of history, market value $50m–$2bn;
+    (2) still struggling: a loss this year or last, or an operating margin under 3%;
+    (3) shares at or below half of their 3-year high;
+    (4) <strong>S1</strong> cash beats earnings (operating cash flow positive despite a loss) or
+    <strong>S3</strong> shrink to grow (revenue down, gross profit up);
+    (5) not in the Altman Z bankruptcy-risk zone.
+    Extra signals S2, S4, S5 and S6 are shown when present, and a <strong>Lower risk</strong> label marks companies that also pass the quality check
+    (strong quality score, positive cash flow, no sign of earnings manipulation).
+    In a test on 2018–2023 filings (258 cases), companies passing these rules had a median 3-year return of +41%;
+    33% doubled and 19% halved. Results varied a lot by year, and past results do not predict future returns.
+  </div>
+  <div class="stats-row" id="v2-scorecard" style="display:none"></div>
+
   <!-- Filters -->
-  <div class="filter-bar">
+  <div class="filter-bar" id="filter-bar-v1">
     <button class="filter-btn active" data-filter="all"   onclick="setFilter('all',this)">All Signals</button>
     <button class="filter-btn buy"   data-filter="buy"   onclick="setFilter('buy',this)">🟢 Opportunity</button>
     <button class="filter-btn watch" data-filter="watch" onclick="setFilter('watch',this)">🟡 Watch</button>
     <button class="filter-btn"       data-filter="new"   onclick="setFilter('new',this)">⚡ New only</button>
+  </div>
+  <div class="filter-bar" id="filter-bar-v2" style="display:none">
+    <button class="filter-btn active" onclick="setFilterV2('all',this)">All signals</button>
+    <button class="filter-btn"        onclick="setFilterV2('multi',this)">2+ signals</button>
+    <button class="filter-btn"        onclick="setFilterV2('new',this)">⚡ New this week</button>
   </div>
 
   <!-- Feed -->
@@ -690,8 +711,10 @@ async function loadStatus() {
     if (!r.ok) return;
     const d = await r.json();
     document.getElementById('stat-universe').textContent = (d.universe_size || 0).toLocaleString();
-    document.getElementById('stat-active').textContent   = (d.active_signals || 0).toLocaleString();
-    document.getElementById('stat-new').textContent      = (d.new_last_24h || 0).toLocaleString();
+    if (!window._v2on) {
+      document.getElementById('stat-active').textContent = (d.active_signals || 0).toLocaleString();
+      document.getElementById('stat-new').textContent    = (d.new_last_24h || 0).toLocaleString();
+    }
 
     if ((d.universe_size || 0) === 0) {
       document.getElementById('seed-note').style.display = 'block';
@@ -730,9 +753,123 @@ async function loadSignals() {
   }
 }
 
+// ── v2: rules-based signals with reason codes and a track record ─────────────
+let _v2Signals = [];
+let _v2Filter = 'all';
+const esc = t => String(t ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = (x, d = 0) => x == null ? '—' : (x * 100).toFixed(d) + '%';
+const usdM = x => x == null ? '—' : (Math.abs(x) >= 1e9 ? '$' + (x / 1e9).toFixed(2) + 'B' : '$' + (x / 1e6).toFixed(0) + 'M');
+
+function renderCardV2(s) {
+  const id = s.id.replace(/[^A-Za-z0-9_-]/g, '_');
+  const isNew = (Date.now() - new Date(s.first_seen)) / 864e5 <= 7;
+  const chips = (s.reasons || []).map(r =>
+    `<span class="signal-type-tag" title="${esc(r.label)}">${esc(r.code)} · ${esc(r.label.split(':')[0])}</span>`).join(' ');
+  const sc = s.scores || {}, m = s.metrics || {};
+  const items = [
+    ['Price vs 3-yr high', pct(s.price_vs_3y_high)],
+    ['Piotroski F-score', sc.piotroski != null ? sc.piotroski + '/9' : '—'],
+    ['Quality score', sc.quality_score != null ? sc.quality_score + '/9' + (sc.quality_score_prev != null ? ` (prior year ${sc.quality_score_prev})` : '') : '—'],
+    ['Altman Z', sc.altman_z ?? '—'],
+    ['Beneish M', sc.beneish_m ?? '—'],
+    ['Revenue', usdM(m.revenue)],
+    ['Gross margin', pct(m.gross_margin, 1) + (m.gross_margin_prev != null ? ` (prior ${pct(m.gross_margin_prev, 1)})` : '')],
+    ['Operating margin', pct(m.operating_margin, 1)],
+    ['Net income', usdM(m.net_income)],
+    ['Operating cash flow', usdM(m.operating_cash_flow)],
+    ['Fiscal year end', s.fiscal_year_end],
+  ].map(([l, v]) => `<div class="raw-signal-item">${l}: <span>${esc(v)}</span></div>`).join('');
+  const perf = Object.entries(s.performance || {}).map(([mth, p]) =>
+    `<div class="raw-signal-item">Return after ${mth} months: <span>${pct(p.return)} (Russell 2000 ${pct(p.iwm_return)})</span></div>`).join('');
+  return `
+    <div class="signal-card watch" data-id="${id}">
+      <div class="card-header" onclick="toggleCard('${id}')">
+        <div class="card-left">
+          <div class="card-top-row">
+            <span class="ticker-badge">${esc(s.ticker)}</span>
+            <span class="company-name">${esc(s.name)}</span>
+            ${isNew ? '<span class="badge-new">NEW</span>' : ''}
+            ${sc.lower_risk ? '<span class="badge-updated" title="Passes the quality check: strong quality score, positive cash flow, clean Beneish M">LOWER RISK</span>' : ''}
+          </div>
+          <div class="card-meta">${chips}</div>
+          <div class="card-meta">
+            ${s.market_cap ? `<span class="mc-tag">${fmtMC(s.market_cap)}</span>` : ''}
+            <span class="mc-tag">${pct(s.price_vs_3y_high)} of 3-yr high</span>
+          </div>
+        </div>
+        <div class="card-right">
+          <span class="conviction-label">${s.signal_count} signal${s.signal_count !== 1 ? 's' : ''}</span>
+          <div class="expand-icon">⌄</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="thesis-text">${s.explanation ? esc(s.explanation) : 'Plain-English summary is being written and will appear within a day.'}</p>
+        <div class="raw-signals">${items}${perf}</div>
+        <div class="card-actions">
+          <a class="btn-deep-dive" href="deep-dive.html?ticker=${encodeURIComponent(s.ticker)}">Open Deep Dive →</a>
+          <span class="signal-date">Signal first listed ${fmtDate(s.first_seen)}</span>
+        </div>
+      </div>
+    </div>`;
+}
+
+function setFilterV2(f, btn) {
+  _v2Filter = f;
+  document.querySelectorAll('#filter-bar-v2 .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFeedV2();
+}
+
+function renderFeedV2() {
+  let s = _v2Signals;
+  if (_v2Filter === 'multi') s = s.filter(x => x.signal_count >= 2);
+  if (_v2Filter === 'new') s = s.filter(x => (Date.now() - new Date(x.first_seen)) / 864e5 <= 7);
+  document.getElementById('feed').innerHTML = s.length ? s.map(renderCardV2).join('')
+    : '<div class="empty-state"><div class="empty-state-icon">🔍</div><h3>No signals match</h3></div>';
+}
+
+async function loadScorecard() {
+  try {
+    const r = await fetch(`${API}/alpha-scanner/v2/scorecard`, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return;
+    const d = await r.json();
+    const el = document.getElementById('v2-scorecard');
+    const h = d.by_horizon_months || {};
+    el.innerHTML = [3, 6, 12, 24].map(mth => {
+      const x = h[mth] || {};
+      const val = x.count ? pct(x.median_return) : '—';
+      const lbl = x.count ? `Median return after ${mth} months (${x.count} signals, ${pct(x.share_beat_iwm)} beat Russell 2000)`
+                          : `Track record after ${mth} months: building`;
+      return `<div class="stat-chip"><div class="val">${val}</div><div class="lbl">${lbl}</div></div>`;
+    }).join('');
+    el.style.display = '';
+  } catch (e) { /* scorecard optional */ }
+}
+
+async function loadSignalsV2() {
+  try {
+    const r = await fetch(`${API}/alpha-scanner/v2/signals?limit=200`, { signal: AbortSignal.timeout(12000) });
+    if (!r.ok) return false;
+    const d = await r.json();
+    _v2Signals = d.signals || [];
+    if (!_v2Signals.length) return false;
+    window._v2on = true;
+    document.getElementById('filter-bar-v1').style.display = 'none';
+    document.getElementById('filter-bar-v2').style.display = '';
+    document.getElementById('v2-method').style.display = '';
+    document.getElementById('stat-active').textContent = _v2Signals.length.toLocaleString();
+    document.getElementById('stat-new').textContent =
+      _v2Signals.filter(x => (Date.now() - new Date(x.first_seen)) / 864e5 <= 1).length.toLocaleString();
+    document.getElementById('last-run').textContent = d.last_run?.started ? 'Updated ' + fmtDate(d.last_run.started) : 'Live';
+    renderFeedV2();
+    loadScorecard();
+    return true;
+  } catch (e) { return false; }
+}
+
 // ── Init ─────────────────────────────────────────────────────────────────────
 loadStatus();
-loadSignals();
+loadSignalsV2().then(ok => { if (!ok) loadSignals(); });
 </script>
 
 <nav class="mobile-bottom-nav" aria-label="Mobile navigation">

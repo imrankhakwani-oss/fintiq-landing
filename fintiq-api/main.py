@@ -7950,6 +7950,48 @@ def alpha_scanner_status():
 
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  ALPHA SCANNER v2 — rules-first, filing-triggered, with a public track record
+#  Logic lives in alpha_scanner_v2.py. v1 endpoints above stay live until the
+#  new page is switched over.
+# ══════════════════════════════════════════════════════════════════════════════
+import alpha_scanner_v2 as _as2
+
+_as2_running = False
+
+@app.get("/alpha-scanner/v2/run")
+def alpha_scanner_v2_run(background_tasks: BackgroundTasks, token: str = "", mode: str = "daily"):
+    """daily = companies that filed a 10-K/10-Q since the last run; full = all listed companies (weekly)."""
+    global _as2_running
+    if not REFRESH_TOKEN or token != REFRESH_TOKEN:
+        raise HTTPException(status_code=403, detail="Invalid token")
+    if mode not in ("daily", "full"):
+        raise HTTPException(status_code=400, detail="mode must be daily or full")
+    if _as2_running:
+        return {"status": "already_running"}
+    _as2_running = True
+    def _job():
+        global _as2_running
+        try:
+            print("[Alpha Scanner v2]", _as2.run(mode=mode, anthropic_key=ANTHROPIC_API_KEY))
+        finally:
+            _as2_running = False
+    background_tasks.add_task(_job)
+    return {"status": "started", "mode": mode}
+
+
+@app.get("/alpha-scanner/v2/signals")
+def alpha_scanner_v2_signals(status: str = "active", limit: int = 200):
+    if status not in ("active", "closed"):
+        raise HTTPException(status_code=400, detail="status must be active or closed")
+    return _as2.list_signals(status=status, limit=max(1, min(limit, 500)))
+
+
+@app.get("/alpha-scanner/v2/scorecard")
+def alpha_scanner_v2_scorecard():
+    return _as2.scorecard()
+
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  PORTFOLIO OPTIMISER  —  /optimise  &  /fintiq-portfolios
 # ══════════════════════════════════════════════════════════════════════════════
 
