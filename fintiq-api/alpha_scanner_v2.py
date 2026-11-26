@@ -105,6 +105,13 @@ def db() -> sqlite3.Connection:
     );
     CREATE TABLE IF NOT EXISTS as2_meta (k TEXT PRIMARY KEY, v TEXT);
     """)
+    # columns added after the first release (safe to re-run)
+    for table, col in (("as2_signals", "industry TEXT"), ("as2_signals", "period_label TEXT"),
+                       ("as2_company", "sic_desc TEXT")):
+        try:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col}")
+        except sqlite3.OperationalError:
+            pass  # already there
     return conn
 
 def _meta_get(conn, k, default=None):
@@ -145,15 +152,35 @@ def ticker_for_cik(cik: int) -> str | None:
 
 def company_profile(conn, cik: int) -> dict:
     row = conn.execute("SELECT * FROM as2_company WHERE cik=?", (str(cik),)).fetchone()
-    if row and row["updated"] and row["updated"] > (datetime.now(timezone.utc) - timedelta(days=30)).isoformat():
+    if (row and row["updated"] and row["sic_desc"] is not None
+            and row["updated"] > (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()):
         return dict(row)
     sub = _sec_get(f"https://data.sec.gov/submissions/CIK{int(cik):010d}.json") or {}
     prof = {"cik": str(cik), "ticker": ticker_for_cik(cik), "name": sub.get("name", ""),
             "sic": int(sub["sic"]) if str(sub.get("sic", "")).isdigit() else None,
+            "sic_desc": (sub.get("sicDescription") or "").strip().title(),
             "updated": datetime.now(timezone.utc).isoformat()}
-    conn.execute("""INSERT INTO as2_company(cik,ticker,name,sic,updated) VALUES(:cik,:ticker,:name,:sic,:updated)
-                    ON CONFLICT(cik) DO UPDATE SET ticker=excluded.ticker,name=excluded.name,sic=excluded.sic,updated=excluded.updated""", prof)
+    conn.execute("""INSERT INTO as2_company(cik,ticker,name,sic,sic_desc,updated) VALUES(:cik,:ticker,:name,:sic,:sic_desc,:updated)
+                    ON CONFLICT(cik) DO UPDATE SET ticker=excluded.ticker,name=excluded.name,sic=excluded.sic,
+                    sic_desc=excluded.sic_desc,updated=excluded.updated""", prof)
     return prof
+
+# Broad sector from the SEC industry (SIC) code, used when Yahoo has no sector.
+def sector_from_sic(sic: int | None) -> str:
+    if not sic:
+        return ""
+    for lo, hi, name in ((100, 999, "Agriculture"), (1000, 1499, "Mining & Energy"), (1500, 1799, "Construction"),
+                         (2000, 2799, "Consumer & Materials Manufacturing"), (2800, 2899, "Chemicals & Pharma"),
+                         (2900, 3299, "Materials"), (3300, 3599, "Industrials"), (3600, 3699, "Technology Hardware"),
+                         (3700, 3799, "Transportation Equipment"), (3800, 3999, "Instruments & Other Manufacturing"),
+                         (4000, 4799, "Transportation"), (4800, 4899, "Communication Services"),
+                         (4900, 4999, "Utilities"), (5000, 5199, "Wholesale"), (5200, 5999, "Retail"),
+                         (7000, 7299, "Consumer Services"), (7300, 7399, "Software & Business Services"),
+                         (7400, 7999, "Consumer Services"), (8000, 8099, "Healthcare Services"),
+                         (8100, 8999, "Professional Services")):
+        if lo <= sic <= hi:
+            return name
+    return ""
 
 def new_filers(since: date, until: date) -> list[tuple[int, str, str]]:
     """CIKs that filed a 10-K or 10-Q between two dates, from EDGAR's daily form index."""
@@ -230,6 +257,129 @@ def annual_figures(facts: dict) -> list[dict]:
         if r.get("gp") is None and r.get("rev") is not None and r.get("cogs") is not None:
             r["gp"] = r["rev"] - r["cogs"]
     return rows[:4]
+
+# ── Latest 12 months from quarterly filings (TTM) ────────────────────────────
+# Flow items (revenue, profit, cash flow) are summed over the last 12 months:
+#   TTM at a quarter end = last full year + this year-to-date - same period last year
+# e.g. 12 months to 30 Sep 2026 = FY2025 + Jan-Sep 2026 - Jan-Sep 2025.
+# Balance-sheet items (assets, debt, equity) are taken as at that quarter end.
+FLOW_KEYS = {"rev", "gp", "cogs", "oi", "ni", "ocf", "sga", "dep"}
+SHARE_KEYS = {"sh"}
+
+def _days(a: str, b: str) -> int:
+    return (date.fromisoformat(b) - date.fromisoformat(a)).days
+
+def _near(target: str, options, tol: int = 20):
+    """Closest date string in options within tol days of target."""
+    best = None
+    for o in options:
+        dd = abs(_days(o, target))
+        if dd <= tol and (best is None or dd < abs(_days(best, target))):
+            best = o
+    return best
+
+def period_figures(facts: dict) -> tuple[list[dict], str] | None:
+    """[latest 12 months, the 12 months a year earlier, two years earlier] and a label.
+    Falls back to None when quarterly data is too patchy (caller then uses annual)."""
+    gaap = (facts or {}).get("facts", {}).get("us-gaap", {})
+    series: dict[str, dict] = {}
+    for key, names in CONCEPTS.items():
+        for name in names:
+            units = gaap.get(name, {}).get("units", {})
+            arr = units.get("USD") or units.get("shares")
+            if not arr:
+                continue
+            annual, ytd, inst, anyd = {}, {}, {}, {}
+            for e in arr:
+                if not str(e.get("form", "")).startswith(("10-K", "10-Q")):
+                    continue
+                end, val = e["end"], e["val"]
+                if e.get("start"):
+                    n = _days(e["start"], end)
+                    if 350 <= n <= 380:
+                        annual[end] = val
+                    elif 80 <= n <= 300:
+                        ytd.setdefault(end, {})[e["start"]] = val
+                    if key in SHARE_KEYS and 80 <= n <= 380:
+                        anyd.setdefault(end, (n, val))
+                        if n < anyd[end][0]:
+                            anyd[end] = (n, val)
+                else:
+                    inst[end] = val
+            if annual or ytd or inst:
+                series[key] = {"annual": annual, "ytd": ytd, "inst": inst, "anyd": anyd}
+                break
+    if "rev" not in series or "ni" not in series:
+        return None
+
+    def ttm(key: str, end: str):
+        s = series.get(key)
+        if not s:
+            return None
+        if key in SHARE_KEYS:
+            k = _near(end, s["anyd"], 10)
+            return s["anyd"][k][1] if k else None
+        if key not in FLOW_KEYS:
+            k = _near(end, s["inst"], 10)
+            return s["inst"][k] if k else None
+        a = _near(end, s["annual"], 10)
+        if a:
+            return s["annual"][a]
+        fy = max((x for x in s["annual"] if x < end), default=None)
+        if not fy or _days(fy, end) > 300:
+            return None
+        cur = _near(end, s["ytd"], 10)
+        if not cur:
+            return None
+        cur_start = _near((date.fromisoformat(fy) + timedelta(days=1)).isoformat(), s["ytd"][cur], 10)
+        if not cur_start:
+            return None
+        prev_end = _near((date.fromisoformat(end) - timedelta(days=365)).isoformat(), s["ytd"], 15)
+        prev_fy = max((x for x in s["annual"] if x < fy), default=None)
+        if not prev_end or not prev_fy:
+            return None
+        prev_start = _near((date.fromisoformat(prev_fy) + timedelta(days=1)).isoformat(), s["ytd"][prev_end], 10)
+        if not prev_start:
+            return None
+        return s["annual"][fy] + s["ytd"][cur][cur_start] - s["ytd"][prev_end][prev_start]
+
+    rev = series["rev"]
+    ends = sorted(set(rev["annual"]) | set(rev["ytd"]), reverse=True)
+    if not ends:
+        return None
+    e0 = ends[0]
+    targets = [e0, (date.fromisoformat(e0) - timedelta(days=365)).isoformat(),
+               (date.fromisoformat(e0) - timedelta(days=730)).isoformat()]
+    out = []
+    for t in targets:
+        t = _near(t, ends, 20) or t
+        row = {"end": t}
+        for key in CONCEPTS:
+            try:
+                row[key] = ttm(key, t)
+            except Exception:
+                row[key] = None
+        if row.get("gp") is None and row.get("rev") is not None and row.get("cogs") is not None:
+            row["gp"] = row["rev"] - row["cogs"]
+        out.append(row)
+    if any(r.get("rev") is None or r.get("ni") is None for r in out):
+        return None
+    is_annual = _near(e0, rev["annual"], 10) is not None
+    end_txt = date.fromisoformat(e0).strftime("%-d %b %Y")
+    label = f"12 months to {end_txt}" + (" (annual report)" if is_annual else " (latest quarters)")
+    return out, label
+
+def latest_shares(facts: dict) -> tuple[float, str] | None:
+    """Shares outstanding from the latest filing's cover page (dei)."""
+    arr = ((facts or {}).get("facts", {}).get("dei", {})
+           .get("EntityCommonStockSharesOutstanding", {}).get("units", {}).get("shares"))
+    if not arr:
+        return None
+    end = max(e["end"] for e in arr)
+    latest = [e for e in arr if e["end"] == end]
+    accn = max(e.get("accn", "") for e in latest)
+    total = sum(e["val"] for e in latest if e.get("accn", "") == accn)   # sums share classes
+    return (float(total), end) if total > 0 else None
 
 # ── Scores ───────────────────────────────────────────────────────────────────
 def _d(a, b):
@@ -345,9 +495,32 @@ def price_context(ticker: str) -> dict | None:
             return None
         last = float(h["Close"].dropna().iloc[-1])
         hi = float(h["High"].dropna().max())
-        return {"price": last, "high_3y": hi, "vs_high": last / hi if hi else None}
+        splits = []
+        try:
+            sp = yf.Ticker(ticker).splits
+            splits = [(d.date().isoformat(), float(r)) for d, r in sp.items() if r and r > 0]
+        except Exception:
+            pass
+        return {"price": last, "high_3y": hi, "vs_high": last / hi if hi else None, "splits": splits}
     except Exception:
         return None
+
+def yahoo_profile(ticker: str) -> dict:
+    """Sector and industry as Yahoo labels them (empty if unavailable)."""
+    try:
+        import yfinance as yf
+        info = yf.Ticker(ticker).info or {}
+        return {"sector": info.get("sector") or "", "industry": info.get("industry") or ""}
+    except Exception:
+        return {"sector": "", "industry": ""}
+
+def split_factor_since(splits: list, since: str) -> float:
+    """Combined split ratio after a date (2.0 = shares doubled since then; 0.1 = 1-for-10 reverse split)."""
+    f = 1.0
+    for d, r in splits or []:
+        if d > since:
+            f *= r
+    return f
 
 def _price_on(ticker: str, when: date) -> float | None:
     try:
@@ -371,6 +544,16 @@ def score_company(conn, cik: int) -> dict | None:
     if len(yrs) < 3:
         return None                                   # need 3 years of history
     v, p, q = yrs[0], yrs[1], yrs[2]
+    period_label = "12 months to " + date.fromisoformat(v["end"]).strftime("%-d %b %Y") + " (annual report)"
+    # Prefer the latest 12 months from quarterly filings when they are newer than the last annual report
+    try:
+        pf = period_figures(facts)
+    except Exception:
+        pf = None
+    if pf and pf[0][0]["end"] > v["end"]:
+        (v2, p2, q2), lbl = pf
+        accn = v.get("accn")
+        v, p, q, period_label = dict(v2, accn=accn), p2, q2, lbl
     if not v.get("rev") or v["rev"] < MIN_REVENUE or not q.get("rev"):
         return None
     om = _d(v.get("oi"), v["rev"])
@@ -383,7 +566,16 @@ def score_company(conn, cik: int) -> dict | None:
     px = price_context(tk)
     if not px or px["vs_high"] is None or px["vs_high"] > MAX_PRICE_VS_HI:
         return None
-    mcap = px["price"] * v["sh"] if v.get("sh") else None
+    # Shares: latest cover-page count from the filing, adjusted for any split since
+    # (fixes market values inflated by reverse splits, e.g. GEE Group).
+    cover = latest_shares(facts)
+    if cover:
+        shares = cover[0] * split_factor_since(px.get("splits"), cover[1])
+    elif v.get("sh"):
+        shares = v["sh"] * split_factor_since(px.get("splits"), v["end"])
+    else:
+        shares = None
+    mcap = px["price"] * shares if shares else None
     if not mcap or mcap < MIN_MCAP or mcap > MAX_MCAP:
         return None
     f = piotroski(v, p)
@@ -400,9 +592,13 @@ def score_company(conn, cik: int) -> dict | None:
                         and (fq >= 7 or (fq in (5, 6) and fq_prev is not None and fq > fq_prev))
                         and (m is None or m < -1.78))
     reasons = [k for k, ok in sig.items() if ok]
+    yp = yahoo_profile(tk)
     return {
         "id": f"{tk}:{v['end']}", "ticker": tk, "cik": str(cik), "name": prof.get("name") or tk,
         "sic": sic, "fiscal_year_end": v["end"], "filing_accn": v.get("accn"),
+        "period_label": period_label,
+        "sector": yp["sector"] or sector_from_sic(sic),
+        "industry": yp["industry"] or (prof.get("sic_desc") or ""),
         "price": px["price"], "market_cap": mcap, "price_vs_3y_high": px["vs_high"],
         "reasons": reasons,
         "scores": {"piotroski": f, "altman_z": None if z is None else round(z, 2),
@@ -415,18 +611,28 @@ def score_company(conn, cik: int) -> dict | None:
     }
 
 def save_signal(conn, s: dict, iwm_price: float | None):
+    """One active signal per company. A newer quarter updates the existing signal
+    (its start date and price at signal stay, so the track record is honest);
+    the plain-English summary is re-queued when the figures move to a new period."""
     now = datetime.now(timezone.utc).isoformat()
-    row = conn.execute("SELECT id FROM as2_signals WHERE id=?", (s["id"],)).fetchone()
+    row = conn.execute("SELECT id, fiscal_year_end FROM as2_signals WHERE ticker=? AND status='active'",
+                       (s["ticker"],)).fetchone()
     if row:
-        conn.execute("""UPDATE as2_signals SET last_scored=?, market_cap=?, price_vs_3y_high=?,
-                        reasons=?, scores=?, metrics=? WHERE id=?""",
+        new_period = row["fiscal_year_end"] != s["fiscal_year_end"]
+        conn.execute(f"""UPDATE as2_signals SET last_scored=?, market_cap=?, price_vs_3y_high=?,
+                        reasons=?, scores=?, metrics=?, sector=?, industry=?, period_label=?,
+                        fiscal_year_end=?, filing_accn=?
+                        {", explanation=NULL, explained_at=NULL" if new_period else ""} WHERE id=?""",
                      (now, s["market_cap"], s["price_vs_3y_high"], json.dumps(s["reasons"]),
-                      json.dumps(s["scores"]), json.dumps(s["metrics"]), s["id"]))
+                      json.dumps(s["scores"]), json.dumps(s["metrics"]), s["sector"], s["industry"],
+                      s["period_label"], s["fiscal_year_end"], s["filing_accn"], row["id"]))
         return "updated"
-    conn.execute("""INSERT INTO as2_signals(id,ticker,cik,name,sic,fiscal_year_end,filing_accn,status,
-                    first_seen,last_scored,price_at_signal,iwm_at_signal,market_cap,price_vs_3y_high,
-                    reasons,scores,metrics) VALUES(?,?,?,?,?,?,?,'active',?,?,?,?,?,?,?,?,?)""",
-                 (s["id"], s["ticker"], s["cik"], s["name"], s["sic"], s["fiscal_year_end"], s["filing_accn"],
+    conn.execute("""INSERT INTO as2_signals(id,ticker,cik,name,sic,sector,industry,period_label,fiscal_year_end,
+                    filing_accn,status,first_seen,last_scored,price_at_signal,iwm_at_signal,market_cap,
+                    price_vs_3y_high,reasons,scores,metrics)
+                    VALUES(?,?,?,?,?,?,?,?,?,?,'active',?,?,?,?,?,?,?,?,?)""",
+                 (s["id"], s["ticker"], s["cik"], s["name"], s["sic"], s["sector"], s["industry"],
+                  s["period_label"], s["fiscal_year_end"], s["filing_accn"],
                   now, now, s["price"], iwm_price, s["market_cap"], s["price_vs_3y_high"],
                   json.dumps(s["reasons"]), json.dumps(s["scores"]), json.dumps(s["metrics"])))
     return "new"
@@ -448,7 +654,9 @@ def explain_queue(conn, anthropic_key: str) -> int:
     client = anthropic.Anthropic(api_key=anthropic_key)
     done = 0
     for r in rows:
-        facts = {"ticker": r["ticker"], "company": r["name"], "fiscal_year_end": r["fiscal_year_end"],
+        facts = {"ticker": r["ticker"], "company": r["name"],
+                 "figures_for": r["period_label"] or ("12 months to " + str(r["fiscal_year_end"])),
+                 "sector": r["sector"], "industry": r["industry"],
                  "signals": {c: BOOSTER_LABELS[c] for c in json.loads(r["reasons"])},
                  "scores": json.loads(r["scores"]), "metrics": json.loads(r["metrics"]),
                  "price_vs_3_year_high": r["price_vs_3y_high"]}
@@ -550,6 +758,7 @@ def list_signals(status: str = "active", limit: int = 200) -> dict:
         out.append({
             "id": r["id"], "ticker": r["ticker"], "name": r["name"], "sic": r["sic"],
             "fiscal_year_end": r["fiscal_year_end"], "first_seen": r["first_seen"],
+            "period_label": r["period_label"], "sector": r["sector"], "industry": r["industry"],
             "market_cap": r["market_cap"], "price_at_signal": r["price_at_signal"],
             "price_vs_3y_high": r["price_vs_3y_high"],
             "reasons": [{"code": c, "label": BOOSTER_LABELS.get(c, c)} for c in reasons],

@@ -103,11 +103,27 @@
 
   /* ── Page title ── */
   .page-title {
-    display: flex; align-items: flex-start; justify-content: space-between;
-    margin-bottom: 12px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 20px; padding: 28px 0 22px;
+    border-bottom: 1px solid var(--border);
     flex-wrap: wrap; gap: 16px;
   }
-  .page-title h1 { font-size: 26px; font-weight: 700; }
+  .page-title h1 { font-size: 40px; font-weight: 800; letter-spacing: -0.5px; line-height: 1.1; }
+  .page-title .hero-sub { color: var(--muted); font-size: 16px; margin-top: 10px; max-width: 640px; line-height: 1.5; }
+  @media (max-width: 600px) { .page-title h1 { font-size: 30px; } .page-title .hero-sub { font-size: 14px; } }
+  /* collapsible "How a company gets here" */
+  details.method-box { padding: 0; }
+  details.method-box summary { cursor: pointer; padding: 12px 16px; font-size: 14px; color: var(--text); font-weight: 600; list-style: none; }
+  details.method-box summary::-webkit-details-marker { display: none; }
+  details.method-box summary::after { content: ' ⌄'; color: var(--muted); }
+  details.method-box[open] summary::after { content: ' ⌃'; }
+  details.method-box .method-body { padding: 0 16px 14px; }
+  /* track record: four boxes on one row */
+  .scorecard-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 28px; }
+  .scorecard-row .stat-chip { min-width: 0; }
+  .scorecard-row .stat-chip .lbl { font-size: 12px; }
+  @media (max-width: 600px) { .scorecard-row { gap: 6px; } .scorecard-row .stat-chip { padding: 8px; } .scorecard-row .stat-chip .val { font-size: 16px; } .scorecard-row .stat-chip .lbl { font-size: 10.5px; } }
+  .sector-tag { font-size: 12px; color: var(--muted); }
   .page-title h1 span { color: var(--gold); }
   .status-bar {
     display: flex; gap: 20px; align-items: center;
@@ -435,8 +451,9 @@
   <div class="page-title">
     <div>
       <h1>Alpha <span>Scanner</span></h1>
-      <p style="color:var(--muted);font-size:14px;margin-top:6px;">
-        Daily intelligence feed — US small &amp; micro-cap stocks
+      <p class="hero-sub">
+        Struggling US small caps that are showing early signs of a turnaround in their SEC filings,
+        updated the day new quarterly or annual results are filed.
       </p>
     </div>
     <div class="status-bar">
@@ -449,7 +466,7 @@
   <div class="disclaimer">
     <strong>Important:</strong> Alpha Scanner is a research screen of US-listed small companies
     (about $50m to $2bn market value), excluding banks, insurers and other financials. These are small, often illiquid companies.
-    Each signal lists the rules a company passed, taken from its latest annual SEC filing; it is <strong>not investment advice or a personal recommendation</strong>.
+    Each signal lists the rules a company passed, taken from its latest quarterly or annual SEC filings; it is <strong>not investment advice or a personal recommendation</strong>.
     Every signal is kept and its later return is published in the track record below. Small-cap investing carries significantly higher risk than mainstream markets.
     Past performance is not indicative of future results. Always conduct your own research and consider speaking to a qualified financial adviser before investing.
   </div>
@@ -477,10 +494,12 @@
   </div>
 
   <!-- How it works + track record (v2) -->
-  <div class="disclaimer" id="v2-method" style="display:none">
-    <strong>How a company gets here.</strong> All five must hold, using its latest annual filing:
+  <details class="disclaimer method-box" id="v2-method" style="display:none">
+    <summary>How a company gets here</summary>
+    <div class="method-body">
+    All five must hold, using the company's latest 12 months of figures (its last four quarterly or annual filings):
     (1) non-financial US company, revenue of $50m or more, at least 3 years of history, market value $50m–$2bn;
-    (2) still struggling: a loss this year or last, or an operating margin under 3%;
+    (2) still struggling: a loss in the latest 12 months or the 12 months before, or an operating margin under 3%;
     (3) shares at or below half of their 3-year high;
     (4) <strong>S1</strong> cash beats earnings (operating cash flow positive despite a loss) or
     <strong>S3</strong> shrink to grow (revenue down, gross profit up);
@@ -488,9 +507,11 @@
     Extra signals S2, S4, S5 and S6 are shown when present, and a <strong>Lower risk</strong> label marks companies that also pass the quality check
     (strong quality score, positive cash flow, no sign of earnings manipulation).
     In a test on 2018–2023 filings (258 cases), companies passing these rules had a median 3-year return of +41%;
-    33% doubled and 19% halved. Results varied a lot by year, and past results do not predict future returns.
-  </div>
-  <div class="stats-row" id="v2-scorecard" style="display:none"></div>
+    33% doubled and 19% halved. That test used annual filings; using the latest quarters lets a turnaround show up sooner but has not been tested separately.
+    Results varied a lot by year, and past results do not predict future returns.
+    </div>
+  </details>
+  <div class="scorecard-row" id="v2-scorecard" style="display:none"></div>
 
   <!-- Filters -->
   <div class="filter-bar" id="filter-bar-v1">
@@ -777,7 +798,8 @@ function renderCardV2(s) {
     ['Operating margin', pct(m.operating_margin, 1)],
     ['Net income', usdM(m.net_income)],
     ['Operating cash flow', usdM(m.operating_cash_flow)],
-    ['Fiscal year end', s.fiscal_year_end],
+    ['Sector', [s.sector, s.industry].filter(Boolean).join(' · ') || '—'],
+    ['Figures for', s.period_label || ('12 months to ' + s.fiscal_year_end)],
   ].map(([l, v]) => `<div class="raw-signal-item">${l}: <span>${esc(v)}</span></div>`).join('');
   const perf = Object.entries(s.performance || {}).map(([mth, p]) =>
     `<div class="raw-signal-item">Return after ${mth} months: <span>${pct(p.return)} (Russell 2000 ${pct(p.iwm_return)})</span></div>`).join('');
@@ -791,6 +813,7 @@ function renderCardV2(s) {
             ${isNew ? '<span class="badge-new">NEW</span>' : ''}
             ${sc.lower_risk ? '<span class="badge-updated" title="Passes the quality check: strong quality score, positive cash flow, clean Beneish M">LOWER RISK</span>' : ''}
           </div>
+          ${(s.sector || s.industry) ? `<div class="card-meta"><span class="sector-tag">${esc([s.sector, s.industry].filter(Boolean).join(' · '))}</span></div>` : ''}
           <div class="card-meta">${chips}</div>
           <div class="card-meta">
             ${s.market_cap ? `<span class="mc-tag">${fmtMC(s.market_cap)}</span>` : ''}
