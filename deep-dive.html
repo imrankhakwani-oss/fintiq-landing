@@ -2219,6 +2219,7 @@ function renderFundamentals(d) {
     <div class="dupont-formula-note">ROIC = NOPAT Margin × Asset Turnover × Capital Efficiency</div>
     <div class="tbl-wrap">
     <table class="dupont-table" id="dupont-table">
+      <thead>
       <tr>
         <th style="text-align:left">Year</th>
         <th>Revenue (m)</th>
@@ -2228,6 +2229,8 @@ function renderFundamentals(d) {
         <th>Capital Efficiency</th>
         <th class="roic-col">ROIC</th>
       </tr>
+      </thead>
+      <tbody id="dupont-tbody"></tbody>
     </table>
     </div>
     <div class="dupont-analysis" id="dupont-analysis" style="display:none"></div>
@@ -2383,8 +2386,10 @@ async function _loadDuPont(ticker) {
       </tr>`;
     }).join('');
 
-    // Append body rows to table (header already exists in template)
-    tbl.innerHTML += bodyRows;
+    // Replace body rows (use tbody to avoid duplicating header on re-render)
+    const tbody = document.getElementById('dupont-tbody');
+    if (tbody) tbody.innerHTML = bodyRows;
+    else tbl.innerHTML = tbl.innerHTML + bodyRows;
     section.style.display = '';
 
     // Show AI analysis if available
