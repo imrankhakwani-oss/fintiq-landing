@@ -3223,11 +3223,27 @@ def _run_fundamentals(ticker: str):
         ni_row   = row(fin, 'Net Income', 'Net Income Common Stockholders')
         fcf_row_ = row(cf, 'Free Cash Flow')
         shares_out = fv(info.get('sharesOutstanding') or info.get('impliedSharesOutstanding')) or 1e9
+        # Balance sheet rows for year-matched ROIC (same as DuPont)
+        _bs_eq_row  = row(bs, 'Stockholders Equity', 'Total Stockholders Equity', 'Common Stock Equity', 'Total Equity Gross Minority Interest')
+        _bs_ltd_row = row(bs, 'Long Term Debt', 'LongTermDebt', 'Long Term Debt And Capital Lease Obligation')
+        _bs_std_row = row(bs, 'Current Debt', 'Short Term Debt', 'Short Long Term Debt')
+        _bs_csh_row = row(bs, 'Cash And Cash Equivalents', 'Cash', 'Cash Financial', 'Cash And Short Term Investments')
 
         if fin is not None and not fin.empty:
             fy_dates = sorted([c for c in fin.columns if hasattr(c, 'year')], reverse=True)
             for fi in range(min(len(fy_dates), 4)):
                 dt = fy_dates[fi]
+                # Find balance sheet column matching this fiscal year (try same year, then prior year)
+                bs_dt = None
+                if bs is not None and not bs.empty:
+                    for _c in bs.columns:
+                        if hasattr(_c, 'year') and _c.year == dt.year: bs_dt = _c; break
+                    if bs_dt is None:
+                        for _c in bs.columns:
+                            if hasattr(_c, 'year') and _c.year == dt.year - 1: bs_dt = _c; break
+                def _bsv(r):
+                    try: return fv(r[bs_dt]) if r is not None and bs_dt is not None and bs_dt in r.index else None
+                    except: return None
                 def gcol(r):
                     try: return fv(r[dt]) if r is not None and dt in r.index else None
                     except: return None
@@ -3269,17 +3285,14 @@ def _run_fundamentals(ticker: str):
                 ni_g   = (ni - ni_prev) / abs(ni_prev) if ni and ni_prev and ni_prev != 0 else None
                 eps    = ni / shares_out if ni else None
                 om     = ebit / rev if ebit and rev and rev > 0 else None
-                # ROIC = NOPAT / Invested Capital (matches DuPont formula)
-                # IC = Total Equity + Total Debt − Excess Cash
+                # ROIC = NOPAT / Invested Capital — year-matched BS (matches DuPont formula)
                 roic   = None
                 try:
-                    eq_   = col_val(bs, 'Stockholders Equity', 'Total Stockholders Equity',
-                                    'Common Stock Equity', 'Total Equity Gross Minority Interest')
-                    ltd_  = col_val(bs, 'Long Term Debt', 'LongTermDebt', 'Long Term Debt And Capital Lease Obligation')
-                    std_  = col_val(bs, 'Current Debt', 'Short Term Debt', 'Short Long Term Debt')
-                    csh_  = col_val(bs, 'Cash And Cash Equivalents', 'Cash', 'Cash Financial',
-                                    'Cash And Short Term Investments')
-                    td_   = (ltd_ or 0) + (std_ or 0)
+                    eq_  = _bsv(_bs_eq_row)
+                    ltd_ = _bsv(_bs_ltd_row)
+                    std_ = _bsv(_bs_std_row)
+                    csh_ = _bsv(_bs_csh_row)
+                    td_  = (ltd_ or 0) + (std_ or 0)
                     if eq_ is not None and nopat is not None:
                         ic_ = max((eq_ or 0) + td_ - (csh_ or 0), 1)
                         roic = nopat / ic_
