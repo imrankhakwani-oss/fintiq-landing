@@ -3219,7 +3219,7 @@ def _run_fundamentals(ticker: str):
         # ── Growth table (4 years) ──
         growth_table = []
         rev_row  = row(fin, 'Total Revenue', 'Revenue')
-        ebit_row = row(fin, 'EBIT', 'Operating Income')
+        ebit_row = row(fin, 'Operating Income', 'EBIT')
         ni_row   = row(fin, 'Net Income', 'Net Income Common Stockholders')
         fcf_row_ = row(cf, 'Free Cash Flow')
         shares_out = fv(info.get('sharesOutstanding') or info.get('impliedSharesOutstanding')) or 1e9
