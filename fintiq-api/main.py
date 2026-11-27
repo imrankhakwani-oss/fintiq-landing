@@ -3244,7 +3244,19 @@ def _run_fundamentals(ticker: str):
                     rev_prev = gcol_p(rev_row); ni_prev  = gcol_p(ni_row)
 
                 rev_g  = (rev - rev_prev) / abs(rev_prev) if rev and rev_prev and rev_prev != 0 else None
-                nopat  = ebit * 0.75 if ebit else None  # approx NOPAT = EBIT × (1-tax)
+                # NOPAT: use actual tax rate from financials where possible
+                ptax_v = None; tax_v = None
+                try:
+                    ptax_row_ = row(fin, 'Pretax Income', 'Income Before Tax', 'Pre Tax Income')
+                    tax_row_  = row(fin, 'Tax Provision', 'Income Tax Expense', 'Provision For Income Taxes', 'Income Tax')
+                    if ptax_row_ is not None and dt in ptax_row_.index: ptax_v = fv(ptax_row_[dt])
+                    if tax_row_  is not None and dt in tax_row_.index:  tax_v  = fv(tax_row_[dt])
+                except: pass
+                tax_rate_v = 0.21  # US statutory fallback
+                if ptax_v and tax_v and ptax_v != 0:
+                    tr = tax_v / ptax_v
+                    tax_rate_v = max(0.0, min(tr, 0.5)) if 0 <= tr <= 0.5 else (0.0 if tr < 0 else 0.3)
+                nopat  = ebit * (1 - tax_rate_v) if ebit else None
                 nopat_prev = None
                 if fi + 1 < len(fy_dates):
                     ebit_prev_v = None
@@ -3257,12 +3269,20 @@ def _run_fundamentals(ticker: str):
                 ni_g   = (ni - ni_prev) / abs(ni_prev) if ni and ni_prev and ni_prev != 0 else None
                 eps    = ni / shares_out if ni else None
                 om     = ebit / rev if ebit and rev and rev > 0 else None
-                # ROIC approx: NOPAT / (Total Assets - Current Liabilities)
+                # ROIC = NOPAT / Invested Capital (matches DuPont formula)
+                # IC = Total Equity + Total Debt − Excess Cash
                 roic   = None
                 try:
-                    ta  = col_val(bs, 'Total Assets')
-                    cl  = col_val(bs, 'Current Liabilities', 'Total Current Liabilities')
-                    if ta and cl and nopat: roic = nopat / (ta - cl) if (ta - cl) > 0 else None
+                    eq_   = col_val(bs, 'Stockholders Equity', 'Total Stockholders Equity',
+                                    'Common Stock Equity', 'Total Equity Gross Minority Interest')
+                    ltd_  = col_val(bs, 'Long Term Debt', 'LongTermDebt', 'Long Term Debt And Capital Lease Obligation')
+                    std_  = col_val(bs, 'Current Debt', 'Short Term Debt', 'Short Long Term Debt')
+                    csh_  = col_val(bs, 'Cash And Cash Equivalents', 'Cash', 'Cash Financial',
+                                    'Cash And Short Term Investments')
+                    td_   = (ltd_ or 0) + (std_ or 0)
+                    if eq_ is not None and nopat is not None:
+                        ic_ = max((eq_ or 0) + td_ - (csh_ or 0), 1)
+                        roic = nopat / ic_
                 except: pass
                 # Investment rate = (CapEx + ΔWorkingCapital) / NOPAT
                 inv_rate = None
