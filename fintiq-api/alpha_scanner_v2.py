@@ -510,9 +510,11 @@ def yahoo_profile(ticker: str) -> dict:
     try:
         import yfinance as yf
         info = yf.Ticker(ticker).info or {}
-        return {"sector": info.get("sector") or "", "industry": info.get("industry") or ""}
+        mc = info.get("marketCap")
+        return {"sector": info.get("sector") or "", "industry": info.get("industry") or "",
+                "market_cap": float(mc) if mc else None}
     except Exception:
-        return {"sector": "", "industry": ""}
+        return {"sector": "", "industry": "", "market_cap": None}
 
 def split_factor_since(splits: list, since: str) -> float:
     """Combined split ratio after a date (2.0 = shares doubled since then; 0.1 = 1-for-10 reverse split)."""
@@ -611,6 +613,13 @@ def score_company(conn, cik: int) -> dict | None:
     else:
         shares = None
     mcap = px["price"] * shares if shares else None
+    # Cross-check with Yahoo's market value. Share counts in filings can miss a share
+    # class or lag a share issue (e.g. iHeartMedia). If the two differ by more than
+    # half, use Yahoo's figure.
+    yp = yahoo_profile(tk)
+    mcap_source = "SEC shares x price"
+    if yp.get("market_cap") and (not mcap or not (1 / 1.5 <= yp["market_cap"] / mcap <= 1.5)):
+        mcap, mcap_source = yp["market_cap"], "Yahoo Finance"
     if not mcap or mcap < MIN_MCAP or mcap > MAX_MCAP:
         return _fail("data" if not mcap else "out_of_range")
     f = piotroski(v, p)
@@ -627,7 +636,6 @@ def score_company(conn, cik: int) -> dict | None:
                         and (fq >= 7 or (fq in (5, 6) and fq_prev is not None and fq > fq_prev))
                         and (m is None or m < -1.78))
     reasons = [k for k, ok in sig.items() if ok]
-    yp = yahoo_profile(tk)
     return {
         "id": f"{tk}:{v['end']}", "ticker": tk, "cik": str(cik), "name": prof.get("name") or tk,
         "sic": sic, "fiscal_year_end": v["end"], "filing_accn": v.get("accn"),
@@ -636,7 +644,7 @@ def score_company(conn, cik: int) -> dict | None:
         "industry": yp["industry"] or (prof.get("sic_desc") or ""),
         "price": px["price"], "market_cap": mcap, "price_vs_3y_high": px["vs_high"],
         "reasons": reasons,
-        "scores": {"piotroski": f, "altman_z": None if z is None else round(z, 2),
+        "scores": {"market_cap_source": mcap_source, "piotroski": f, "altman_z": None if z is None else round(z, 2),
                    "beneish_m": None if m is None else round(m, 2),
                    "quality_score": fq, "quality_score_prev": fq_prev, "lower_risk": quality_pass},
         "metrics": {"revenue": v.get("rev"), "revenue_prev": p.get("rev"),
