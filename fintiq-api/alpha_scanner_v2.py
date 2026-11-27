@@ -41,6 +41,8 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
+import cost_of_capital as _coc
+
 # ── Configuration (override with environment variables) ─────────────────────
 def _envf(name: str, default: float) -> float:
     try:
@@ -223,6 +225,11 @@ CONCEPTS = {
     "debt": ["LongTermDebtNoncurrent", "LongTermDebt"],
     "dem":  ["ContractWithCustomerLiability", "RevenueRemainingPerformanceObligation"],
     "sh":   ["WeightedAverageNumberOfDilutedSharesOutstanding", "WeightedAverageNumberOfSharesOutstandingBasic"],
+    # for ROIC and cost of capital
+    "int":  ["InterestExpense", "InterestExpenseNonoperating", "InterestExpenseDebt"],
+    "ltd":  ["LongTermDebt"], "ltdn": ["LongTermDebtNoncurrent"], "ltdc": ["LongTermDebtCurrent"],
+    "std":  ["ShortTermBorrowings"],
+    "cash": ["CashAndCashEquivalentsAtCarryingValue", "CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents"],
 }
 
 def annual_figures(facts: dict) -> list[dict]:
@@ -263,7 +270,7 @@ def annual_figures(facts: dict) -> list[dict]:
 #   TTM at a quarter end = last full year + this year-to-date - same period last year
 # e.g. 12 months to 30 Sep 2026 = FY2025 + Jan-Sep 2026 - Jan-Sep 2025.
 # Balance-sheet items (assets, debt, equity) are taken as at that quarter end.
-FLOW_KEYS = {"rev", "gp", "cogs", "oi", "ni", "ocf", "sga", "dep"}
+FLOW_KEYS = {"rev", "gp", "cogs", "oi", "ni", "ocf", "sga", "dep", "int"}
 SHARE_KEYS = {"sh"}
 
 def _days(a: str, b: str) -> int:
@@ -622,6 +629,12 @@ def score_company(conn, cik: int) -> dict | None:
         mcap, mcap_source = yp["market_cap"], "Yahoo Finance"
     if not mcap or mcap < MIN_MCAP or mcap > MAX_MCAP:
         return _fail("data" if not mcap else "out_of_range")
+    # ROIC and cost of capital (display only; not a rule until backtested)
+    cc = _coc.wacc(sic, mcap, _coc.total_debt(v), v.get("oi"), v.get("int"))
+    r0, r1, r2 = _coc.roic(v, p), _coc.roic(p, q), _coc.roic(q, None)
+    st_n, st_lbl = _coc.stage(r0, r1, cc["wacc"] if cc else None)
+    ic0 = _coc.invested_capital(v)
+    ep = round((r0 - cc["wacc"]) * ic0) if (r0 is not None and cc and ic0 and ic0 > 0) else None
     f = piotroski(v, p)
     z = altman_z(v, mcap, sic)
     m = beneish_m(v, p)
@@ -650,7 +663,9 @@ def score_company(conn, cik: int) -> dict | None:
         "metrics": {"revenue": v.get("rev"), "revenue_prev": p.get("rev"),
                     "gross_margin": _d(v.get("gp"), v["rev"]), "gross_margin_prev": _d(p.get("gp"), p.get("rev")),
                     "operating_margin": om, "net_income": v.get("ni"), "operating_cash_flow": v.get("ocf"),
-                    "long_term_debt": v.get("debt"), "long_term_debt_prev": p.get("debt")},
+                    "long_term_debt": v.get("debt"), "long_term_debt_prev": p.get("debt"),
+                    "roic": r0, "roic_prev": r1, "roic_prev2": r2, "invested_capital": ic0,
+                    "economic_profit": ep, "stage": st_n, "stage_label": st_lbl, "cost_of_capital": cc},
     }
 
 def save_signal(conn, s: dict, iwm_price: float | None):

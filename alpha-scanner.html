@@ -124,6 +124,8 @@
   .scorecard-row .stat-chip .lbl { font-size: 12px; }
   @media (max-width: 600px) { .scorecard-row { gap: 6px; } .scorecard-row .stat-chip { padding: 8px; } .scorecard-row .stat-chip .val { font-size: 16px; } .scorecard-row .stat-chip .lbl { font-size: 10.5px; } }
   .sector-tag { font-size: 12px; color: var(--muted); }
+  .stage-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px dashed var(--border); color: var(--muted); }
+  .stage-tag.stage-3 { border-style: solid; }
   .closed-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--muted); }
   .closed-note { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
   .page-title h1 span { color: var(--gold); }
@@ -508,6 +510,9 @@
     (5) not in the Altman Z bankruptcy-risk zone.
     Extra signals S2, S4, S5 and S6 are shown when present, and a <strong>Lower risk</strong> label marks companies that also pass the quality check
     (strong quality score, positive cash flow, no sign of earnings manipulation).
+    Cards also show ROIC (return on invested capital), the company's cost of capital (WACC, from CAPM with
+    industry betas and a credit-rating-based cost of debt) and a value-creation stage. These are for information only:
+    in our 2017–2024 test, an improving ROIC did not on its own point to better share-price returns.
     Every new filing is checked again. If the latest figures no longer pass, the company moves to <strong>No longer qualifies</strong> with the reason
     (figures got worse, price recovered, back to profit, and so on). Its returns are still counted in the track record.
     In a test on 2018–2023 filings (258 cases), companies passing these rules had a median 3-year return of +41%;
@@ -792,7 +797,8 @@ function renderCardV2(s) {
   const isNew = !closed && (Date.now() - new Date(s.first_seen)) / 864e5 <= 7;
   const chips = (s.reasons || []).map(r =>
     `<span class="signal-type-tag" title="${esc(r.label)}">${esc(r.code)} · ${esc(r.label.split(':')[0])}</span>`).join(' ');
-  const sc = s.scores || {}, m = s.metrics || {};
+  const sc = s.scores || {}, m = s.metrics || {}, cc = m.cost_of_capital || {};
+  const stageTag = m.stage ? `<span class="stage-tag stage-${m.stage}" title="Display only: not part of the rules until tested">${esc(m.stage_label)}</span>` : '';
   const items = [
     ['Price vs 3-yr high', pct(s.price_vs_3y_high)],
     ['Piotroski F-score', sc.piotroski != null ? sc.piotroski + '/9' : '—'],
@@ -804,6 +810,9 @@ function renderCardV2(s) {
     ['Operating margin', pct(m.operating_margin, 1)],
     ['Net income', usdM(m.net_income)],
     ['Operating cash flow', usdM(m.operating_cash_flow)],
+    ['ROIC (2 yrs ago → last yr → latest)', [m.roic_prev2, m.roic_prev, m.roic].map(x => pct(x, 1)).join(' → ')],
+    ['Cost of capital (WACC)', cc.wacc != null ? pct(cc.wacc, 1) + ` (equity ${pct(cc.cost_of_equity, 1)}, beta ${cc.beta}; debt ${pct(cc.cost_of_debt, 1)}, rating ${esc(cc.rating)}; ${esc(cc.industry)})` : '—'],
+    ['Economic profit (ROIC − WACC) × capital', usdM(m.economic_profit)],
     ['Sector', [s.sector, s.industry].filter(Boolean).join(' · ') || '—'],
     ['Figures for', s.period_label || ('12 months to ' + s.fiscal_year_end)],
   ].map(([l, v]) => `<div class="raw-signal-item">${l}: <span>${esc(v)}</span></div>`).join('');
@@ -821,7 +830,7 @@ function renderCardV2(s) {
             ${sc.lower_risk ? '<span class="badge-updated" title="Passes the quality check: strong quality score, positive cash flow, clean Beneish M">LOWER RISK</span>' : ''}
           </div>
           ${(s.sector || s.industry) ? `<div class="card-meta"><span class="sector-tag">${esc([s.sector, s.industry].filter(Boolean).join(' · '))}</span></div>` : ''}
-          <div class="card-meta">${chips}</div>
+          <div class="card-meta">${chips} ${stageTag}</div>
           <div class="card-meta">
             ${s.market_cap ? `<span class="mc-tag">${fmtMC(s.market_cap)}</span>` : ''}
             <span class="mc-tag">${pct(s.price_vs_3y_high)} of 3-yr high</span>
